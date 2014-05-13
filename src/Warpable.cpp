@@ -590,6 +590,10 @@ SQInteger Warpable::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushfloat(v, SQFloat(getManeuve().capacity));
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("warpSpeed"))){
+		sq_pushfloat(v, SQFloat(warpSpeed));
+		return 1;
+	}
 	else
 		return st::sqGet(v, name);
 }
@@ -617,6 +621,13 @@ SQInteger Warpable::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getfloat(v, 3, &f)))
 			return sq_throwerror(v, _SC("Warpable.capacitor could not convert to float"));
 		this->capacitor = f;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("warpSpeed"))){
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+			return sq_throwerror(v, _SC("Warpable.warpSpeed could not convert to float"));
+		this->warpSpeed = f;
 		return 0;
 	}
 	else

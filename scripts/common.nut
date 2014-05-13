@@ -113,6 +113,17 @@ class Docker{
 	void addent(Entity);
 }
 
+/// Entities that can warp with hyperdrive.
+class Warpable extends Entity{
+	// These property names need revisited
+	bool warping;
+	Vec3d warpdst;
+	CoordSys warpdstcs;
+	float capacitor;
+	float capacity;
+	float warpSpeed;
+}
+
 class Player{
 	string classname;
 	Vec3d getpos();

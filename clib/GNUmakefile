@@ -43,6 +43,7 @@ ${OUTDIR}:
 	mkdir $@
 
 ${OUT}(UnZip.o): src/UnZip.c
+	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 ${OUT}(amat3.o): src/amat3.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 ${OUT}(amat4.o): src/amat4.c

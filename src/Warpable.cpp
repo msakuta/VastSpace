@@ -671,7 +671,7 @@ StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genCache) :
 {
 	gx = cen[0] - numSectors;
 	gy = cen[1] - numSectors;
-	gz = cen[2] - numSectors - 1; // Start from one minuse the first sector.
+	gz = cen[2] - numSectors - 1; // Start from the first sector subtracted by 1.
 	newCell();
 }
 

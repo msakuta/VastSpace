@@ -17,7 +17,8 @@
 #define GALAXY_EPSILON 1e-3
 #define GALAXY_DR 1e-3 /* dynamic range of galaxy lights */
 
-typedef unsigned char GalaxyField[FIELD][FIELD][FIELDZ][4];
+typedef unsigned char GalaxyFieldCell;
+typedef GalaxyFieldCell GalaxyField[FIELD][FIELD][FIELDZ][4];
 
 const GalaxyField *initGalaxyField();
 

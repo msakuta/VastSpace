@@ -2,6 +2,7 @@
  * \brief Implementation of Warpable class.
  */
 #define NOMINMAX
+#define _CRT_SECURE_NO_WARNINGS
 #include "Warpable.h"
 #include "cmd.h"
 #include "astrodef.h"
@@ -121,7 +122,6 @@ void Warpable::init(){
 static int cmd_warp(int argc, char *argv[], void *pv){
 	Game *game = (Game*)pv;
 	Player *ppl = game->player;
-	Entity *pt;
 	if(argc < 2){
 		CmdPrintf("Usage: warp dest [x] [y] [z]");
 		return 1;
@@ -186,9 +186,7 @@ Entity::Props Warpable::props()const{
 
 
 void Warpable::warp_collapse(){
-	int i;
 	Warpable *p = this;
-	Entity *pt2;
 	if(!warpcs)
 		return;
 	double sdist = (pos - w->cs->tocs(Vec3d(0,0,0), this->warpcs->parent)).slen();
@@ -390,16 +388,14 @@ void Warpable::anim(double dt){
 			post_warp();
 		}
 		else if(desiredvelo < velo){
-			Vec3d delta, dst, dstvelo;
-			double dstspd, u, len;
-			delta = p->warpdst - dstcspos;
-/*			VECSUB(delta, warpdst, pt->pos);*/
-			len = delta.len();
+			Vec3d delta = p->warpdst - dstcspos;
+			double len = delta.len();
 #if 1
-			u = desiredvelo / len;
-			dstvelo = delta * u;
+			double u = desiredvelo / len;
+			Vec3d dstvelo = delta * u;
 			*pvelo = dstvelo;
 #else
+			Vec3d dst;
 			u = -exp(-desiredvelo * dt);
 			VECSCALE(dst, delta, u);
 			VECADDIN(dst, warpdst);
@@ -416,11 +412,10 @@ void Warpable::anim(double dt){
 			capacitor = 0.;
 		}
 		else if(.99 < sp){
-			double dstspd, u, len;
 			const double L = LIGHT_SPEED;
 			Vec3d delta = warpdst - pt->pos;
-			len = delta.len();
-			u = (velo + .5) * 1e1 /** 5e-1 * (len - p->sight->rad)*/;
+			double len = delta.len();
+			double u = (velo + .5) * 1e1 /** 5e-1 * (len - p->sight->rad)*/;
 	/*		u = L - L * L / (u + L);*/
 	/*		dstspd = (u + v) / (1 + u * v / LIGHT_SPEED / LIGHT_SPEED);*/
 			delta.normin();
@@ -534,7 +529,6 @@ bool Warpable::command(EntityCommand *com){
 			double cost = g_warp_cost_factor * this->mass / 1e3 * (log10(dist + 1.) + 1.);
 			Warpable *p = this;
 			if(cost < p->capacitor){
-				double f;
 				int i;
 				p->warping = 1;
 				p->task = sship_warp;
@@ -604,7 +598,7 @@ SQInteger Warpable::sqSet(HSQUIRRELVM v, const SQChar *name){
 		// Warping flag should not regularly be changed by scripts!
 		SQBool b;
 		if(SQ_SUCCEEDED(sq_getbool(v, 3, &b)))
-			this->warping = b;
+			this->warping = b != SQFalse;
 		return 0;
 	}
 	else if(!scstrcmp(name, _SC("warpdst"))){
@@ -940,6 +934,7 @@ static int cmd_find(int argc, char *argv[]){
 	}
 	if(!count)
 		CmdPrintf("No such a star found: %s", argv[1]);
+	return 0;
 }
 
 StaticInitializer stin([](){CmdAdd("find", cmd_find);});
@@ -967,7 +962,7 @@ sqa::Initializer sqin("StarEnum", [](HSQUIRRELVM v){
 			SQBool genCache;
 			if(SQ_FAILED(sq_getbool(v, 4, &genCache)))
 				genCache = SQFalse;
-			new(p) StarEnum(plpos.value, numSectors, genCache == SQTrue);
+			new(p) StarEnum(plpos.value, int(numSectors), genCache == SQTrue);
 
 			sq_setreleasehook(v, 1, [](SQUserPointer p, SQInteger){
 				((StarEnum*)p)->~StarEnum();
@@ -1036,10 +1031,10 @@ static void perlin_noise(GalaxyField &field, GalaxyField &work, long seed){
 			int sum[4] = {0};
 			for(k = 0; k < 4; k++){
 				for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++) for(zj = 0; zj <= 1; zj++){
-					sum[k] += (double)work[xi / cell + xj][yi / cell + yj][zi / cell + zj][k]
+					sum[k] += int((double)work[xi / cell + xj][yi / cell + yj][zi / cell + zj][k]
 					* (xj ? xi % cell : (cell - xi % cell - 1)) / (double)cell
 					* (yj ? yi % cell : (cell - yi % cell - 1)) / (double)cell
-					* (zj ? zi % cell : (cell - zi % cell - 1)) / (double)cell;
+					* (zj ? zi % cell : (cell - zi % cell - 1)) / (double)cell);
 				}
 				field[xi][yi][zi][k] = MIN(255, field[xi][yi][zi][k] + sum[k] / 2);
 			}
@@ -1051,15 +1046,15 @@ static unsigned char galaxy_set_star_density(GalaxyField &field, unsigned char c
 	Vec3d v0(FIELD / 2., FIELD / 2., FIELDZ / 2.);
 	int v1[3];
 	for(int i = 0; i < 3; i++)
-		v1[i] = floor(v0[i]);
+		v1[i] = int(v0[i]);
 /*	printf("stardensity(%lg,%lg,%lg)[%d,%d,%d]: %lg\n", v0[0], v0[1], v0[2], v1[0], v1[1], v1[2], );*/
 	if(0 <= v1[0] && v1[0] < FIELD-1 && 0 <= v1[1] && v1[1] < FIELD-1 && 0 <= v1[2] && v1[2] < FIELDZ-1){
 		int xj, yj, zj;
 		for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++) for(zj = 0; zj <= 1; zj++){
-			field[v1[0] + xj][v1[1] + yj][v1[2] + zj][3] = c
+			field[v1[0] + xj][v1[1] + yj][v1[2] + zj][3] = (GalaxyFieldCell)(c
 				* (xj ? v0[0] - v1[0] : 1. - (v0[0] - v1[0]))
 				* (yj ? v0[1] - v1[1] : 1. - (v0[1] - v1[1]))
-				* (zj ? v0[2] - v1[2] : 1. - (v0[2] - v1[2]));
+				* (zj ? v0[2] - v1[2] : 1. - (v0[2] - v1[2])));
 		}
 		return c;
 	}
@@ -1150,7 +1145,6 @@ const GalaxyField *initGalaxyField(){
 	static bool field_init = false;
 
 	if(!field_init){
-		FILE *ofp;
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 		field_init = true;
@@ -1161,10 +1155,10 @@ const GalaxyField *initGalaxyField(){
 		}
 		else{
 		struct random_sequence rs;
-		int xi, yi, zi, zzi, xj, yj, zj;
-		int k, n;
+		int xi, yi, zi;
+		int k;
 		int srcx, srcy;
-		float darknebula[DARKNEBULA][DARKNEBULA];
+		double darknebula[DARKNEBULA][DARKNEBULA];
 		GalaxyField *pfield2 = (GalaxyField*)malloc(sizeof field);
 		if(!pfield2)
 			return NULL;
@@ -1224,7 +1218,7 @@ const GalaxyField *initGalaxyField(){
 		for(zi = 16 - zzi; zzi && zi <= 16 + zzi; zi += zzi * 2, zzz -= 2)*/
 		CmdPrintf("draw_gs.noise: %lg sec", TimeMeasLap(&tm));
 		for(xi = 0; xi < DARKNEBULA; xi++) for(yi = 0; yi < DARKNEBULA; yi++){
-			darknebula[xi][yi] = (drseq(&rs) - .5) + (drseq(&rs) - .5);
+			darknebula[xi][yi] = ((drseq(&rs) - .5) + (drseq(&rs) - .5));
 		}
 		CmdPrintf("draw_gs.nebula: %lg sec", TimeMeasLap(&tm));
 		for(zi = 0; zi < FIELDZ; zi++){
@@ -1256,7 +1250,7 @@ const GalaxyField *initGalaxyField(){
 			double thickness = sqrt(std::max(0., 1. - dxy)) * srcw;
 
 			if(srcpixel == 0 || 1. < dxy || thickness <= dz){
-				memset(field2[xi][yi][zi], 0, sizeof (char[4]));
+				memset(field2[xi][yi][zi], 0, sizeof (GalaxyFieldCell[4]));
 			}
 			else{
 				// There are dark nebulae along the central plane of the galaxy.  We simulate this by darkening
@@ -1265,15 +1259,15 @@ const GalaxyField *initGalaxyField(){
 				double dzq = dz / thickness;
 
 				for(k = 0; k < 4; k++)
-					field2[xi][yi][zi][k] *= (k == 3 ? std::min(1., (1. - dz / thickness) * 2.) : dzq);
+					field2[xi][yi][zi][k] *= (GalaxyFieldCell)(k == 3 ? std::min(1., (1. - dz / thickness) * 2.) : dzq);
 			}
 
 			// Enhance color near center to render bulge
 			if(dellipse < 1.){
-				field2[xi][yi][zi][0] = MIN(255, field2[xi][yi][zi][0] + 256 * (1. - dellipse));
-				field2[xi][yi][zi][1] = MIN(255, field2[xi][yi][zi][1] + 256 * (1. - dellipse));
-				field2[xi][yi][zi][2] = MIN(255, field2[xi][yi][zi][2] + 128 * (1. - dellipse));
-				field2[xi][yi][zi][3] = MIN(255, field2[xi][yi][zi][3] + 128 * (1. - dellipse));
+				field2[xi][yi][zi][0] = MIN(255, (GalaxyFieldCell)(field2[xi][yi][zi][0] + 256 * (1. - dellipse)));
+				field2[xi][yi][zi][1] = MIN(255, (GalaxyFieldCell)(field2[xi][yi][zi][1] + 256 * (1. - dellipse)));
+				field2[xi][yi][zi][2] = MIN(255, (GalaxyFieldCell)(field2[xi][yi][zi][2] + 128 * (1. - dellipse)));
+				field2[xi][yi][zi][3] = MIN(255, (GalaxyFieldCell)(field2[xi][yi][zi][3] + 128 * (1. - dellipse)));
 			}
 /*			fwrite(&field2[xi][yi][zi], 1, 3, ofp);*/
 		}
@@ -1338,7 +1332,7 @@ double galaxy_get_star_density_pos(const Vec3d &pos, const CoordSys *cs){
 	int v1[3];
 	int i;
 	for(i = 0; i < 3; i++)
-		v1[i] = floor(v0[i]);
+		v1[i] = int(v0[i]);
 	/* cubic linear interpolation is fairly slower, but this function is rarely called. */
 	if(0 <= v1[0] && v1[0] < FIELD-1 && 0 <= v1[1] && v1[1] < FIELD-1 && 0 <= v1[2] && v1[2] < FIELDZ-1){
 		int xj, yj, zj;

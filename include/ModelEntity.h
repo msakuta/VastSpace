@@ -115,7 +115,7 @@ protected:
 //    Inline Implementation
 //-----------------------------------------------------------------------------
 
-inline ModelEntity::Navlight::Navlight() : pos(0,0,0), color(1,0,0,1), radius(0.01f), period(1.), phase(0.), pattern(Triangle), duty(0.1){
+inline ModelEntity::Navlight::Navlight() : pos(0,0,0), color(1,0,0,1), radius(0.01f), period(1.), phase(0.), pattern(Triangle), duty(0.1f){
 }
 
 

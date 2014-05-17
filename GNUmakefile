@@ -94,4 +94,6 @@ tests/crc32_test: tests/crc32_test.c ${OUT}
 	${CC} $(CFLAGS) $^ -o $@
 tests/rseq_test: tests/rseq_test.c ${OUT}
 	${CC} $(CFLAGS) $^ -o $@
+tests/UnZip_test: tests/UnZip_test.c src/UnZip.c
+	${CC} $(CFLAGS) $< -o $@ -lz
 

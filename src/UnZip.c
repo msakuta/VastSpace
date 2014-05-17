@@ -7,57 +7,73 @@
 #include <clib/timemeas.h>
 #endif
 
-typedef unsigned long DWORD;
-typedef unsigned short WORD;
+#if __STDC_VERSION__ >= 199901L
+#include <stdint.h>
+#else
+typedef unsigned int uint32_t;
+typedef unsigned short uint16_t;
+#endif
 
+#ifdef _WIN32
 #pragma pack(push, 2)
+#endif
+
+#ifdef __GNUC__
+#define PACKED __attribute__((packed))
+#else
+#define PACKED
+#endif
+
 typedef struct sZipLocalHeader{
-	DWORD signature; //    local file header signature     4 bytes  (0x04034b50)
-    WORD version; // version needed to extract       2 bytes
-    WORD flag; //general purpose bit flag        2 bytes
-    WORD method; //compression method              2 bytes
-    WORD modtime; //last mod file time              2 bytes
-    WORD moddate; //last mod file date              2 bytes
-    DWORD crc32; //crc-32                          4 bytes
-	DWORD csize; //compressed size                 4 bytes
-    DWORD usize; //uncompressed size               4 bytes
-    WORD namelen; //file name length                2 bytes
-    WORD extralen; //extra field length              2 bytes
-} ZipLocalHeader;
+	uint32_t signature; //    local file header signature     4 bytes  (0x04034b50)
+	uint16_t version; // version needed to extract       2 bytes
+	uint16_t flag; //general purpose bit flag        2 bytes
+	uint16_t method; //compression method              2 bytes
+	uint16_t modtime; //last mod file time              2 bytes
+	uint16_t moddate; //last mod file date              2 bytes
+	uint32_t crc32; //crc-32                          4 bytes
+	uint32_t csize; //compressed size                 4 bytes
+	uint32_t usize; //uncompressed size               4 bytes
+	uint16_t namelen; //file name length                2 bytes
+	uint16_t extralen; //extra field length              2 bytes
+} PACKED ZipLocalHeader;
 
 typedef struct sZipCentralDirHeader
 {
-    unsigned int signature;   
-    unsigned short madever;   
-    unsigned short needver;   
-    unsigned short option;   
-    unsigned short comptype;   
-    unsigned short filetime;   
-    unsigned short filedate;   
-    unsigned int crc32;   
-    unsigned int compsize;   
-    unsigned int uncompsize;   
-    unsigned short fnamelen;   
-    unsigned short extralen;   
-    unsigned short commentlen;   
-    unsigned short disknum;   
-    unsigned short inattr;   
-    unsigned int outattr;   
-    unsigned int headerpos;   
-} ZipCentralDirHeader;
+	uint32_t signature;
+	uint16_t madever;
+	uint16_t needver;
+	uint16_t option;
+	uint16_t comptype;
+	uint16_t filetime;
+	uint16_t filedate;
+	uint32_t crc32;
+	uint32_t compsize;
+	uint32_t uncompsize;
+	uint16_t fnamelen;
+	uint16_t extralen;
+	uint16_t commentlen;
+	uint16_t disknum;
+	uint16_t inattr;
+	uint32_t outattr;
+	uint32_t headerpos;
+} PACKED ZipCentralDirHeader;
 
 typedef struct sZipEndCentDirHeader
-{   
-    unsigned int signature;   
-    unsigned short disknum;   
-    unsigned short startdisknum;   
-    unsigned short diskdirentry;   
-    unsigned short direntry;   
-    unsigned int dirsize;   
-    unsigned int startpos;   
-    unsigned short commentlen;   
-} ZipEndCentDirHeader;
+{
+	uint32_t signature;
+	uint16_t disknum;
+	uint16_t startdisknum;
+	uint16_t diskdirentry;
+	uint16_t direntry;
+	uint32_t dirsize;
+	uint32_t startpos;
+	uint16_t commentlen;
+} PACKED ZipEndCentDirHeader;
+
+#ifdef _WIN32
 #pragma pack(pop, 2)
+#endif
 
 
 static int pathncmp (const char *first, const char *last, unsigned count)

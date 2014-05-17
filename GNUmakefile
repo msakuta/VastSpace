@@ -6,16 +6,26 @@ OUTDIR = Release
 CFLAGS += -O3 -g
 endif
 
+USE_LOCAL_BULLET=y
+
 ifndef BULLET_INCLUDE
-BULLET_INCLUDE=bullet/src
+	ifeq "$(USE_LOCAL_BULLET)" "y"
+		BULLET_INCLUDE=bullet/src
+	else
+		BULLET_INCLUDE=/usr/include/bullet
+	endif
 endif
 
 ifndef BULLET_LIB
-BULLET_LIB=
+	ifeq "$(USE_LOCAL_BULLET)" "y"
+		BULLET_LIB=-Lbullet/src/LinearMath -Lbullet/src/BulletCollision -Lbullet/src/BulletDynamics
+	else
+		BULLET_LIB=
+	endif
 endif
 
 CFLAGS += -I clib/include -I cpplib/include -I squirrel3/include \
- -I lpng -I zlib -I ${BULLET_INCLUDE}
+ -I lpng -I zlib -I ${BULLET_INCLUDE} -DBT_USE_DOUBLE_PRECISION
 CFLAGS += -D DEDICATED
 CPPFLAGS += -std=c++11
 CC = gcc
@@ -87,7 +97,7 @@ gltestdll_objects = gltestdll/${OUTDIR}/Soldier.o\
 
 all: ${OUTDIR}/gltestplus #${OUTDIR}/gltestdll.so
 
-${OUTDIR}/gltestplus: ${OUTDIR} ${objects}
+${OUTDIR}/gltestplus: ${OUTDIR} ${objects} libLinearMath libBulletCollision libBulletDynamics
 	${CC} ${CFLAGS} $(CPPFLAGS) $(RDYNAMIC) ${objects} -o $@ $(BULLET_LIB) \
 	-lstdc++ -lm -lBulletDynamics -lBulletCollision -lLinearMath -ldl -lrt -lpthread
 
@@ -112,6 +122,15 @@ ${OUTDIR}/gltestdll.so:
 ./squirrel3/lib/libsquirrel.a ./squirrel3/lib/libsqstdlib.a:
 	-mkdir ./squirrel3/lib ./squirrel3/bin # Squirrel's makefile does not try to mkdir
 	cd squirrel3 && ${MAKE}
+
+ifeq "$(USE_LOCAL_BULLET)" "y"
+libLinearMath: bullet/src/LinearMath/libLinearMath.so
+libBulletCollision: bullet/src/BulletCollision/libBulletCollision.so
+libBulletDynamics: bullet/src/BulletDynamics/libBulletDynamics.so
+endif
+
+bullet/src/LinearMath/libLinearMath.so bullet/src/BulletCollision/libBulletCollision.so bullet/src/BulletDynamics/libBulletDynamics.so:
+	cd bullet && ${MAKE}
 
 ${OUTDIR}:
 	mkdir ${OUTDIR}
@@ -234,5 +253,5 @@ surface/models/*.nut
 clean:
 	rm ${OUTDIR} -r
 
-.PHONY: ${OUTDIR}/gltestdll.so ./clib/${OUTDIR}/clib.a
+.PHONY: ${OUTDIR}/gltestdll.so ./clib/${OUTDIR}/clib.a libLinearMath libBulletCollision libBulletDynamics
 

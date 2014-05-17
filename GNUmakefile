@@ -98,7 +98,7 @@ ${OUTDIR}/gltestdll.so:
 	cd gltestdll && ${MAKE}
 
 ./clib/${OUTDIR}/clib.a:
-	cd clib && ${MAKE}
+	cd clib && CFLAGS="-I ../zlib" ${MAKE} 
 
 ./cpplib/${OUTDIR}/cpplib.a:
 	cd cpplib && ${MAKE}

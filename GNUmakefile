@@ -9,7 +9,7 @@ DEBUG = -s -O3 -D NDEBUG # essentially release
 OUTDIR = Release
 endif
 
-CFLAGS = ${DEBUG} -I include -fPIC
+CFLAGS += ${DEBUG} -I include -fPIC
 OUT = ${OUTDIR}/clib.a
 all: ${OUT}
 

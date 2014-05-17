@@ -7,7 +7,7 @@ CFLAGS += -O3 -g
 endif
 
 ifndef BULLET_INCLUDE
-BULLET_INCLUDE=/usr/include/bullet
+BULLET_INCLUDE=bullet/src
 endif
 
 ifndef BULLET_LIB
@@ -15,7 +15,7 @@ BULLET_LIB=
 endif
 
 CFLAGS += -I clib/include -I cpplib/include -I squirrel3/include \
- -I lpng -I ${BULLET_INCLUDE}
+ -I lpng -I zlib -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
 CPPFLAGS += -std=c++11
 CC = gcc

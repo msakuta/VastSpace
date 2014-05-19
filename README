@@ -63,11 +63,18 @@ Building Linux Server
 ---------------------
 
 Linux server is a network server that can host game worlds
-to share among clients.
+to share among clients.  The server hosted on Linux is called
+dedicated server and does not provide any graphics on the
+server side.  The server can be managed while running by
+command-line interface.
 
 Invoking gnu make will build the application.
 Gcc and g++ with C++11 support is needed.
 Gcc 4.8.2 is confirmed to build to some extent.
+Most distributions doesn't provide package managers that
+support gcc 4.8.2 but older versions.  In such case
+(which is almost always the case), you must build gcc
+from source.
 
 You'll need various external libraries:
   libpng
@@ -75,6 +82,23 @@ You'll need various external libraries:
   zlib
   Bullet Dynamics Engine (version 2.76 or later)
   Squirrel Scripting Language version 3
+  libogg
+  libvorbis
+
+All sources are included in the source tree except Bullet,
+but GNUMakefile does not automatically build them.
+You can choose the method to install these libraries; You can
+install from the distribution's package managers (yum or apt-get)
+or build from the sources.
+
+Bullet Dynamics Engine's sources can be downloaded by the shell script
+svn-bullet.sh.  A Subversion command line client and internet connection
+is required.  BDE libraries are built as shared libraries because the
+extension libraries can link to them.  The easiest way to incorporate
+BDE is to install it into the system, but if you have no system
+administrative privileges, you can set LD_LIBRARY_PATH environment
+variable to point to the libraries under your home directory when
+running the server.
 
 
 Notes about history

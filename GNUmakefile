@@ -95,7 +95,7 @@ gltestdll_objects = gltestdll/${OUTDIR}/Soldier.o\
  ./clib/Release/clib.a\
  ./cpplib/Release/cpplib.a
 
-all: ${OUTDIR}/gltestplus #${OUTDIR}/gltestdll.so
+all: ${OUTDIR}/gltestplus ${OUTDIR}/vastspace.so
 
 ${OUTDIR}/gltestplus: ${OUTDIR} ${objects} libLinearMath libBulletCollision libBulletDynamics
 	${CC} ${CFLAGS} $(CPPFLAGS) $(RDYNAMIC) ${objects} -o $@ $(BULLET_LIB) \
@@ -104,8 +104,8 @@ ${OUTDIR}/gltestplus: ${OUTDIR} ${objects} libLinearMath libBulletCollision libB
 #${OUTDIR}/gltestdll.so: gltestdll/${OUTDIR} ${gltestdll_objects}
 #	${CC} ${CFLAGS} $(CPPFLAGS) -shared ${gltestdll_objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
 
-${OUTDIR}/gltestdll.so:
-	cd gltestdll && ${MAKE}
+${OUTDIR}/vastspace.so:
+	cd mods/vastspace && ${MAKE}
 
 ./clib/${OUTDIR}/clib.a:
 	cd clib && CFLAGS="-I ../zlib" ${MAKE} 
@@ -135,8 +135,8 @@ bullet/src/LinearMath/libLinearMath.so bullet/src/BulletCollision/libBulletColli
 ${OUTDIR}:
 	mkdir ${OUTDIR}
 
-gltestdll/${OUTDIR}:
-	mkdir gltestdll/${OUTDIR}
+mods/vastspace/${OUTDIR}:
+	mkdir mods/vastspace/${OUTDIR}
 
 ${OUTDIR}/serial.o: $(call depends,serial.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
@@ -240,11 +240,6 @@ models/*.png \
 textures/*.png \
 textures/*.jpg \
 textures/*.bmp \
-gltestdll/models/*.mqo \
-gltestdll/models/*.mot \
-gltestdll/models/*.nut \
-gltestdll/models/*.png \
-gltestdll/models/*.jpg \
 surface/models/*.mqo \
 surface/models/*.mot \
 surface/models/*.nut

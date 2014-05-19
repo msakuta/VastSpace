@@ -5,15 +5,33 @@ else
 OUTDIR = Release
 CFLAGS += -O3 -g
 endif
+
+USE_LOCAL_BULLET=y
+
 ifndef BULLET_INCLUDE
-BULLET_INCLUDE=/usr/include/bullet
+	ifeq "$(USE_LOCAL_BULLET)" "y"
+		BULLET_INCLUDE=../../bullet/src
+	else
+		BULLET_INCLUDE=/usr/include/bullet
+	endif
 endif
-CFLAGS += -I ../include -I ../../clib/include -I ../../cpplib/include -I ../../SQUIRREL3/include -I ${BULLET_INCLUDE}
+
+ifndef BULLET_LIB
+	ifeq "$(USE_LOCAL_BULLET)" "y"
+		BULLET_LIB=-L../../bullet/src/LinearMath \
+			-L../../bullet/src/BulletCollision \
+			-L../../bullet/src/BulletDynamics
+	else
+		BULLET_LIB=
+	endif
+endif
+
+CFLAGS += -I ../../include -I ../../clib/include -I ../../cpplib/include -I ../../squirrel3/include -I ${BULLET_INCLUDE}
 CFLAGS += -D DEDICATED
 CFLAGS += -fPIC
 
 # Ignore DLL export definition in gcc build. 
-CFLAGS += '-DGLTESTDLL_EXPORT='
+CFLAGS += '-DVASTSPACE_EXPORT='
 
 depends = $(patsubst %:,,$(subst \ ,,$(shell $(CC) $(CFLAGS) $(CPPFLAGS) -I ../include -MM $(1))))
 
@@ -23,10 +41,11 @@ objects = ${OUTDIR}/Soldier.o\
  ../../clib/Release/clib.a\
  ../../cpplib/Release/cpplib.a
 
-all: ../${OUTDIR}/gltestdll.so
+all: ../../${OUTDIR}/vastspace.so
 
-../${OUTDIR}/gltestdll.so: ${OUTDIR} ${objects}
-	${CC} ${CFLAGS} $(CPPFLAGS) -shared ${objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
+../../${OUTDIR}/vastspace.so: ${OUTDIR} ${objects}
+	${CC} ${CFLAGS} $(CPPFLAGS) -shared ${objects} -o $@ ${BULLET_LIB} \
+	-lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
 
 ${OUTDIR}:
 	mkdir ${OUTDIR}

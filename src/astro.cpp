@@ -30,6 +30,7 @@ extern "C"{
 #include <ctype.h>
 #include <sstream>
 #include <fstream>
+#include <algorithm>
 
 
 /// \brief Barycenter of multi-body problems.
@@ -714,25 +715,51 @@ double checkEclipse(const Astrobj *a, const CoordSys *retcs, const Vec3d &src, c
 }
 
 bool FindBrightestAstrobj::invoke(const CoordSys *cs2){
-	double rawval, val;
 	const Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
-	if(a && a->absmag < 30){
-		Vec3d lightSource = retcs->tocs(vec3_000, a);
-		Vec3d ray = src - lightSource;
-		double sd = ray.slen();
-		rawval = 0. < sd ? pow(2.512, -1.*a->absmag) / sd : 0.;
-		// Check for eclipses only if you could be the brightest celestial object.
-		if(checkEclipse && threshold < rawval && brightness < rawval)
-			val = rawval * ::checkEclipse(a, retcs, src, lightSource, ray, &eclipseCaster);
-		else
-			val = rawval;
+	if(!a || 30 <= a->absmag)
+		return true;
+
+	// I don't understand why, but this function seems to be occasionally called twice for the same
+	// argument in a single find().
+	for(int i = 0; i < results.size(); i++){
+		if(results[i].cs == a)
+			return true;
 	}
+
+	Vec3d lightSource = retcs->tocs(vec3_000, a);
+	Vec3d ray = src - lightSource;
+	double sd = ray.slen();
+	if(sd == 0.)
+		return true;
+
+	// Obtain brightness in ratio to Sun looked from earth
+	double rawval = pow(2.512, -(a->absmag + 26.7)) * 3.e14 * 3.e14 / sd;
+
+	// Check for eclipses only if you could be the brightest celestial object.
+	double val;
+	if(checkEclipse && threshold < rawval && brightness < rawval)
+		val = rawval * ::checkEclipse(a, retcs, src, lightSource, ray, &eclipseCaster);
 	else
-		rawval = val = 0.;
-	if(brightness < val){
-		brightness = val;
+		val = rawval;
+	if(val == 0.)
+		return true;
+
+	if(results.size() < resultCount || results.back().brightness < val){
 		nonShadowBrightness = rawval;
-		result = a;
+		ResultSet res;
+		res.cs = a;
+		res.brightness = val;
+		res.pos = lightSource;
+		std::vector<ResultSet>::iterator it = std::upper_bound(results.begin(), results.end(), val, [](const double &v, const ResultSet &it){
+			return it.brightness < v;
+		});
+		results.insert(it, res);
+
+		// Update most bright brightness
+		brightness = results.front().brightness;
+
+		if(resultCount < results.size())
+			results.pop_back();
 	}
 	return true;
 }
@@ -748,7 +775,10 @@ bool FindBrightestAstrobj::invoke(const CoordSys *cs2){
 Astrobj *CoordSys::findBrightest(const Vec3d &po){
 	FindBrightestAstrobj fba(this, pos);
 	find(fba);
-	return const_cast<Astrobj*>(fba.result);
+	if(fba.results.size())
+		return const_cast<Astrobj*>(fba.results[0].cs);
+	else
+		return NULL;
 }
 
 bool Astrobj::sq_define(HSQUIRRELVM v){

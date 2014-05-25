@@ -553,6 +553,8 @@ bool CoordSys::find(FindCallbackConst &fc)const{
 	return tempFindParent(this, fc);
 }
 
+CoordSys::FindCallbackConst::~FindCallbackConst(){}
+
 static std::map<double, CoordSys*> drawnlist;
 
 void CoordSys::predraw(const Viewer *vw){

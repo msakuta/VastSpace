@@ -211,7 +211,7 @@ void Game::lightOn(Viewer &vw){
 	fba.returnBrightness = true;
 	fba.threshold = 1e-20;
 	vw.cs->find(fba);
-	const Astrobj *sun = fba.result;
+	const Astrobj *sun = fba.results.size() ? fba.results[0].cs : NULL;
 //	const Astrobj *sun = player->cs->findBrightest(player->getpos(), param);
 	GLfloat val = 0.;
 	if(sun){
@@ -223,7 +223,7 @@ void Game::lightOn(Viewer &vw){
 		else{
 			// This conversion formula is very temporary and qualitative. This should be shared among 
 			// TexSphere's drawing methods and WarSpace's ones.
-			val = GLfloat(sqrt(fba.brightness * 1e18));
+			val = GLfloat(sqrt(fba.brightness));
 			if(val < 0.)
 				val = 0.;
 		}

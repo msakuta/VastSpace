@@ -192,18 +192,19 @@ void TexSphere::draw(const Viewer *vw){
 	if(vw->zslice != 2)
 		return;
 
-	FindBrightestAstrobj param(this, vec3_000);
-	param.returnBrightness = true;
-	param.threshold = 1e-20;
-	
+	GLint maxLights = 1;
+	glGetIntegerv(GL_MAX_LIGHTS, &maxLights);
+	FindBrightestAstrobj param(vw->cs, apparentPos, maxLights);
+	param.threshold = 1e-6;
+
 	find(param);
-	Astrobj *sun = const_cast<Astrobj*>(param.result);
+	Astrobj *sun = param.results.size() ? const_cast<Astrobj*>(param.results[0].cs) : NULL;
 	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
 	Quatd ringrot;
 	int ringdrawn = 8;
 	bool drawring = 0. < ringthick && !vw->gc->cullFrustum(calcPos(*vw), rad * ringmax * 1.1);
 
-	GLfloat brightness = GLfloat(sqrt(param.brightness * 1e18));
+	GLfloat brightness = GLfloat(sqrt(param.brightness));
 
 	// Sun distance
 	double sundist = sun ? (parent->tocs(sun->pos, sun->parent) - pos).len() : 1e5;
@@ -393,7 +394,7 @@ double TexSphere::getAmbientBrightness(const Viewer &vw)const{
 
 	find(param);
 
-	const Astrobj *sun = param.result;
+	const Astrobj *sun = param.results.size() ? param.results[0].cs : NULL;
 	Vec3d sunpos = sun ? vwcs->tocs(sun->pos, sun->parent) : vec3_000;
 	Vec3d thispos = vwcs->tocs(this->pos, this->parent);
 

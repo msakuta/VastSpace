@@ -1087,7 +1087,7 @@ void Game::adjustAutoExposure(Viewer &vw){
 	// Note that it won't be effective if the shader is off.
 	if(r_auto_exposure){
 		// Exposure limits. It affects the target exposure.
-		static const double minExposure = 1e-1;
+		static const double minExposure = 1e-3;
 		static const double maxExposure = 1e3;
 		double accum = 0.;
 		static RandomSequence rs(12321); // Random source

@@ -527,6 +527,7 @@ void DrawTextureSphere::useShader(){
 			GLint heightLoc;
 			GLint exposureLoc;
 			GLint tonemapLoc;
+			GLint lightCountLoc;
 			void getLocs(GLuint shader){
 				textureLoc = glGetUniformLocation(shader, "texture");
 				noise3DLoc = glGetUniformLocation(shader, "noise3D");
@@ -536,6 +537,7 @@ void DrawTextureSphere::useShader(){
 				heightLoc = glGetUniformLocation(shader, "height");
 				exposureLoc = glGetUniformLocation(shader, "exposure");
 				tonemapLoc = glGetUniformLocation(shader, "tonemap");
+				lightCountLoc = glGetUniformLocation(shader, "lightCount");
 			}
 		};
 		static std::map<GLuint, Locs> locmap;
@@ -575,6 +577,9 @@ void DrawTextureSphere::useShader(){
 		}
 		if(0 <= locs.tonemapLoc){
 			glUniform1i(locs.tonemapLoc, r_tonemap);
+		}
+		if(0 <= locs.lightCountLoc){
+			glUniform1i(locs.lightCountLoc, lightingStars.size());
 		}
 
 		TexSphere::TextureIterator it;
@@ -667,7 +672,7 @@ bool DrawTextureSphere::draw(){
 	if(rad / dist < 1. / vw->vp.m)
 		return texenable;
 
-	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT | GL_LIGHTING_BIT);
 /*	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glLineWidth(1);
 	glDisable(GL_BLEND);
@@ -707,15 +712,21 @@ bool DrawTextureSphere::draw(){
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, texenable ? color : mat_diffuse);
 		glMaterialfv(GL_FRONT, GL_AMBIENT, texenable ? amb : mat_ambient);
 		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-		glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
 
-		Vec4<GLfloat> light_position = (sunpos - apos).normin().cast<GLfloat>();
-		light_position[3] = 0.;
-		glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 		glEnable(GL_LIGHTING);
-		glEnable(GL_LIGHT0);
 		glEnable(GL_NORMALIZE);
+		for(int i = 0; i < lightingStars.size(); i++){
+			FindBrightestAstrobj::ResultSet &rs = lightingStars[i];
+			Vec3d sunpos = rs.pos - apos;
+			if(sunpos.slen() == 0.)
+				continue;
+			Vec4<GLfloat> light_position = sunpos.normin().cast<GLfloat>();
+			light_position[3] = 0.;
+			glLightfv(GL_LIGHT0 + i, GL_AMBIENT, amb);
+			glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, Vec4f(1.f, 1.f, 1.f, 1.f) * GLfloat(sqrt(rs.brightness)));
+			glLightfv(GL_LIGHT0 + i, GL_POSITION, light_position);
+			glEnable(GL_LIGHT0 + i);
+		}
 	}
 	else{
 		glColor4fv(mat_diffuse);

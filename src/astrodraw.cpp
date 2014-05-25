@@ -356,6 +356,7 @@ void TexSphere::draw(const Viewer *vw){
 				.ring(&astroRing)
 				.cloudRotation(cloudRotation())
 				.noisePos(noisePos.cast<float>())
+				.lightingStar(param.results)
 				.draw();
 			if(!ret && *texname){
 				texname = "";

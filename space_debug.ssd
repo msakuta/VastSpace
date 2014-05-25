@@ -382,6 +382,37 @@ coordsys "Alpha Centauri"{
 		mass .123*Msun
 		pos .2*LY 0 0
 		spectral M5.5Ve
+		absmag 15.487
+	}
+	coordsys Orbit b{
+		fullname "Rigil Kentaurus B b"
+		cs_radius 1000000
+		orbits "B"
+		orbit_radius 0.04*AU
+		inclination 10.2
+		argument_of_periapsis 77.5806
+		ascending_node 138
+		eccentricity 0.123
+		showorbit
+		astro TextureSphere b{
+			fullname "Rigil Kentaurus B b"
+			radius 1.01*6375
+			mass 5.972e24*1.13
+			color afcfcf
+			planet
+			spherehit
+			texture textures/lavaplanet.jpg
+			vertexshader "shaders/flatplanet.vs"
+			fragmentshader "shaders/flatplanet.fs"
+		}
+		coordsys Orbit orbit{
+			orbits "b"
+			showorbit
+			orbit_radius 10000
+			fullname "Rigil Kentaurus B b"
+			bookmark "Rigil Kentaurus B b"
+			rstation 0 -1 -5
+		}
 	}
 	coordsys Orbit a{
 		fullname "Rigil Kentaurus B a"
@@ -400,7 +431,9 @@ coordsys "Alpha Centauri"{
 			color afafaf
 			planet
 			spherehit
-#			texture mer0muu2.jpg
+			texture textures/gasgiant.jpg
+			vertexshader "shaders/flatplanet.vs"
+			fragmentshader "shaders/flatplanet.fs"
 		}
 		coordsys Orbit orbit{
 			orbits "a"

@@ -163,17 +163,21 @@ function materializeStar(name,pos,e,rs){
 
 	local function addPlanet(a,idx){
 		local name = a.name + " " + ('a' + idx).tochar();
-		local p = TextureSphere(name, child);
+		local o = Orbit(name, child);
+		local orbitPlane = plane * Quatd.rotation(0.5 * PI * rs.nextd(), Vec3d(rs.nextd(),rs.nextd(),rs.nextd()).norm());
+		o.orbits(a, rs.nextd() * 1.0e8, rs.nextd(), orbitPlane);
+		o.showOrbit = true;
+		local p = TextureSphere(name, o);
 		print("Planet gen: " + name + ": " + p);
 		p.texture = "textures/gasgiant.jpg";
 		p.mass = 5.6846e26 * exp(rs.nextGauss());
 		p.radius = 60268 * exp(rs.nextGauss());
-		p.orbits(a, rs.nextd() * 1.0e8, rs.nextd(), plane * Quatd.rotation(0.5 * PI * rs.nextd(), Vec3d(rs.nextd(),rs.nextd(),rs.nextd()).norm()));
-		p.showOrbit = true;
+		p.omg = orbitPlane.trans(Vec3d(0,0,1)) * rs.nextd() * 1.e-3;
+		p.rot = orbitPlane.rotate(0.5 * PI, Vec3d(1,0,0));
 		p.vertexshader = "shaders/flatplanet.vs";
 		p.fragmentshader = "shaders/flatplanet.fs";
-		local po = Orbit(a.name + " a orbit", p);
-		po.orbits(p, p.radius * 5, 0., plane);
+		local po = Orbit(a.name + " a orbit", o);
+		po.orbits(p, p.radius * 2, 0., plane);
 		po.showOrbit = true;
 
 		// TODO: Bookmarks grow too fast?

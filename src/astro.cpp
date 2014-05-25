@@ -801,6 +801,19 @@ const CoordSys::PropertyMap &Astrobj::propertyMap()const{
 			a->mass = f;
 			return SQInteger(0);
 		});
+		pmap["absmag"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const Astrobj *a = static_cast<const Astrobj*>(cs);
+			sq_pushfloat(v, a->absmag);
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			Astrobj *a = static_cast<Astrobj*>(cs);
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+				return sq_throwerror(v, _SC("Astrobj.absmag set fail"));
+			a->absmag = float(f);
+			return SQInteger(0);
+		});
 	}
 	return pmap;
 }
@@ -835,7 +848,6 @@ bool Star::sq_define(HSQUIRRELVM v){
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
 	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<Star>);
-	register_closure(v, _SC("_get"), sqf_get);
 	sq_createslot(v, -3);
 	return true;
 }

@@ -345,6 +345,7 @@ coordsys "Alpha Centauri"{
 		mass 1.1*Msun
 		pos 0 0 0
 		spectral G2V
+		absmag 4.379
 	}
 	coordsys Orbit "orbit"{
 		orbits A
@@ -371,6 +372,7 @@ coordsys "Alpha Centauri"{
 		mass .907*Msun
 		pos 11*AU 0 0
 		spectral K1V
+		absmag 5.837
 	}
 	astro Star C{
 		fullname "Proxima Centauri"

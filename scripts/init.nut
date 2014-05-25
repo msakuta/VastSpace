@@ -197,6 +197,7 @@ function materializeStar(name,pos,e,rs){
 		a.radius = 6.960e5 * radscale; // Exponential distribution around Rsun
 		a.mass = 1.9884e30 * radscale * radscale * radscale * exp(rs.nextGauss()); // Mass has variance too, but probably mean is proportional to cubic radius.
 		a.spect = "G";
+		a.absmag = rs.nextGauss() + 2.;
 		a.orbits(child, rs.nextd() * 1.0e8, eccentricity, plane);
 		a.showOrbit = true;
 		local b = Star(name + " B", child);
@@ -205,6 +206,7 @@ function materializeStar(name,pos,e,rs){
 		b.radius = 6.960e5 * radscale; // Exponential distribution around Rsun
 		b.mass = 1.9884e30 * radscale * radscale * radscale * exp(rs.nextGauss()); // Mass has variance too, but probably mean is proportional to cubic radius.
 		b.spect = "G";
+		b.absmag = rs.nextGauss() + 2.;
 		b.orbits(child, rs.nextd() * 1.0e8, eccentricity, plane.rotate(PI, Vec3d(0,0,1)));
 		b.showOrbit = true;
 		addPlanets(a, rs.next() % 5);
@@ -215,6 +217,7 @@ function materializeStar(name,pos,e,rs){
 		child.radius = 6.960e5 * radscale; // Exponential distribution around Rsun
 		child.mass = 1.9884e30 * radscale * radscale * radscale * exp(rs.nextGauss()); // Mass has variance too, but probably mean is proportional to cubic radius.
 		child.spect = "G";
+		child.absmag = rs.nextGauss() + 2.;
 		addPlanets(child, rs.next() % 5);
 	}
 	// Create a temporary orbit to arrive.

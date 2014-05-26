@@ -162,6 +162,7 @@ function materializeStar(name,pos,e,rs){
 	local plane = Quatd.direction(axis);
 
 	local function addPlanet(a,idx){
+		const G = 6.67e-20; // Gravitational constant, km^3 kg^-1 s^-2
 		local name = a.name + " " + ('a' + idx).tochar();
 		local o = Orbit(name, child);
 		local orbitPlane = plane * Quatd.rotation(0.5 * PI * rs.nextd(), Vec3d(rs.nextd(),rs.nextd(),rs.nextd()).norm());
@@ -172,8 +173,15 @@ function materializeStar(name,pos,e,rs){
 		p.texture = "textures/gasgiant.jpg";
 		p.mass = 5.6846e26 * exp(rs.nextGauss());
 		p.radius = 60268 * exp(rs.nextGauss());
-		p.omg = orbitPlane.trans(Vec3d(0,0,1)) * rs.nextd() * 1.e-3;
-		p.rot = orbitPlane.rotate(0.5 * PI, Vec3d(1,0,0));
+
+		// Saturn's day is about 10 hours.  Rotation axis is aligned to orbitPlane.
+		p.omg = orbitPlane.trans(Vec3d(0,0,1)) * exp(rs.nextGauss()) / (10 * 3600);
+
+		// Approximated value of equatorial bulge.
+		// https://en.wikipedia.org/wiki/Earth_radius#Physics_of_Earth.27s_deformation
+		p.oblateness = pow(p.radius, 3) * p.omg.slen() / G / p.mass;
+
+		p.rot = orbitPlane;
 		p.vertexshader = "shaders/flatplanet.vs";
 		p.fragmentshader = "shaders/flatplanet.fs";
 		local po = Orbit(a.name + " a orbit", o);

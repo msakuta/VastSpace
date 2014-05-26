@@ -314,6 +314,7 @@ void TexSphere::draw(const Viewer *vw){
 				.ringRange(ringmin, ringmax)
 				.cloudRotation(cloudRotation())
 				.noisePos(noisePos.cast<float>())
+				.lightingStar(param.results)
 				.draw();
 			if(!ret && *texname){
 				texname = "";

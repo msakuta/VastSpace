@@ -90,6 +90,9 @@ public:
 	/// \param flags DrawTextureSphere flags.
 	static GLuint ProjectSphereCubeImage(const char *fname, int flags);
 
+protected:
+	/// \brief Sets up lights from lightingStars
+	void setupLight();
 };
 
 /// \brief A class that draw textured sphere.

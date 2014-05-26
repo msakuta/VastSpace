@@ -703,35 +703,7 @@ bool DrawTextureSphere::draw(){
 	glPushMatrix();
 	glLoadIdentity();
 
-	if(m_flags & TexSphere::DTS_LIGHTING){
-		const GLfloat mat_specular[] = {0., 0., 0., 1.};
-		const GLfloat mat_shininess[] = { 50.0 };
-		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
-
-		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-		glMaterialfv(GL_FRONT, GL_DIFFUSE, texenable ? color : mat_diffuse);
-		glMaterialfv(GL_FRONT, GL_AMBIENT, texenable ? amb : mat_ambient);
-		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-
-		glEnable(GL_LIGHTING);
-		glEnable(GL_NORMALIZE);
-		for(int i = 0; i < lightingStars.size(); i++){
-			FindBrightestAstrobj::ResultSet &rs = lightingStars[i];
-			Vec3d sunpos = rs.pos - apos;
-			if(sunpos.slen() == 0.)
-				continue;
-			Vec4<GLfloat> light_position = sunpos.normin().cast<GLfloat>();
-			light_position[3] = 0.;
-			glLightfv(GL_LIGHT0 + i, GL_AMBIENT, amb);
-			glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, Vec4f(1.f, 1.f, 1.f, 1.f) * GLfloat(sqrt(rs.brightness)));
-			glLightfv(GL_LIGHT0 + i, GL_POSITION, light_position);
-			glEnable(GL_LIGHT0 + i);
-		}
-	}
-	else{
-		glColor4fv(mat_diffuse);
-		glDisable(GL_LIGHTING);
-	}
+	setupLight();
 
 	if(flags & TexSphere::DTS_ADD){
 		glEnable(GL_BLEND);
@@ -891,6 +863,39 @@ bool DrawTextureSphere::draw(){
 	return texenable;
 }
 
+void DrawTextureSphere::setupLight(){
+	bool texenable = ptexlist && *ptexlist && m_texmat;
+	if(m_flags & TexSphere::DTS_LIGHTING){
+		const GLfloat mat_specular[] = {0., 0., 0., 1.};
+		const GLfloat mat_shininess[] = { 50.0 };
+		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
+
+		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, texenable ? color : m_mat_diffuse);
+		glMaterialfv(GL_FRONT, GL_AMBIENT, texenable ? amb : m_mat_ambient);
+		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+
+		glEnable(GL_LIGHTING);
+		glEnable(GL_NORMALIZE);
+		for(int i = 0; i < lightingStars.size(); i++){
+			FindBrightestAstrobj::ResultSet &rs = lightingStars[i];
+			Vec3d sunpos = rs.pos - apos;
+			if(sunpos.slen() == 0.)
+				continue;
+			Vec4<GLfloat> light_position = sunpos.normin().cast<GLfloat>();
+			light_position[3] = 0.;
+			glLightfv(GL_LIGHT0 + i, GL_AMBIENT, amb);
+			glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, Vec4f(1.f, 1.f, 1.f, 1.f) * GLfloat(sqrt(rs.brightness)));
+			glLightfv(GL_LIGHT0 + i, GL_POSITION, light_position);
+			glEnable(GL_LIGHT0 + i);
+		}
+	}
+	else{
+		glColor4fv(m_mat_diffuse);
+		glDisable(GL_LIGHTING);
+	}
+}
+
 bool DrawTextureSpheroid::draw(){
 	const Vec4f &mat_diffuse = m_mat_diffuse;
 	const Vec4f &mat_ambient = m_mat_ambient;
@@ -943,7 +948,7 @@ bool DrawTextureSpheroid::draw(){
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
-	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT);
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_LIGHTING_BIT);
 /*	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glLineWidth(1);
 	glDisable(GL_BLEND);
@@ -963,24 +968,9 @@ bool DrawTextureSpheroid::draw(){
 	Quatd qrot = vw->cs->tocsq(a->parent).cnj() * a->rot;
 	Vec3d pos(vw->cs->tocs(a->pos, a->parent));
 
-	if(m_flags & TexSphere::DTS_LIGHTING){
-		const GLfloat mat_specular[] = {0., 0., 0., 1.};
-		const GLfloat mat_shininess[] = { 50.0 };
-		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
+	setupLight();
 
-		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-		glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-		glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
-		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-		glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
-		glEnable(GL_NORMALIZE);
-		glEnable(GL_CULL_FACE);
-		glEnable(GL_LIGHTING);
-		glEnable(GL_LIGHT0);
-
-		glLightfv(GL_LIGHT0, GL_POSITION, Vec4<float>(/*qrot.cnj().trans*/(sunpos - pos).cast<float>()));
-	}
+	glEnable(GL_CULL_FACE);
 
 	// Temporarily create dummy Viewer (in other words, latch) with position of zero vector, to avoid cancellation errors.
 	// It does not remove subtraction, but many OpenGL implementation treats matrices with float, so using double inside CPU would help.

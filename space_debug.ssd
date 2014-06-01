@@ -92,35 +92,40 @@ coordsys Orbit earth{
 	}
 
 	coordsys Orbit moon{
+		define ascending_node 49.6198
+		define tilt 1.85*RAD_PER_DEG
 		cs_radius .5e4
 		orbits Earth
 		semimajor_axis 60.2686*6378.
 		eccentricity 0.09341233
 		inclination 1.85
 		argument_of_periapsis 336.2075
-		ascending_node 49.6198
+		ascending_node ascending_node
 		showorbit
 
 		astro TextureSphere Moon{
 			radius 1738
 			mass 0.0123*5.977e24
-			omega "(Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))).trans(Vec3d(0,0,1)) * PI*2/(27*DAY_SECONDS+7*HOUR_SECONDS+43.7*MINUTE_SECONDS)"   #rotation speed
+			omega "(Quatd.rotation(ascending_node * RAD_PER_DEG,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))).trans(Vec3d(0,0,1)) * PI*2/(27*DAY_SECONDS+7*HOUR_SECONDS+43.7*MINUTE_SECONDS)"   #rotation speed
+			rotation "Quatd.rotation(ascending_node * RAD_PER_DEG,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))"
 			texture textures/moon.png
 			extexture bumptexture textures/moonbump.png 0 normal
 			fragmentshader shaders/moon.fs
 			vertexshader shaders/moon.vs
-			updirection 0 1 0
+#			updirection 0 1 0
+#			oblateness 0.01
 			planet
 			spherehit
 		}
 		coordsys Orbit moonlo{
 			fullname "Moon Low Orbit"
 			orbits Moon
-			orbit_radius 2000.
+			orbit_radius 3000.
 			inclination 13.3
 			argument_of_periapsis 180
 			ascending_node -90
 			updirection 0 1 
+			showorbit
 		}
 	}
 

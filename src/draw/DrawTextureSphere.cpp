@@ -94,7 +94,7 @@ static void drawIcosaSphereInt(int level, drawIcosaSphereArg *arg, const Vec3d &
 			Vec3d rpos = arg->qrot.trans(tpos);
 			Vec3d ipos = arg->imodel.dvp3(pos[n]);
 			glNormal3dv(arg->qrot.trans(ipos));
-			glTexCoord3dv(tpos);
+			glTexCoord3dv(-tpos); // Texture coordinates direction look better when negated
 			if(glMultiTexCoord3dvARB)
 				glMultiTexCoord3dvARB(GL_TEXTURE1_ARB, rpos / arg->radius);
 			glVertex3dv(rpos + arg->org);
@@ -528,6 +528,7 @@ void DrawTextureSphere::useShader(){
 			GLint exposureLoc;
 			GLint tonemapLoc;
 			GLint lightCountLoc;
+			GLint rotationLoc;
 			void getLocs(GLuint shader){
 				textureLoc = glGetUniformLocation(shader, "texture");
 				noise3DLoc = glGetUniformLocation(shader, "noise3D");
@@ -538,6 +539,7 @@ void DrawTextureSphere::useShader(){
 				exposureLoc = glGetUniformLocation(shader, "exposure");
 				tonemapLoc = glGetUniformLocation(shader, "tonemap");
 				lightCountLoc = glGetUniformLocation(shader, "lightCount");
+				rotationLoc = glGetUniformLocation(shader, "rotation");
 			}
 		};
 		static std::map<GLuint, Locs> locmap;
@@ -580,6 +582,15 @@ void DrawTextureSphere::useShader(){
 		}
 		if(0 <= locs.lightCountLoc){
 			glUniform1i(locs.lightCountLoc, lightingStars.size());
+		}
+		if(0 <= locs.rotationLoc){
+			TexSphere *ts = dynamic_cast<TexSphere*>(a);
+			Mat4d src = (vw->cs->tocsq(a->parent).cnj() * a->rot).tomat4();
+			// When drawing oblate sphere, we need to rotate normal map texture manually.
+			if(ts && ts->oblateness != 0.)
+				src = vw->rot * src;
+			Mat3<float> rot3 = src.tomat3().cast<float>();
+			glUniformMatrix3fv(locs.rotationLoc, 1, GL_FALSE, rot3);
 		}
 
 		TexSphere::TextureIterator it;
@@ -981,7 +992,7 @@ bool DrawTextureSpheroid::draw(){
 	glMatrixMode(GL_TEXTURE);
 	glPushMatrix();
 	glMultMatrixd(texmat);
-	glRotatef(90, 1, 0, 0);
+//	glRotatef(90, 1, 0, 0);
 	glMatrixMode(GL_MODELVIEW);
 
 	useShader();
@@ -1079,17 +1090,26 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 					*dst = zero;
 					continue;
 				}*/
-				Vec3d epos = cubedirs[nn].cnj().trans(Vec3d(j / (PROJC / 2.) - 1., i / (PROJC / 2.) - 1., -1));
-				double lon = -atan2(epos[0], -(epos[2]));
-				double lat = (raw->bmiHeader.biHeight < 0 ? 1 : -1) * atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2])) + M_PI / 2.;
-//					double lon = -atan2(epos[0], -(epos[1]));
-//					double lat = atan2(epos[2], sqrt(epos[0] * epos[0] + epos[1] * epos[1]));
-				double dj1 = (raww-1) * (lon / (2. * M_PI) - floor(lon / (2. * M_PI)));
-				double di1 = (rawh-1) * (lat / (M_PI) - floor(lat / (M_PI)));
-				double fj1 = dj1 - floor(dj1); // fractional part
-				double fi1 = di1 - floor(di1);
-				int i1 = (int(floor(di1)) + rawh) % rawh;
-				int j1 = (int(floor(dj1)) + raww) % raww;
+
+				// Local function to obtain pixel coordinates in equirectangular projection
+				auto castEquirectRay = [&](const Vec3d &epos, int &j1, int &i1, double &fj1, double &fi1){
+					double lon = -atan2(epos[0], -(epos[2]));
+					double lat = (raw->bmiHeader.biHeight < 0 ? 1 : -1) * atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2])) + M_PI / 2.;
+					double dj1 = (raww-1) * (lon / (2. * M_PI) - floor(lon / (2. * M_PI)));
+					double di1 = (rawh-1) * (lat / (M_PI) - floor(lat / (M_PI)));
+					// Whole part
+					i1 = (int(floor(di1)) + rawh) % rawh;
+					j1 = (int(floor(dj1)) + raww) % raww;
+					// fractional part
+					fj1 = dj1 - floor(dj1);
+					fi1 = di1 - floor(di1);
+				};
+
+				Vec3d localRay(j / (PROJC / 2.) - 1., i / (PROJC / 2.) - 1., -1);
+				Vec3d epos = cubedirs[nn].cnj().trans(localRay);
+				int i1, j1;
+				double fj1, fi1;
+				castEquirectRay(epos, j1, i1, fj1, fi1);
 
 				if(raw->bmiHeader.biBitCount == 4){ // untested
 					double accum[3] = {0}; // accumulator
@@ -1108,20 +1128,36 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 						*dst8 = (GLubyte)(accum);
 					}
 					else if(flags & TexSphere::DTS_NORMALMAP){
-						double accum[3] = {0.};
-						for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++){
-							const unsigned char *src = ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed]);
-							int y = (i1 + ii) % rawh;
-							int x = (j1 + jj) % raww;
-							int wb = linebytes, w = raww, h = rawh;
-							double f = (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1);
-							accum[0] += f * (unsigned char)rangein(127 + (double)1. * (src[x + y * wb] - src[(x - 1 + w) % w + y * wb]) / 4, 0, 255);
-							accum[1] += f * (unsigned char)rangein(127 + 1. * (src[x + y * wb] - src[x + (y - 1 + h) % h * wb]) / 4, 0, 255);
-							accum[2] = 255;
-						}
-						dst->rgbRed = (GLubyte)accum[0];
-						dst->rgbGreen = (GLubyte)accum[1];
-						dst->rgbBlue = (GLubyte)accum[2];
+						const unsigned char *src = ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed]);
+						double heights[3] = {0.};
+
+						// Local function to obtain pixel intensity in equirectangular projection in 8 bit texture
+						auto sampler8 = [&](const Vec3d &epos){
+							int j1, i1;
+							double fj1, fi1;
+							castEquirectRay(epos, j1, i1, fj1, fi1);
+							double accum = 0.;
+							for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++){
+								const unsigned char *src = ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed]);
+								accum += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * src[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww];
+							}
+							return accum;
+						};
+
+						// Obtain heights at adjacent pixels in this cube face.
+						for(int k = 0; k < 3; k++)
+							heights[k] = sampler8(cubedirs[nn].cnj().trans(Vec3d((j + (k == 1)) / (PROJC / 2.) - 1., (i + (k == 2)) / (PROJC / 2.) - 1., -1)));
+
+						// Normal vector modulation before rotation for cube faces
+						Vec3d localVec((heights[0] - heights[1]) / 256., (heights[0] - heights[2]) / 256., 0.);
+
+						// Normal vector after rotation.  Negated direction seems right.
+						Vec3d globalVec = -(epos + cubedirs[nn].cnj().trans(localVec));
+
+						// Store the normal vector in BGR order
+						dst->rgbRed = (GLubyte)rangein(127 + globalVec[2] * 128, 0, 255);
+						dst->rgbGreen = (GLubyte)rangein(127 + globalVec[1] * 128, 0, 255);
+						dst->rgbBlue = (GLubyte)rangein(127 + globalVec[0] * 128, 0, 255);
 						dst->rgbReserved = 255;
 					}
 					else{

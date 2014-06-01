@@ -239,6 +239,13 @@ function materializeStar(name,pos,e,rs){
 }
 
 
+register_console_command("obl", function(...){
+	if(vargv.len() == 0){
+		print("usage: obl oblateness");
+		return;
+	}
+	player.cs.next.oblateness = vargv[0].tofloat();
+});
 
 
 function ae(){
@@ -313,6 +320,7 @@ function init_Universe(){
 
 	// Earth low orbit in space_debug.ssd
 	local paths = [
+		universe.findcspath("/moon/moonlo"),
 //		universe.findcspath("Alpha Centauri/a/orbit"),
 //		universe.findcspath("/earth/Earth/earths"),
 		universe.findcspath("/earth/moon/moonlo"),

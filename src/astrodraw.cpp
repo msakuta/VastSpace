@@ -330,14 +330,14 @@ void TexSphere::draw(const Viewer *vw){
 			DrawTextureSphere cloudDraw = DrawTextureSphere(this, vw, sunpos);
 			if(g_cloud && (cloudtexname.len() || cloudtexlist)){
 				cloudDraw
-				.flags(DTS_LIGHTING)
 				.texlist(&cloudtexlist)
 				.texmat(cloudRotation().cnj().tomat4())
 				.texname(cloudtexname)
 				.textures(textures)
 				.shader(cloudShader)
 				.rad(fcloudHeight)
-				.flags(DTS_ALPHA | DTS_NODETAIL | DTS_NOGLOBE)
+				.flags(DTS_LIGHTING | DTS_ALPHA | DTS_NODETAIL | DTS_NOGLOBE)
+				.lightingStar(param.results)
 				.drawint(true)
 				.ncuts(g_tscuts);
 				if(underCloud){

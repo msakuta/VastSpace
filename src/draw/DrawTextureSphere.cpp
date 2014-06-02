@@ -1093,8 +1093,8 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 
 				// Local function to obtain pixel coordinates in equirectangular projection
 				auto castEquirectRay = [&](const Vec3d &epos, int &j1, int &i1, double &fj1, double &fi1){
-					double lon = -atan2(epos[0], -(epos[2]));
-					double lat = (raw->bmiHeader.biHeight < 0 ? 1 : -1) * atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2])) + M_PI / 2.;
+					double lon = -atan2(epos[0], epos[1]);
+					double lat = (raw->bmiHeader.biHeight < 0 ? 1 : -1) * atan2(epos[2], sqrt(epos[0] * epos[0] + epos[1] * epos[1])) + M_PI / 2.;
 					double dj1 = (raww-1) * (lon / (2. * M_PI) - floor(lon / (2. * M_PI)));
 					double di1 = (rawh-1) * (lat / (M_PI) - floor(lat / (M_PI)));
 					// Whole part

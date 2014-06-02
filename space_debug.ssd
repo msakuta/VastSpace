@@ -45,7 +45,7 @@ coordsys Orbit earth{
 		omega (Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))).trans(Vec3d(0,0,1))*PI*2/DAY_SECONDS
 #		omega 0 cos(tilt) sin(tilt) pi*2/DAY_SECONDS  #rotation speed
 #		omega 0 0 1 pi*2/DAY_SECONDS  #rotation speed
-		rotation Quatd.rotation(PI/2.,Vec3d(1,0,0))*Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))
+		rotation Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))
 #		rotation 0*sqrt(2)/2 0 sin(tilt/2.) cos(tilt/2.)
 #		updirection 0 cos(tilt) sin(tilt)
 		texture textures/earth.jpg
@@ -106,8 +106,8 @@ coordsys Orbit earth{
 		astro TextureSphere Moon{
 			radius 1738
 			mass 0.0123*5.977e24
-			omega "(Quatd.rotation(ascending_node * RAD_PER_DEG,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))).trans(Vec3d(0,0,1)) * PI*2/(27*DAY_SECONDS+7*HOUR_SECONDS+43.7*MINUTE_SECONDS)"   #rotation speed
-			rotation "Quatd.rotation(ascending_node * RAD_PER_DEG,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))"
+			omega "(Quatd.rotation(ascending_node * RAD_PER_DEG,Vec3d(0,0,1))*Quatd.rotation(tilt,Vec3d(1,0,0))).trans(Vec3d(0,0,1)) * PI*2/(27*DAY_SECONDS+7*HOUR_SECONDS+43.7*MINUTE_SECONDS)"   #rotation speed
+#			rotation "Quatd.rotation(ascending_node * RAD_PER_DEG,Vec3d(0,0,1))*Quatd.rotation(tilt,Vec3d(1,0,0))"
 			texture textures/moon.png
 			extexture bumptexture textures/moonbump.png 0 normal
 			fragmentshader shaders/moon.fs

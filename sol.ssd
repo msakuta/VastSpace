@@ -106,7 +106,7 @@ coordsys Orbit earth{
 		omega (Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))).trans(Vec3d(0,0,1))*PI*2/DAY_SECONDS
 #		omega 0 cos(tilt) sin(tilt) pi*2/DAY_SECONDS  #rotation speed
 #		omega 0 0 1 pi*2/DAY_SECONDS  #rotation speed
-		rotation Quatd.rotation(PI/2.,Vec3d(1,0,0))*Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))
+		rotation Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))
 #		rotation 0*sqrt(2)/2 0 sin(tilt/2.) cos(tilt/2.)
 #		updirection 0 cos(tilt) sin(tilt)
 		texture earth.jpg
@@ -164,7 +164,7 @@ coordsys Orbit earth{
 			extexture bumptexture textures/moonbump.jpg 0 normal
 			fragmentshader shaders/moon.fs
 			vertexshader shaders/moon.vs
-			updirection 0 1 0
+#			updirection 0 1 0
 			planet
 			spherehit
 		}

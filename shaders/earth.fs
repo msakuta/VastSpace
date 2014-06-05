@@ -11,12 +11,11 @@ uniform sampler1D tex1d;
 uniform float ringmin, ringmax;
 uniform vec3 ringnorm;
 uniform vec3 noisePos;
+uniform mat3 rotation;
 
 varying vec3 view;
 varying vec3 nrm;
 varying vec4 col;
-varying vec3 texa0; // texture axis component 0
-varying vec3 texa1; // texture axis component 1
 
 // This will bluescreen in Radeon HD 6870.
 //#extension GL_EXT_gpu_shader4 : enable
@@ -62,9 +61,6 @@ void main (void)
 	dawness = 1. - exp(-dawness * dawness);
 	vec4 vshininess = vec4(.75, .2 + .6 * dawness, .3 + .7 * dawness, 0.);
 
-	vec3 texnorm0 = vec3(textureCube(bumptexture, texCoord)) - vec3(1., .5, .5);
-	texnorm0[1] *= 5.;
-	texnorm0[2] *= 5.;
 
 	// Obtain ocean noise to add to normal vector.
 	// The noise position moves over time, so it would be a random source.
@@ -74,8 +70,9 @@ void main (void)
 		noiseInput += 2e-6 * noisePos;
 	vec4 noise = ocean(noiseInput);
 
-	vec3 texnorm = (texa0 * (texnorm0[2]) + texa1 * (texnorm0[1]) + noise.xyz);
-	vec3 fnormal = normalize((normal) + (texnorm) * 1.);
+	vec3 texsample = textureCube(bumptexture, texCoord);
+	vec3 texnorm0 = texsample - vec3(0.5, 0.5, 0.5);
+	vec3 fnormal = normalize(rotation * texnorm0);
 
 	vec3 fview = normalize(view);
 

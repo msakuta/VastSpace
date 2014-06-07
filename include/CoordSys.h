@@ -60,9 +60,9 @@ public:
 	Vec3d omg; ///< Angular velocity
 	double csrad; ///< Bounding sphere radius around origin, used for culling or conversion.
 	CoordSys *parent; ///< Parent node
-	const char *name; ///< Reference name
-	const char *fullname; ///< Detailed name for displaying, etc.
-	std::vector<cpplib::dstring> extranames; ///< Aliases
+	gltestp::dstring name; ///< Reference name
+	gltestp::dstring fullname; ///< Detailed name for displaying, etc.
+	std::vector<gltestp::dstring> extranames; ///< Aliases
 	unsigned flags; ///< Utility flags
 
 	/* These trivial variables are only used on drawing to enhance speed by caching

@@ -28,9 +28,8 @@ Universe::Universe(Game *game) : st(game), paused(true), timescale(1), global_ti
 {
 
 	if(game->isServer()){
-		name = new char[sizeof"root"];
-		strcpy(const_cast<char*>(name), "root");
-		fullname = NULL;
+		name = "root";
+		fullname = "";
 		flags = CS_ISOLATED | CS_EXTENT;
 	}
 }

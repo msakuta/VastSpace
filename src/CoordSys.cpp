@@ -50,7 +50,7 @@ long tocs_children_invokes = 0;
 void CoordSys::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << name;
-	sc.o << (fullname ? fullname : "");
+	sc.o << fullname;
 	sc.o << parent;
 	sc.o << children;
 	sc.o << w;
@@ -63,7 +63,6 @@ void CoordSys::serialize(SerializeContext &sc){
 
 void CoordSys::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	cpplib::dstring name, fullname;
 	sc.i >> name;
 	sc.i >> fullname;
 	sc.i >> parent;
@@ -75,8 +74,6 @@ void CoordSys::unserialize(UnserializeContext &sc){
 	sc.i >> csrad;
 	sc.i >> flags;
 
-	this->name = strnewdup(name, name.len());
-	this->fullname = fullname.len() ? strnewdup(fullname, fullname.len()) : NULL;
 	CoordSys *eis = findeisystem();
 	if(eis)
 		eis->addToDrawList(this);
@@ -495,7 +492,7 @@ CoordSys *CoordSys::findcspath(const char *path){
 		else
 			return parent->findcspath(p+1);
 	}
-	if(p) for(cs = this->children; cs; cs = cs->next) if(strlen(cs->name) == p - path && !strncmp(cs->name, path, p - path)){
+	if(p) for(cs = this->children; cs; cs = cs->next) if(cs->name.len() == p - path && !strncmp(cs->name, path, p - path)){
 		if(!*p)
 			return cs;
 		else
@@ -755,10 +752,8 @@ void CoordSys::init(const char *path, CoordSys *root){
 	ret->parent = root;
 	if(!name)
 		name = "?";
-	char *newname = new char[strlen(name) + 1];
-	strcpy(newname, name);
-	ret->name = newname;
-	ret->fullname = NULL;
+	ret->name = name;
+	ret->fullname = "";
 	ret->flags = 0;
 	ret->vwvalid = 0;
 	ret->w = NULL;
@@ -772,10 +767,6 @@ extern int 	cs_destructs;
 int cs_destructs = 0;
 
 CoordSys::~CoordSys(){
-	if(name)
-		delete[] name;
-	if(fullname)
-		delete[] fullname;
 //	delete children;
 	// Do not delete siblings, they may be alive after this death.
 //	delete next;
@@ -821,21 +812,13 @@ std::map<const CoordSys *, std::vector<dstring> > linemap;
 bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 	const char *s = argv[0], *ps = argv[1];
 	if(!strcmp(s, "name")){
-		if(s = ps/*strtok(ps, " \t\r\n")*/){
-			char *name;
-			if(this->name)
-				delete[] this->name;
-			name = new char[strlen(s) + 1];
-			strcpy(name, s);
-			this->name = name;
-		}
+		if(ps)
+			name = ps;
 		return true;
 	}
 	else if(!strcmp(s, "fullname")){
-		if(s = ps){
-			fullname = new char[strlen(s) + 1];
-			strcpy(const_cast<char *>(fullname), s);
-		}
+		if(ps)
+			fullname = ps;
 		return true;
 	}
 	else if(!strcmp(s, "extraname")){
@@ -1124,7 +1107,7 @@ int CoordSys::getpathint(char *buf, size_t size)const{
 	ret = parent->getpathint(buf, size);
 	buf[ret] = '/';
 	strcpy(&buf[ret+1], name);
-	return strlen(name) + 1 + ret;
+	return name.len() + 1 + ret;
 }
 
 cpplib::dstring CoordSys::getpath()const{

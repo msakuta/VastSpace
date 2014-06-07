@@ -11,6 +11,7 @@
 #include "Game.h"
 #include "CoordSys-property.h"
 #include "CoordSys-sq.h"
+#include "CoordSys-find.h"
 extern "C"{
 #include "calc/calc.h"
 }
@@ -294,6 +295,33 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 	}
 	else
 		return st::readFile(sc, argc, argv);
+}
+
+void TexSphere::anim(double dt){
+	st::anim(dt);
+	updateAbsMag(dt);
+}
+
+void TexSphere::updateAbsMag(double dt){
+	FindBrightestAstrobj finder(this, vec3_000);
+	finder.threshold = 1e-6;
+	find(finder);
+	if(0 < finder.results.size()){
+		// We use the brightest light source only since reflected lights tend to be so dim.
+		// Absolute magnitude induced by another light source is calculated by dividing all light
+		// intensity emitted from the other light source by apparent radius of the object seen
+		// from a distance of 1 parsec.
+
+		// First, obtain apparent solid angle seen from a distance of 1 parsec.
+		double appArea = rad * rad / 3.e14 / 3.e14;
+
+		// Second, calculate absolute brightness by multiplying the brightness of the other
+		// light source by albedo and radius.
+		double absBrightness = albedo * finder.brightness * appArea;
+
+		// Last, convert the brightness to absolute magnitude (logarithmic scale).
+		absmag = float(-log(absBrightness) / log(2.512) - 26.7);
+	}
 }
 
 double TexSphere::atmoScatter(const Viewer &vw)const{

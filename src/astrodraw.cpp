@@ -211,7 +211,7 @@ void TexSphere::draw(const Viewer *vw){
 	double sundist = sun ? (parent->tocs(sun->pos, sun->parent) - pos).len() : 1e5;
 
 	// Sun apparent radius
-	double sunar = sun ? sun->rad / sundist : .01;
+	double sunar = sun && sundist != 0. ? sun->rad / sundist : .01;
 
 	Vec3d pos = vw->cs->tocs(this->pos, this->parent);
 	if(drawring && 0. < ringmin){

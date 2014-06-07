@@ -84,6 +84,7 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual bool readFile(StellarContext &, int argc, const char *argv[]);
+	void anim(double dt)override;
 	void draw(const Viewer *);
 	virtual double atmoScatter(const Viewer &vw)const;
 	virtual double getAtmosphericScaleHeight()const{return atmodensity;}
@@ -94,6 +95,8 @@ public:
 	TextureIterator endTextures()const{return textures.end();} ///< End of iteration.
 	Quatd cloudRotation()const{return rot.rotate(cloudPhase, 0, 1, 0);}
 	static bool sq_define(HSQUIRRELVM v);
+protected:
+	virtual void updateAbsMag(double dt); ///< Update absolute magnitude of this celestial body by other light sources
 private:
 	std::vector<Texture> textures;
 	const PropertyMap &propertyMap()const;

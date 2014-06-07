@@ -25,6 +25,7 @@ protected:
 	double oblateness;
 	float atmohor[4];
 	float atmodawn[4];
+	float albedo; ///< Albedo of this celestial body, (0,1)
 	int ring;
 	StringList vertexShaderName, fragmentShaderName;
 #ifndef DEDICATED

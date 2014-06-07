@@ -50,6 +50,7 @@ coordsys Orbit earth{
 #		updirection 0 cos(tilt) sin(tilt)
 		texture textures/earth.jpg
 		basecolor .5 .65 1.
+		albedo 0.367
 
 		extexture "bumptexture" textures/earth_bump.jpg 0 normal
 		extexture "cloudtexture" textures/cloud.jpg 0 alpha

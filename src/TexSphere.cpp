@@ -35,6 +35,7 @@ TexSphere::TexSphere(Game *game) :
 TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
 	oblateness(0.),
 	ring(0),
+	albedo(1),
 #ifndef DEDICATED
 	shader(0),
 	shaderGiveup(false),
@@ -114,6 +115,7 @@ void TexSphere::serialize(SerializeContext &sc){
 	sc.o << atmodensity;
 	sc.o << *(Vec4<float>*)(atmohor);
 	sc.o << *(Vec4<float>*)(atmodawn);
+	sc.o << albedo;
 	sc.o << ring;
 	sc.o << textures;
 	sc.o << vertexShaderName;
@@ -140,6 +142,7 @@ void TexSphere::unserialize(UnserializeContext &sc){
 	sc.i >> atmodensity;
 	sc.i >> *(Vec4<float>*)(atmohor);
 	sc.i >> *(Vec4<float>*)(atmodawn);
+	sc.i >> albedo;
 	sc.i >> ring;
 	sc.i >> textures;
 	sc.i >> vertexShaderName;
@@ -241,6 +244,12 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if(!strcmp(s, "ringbacktexture")){
 		if(1 < argc){
 			this->ringbacktexname = argv[1];
+		}
+		return true;
+	}
+	else if(!strcmp(s, "albedo")){
+		if(1 < argc){
+			this->albedo = float(sqcalc(sc, argv[1], "albedo"));
 		}
 		return true;
 	}

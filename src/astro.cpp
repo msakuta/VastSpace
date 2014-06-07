@@ -735,9 +735,13 @@ bool FindBrightestAstrobj::invoke(const CoordSys *cs2){
 	// Obtain brightness in ratio to Sun looked from earth
 	double rawval = pow(2.512, -(a->absmag + 26.7)) * 3.e14 * 3.e14 / sd;
 
+	// Omit further investigation if the raw brightness is below the threshold.
+	if(rawval < threshold)
+		return true;
+
 	// Check for eclipses only if you could be the brightest celestial object.
 	double val;
-	if(checkEclipse && threshold < rawval && brightness < rawval)
+	if(checkEclipse && eclipseThreshold < rawval && brightness < rawval)
 		val = rawval * ::checkEclipse(a, retcs, src, lightSource, ray, &eclipseCaster);
 	else
 		val = rawval;

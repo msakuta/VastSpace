@@ -99,6 +99,9 @@ struct EXPORT FindBrightestAstrobj : CoordSys::FindCallbackConst{
 	/// those stars will improve performance if there are many stars.
 	///
 	/// Setting 0 will disable truncation.
+	double eclipseThreshold;
+
+	/// \brief The threshold to omit enumerating too faint light sources.
 	double threshold;
 
 	/// \brief The returned Astrobj that is casting shadow.
@@ -128,7 +131,10 @@ struct EXPORT FindBrightestAstrobj : CoordSys::FindCallbackConst{
 
 	/// \brief The constructor with default parameters.
 	FindBrightestAstrobj(const CoordSys *retcs, const Vec3d &src, int resultCount = 1) :
-		checkEclipse(false), returnBrightness(false), brightness(0), threshold(0), eclipseCaster(NULL),
+		checkEclipse(false), returnBrightness(false), brightness(0),
+		eclipseThreshold(0),
+		threshold(0),
+		eclipseCaster(NULL),
 		retcs(retcs), src(src), resultCount(resultCount){}
 	bool invoke(const CoordSys *cs);
 };

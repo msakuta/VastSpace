@@ -1703,6 +1703,20 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 	}
 }
 
+double CoordSys::sqcalc(StellarContext &sc, const char *str, const SQChar *context){
+	StackReserver st(sc.v);
+	gltestp::dstring dst = gltestp::dstring("return(") << str << ")";
+	if(SQ_FAILED(sq_compilebuffer(sc.v, dst, dst.len(), context, SQTrue)))
+		throw StellarError(gltestp::dstring() << "sqcalc compile error: " << context);
+	sq_push(sc.v, -2);
+	if(SQ_FAILED(sq_call(sc.v, 1, SQTrue, SQTrue)))
+		throw StellarError(gltestp::dstring() << "sqcalc call error: " << context);
+	SQFloat f;
+	if(SQ_FAILED(sq_getfloat(sc.v, -1, &f)))
+		throw StellarError(gltestp::dstring() << "sqcalc returned value not convertible to float: " << context);
+	return f;
+}
+
 SQInteger sqf_set(HSQUIRRELVM v){
 	if(sq_gettop(v) < 3)
 		return sq_throwerror(v, _SC("Invalid _set call"));

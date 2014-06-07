@@ -308,6 +308,11 @@ protected:
 	/// The default getter
 	static SQInteger sqf_get(HSQUIRRELVM v);
 
+	/// Evaluate an expression with Squirrel one-linear compiler
+	/// \param str The Squirrel expression to evaluate
+	/// \param context The context name for the compiled buffer, printed on error
+	static double sqcalc(StellarContext&, const char *str, const SQChar *context = _SC("sqcalc"));
+
 private:
 	template<typename T, typename Callback>
 	static bool tempFindChild(T *cs, Callback &fc, T *skipcs);

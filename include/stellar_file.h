@@ -7,6 +7,7 @@
 #include "astro.h"
 #include <stdio.h>
 #include <squirrel.h>
+#include <exception>
 
 
 
@@ -37,5 +38,9 @@ struct StellarContext{
 	StellarStructureScanner *scanner;
 };
 
+/// \brief Base type for any errors that could happen in stellar file interpretation.
+struct StellarError : std::exception{
+	StellarError(const char *s) : std::exception(s){}
+};
 
 #endif

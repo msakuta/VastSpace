@@ -280,10 +280,15 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			std::vector<const char *> cargs(argv.size());
 			for(int i = 0; i < argv.size(); i++)
 				cargs[i] = argv[i];
-			if(cs->readFile(sc, argv.size(), &cargs[0]));
-			else{
-	//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
-				printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s.operator const char *());
+			try{
+				if(cs->readFile(sc, argv.size(), &cargs[0]));
+				else{
+		//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
+					printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s.operator const char *());
+				}
+			}
+			catch(StellarError &e){
+				printf("%s(%ld): Error %s: %s\n", sc.fname, sc.line, cs->classname(), e.what());
 			}
 		}
 	}

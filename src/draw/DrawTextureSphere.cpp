@@ -896,7 +896,7 @@ void DrawTextureSphere::setupLight(){
 			Vec4<GLfloat> light_position = sunpos.normin().cast<GLfloat>();
 			light_position[3] = 0.;
 			glLightfv(GL_LIGHT0 + i, GL_AMBIENT, amb);
-			glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, Vec4f(1.f, 1.f, 1.f, 1.f) * GLfloat(sqrt(rs.brightness)));
+			glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, rs.cs->basecolor * GLfloat(sqrt(rs.brightness)));
 			glLightfv(GL_LIGHT0 + i, GL_POSITION, light_position);
 			glEnable(GL_LIGHT0 + i);
 		}

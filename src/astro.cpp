@@ -730,7 +730,7 @@ double checkEclipse(const Astrobj *a, const CoordSys *retcs, const Vec3d &src, c
 
 bool FindBrightestAstrobj::invoke(const CoordSys *cs2){
 	const Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
-	if(!a || 30 <= a->absmag)
+	if(!a || a == ignorecs ||  30 <= a->absmag)
 		return true;
 
 	// I don't understand why, but this function seems to be occasionally called twice for the same

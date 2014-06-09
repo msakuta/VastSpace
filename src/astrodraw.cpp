@@ -194,7 +194,7 @@ void TexSphere::draw(const Viewer *vw){
 
 	GLint maxLights = 1;
 	glGetIntegerv(GL_MAX_LIGHTS, &maxLights);
-	FindBrightestAstrobj param(vw->cs, apparentPos, maxLights);
+	FindBrightestAstrobj param(vw->cs, apparentPos, maxLights, this);
 	param.threshold = 1e-6;
 	param.eclipseThreshold = 1e-5;
 

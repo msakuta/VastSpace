@@ -122,6 +122,8 @@ struct EXPORT FindBrightestAstrobj : CoordSys::FindCallbackConst{
 	const CoordSys *retcs; ///< The CoordSys for returned point.
 	Vec3d src; ///< The source position from where observing brightness.
 
+	const CoordSys *ignorecs; ///< The CoordSys to skip checking
+
 	struct ResultSet{
 		const Astrobj *cs;
 		double brightness;
@@ -130,12 +132,13 @@ struct EXPORT FindBrightestAstrobj : CoordSys::FindCallbackConst{
 	std::vector<ResultSet> results; ///< The returned Astrobj
 
 	/// \brief The constructor with default parameters.
-	FindBrightestAstrobj(const CoordSys *retcs, const Vec3d &src, int resultCount = 1) :
+	FindBrightestAstrobj(const CoordSys *retcs, const Vec3d &src, int resultCount = 1, const CoordSys *ignorecs = NULL) :
 		checkEclipse(false), returnBrightness(false), brightness(0),
 		eclipseThreshold(0),
 		threshold(0),
 		eclipseCaster(NULL),
-		retcs(retcs), src(src), resultCount(resultCount){}
+		retcs(retcs), src(src), ignorecs(ignorecs),
+		resultCount(resultCount){}
 	bool invoke(const CoordSys *cs);
 };
 

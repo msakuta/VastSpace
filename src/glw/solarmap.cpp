@@ -685,7 +685,7 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		}
 		glPushMatrix();
 		glLoadIdentity();
-		glScaled(1. / this->width, 1. / this->width, 1. / this->width);	glBegin(GL_LINES);
+		glScaled(1. / this->width, 1. / this->width, 1. / this->width);
 		glColor4ub(127,255,127,255);
 		glBegin(GL_LINES);
 		glVertex3d(plpos[0] + 8, plpos[1] + 8, 0);

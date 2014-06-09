@@ -351,6 +351,20 @@ const CoordSys::PropertyMap &OrbitCS::propertyMap()const{
 			}
 			return SQInteger(1);
 		}, NULL);
+
+		pmap[_SC("orbitRadius")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const OrbitCS *a = static_cast<const OrbitCS*>(cs);
+			sq_pushfloat(v, SQFloat(a->orbit_rad));
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			OrbitCS *a = static_cast<OrbitCS*>(cs);
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+				return sq_throwerror(v, _SC("OrbitCS.orbitRadius received non-float value"));
+			a->orbit_rad = double(f);
+			return SQInteger(0);
+		});
 	}
 	return pmap;
 }

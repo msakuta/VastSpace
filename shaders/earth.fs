@@ -11,6 +11,7 @@ uniform sampler1D tex1d;
 uniform float ringmin, ringmax;
 uniform vec3 ringnorm;
 uniform vec3 noisePos;
+uniform int lightCount;
 uniform mat3 rotation;
 
 varying vec3 view;
@@ -52,12 +53,11 @@ void main (void)
 	float specular;
 	float shininess;
 	if(texColor[2] > texColor[0] + texColor[1])
-		specular = 0.7, shininess = 50., waving = true;
+		specular = 3.5, shininess = 50., waving = true;
 	else
-		specular = 0.25, shininess = 5., waving = false;
+		specular = 1.25, shininess = 5., waving = false;
 	float sundot = dot(flight, normal);
 	float dawness = sundot * 8.;
-	specular *= max(.1, min(1., dawness));
 	dawness = 1. - exp(-dawness * dawness);
 	vec4 vshininess = vec4(.75, .2 + .6 * dawness, .3 + .7 * dawness, 0.);
 
@@ -71,35 +71,55 @@ void main (void)
 	vec4 noise = ocean(noiseInput);
 
 	vec3 texsample = textureCube(bumptexture, texCoord);
-	vec3 texnorm0 = texsample - vec3(0.5, 0.5, 0.5);
+	vec3 texnorm0 = texsample - vec3(0.5, 0.5, 0.5) + noise.xyz;
 	vec3 fnormal = normalize(rotation * texnorm0);
 
 	vec3 fview = normalize(view);
 
-	float diffuse = max(0., dot(flight, fnormal) + .0);
-
-	// Dot product of light and geometry normal.
-	float dtn = dot(flight, normal);
-	// The ambient factor is calculated with the same formula as the atmosphere's.
-	float ambf = 0. < dtn ? 1. : pow(1. + dtn, 8.)/* max(0., min(1., (dtn + 0.1) / 0.2))*/;
 	// Obtain cloud thickness above. TODO: project sun's ray of light onto sphere.
 	float cloud = cloudfunc(cloudtexture, vec3(gl_TexCoord[2]), view.z).a;
 	// How diffuse light is blocked by cloud. The coefficient of cloud looks better to be less than 1.
 	float cloudBlock = 1. - 0.75 * cloud;
-	// Diffuse strength should be scaled with ambf too, or subtle artifacts appear in sunrise and sunset.
-	diffuse *= ambf * cloudBlock;
-	// Specular reflection won't reach the night side of the Earth.
-	specular *= ambf * cloudBlock;
+
 	// If you're far from the ocean surface, small waves are averaged and apparent shininess decreases.
 	float innerShininess = shininess * 50.;
 	innerShininess /= min(50., 1. - 0.2 * view.z);
 
-	float ambient = 0.002 + 0.15 * ambf;
-	ambient *= 1. - 0.5 * cloud;
-	texColor *= (diffuse + ambient) * (1. + 2. * noise.w);
-	texColor += specular * vshininess * pow(shininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
-	// Another specular for sun's direct light
-	texColor += specular * vshininess * pow(innerShininess * (1. - dot(flight, (reflect(invEyeRot3x3 * fview, fnormal)))) + 1., -2.);
+	vec3 reflectDirection = reflect(invEyeRot3x3 * fview, fnormal);
+
+	vec3 diffuse = 0;
+	vec3 ambient = 0;
+	vec3 specAccum = 0;
+	for(int i = 0; i < lightCount; i++){
+		vec3 flight = normalize(gl_LightSource[i].position.xyz);
+
+		vec3 ldiffuse = max(vec3(0,0,0), dot(flight, fnormal) * gl_LightSource[i].diffuse.xyz);
+
+		// Dot product of light and geometry normal.
+		float dtn = dot(flight, normal);
+		// The ambient factor is calculated with the same formula as the atmosphere's.
+		float ambf = 0. < dtn ? 1. : pow(1. + dtn, 8.)/* max(0., min(1., (dtn + 0.1) / 0.2))*/;
+
+		// Diffuse strength should be scaled with ambf too, or subtle artifacts appear in sunrise and sunset.
+		ldiffuse *= ambf * cloudBlock;
+
+		float reflection = 1. - dot(flight, reflectDirection);
+
+		// Outer specular highlight
+		vec3 lspecular = pow(shininess * reflection + 1., -2.);
+		// Another specular for the light source's direct ray
+		lspecular += pow(innerShininess * reflection + 1., -2.);
+
+		// Specular reflection won't reach the night side of the Earth.
+		specAccum += gl_LightSource[i].diffuse.xyz * ambf * cloudBlock * specular * max(.1, min(1., dtn))
+			* lspecular;
+
+		diffuse += ldiffuse;
+		ambient += gl_LightSource[i].ambient.xyz + gl_LightSource[i].diffuse.xyz * (0.15 * ambf * (1. - 0.5 * cloud));
+	}
+
+	texColor.xyz *= (diffuse + ambient) * (1. + 2. * noise.w);
+	texColor.xyz += specAccum;
 
 	if(sundot < 0.1)
 		texColor += textureCube(lightstexture, vec3(gl_TexCoord[0])) * min(.02, 5. * (-sundot + 0.1));

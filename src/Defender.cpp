@@ -37,6 +37,7 @@ extern "C"{
 
 #include <assert.h>
 #include <string.h>
+#include <algorithm>
 
 
 /* some common constants that can be used in static data definition. */

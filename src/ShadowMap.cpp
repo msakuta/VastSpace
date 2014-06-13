@@ -23,6 +23,7 @@ extern "C"{
 #include <cpplib/quat.h>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 
 
 void *operator new(size_t size, OpenGLState &o){

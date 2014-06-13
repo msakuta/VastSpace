@@ -28,7 +28,7 @@ extern "C"{
 #include <GL/glext.h>
 #include <limits.h>
 #include <stddef.h>
-
+#include <algorithm>
 
 
 /* color sequences */

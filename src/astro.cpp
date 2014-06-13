@@ -365,6 +365,34 @@ const CoordSys::PropertyMap &OrbitCS::propertyMap()const{
 			a->orbit_rad = double(f);
 			return SQInteger(0);
 		});
+
+		// Read-only property to return orbital period of this OrbitCS.
+		pmap[_SC("orbitPeriod")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			do{
+				const OrbitCS *a = static_cast<const OrbitCS*>(cs);
+				const CoordSys *c = a->getOrbitCenter();
+				while(!c && a){
+					if(!a->parent)
+						break;
+					a = a->parent->toOrbitCS();
+					if(!a)
+						break;
+					c = a->getOrbitCenter();
+				}
+				if(!c)
+					break;
+				const OrbitCS *oc = c->toOrbitCS();
+				if(!oc)
+					break;
+				// Oddly enough, orbital period is dependent to semi major axis but not eccentricity.
+				// http://en.wikipedia.org/wiki/Orbital_period
+				sq_pushfloat(v, SQFloat(sqrt(4 * M_PI * M_PI / DEF_UGC / (oc->getSystemMass() + a->getSystemMass())
+					* a->orbit_rad * a->orbit_rad * a->orbit_rad)));
+				return SQInteger(1);
+			}while(0);
+			sq_pushfloat(v, 0);
+			return SQInteger(1);
+		}, NULL);
 	}
 	return pmap;
 }

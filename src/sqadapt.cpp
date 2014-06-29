@@ -1589,27 +1589,37 @@ SQRESULT sqa_dofile(HSQUIRRELVM v, const char *filename, SQInteger retval, SQBoo
 
 void register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname)
 {
-    sq_pushroottable(v);
-    sq_pushstring(v,fname,-1);
-    sq_newclosure(v,f,0); //create a new function
-    sq_createslot(v,-3); 
-    sq_pop(v,1); //pops the root table    
+	sq_pushroottable(v);
+	sq_pushstring(v,fname,-1);
+	sq_newclosure(v,f,0); //create a new function
+	sq_createslot(v,-3);
+	sq_pop(v,1); //pops the root table
 }
 
 void register_global_var(HSQUIRRELVM v, int var, const SQChar *vname){
-    sq_pushroottable(v);
-    sq_pushstring(v,vname,-1);
-    sq_pushinteger(v,var);
-    sq_createslot(v,-3); 
-    sq_pop(v,1); //pops the root table    
+	sq_pushroottable(v);
+	sq_pushstring(v,vname,-1);
+	sq_pushinteger(v,var);
+	sq_createslot(v,-3);
+	sq_pop(v,1); //pops the root table
 }
 
-void register_const(HSQUIRRELVM v, const SQChar *vname, int var){
-    sq_pushconsttable(v);
-    sq_pushstring(v,vname,-1);
-    sq_pushinteger(v,var);
-    sq_createslot(v,-3); 
-    sq_pop(v,1); //pops the const table    
+bool register_const(HSQUIRRELVM v, const SQChar *vname, SQInteger var){
+	sq_pushconsttable(v);
+	sq_pushstring(v,vname,-1);
+	sq_pushinteger(v,var);
+	bool ret = SQ_SUCCEEDED(sq_createslot(v,-3));
+	sq_pop(v,1); //pops the const table
+	return ret;
+}
+
+bool register_static(HSQUIRRELVM v, const SQChar *vname, SQInteger var){
+	StackReserver sr(v);
+	sq_pushstring(v,vname,-1);
+	sq_pushinteger(v,var);
+	if(SQ_FAILED(sq_newslot(v, -3, SQTrue)))
+		return false;
+	return true;
 }
 
 bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f, SQInteger nparams, const SQChar *params){

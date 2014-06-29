@@ -941,6 +941,7 @@ bool Star::sq_define(HSQUIRRELVM v){
 		sq_pushstring(v, spectralToName(SpectralType(i)), -1);
 		return SQInteger(1);
 	});
+	register_static(v, _SC("maxSpectralTypes"), Num_SpectralType);
 	sq_createslot(v, -3);
 	return true;
 }

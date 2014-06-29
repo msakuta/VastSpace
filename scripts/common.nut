@@ -83,7 +83,10 @@ class TexSphere extends Astrobj{
 }
 
 class Star extends Astrobj{
-	string spectral;
+	string spectral; // Internally the same variable as spectralIndex
+	int spectralIndex; // Internally the same variable as spectral
+	static string spectralToName(int);
+	static int nameToSpectral(string);
 }
 
 class Entity{

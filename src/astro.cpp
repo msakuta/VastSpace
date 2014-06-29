@@ -924,6 +924,23 @@ bool Star::sq_define(HSQUIRRELVM v){
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
 	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<Star>);
+
+	// Expose conversion functions between spectral type index and name.
+	// Note that the functions are static; you don't need a Star instance to call them.
+	register_closure(v, _SC("nameToSpectral"), [](HSQUIRRELVM v){
+		const SQChar *str;
+		if(SQ_FAILED(sq_getstring(v, 2, &str)))
+			return sq_throwerror(v, _SC("nameToSpectral parameter is not string"));
+		sq_pushinteger(v, nameToSpectral(str));
+		return SQInteger(1);
+	});
+	register_closure(v, _SC("spectralToName"), [](HSQUIRRELVM v){
+		SQInteger i;
+		if(SQ_FAILED(sq_getinteger(v, 2, &i)))
+			return sq_throwerror(v, _SC("spectralToName parameter is not int"));
+		sq_pushstring(v, spectralToName(SpectralType(i)), -1);
+		return SQInteger(1);
+	});
 	sq_createslot(v, -3);
 	return true;
 }
@@ -961,6 +978,21 @@ const CoordSys::PropertyMap &Star::propertyMap()const{
 			if(SQ_FAILED(sq_getstring(v, 3, &str)))
 				return sq_throwerror(v, _SC("Star.spect set fail"));
 			a->spect = nameToSpectral(str);
+			return SQInteger(0);
+		});
+
+		// We want some way to specify the spectral type by an integral value for use by scripts.
+		pmap["spectIndex"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const Star *a = static_cast<const Star*>(cs);
+			sq_pushinteger(v, SQInteger(a->spect));
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			Star *a = static_cast<Star*>(cs);
+			SQInteger i;
+			if(SQ_FAILED(sq_getinteger(v, 3, &i)))
+				return sq_throwerror(v, _SC("Star.spectIndex set fail"));
+			a->spect = SpectralType(i);
 			return SQInteger(0);
 		});
 	}

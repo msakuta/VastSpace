@@ -419,7 +419,7 @@ double TexSphere::getAmbientBrightness(const Viewer &vw)const{
 	double d = std::min(pd, 1.);
 	double air = height / thick / d;
 
-	return sqrt(param.brightness * 1e18) * b / (1. + air);
+	return sqrt(param.brightness) * b / (1. + air);
 }
 
 struct atmo_dye_vertex_param{

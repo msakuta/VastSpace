@@ -37,6 +37,9 @@ SQRESULT sqa_dofile(HSQUIRRELVM, const char *filename, SQInteger retval = 0, SQB
 void register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname);
 void register_global_var(HSQUIRRELVM v, int var, const SQChar *vname);
 
+/// Register a Squirrel const value.
+EXPORT void register_const(HSQUIRRELVM v, const SQChar *vname, int var);
+
 /// Register a Squirrel closure bound to the top of the stack. Useful with defining class methods.
 EXPORT bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f, SQInteger nparams = 0, const SQChar *params = NULL);
 

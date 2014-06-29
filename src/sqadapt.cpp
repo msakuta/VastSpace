@@ -157,8 +157,6 @@ const SQUserPointer tt_Entity = const_cast<char*>("Entity");
 const SQUserPointer tt_GLwindow = const_cast<char*>("GLwindow");
 const SQUserPointer tt_Game = const_cast<char*>("Game");
 
-static void register_const(HSQUIRRELVM v, int var, const SQChar *vname);
-
 static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...) 
 { 
 	va_list arglist; 
@@ -1301,7 +1299,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_gldprint, _SC("gldprint"));
 
 	// Make Squirrel scripts be able to use the same macro constants as C++ sources.
-#define REGISTER_MACRO(a) register_const(v, a, _SC(#a))
+#define REGISTER_MACRO(a) register_const(v, _SC(#a), a)
 
 	/* AttribMask */
 	REGISTER_MACRO(GL_CURRENT_BIT);
@@ -1606,7 +1604,7 @@ void register_global_var(HSQUIRRELVM v, int var, const SQChar *vname){
     sq_pop(v,1); //pops the root table    
 }
 
-void register_const(HSQUIRRELVM v, int var, const SQChar *vname){
+void register_const(HSQUIRRELVM v, const SQChar *vname, int var){
     sq_pushconsttable(v);
     sq_pushstring(v,vname,-1);
     sq_pushinteger(v,var);

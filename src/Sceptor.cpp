@@ -26,6 +26,7 @@ extern "C"{
 #include <clib/mathdef.h>
 }
 #include <cpplib/CRC32.h>
+#include <algorithm>
 
 
 /* some common constants that can be used in static data definition. */

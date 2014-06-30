@@ -4,6 +4,7 @@
 #define NOMINMAX
 #include "Builder.h"
 #include "antiglut.h"
+#include <algorithm>
 
 GLWbuild::GLWbuild(Game *game, const char *title, Builder *a) : st(game, title), builder(a), tabindex(0){
 	flags |= GLW_CLOSE | GLW_COLLAPSABLE;

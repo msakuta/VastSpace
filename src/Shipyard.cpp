@@ -20,6 +20,7 @@ extern "C"{
 #ifndef DEDICATED
 #include <gl/GL.h>
 #endif
+#include <algorithm>
 
 /* some common constants that can be used in static data definition. */
 #define SQRT_2 1.4142135623730950488016887242097

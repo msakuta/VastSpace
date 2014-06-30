@@ -16,6 +16,7 @@ extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
 }
+#include <algorithm>
 
 
 

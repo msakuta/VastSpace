@@ -20,6 +20,7 @@
 #include "astrodef.h"
 #include "EntityCommand.h"
 #include "antiglut.h"
+#include "draw/material.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -431,13 +432,37 @@ void ModelEntity::drawNavlights(WarDraw *wd, const NavlightList &navlights, cons
 	const Mat4d &mat = transmat ? *transmat : defaultmat;
 	/* color calculation of static navlights */
 	double t0 = RandomSequence((unsigned long)this).nextd();
+	static suftexparam_t texParams = {STP_ALPHA};
+	static GLuint navlightList = CallCacheBitmap5("navlight.png", "textures/navlight.png", &texParams, NULL, NULL);
 	for(int i = 0 ; i < navlights.size(); i++){
 		const Navlight &nv = navlights[i];
 		double t = fmod(wd->vw->viewtime + t0 + nv.phase, double(nv.period)) / nv.period;
 		double luminance = nv.patternIntensity(wd->vw->viewtime + t0 + nv.phase);
 		double rad = (luminance + 1.) / 2.;
-		GLubyte col1[4] = {GLubyte(nv.color[0] * 255), GLubyte(nv.color[1] * 255), GLubyte(nv.color[2] * 255), GLubyte(nv.color[3] * 255 * luminance)};
-		gldSpriteGlow(mat.vp3(nv.pos), nv.radius * rad, col1, wd->vw->irot);
+		if(navlightList){
+			glCallList(navlightList);
+			Vec4<GLfloat> fcol = nv.color;
+			fcol[3] *= luminance;
+			glPushAttrib(GL_TEXTURE_BIT | GL_PIXEL_MODE_BIT);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+			glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, fcol);
+			glPushMatrix();
+			gldTranslate3dv(mat.vp3(nv.pos));
+			glMultMatrixd(wd->vw->irot);
+			gldScaled(nv.radius * rad);
+			glBegin(GL_QUADS);
+			glTexCoord2d(0., 0.); glVertex2d(-1., -1.);
+			glTexCoord2d(1., 0.); glVertex2d( 1., -1.);
+			glTexCoord2d(1., 1.); glVertex2d( 1.,  1.);
+			glTexCoord2d(0., 1.); glVertex2d(-1.,  1.);
+			glEnd();
+			glPopMatrix();
+			glPopAttrib();
+		}
+		else{
+			GLubyte col1[4] = {GLubyte(nv.color[0] * 255), GLubyte(nv.color[1] * 255), GLubyte(nv.color[2] * 255), GLubyte(nv.color[3] * 255 * luminance)};
+			gldSpriteGlow(mat.vp3(nv.pos), nv.radius * rad, col1, wd->vw->irot);
+		}
 	}
 
 }

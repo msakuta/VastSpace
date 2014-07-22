@@ -61,7 +61,7 @@ muzzleFlashOffset1 <- Vec3d(-0.00080, 0.00020, 0.0); // Offset from hand
 muzzleFlashRadius2 <- 0.00025;
 muzzleFlashOffset2 <- Vec3d(-0.00110, 0.00020, 0.0);
 
-if(!isServer()){
+if(isClient()){
 register_console_command("reload", function(){
 	if(player.controlled)
 		player.controlled.command("ReloadWeapon");
@@ -73,11 +73,13 @@ beginControl["Soldier"] <- function (){
 		print("Soldier::beginControl");
 	cmd("pushbind");
 	cmd("bind r reload");
+	cmd("r_windows 0");
 }
 
 endControl["Soldier"] <- function (){
 	if("print" in this)
 		print("Soldier::endControl");
 	cmd("popbind");
+	cmd("r_windows 1");
 }
 }

@@ -24,6 +24,7 @@
 #include "GetFov.h"
 #include "SqInitProcess-ex.h"
 #include "tent3d.h"
+#include "audio/playSound.h"
 
 extern "C"{
 #include <clib/mathdef.h>
@@ -1044,6 +1045,12 @@ void Soldier::anim(double dt){
 		else{
 			cooldown2 += arms[0]->shootCooldown();
 			arms[0]->shoot();
+
+#ifndef DEDICATED
+			// Gun shoot sound should vary depending on guns
+			playSound3D(modPath() << "sound/m16-" << (w->rs.next() % 3 + 1) << ".ogg", this->pos, 1., 0.05 * 0.05, w->realtime);
+#endif
+
 			if(game->isClient())
 				muzzle |= 1;
 			p->kickvelo[0] += kickf * (w->rs.nextd() - .3);

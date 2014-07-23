@@ -72,3 +72,13 @@ The Saturn Texture
 The Saturn texture is made by Bjorn Jonsson and obtained from:
 http://www.mmedia.is/~bjj/planetary_maps.html
 
+
+
+M16 Assault Rifle's Gunshot Sound (Public Domain)
+-------------------------------------------------
+
+m16-1.ogg, m16-2.ogg, m16-3.ogg are retrieved from
+
+http://www.freesound.org/people/qubodup/sounds/187677/
+
+and edited to fit our project's use.

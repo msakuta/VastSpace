@@ -572,16 +572,23 @@ void Soldier::drawHUD(WarDraw *wd){
 			gldprintf("%d / %d", arms[0]->ammo, arms[0]->maxammo());
 
 			static suftexparam_t params = {STP_ALPHA};
-			static GLuint gunmodel = CallCacheBitmap5("gunmodel.png", modPath() << "models/gunmodel.png", &params, NULL, NULL);
-			if(gunmodel != 0){
-				glPushAttrib(GL_TEXTURE_BIT);
-				glCallList(gunmodel);
-				glBegin(GL_QUADS);
-				glTexCoord2f(0,0); glVertex2d(-left - 0.40, 0.250);
-				glTexCoord2f(0,1); glVertex2d(-left - 0.40, 0.375);
-				glTexCoord2f(1,1); glVertex2d(-left - 0.15, 0.375);
-				glTexCoord2f(1,0); glVertex2d(-left - 0.15, 0.250);
-				glEnd();
+			static const char *gunNames[2] = {"M16", "M40"};
+			static GLuint gunmodels[2] = {
+				CallCacheBitmap5("gunmodel.png", modPath() << "models/gunmodel.png", &params, NULL, NULL),
+				CallCacheBitmap5("sniperriflemodel.png", modPath() << "models/sniperriflemodel.png", &params, NULL, NULL)
+			};
+			if(gunmodels[0] != 0){
+				glPushAttrib(GL_TEXTURE_BIT | GL_CURRENT_BIT);
+				for(int i = 0; i < numof(gunmodels); i++){
+					glCallList(gunmodels[i]);
+					glColor4fv(!strcmp(arms[0]->classname(), gunNames[i]) ? Vec4f(1,1,1,1) : Vec4f(0.5,0.5,0.5,1.));
+					glBegin(GL_QUADS);
+					glTexCoord2f(0,0); glVertex2d(-left - 0.40, 0.250 - i * 0.125);
+					glTexCoord2f(0,1); glVertex2d(-left - 0.40, 0.375 - i * 0.125);
+					glTexCoord2f(1,1); glVertex2d(-left - 0.15, 0.375 - i * 0.125);
+					glTexCoord2f(1,0); glVertex2d(-left - 0.15, 0.250 - i * 0.125);
+					glEnd();
+				}
 				glPopAttrib();
 			}
 		}

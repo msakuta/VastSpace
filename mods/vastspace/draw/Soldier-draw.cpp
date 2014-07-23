@@ -570,6 +570,20 @@ void Soldier::drawHUD(WarDraw *wd){
 			gldprintf("%s", arms[0]->classname());
 			glRasterPos3d(-left - 200. / m, - 12. / m, -1);
 			gldprintf("%d / %d", arms[0]->ammo, arms[0]->maxammo());
+
+			static suftexparam_t params = {STP_ALPHA};
+			static GLuint gunmodel = CallCacheBitmap5("gunmodel.png", modPath() << "models/gunmodel.png", &params, NULL, NULL);
+			if(gunmodel != 0){
+				glPushAttrib(GL_TEXTURE_BIT);
+				glCallList(gunmodel);
+				glBegin(GL_QUADS);
+				glTexCoord2f(0,0); glVertex2d(-left - 0.40, 0.250);
+				glTexCoord2f(0,1); glVertex2d(-left - 0.40, 0.375);
+				glTexCoord2f(1,1); glVertex2d(-left - 0.15, 0.375);
+				glTexCoord2f(1,0); glVertex2d(-left - 0.15, 0.250);
+				glEnd();
+				glPopAttrib();
+			}
 		}
 
 		// Health value text. Leave space for the task bar on the left.

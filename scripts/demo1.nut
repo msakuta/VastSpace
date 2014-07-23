@@ -230,6 +230,8 @@ function frameproc(dt){
 			soldier.setrot(Quatd(gaussRand(), gaussRand(), gaussRand(), gaussRand()).norm());
 			soldier.race = 0;
 			numsol0 = (numsol0 + 1) % 10;
+			if(!player.chase)
+				player.chase = soldier;
 		}
 		while(false && countents(cs, 1, "Soldier") < 1){
 			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + (drand() - 0.5) * 0.3, -0.2 + gaussRand() * 0.005, 0.65 + (drand() - 0.5) * 0.10));

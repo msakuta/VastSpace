@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="64"
+   height="32"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.47 r22583"
+   sodipodi:docname="gunmodel.svg"
+   inkscape:export-filename="gunmodel.png"
+   inkscape:export-xdpi="180"
+   inkscape:export-ydpi="180">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="8"
+     inkscape:cx="41.935943"
+     inkscape:cy="9.1018365"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="true"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:window-width="1233"
+     inkscape:window-height="763"
+     inkscape:window-x="100"
+     inkscape:window-y="33"
+     inkscape:window-maximized="0">
+    <sodipodi:guide
+       orientation="0,1"
+       position="16,16"
+       id="guide2816" />
+    <sodipodi:guide
+       orientation="1,0"
+       position="16,16"
+       id="guide2818" />
+    <inkscape:grid
+       type="xygrid"
+       id="grid2820"
+       empspacing="4"
+       visible="true"
+       enabled="true"
+       snapvisiblegridlinesonly="true"
+       spacingx="1px"
+       spacingy="1px" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="L1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-1020.3622)">
+    <path
+       style="fill:#e6e6e6;fill-opacity:1;stroke:#000000;stroke-opacity:1"
+       d="M 11 7 L 11 8 L 10 8 L 10 10 L 4 10 L 4 13 L 10 13 L 10 15 L 11 15 L 11 16 L 13 16 L 13 15 L 15 15 L 15 16 L 17 16 L 17 15 L 19 15 L 19 16 L 21 16 L 21 15 L 23 15 L 23 16 L 25 16 L 25 15 L 26 15 L 26 14 L 28 14 L 28 16 L 31 17 L 31 21 L 30 25 L 29 27 L 34 29 L 35 27 L 36 23 L 36 17 L 38 17 L 39 21 L 41 22 L 44 23 L 45 27 L 49 27 L 47 17 L 51 17 L 54 15 L 57 15 L 59 17 L 61 17 L 61 7 L 59 7 L 57 9 L 53 9 L 46 7 L 39 7 L 39 8 L 37 8 L 37 7 L 35 7 L 35 8 L 33 8 L 33 7 L 31 7 L 31 8 L 29 8 L 29 7 L 27 7 L 27 8 L 25 8 L 25 7 L 23 7 L 23 8 L 21 8 L 21 7 L 19 7 L 19 8 L 17 8 L 17 7 L 15 7 L 15 8 L 13 8 L 13 7 L 11 7 z M 42 17 L 43 21 L 40 20 L 39.28125 17.09375 L 42 17 z "
+       transform="translate(0,1020.3622)"
+       id="path3686" />
+  </g>
+</svg>

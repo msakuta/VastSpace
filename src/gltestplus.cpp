@@ -2340,6 +2340,9 @@ static INT_PTR CALLBACK HostGameDlg(HWND hDlg, UINT message, WPARAM wParam, LPAR
 			SetFocus(GetDlgItem(hDlg, IDC_HOSTNAME));
 		}
 		break;
+	case WM_MOUSEWHEEL:
+		SetDlgItemText(hDlg, IDC_NAME, gltestp::dstring() << "WM_MOUSEWHEEL " << wParam << " " << lParam);
+		break;
 	case WM_COMMAND:
 		{
 			UINT id = LOWORD(wParam);

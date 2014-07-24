@@ -8,6 +8,8 @@
 #include "arms.h"
 #include "judge.h"
 #include "EntityCommand.h"
+#include "EntityRegister.h"
+#include "SqInitProcess-ex.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -25,7 +27,7 @@ public:
 
 	Firearm(Game *game) : st(game){}
 	Firearm(Entity *abase, const hardpoint_static *hp) : st(abase, hp){}
-	void shoot();
+	void shoot(double dt);
 	void reload();
 	virtual int maxammo()const = 0;
 	virtual double shootCooldown()const = 0;
@@ -35,6 +37,11 @@ public:
 	virtual double bulletVariance()const{return 0.01;}
 	virtual double aimFov()const{return 0.7;} ///< Magnitude of zoom when aiming expressed in FOV.
 	virtual double shootRecoil()const{return M_PI / 64.;}
+	virtual HSQOBJECT getSqShoot()const{return sq_nullobj();} ///< Returns shoot event handler for this firearm
+
+protected:
+	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
+	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
 };
 
 
@@ -82,6 +89,9 @@ public:
 	static Motion *motions[];
 
 protected:
+	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
+	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
+
 	void init();
 	int shoot_infgun(double phi0, double theta0, double v, double damage, double variance, double t, Mat4d &gunmat);
 	void swapWeapon();
@@ -147,11 +157,11 @@ class M16 : public Firearm{
 public:
 	typedef Firearm st;
 
-	static const unsigned classid;
+	static EntityRegisterNC<M16> entityRegister;
 
 	M16(Game *game) : st(game){}
 	M16(Entity *abase, const hardpoint_static *hp);
-	const char *classname()const;
+	EntityStatic &getStatic()const override{return entityRegister;}
 	void anim(double dt){}
 	void draw(WarDraw *);
 
@@ -164,6 +174,7 @@ protected:
 	double bulletVariance()const{return bulletVarianceValue;}
 	double aimFov()const{return aimFovValue;}
 	double shootRecoil()const{return shootRecoilValue;}
+	HSQOBJECT getSqShoot()const override{return sqShoot;}
 
 	static int maxAmmoValue;
 	static double shootCooldownValue;
@@ -172,6 +183,7 @@ protected:
 	static double bulletVarianceValue;
 	static double aimFovValue;
 	static double shootRecoilValue;
+	static HSQOBJECT sqShoot;
 };
 
 /// \brief M40 sniper rifle. It's silly to see it in space.
@@ -179,11 +191,11 @@ class M40 : public Firearm{
 public:
 	typedef Firearm st;
 
-	static const unsigned classid;
+	static EntityRegisterNC<M40> entityRegister;
 
 	M40(Game *game) : st(game){}
 	M40(Entity *abase, const hardpoint_static *hp);
-	const char *classname()const;
+	EntityStatic &getStatic()const override{return entityRegister;}
 	void anim(double dt){}
 	void draw(WarDraw *);
 
@@ -196,6 +208,7 @@ protected:
 	double bulletVariance()const{return bulletVarianceValue;}
 	double aimFov()const{return aimFovValue;}
 	double shootRecoil()const{return shootRecoilValue;}
+	HSQOBJECT getSqShoot()const override{return sqShoot;}
 
 	static int maxAmmoValue;
 	static double shootCooldownValue;
@@ -204,6 +217,7 @@ protected:
 	static double bulletVarianceValue;
 	static double aimFovValue;
 	static double shootRecoilValue;
+	static HSQOBJECT sqShoot;
 };
 
 

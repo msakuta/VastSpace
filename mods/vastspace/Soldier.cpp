@@ -286,6 +286,7 @@ void Soldier::init(){
 		reloading = 0;
 		muzzle = 0;
 		aiming = false;
+		cooldown2 = 0.;
 		arms[0] = new M16(this, soldierHP[0]);
 		arms[1] = new M40(this, soldierHP[1]);
 		if(w) for(int i = 0; i < numof(arms); i++) if(arms[i])
@@ -1044,12 +1045,7 @@ void Soldier::anim(double dt){
 		}
 		else{
 			cooldown2 += arms[0]->shootCooldown();
-			arms[0]->shoot();
-
-#ifndef DEDICATED
-			// Gun shoot sound should vary depending on guns
-			playSound3D(modPath() << "sound/m16-" << (w->rs.next() % 3 + 1) << ".ogg", this->pos, 1., 0.05 * 0.05, w->realtime);
-#endif
+			arms[0]->shoot(dt);
 
 			if(game->isClient())
 				muzzle |= 1;
@@ -1791,8 +1787,53 @@ static int infantry_tracehit(struct entity *pt, warf_t *w, const double src[3], 
 
 
 
+SQInteger Soldier::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("cooldown"))){
+		sq_pushfloat(v, cooldown2);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("arms"))){
+		// Prepare an empty array in Squirrel VM for adding arms.
+		sq_newarray(v, 0); // array
 
-void Firearm::shoot(){
+		// Retrieve library-provided "append" method for an array.
+		// We'll reuse the method for all the elements, which is not exactly the same way as
+		// an ordinally Squirrel codes evaluate.
+		sq_pushstring(v, _SC("append"), -1); // array "append"
+		if(SQ_FAILED(sq_get(v, -2))) // array array.append
+			return sq_throwerror(v, _SC("append not found"));
+
+		for(int i = 0; i < numof(arms); i++){
+			ArmBase *arm = arms[i];
+			if(arm){
+				sq_push(v, -2); // array array.append array
+				Entity::sq_pushobj(v, arm); // array array.append array Entity-instance
+				sq_call(v, 2, SQFalse, SQFalse); // array array.append
+			}
+		}
+
+		// Pop the saved "append" method
+		sq_poptop(v); // array
+
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger Soldier::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("cooldown"))){
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
+			return sq_throwerror(v, _SC("Value not convertible to float for cooldown2"));
+		cooldown2 = retf;
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
+}
+
+void Firearm::shoot(double dt){
 	Entity *p = base;
 	static const Vec3d nh0(0., 0., -1);
 	double v = bulletSpeed();
@@ -1801,6 +1842,20 @@ void Firearm::shoot(){
 	GetGunPosCommand ggp(0);
 	if(base->command(&ggp)){
 		gunRot = ggp.gunRot;
+	}
+
+	HSQOBJECT sqShoot = getSqShoot();
+	if(!sq_isnull(sqShoot)){
+		// If we have a custom callback for gun shooting logic defined in Squirrel, use it
+		HSQUIRRELVM v = game->sqvm;
+		StackReserver sr(v);
+		sq_pushobject(v, sqShoot);
+		sq_pushroottable(v);
+		Entity::sq_pushobj(v, this);
+		Entity::sq_pushobj(v, this->getOwner());
+		sq_pushfloat(v, dt);
+		sq_call(v, 4, SQFalse, SQTrue);
+		return;
 	}
 
 	Bullet *pb = new Bullet(this, bulletLifeTime(), bulletDamage());
@@ -1838,10 +1893,30 @@ void Firearm::reload(){
 	ammo = maxammo();
 }
 
+SQInteger Firearm::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("ammo"))){
+		sq_pushinteger(v, ammo);
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger Firearm::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("ammo"))){
+		SQInteger reti;
+		if(SQ_FAILED(sq_getinteger(v, 3, &reti)))
+			return sq_throwerror(v, _SC("Value not convertible to int for cooldown2"));
+		ammo = (int)reti;
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
+}
 
 
-const unsigned M16::classid = registerClass("M16", Conster<M16>);
-const char *M16::classname()const{return "M16";}
+
+Entity::EntityRegisterNC<M16> M16::entityRegister("M16");
 int M16::maxAmmoValue = 20;
 double M16::shootCooldownValue = 0.1;
 double M16::bulletSpeedValue = 0.7;
@@ -1849,6 +1924,7 @@ double M16::bulletDamageValue = 1.0;
 double M16::bulletVarianceValue = 0.01;
 double M16::aimFovValue = 0.7;
 double M16::shootRecoilValue = M_PI / 128.;
+HSQOBJECT M16::sqShoot = sq_nullobj();
 
 
 
@@ -1867,15 +1943,15 @@ void M16::init(){
 			SingleDoubleProcess(bulletDamageValue, "bulletDamage", false) <<=
 			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false) <<=
 			SingleDoubleProcess(aimFovValue, "aimFov", false) <<=
-			SingleDoubleProcess(shootRecoilValue, "shootRecoil", false)
+			SingleDoubleProcess(shootRecoilValue, "shootRecoil", false) <<=
+			SqCallbackProcess(sqShoot, "shoot", false)
 			);
 		initialized = true;
 	}
 }
 
 
-const unsigned M40::classid = registerClass("M40", Conster<M40>);
-const char *M40::classname()const{return "M40";}
+Entity::EntityRegisterNC<M40> M40::entityRegister("M40");
 int M40::maxAmmoValue = 5;
 double M40::shootCooldownValue = 1.5;
 double M40::bulletSpeedValue = 1.0;
@@ -1883,6 +1959,7 @@ double M40::bulletDamageValue = 5.0;
 double M40::bulletVarianceValue = 0.001;
 double M40::aimFovValue = 0.2;
 double M40::shootRecoilValue = M_PI / 32.;
+HSQOBJECT M40::sqShoot = sq_nullobj();
 
 
 M40::M40(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
@@ -1900,7 +1977,8 @@ void M40::init(){
 			SingleDoubleProcess(bulletDamageValue, "bulletDamage", false) <<=
 			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false) <<=
 			SingleDoubleProcess(aimFovValue, "aimFov", false) <<=
-			SingleDoubleProcess(shootRecoilValue, "shootRecoil", false)
+			SingleDoubleProcess(shootRecoilValue, "shootRecoil", false) <<=
+			SqCallbackProcess(sqShoot, "shoot", false)
 			);
 		initialized = true;
 	}

@@ -28,15 +28,10 @@ Bullet::Bullet(Entity *aowner, float alife, double adamage) : st(aowner->w), own
 #endif
 }
 
-const char *Bullet::idname()const{
-	return "bullet";
-}
+Entity::EntityRegister<Bullet> Bullet::entityRegister("Bullet");
 
-const char *Bullet::classname()const{
-	return "Bullet";
-}
+Entity::EntityStatic &Bullet::getStatic()const{return entityRegister;}
 
-const unsigned Bullet::classid = registerClass("Bullet", Conster<Bullet>);
 
 void Bullet::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -338,28 +333,24 @@ void Bullet::postframe(){
 
 
 SQInteger Bullet::sqGet(HSQUIRRELVM v, const SQChar *name)const{
-	if(!scstrcmp(name, _SC("life"))){
-		if(!this){
-			sq_pushnull(v);
-			return 1;
-		}
+	if(!this){
+		sq_pushnull(v);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("life"))){
 		sq_pushfloat(v, life);
 		return 1;
 	}
 	else if(!scstrcmp(name, _SC("damage"))){
-		if(!this){
-			sq_pushnull(v);
-			return 1;
-		}
 		sq_pushfloat(v, damage);
 		return 1;
 	}
 	else if(!scstrcmp(name, _SC("owner"))){
-		if(!this){
-			sq_pushnull(v);
-			return 1;
-		}
 		Entity::sq_pushobj(v, owner);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("mass"))){
+		sq_pushfloat(v, mass);
 		return 1;
 	}
 	else
@@ -386,6 +377,13 @@ SQInteger Bullet::sqSet(HSQUIRRELVM v, const SQChar *name){
 		owner = rete;
 		if(owner) // Belong to owner's race
 			race = owner->race;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("mass"))){
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
+			return SQ_ERROR;
+		mass = retf;
 		return 0;
 	}
 	else

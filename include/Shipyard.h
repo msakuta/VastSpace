@@ -9,6 +9,7 @@
 #include "glw/glwindow.h"
 #include "Docker.h"
 #include "libmotion.h"
+#include "Model-forward.h"
 
 class Shipyard;
 
@@ -62,6 +63,7 @@ public:
 	virtual Docker *getDockerInt();
 	virtual Entity *toEntity(){return this;}
 	virtual const ManeuverParams &getManeuve()const;
+	int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn) override;
 
 	bool startBuild();
 	bool finishBuild();
@@ -91,6 +93,7 @@ protected:
 
 	static GLuint disp;
 
+	static Model *getModel();
 	static Motion *motions[2];
 
 	bool cancelBuild(int index, bool recalc_time);

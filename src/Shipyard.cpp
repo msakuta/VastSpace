@@ -11,6 +11,7 @@
 #include "sqadapt.h"
 #include "btadapt.h"
 #include "Destroyer.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
@@ -469,6 +470,74 @@ Vec3d ShipyardDocker::getPortPos(Dockable *e)const{
 
 Quatd ShipyardDocker::getPortRot(Dockable *)const{
 	return quat_u;
+}
+
+Model *Shipyard::getModel(){
+	static Model *model = LoadMQOModel("models/shipyard.mqo");
+	return model;
+}
+
+#define PROFILE_HITPOLY 0
+
+int Shipyard::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+#if PROFILE_HITPOLY
+	timemeas_t tm;
+	TimeMeasStart(&tm);
+#endif
+	Mat4d mat;
+	this->transform(mat);
+	Mat4d imat = mat.scalein(-1. / modelScale, 1. / modelScale, -1. / modelScale).transpose();
+	mat.scalein(-modelScale, modelScale, -modelScale);
+	Vec3d lsrc = imat.dvp3(src - this->pos);
+	Vec3d ldir = imat.dvp3(dir);
+	int bestiret = 0;
+	double bestdret = dt;
+	Vec3d bestlretn;
+
+	Model *model = getModel();
+	if(!model)
+		return 0;
+
+	for(int i = 0; i < model->sufs[0]->np; i++){
+		unsigned short indices[4];
+		Mesh::Primitive *pr = model->sufs[0]->p[i];
+		int n = 0;
+		if(pr->t == Mesh::ET_Polygon){
+			Mesh::Polygon &p = pr->p;
+			assert(p.n <= 4);
+			n = p.n;
+			for(int j = 0; j < p.n; j++)
+				indices[p.n - j - 1] = p.v[j].pos; // Reverse face direction
+		}
+		else if(pr->t == Mesh::ET_UVPolygon){
+			Mesh::UVPolygon &p = pr->uv;
+			assert(p.n <= 4);
+			n = p.n;
+			for(int j = 0; j < p.n; j++)
+				indices[p.n - j - 1] = p.v[j].pos; // Reverse face direction
+		}
+		else assert(false);
+		double dret;
+		Vec3d lretn;
+		int iret = jHitPolygon(model->sufs[0]->v, indices, n, lsrc, ldir, 0, dt, &dret, NULL, (double (*)[3])&lretn[0]);
+		if(iret && dret < bestdret){
+			bestiret = i + 1;
+			bestdret = dret;
+			bestlretn = lretn;
+		}
+	}
+	if(bestiret){
+		if(ret != NULL)
+			*ret = bestdret;
+		if(retp != NULL)
+			*retp = src + dir * bestdret;
+		if(retn != NULL)
+			*retn = mat.dvp3(bestlretn);
+	}
+#if PROFILE_HITPOLY
+	fprintf(stderr, "tracehit for %d: %lg\n", model->sufs[0]->np, TimeMeasLap(&tm));
+#endif
+	return bestiret;
 }
 #endif
 

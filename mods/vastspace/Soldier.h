@@ -32,11 +32,13 @@ struct FirearmStatic{
 	double shootRecoilValue;
 	HSQOBJECT sqShoot;
 	gltestp::dstring modelName;
+	gltestp::dstring overlayIconFile;
 
 	// Following variables are not configurable from Squirrel source,
 	// just automatically set by the program.
 	Model *model;
 	OpenGLState::weak_ptr<bool> modelInit;
+	GLuint overlayIcon;
 
 	FirearmStatic();
 };
@@ -59,6 +61,7 @@ public:
 	virtual double aimFov()const{return 0.7;} ///< Magnitude of zoom when aiming expressed in FOV.
 	virtual double shootRecoil()const{return M_PI / 64.;}
 	virtual HSQOBJECT getSqShoot()const{return sq_nullobj();} ///< Returns shoot event handler for this firearm
+	virtual FirearmStatic *getFirearmStatic()const{return NULL;}
 
 protected:
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
@@ -200,6 +203,7 @@ protected:
 	double aimFov()const{return fs->aimFovValue;}
 	double shootRecoil()const{return fs->shootRecoilValue;}
 	HSQOBJECT getSqShoot()const override{return fs->sqShoot;}
+	FirearmStatic *getFirearmStatic()const override{return fs;}
 
 	FirearmStatic *fs;
 	static FirearmStatic defaultFS;

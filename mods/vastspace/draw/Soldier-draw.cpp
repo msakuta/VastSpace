@@ -572,43 +572,34 @@ void Soldier::drawHUD(WarDraw *wd){
 			gldprintf("%d / %d", arms[0]->ammo, arms[0]->maxammo());
 
 			static suftexparam_t params = {STP_ALPHA};
-			static const char *gunNames[2] = {"M16", "M40"};
-			static GLuint gunmodels[2] = {
-				CallCacheBitmap5("gunmodel.png", modPath() << "models/gunmodel.png", &params, NULL, NULL),
-				CallCacheBitmap5("sniperriflemodel.png", modPath() << "models/sniperriflemodel.png", &params, NULL, NULL)
-			};
-			if(gunmodels[0] != 0){
-				glPushAttrib(GL_TEXTURE_BIT | GL_CURRENT_BIT);
-				for(int i = 0; i < numof(gunmodels); i++){
-					glCallList(gunmodels[i]);
-					glColor4fv(!strcmp(arms[0]->classname(), gunNames[i]) ? Vec4f(1,1,1,1) : Vec4f(0.5,0.5,0.5,1.));
-					glBegin(GL_QUADS);
-					glTexCoord2f(0,0); glVertex2d(-left - 0.40, 0.250 - i * 0.125);
-					glTexCoord2f(0,1); glVertex2d(-left - 0.40, 0.375 - i * 0.125);
-					glTexCoord2f(1,1); glVertex2d(-left - 0.15, 0.375 - i * 0.125);
-					glTexCoord2f(1,0); glVertex2d(-left - 0.15, 0.250 - i * 0.125);
-					glEnd();
-				}
-				glPopAttrib();
+			glPushAttrib(GL_TEXTURE_BIT | GL_CURRENT_BIT);
+			for(int i = 0; i < numof(arms); i++){
+				FirearmStatic *fs = arms[i]->getFirearmStatic();
+				if(!fs)
+					continue;
+				if(fs->overlayIcon == 0)
+					fs->overlayIcon = CallCacheBitmap5(fs->overlayIconFile, modPath() << fs->overlayIconFile, &params, NULL, NULL);
+				if(fs->overlayIcon == 0)
+					continue;
+				glCallList(fs->overlayIcon);
+				glColor4fv(i == 0 ? Vec4f(1,1,1,1) : Vec4f(0.5,0.5,0.5,1.));
+				glBegin(GL_QUADS);
+				glTexCoord2f(0,0); glVertex2d(-left - 0.40, 0.250 - i * 0.125);
+				glTexCoord2f(0,1); glVertex2d(-left - 0.40, 0.375 - i * 0.125);
+				glTexCoord2f(1,1); glVertex2d(-left - 0.15, 0.375 - i * 0.125);
+				glTexCoord2f(1,0); glVertex2d(-left - 0.15, 0.250 - i * 0.125);
+				glEnd();
 			}
+			glPopAttrib();
 
 			static GLuint roundModel = CallCacheBitmap5("round.png", modPath() << "models/round.png", &params, NULL, NULL);
 			if(roundModel != 0){
 				glPushAttrib(GL_TEXTURE_BIT | GL_CURRENT_BIT);
 				// Is it OK to share the same texture for all the firearms?
 				glCallList(roundModel);
-				for(int i = 0; i < numof(gunmodels); i++){
-					int j;
-					// Find matching equipment slot for this class firearm
-					for(j = 0; j < numof(arms); j++){
-						if(arms[j] && !strcmp(arms[j]->classname(), gunNames[i]))
-							break;
-					}
-					// If we don't equip this weapon, skip
-					if(j == numof(arms))
-						continue;
-					Firearm *arm = arms[j];
-					glColor4fv(j == 0 ? Vec4f(1,1,1,1) : Vec4f(0.5,0.5,0.5,1.));
+				for(int i = 0; i < numof(arms); i++){
+					Firearm *arm = arms[i];
+					glColor4fv(i == 0 ? Vec4f(1,1,1,1) : Vec4f(0.5,0.5,0.5,1.));
 					// The texture has only one round, so we repeat the texture to show multiple rounds.
 					float f = (double)arm->ammo / arm->maxammo();
 					glBegin(GL_QUADS);

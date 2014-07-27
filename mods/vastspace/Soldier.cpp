@@ -1928,7 +1928,8 @@ FirearmStatic::FirearmStatic() :
 	aimFovValue(0.7),
 	shootRecoilValue(M_PI / 128.),
 	sqShoot(sq_nullobj()),
-	model(NULL)
+	model(NULL),
+	overlayIcon(0)
 {
 }
 
@@ -1962,7 +1963,8 @@ void Rifle::s_init(){
 			SingleDoubleProcess(fs->aimFovValue, "aimFov", false) <<=
 			SingleDoubleProcess(fs->shootRecoilValue, "shootRecoil", false) <<=
 			SqCallbackProcess(fs->sqShoot, "shoot", false) <<=
-			StringProcess(fs->modelName, "modelName")
+			StringProcess(fs->modelName, "modelName") <<=
+			StringProcess(fs->overlayIconFile, "overlayIconFile")
 			);
 		return SQInteger(0);
 	}, _SC("registerFirearm"));

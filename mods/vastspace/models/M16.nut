@@ -6,6 +6,7 @@ bulletVariance <- 0.01;
 aimFov <- 0.7;
 shootRecoil <- PI / 128.;
 modelName <- "models/m16.mqo";
+overlayIconFile <- "models/gunmodel.png";
 
 local lthis = this;
 

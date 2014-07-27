@@ -832,9 +832,7 @@ bool Soldier::getGunPos(GetGunPosCommand &ggp){
 
 
 
-void M16::draw(WarDraw *wd){
-	static OpenGLState::weak_ptr<bool> init;
-	static Model *model = NULL;
+void Rifle::draw(WarDraw *wd){
 	double pixels;
 
 	/* cull object */
@@ -842,11 +840,11 @@ void M16::draw(WarDraw *wd){
 		return;
 	wd->lightdraws++;
 
-	if(!init){
-		model = LoadMQOModel(modPath() << "models/m16.mqo");
-		init.create(*openGLState);
+	if(!fs->modelInit){
+		fs->model = LoadMQOModel(modPath() << fs->modelName);
+		fs->modelInit.create(*openGLState);
 	}
-	if(!model)
+	if(!fs->model)
 		return;
 
 	double scale = Soldier::getModelScale();
@@ -867,48 +865,7 @@ void M16::draw(WarDraw *wd){
 		gldTranslate3dv(ggp.pos);
 		gldMultQuat(ggp.rot);
 		glScaled(-scale, scale, -scale);
-		DrawMQOPose(model, NULL);
-		glPopMatrix();
-	}
-}
-
-
-void M40::draw(WarDraw *wd){
-	static OpenGLState::weak_ptr<bool> init;
-	static Model *model = NULL;
-	double pixels;
-
-	/* cull object */
-	if(wd->vw->gc->cullFrustum(pos, .003))
-		return;
-	wd->lightdraws++;
-
-	if(!init){
-		model = LoadMQOModel(modPath() << "models/m40.mqo");
-		init.create(*openGLState);
-	}
-	if(!model)
-		return;
-
-	double scale = Soldier::getModelScale();
-
-	// Retrieve gun id
-	int gunId = 0;
-	for(int i = 0; i < base->armsCount(); i++){
-		if(base->armsGet(i) == this){
-			gunId = i;
-			break;
-		}
-	}
-
-	// Send GetGunPosCommand to base Entity to query transformation for held weapons.
-	GetGunPosCommand ggp(gunId);
-	if(base->command(&ggp)){
-		glPushMatrix();
-		gldTranslate3dv(ggp.pos);
-		gldMultQuat(ggp.rot);
-		glScaled(-scale, scale, -scale);
-		DrawMQOPose(model, NULL);
+		DrawMQOPose(fs->model, NULL);
 		glPopMatrix();
 	}
 }

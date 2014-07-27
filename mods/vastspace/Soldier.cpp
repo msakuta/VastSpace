@@ -24,7 +24,7 @@
 #include "GetFov.h"
 #include "SqInitProcess-ex.h"
 #include "tent3d.h"
-#include "audio/playSound.h"
+#include "StaticInitializer.h"
 
 extern "C"{
 #include <clib/mathdef.h>
@@ -287,8 +287,8 @@ void Soldier::init(){
 		muzzle = 0;
 		aiming = false;
 		cooldown2 = 0.;
-		arms[0] = new M16(this, soldierHP[0]);
-		arms[1] = new M40(this, soldierHP[1]);
+		arms[0] = new Rifle(this, soldierHP[0], &Rifle::firearmDefs["M16"]);
+		arms[1] = new Rifle(this, soldierHP[1], &Rifle::firearmDefs["M40"]);
 		if(w) for(int i = 0; i < numof(arms); i++) if(arms[i])
 			w->addent(arms[i]);
 		hookshot = false;
@@ -1916,73 +1916,60 @@ SQInteger Firearm::sqSet(HSQUIRRELVM v, const SQChar *name){
 
 
 
-Entity::EntityRegisterNC<M16> M16::entityRegister("M16");
-int M16::maxAmmoValue = 20;
-double M16::shootCooldownValue = 0.1;
-double M16::bulletSpeedValue = 0.7;
-double M16::bulletDamageValue = 1.0;
-double M16::bulletVarianceValue = 0.01;
-double M16::aimFovValue = 0.7;
-double M16::shootRecoilValue = M_PI / 128.;
-HSQOBJECT M16::sqShoot = sq_nullobj();
+Entity::EntityRegisterNC<Rifle> Rifle::entityRegister("M16");
+FirearmStatic Rifle::defaultFS;
+
+FirearmStatic::FirearmStatic() :
+	maxAmmoValue(20),
+	shootCooldownValue(0.1),
+	bulletSpeedValue(0.7),
+	bulletDamageValue(1.0),
+	bulletVarianceValue(0.01),
+	aimFovValue(0.7),
+	shootRecoilValue(M_PI / 128.),
+	sqShoot(sq_nullobj()),
+	model(NULL)
+{
+}
 
 
 
-M16::M16(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
+Rifle::Rifle(Entity *abase, const hardpoint_static *hp, FirearmStatic *fs) : st(abase, hp), fs(fs ? fs : &defaultFS){
 	init();
 	reload();
 }
 
-void M16::init(){
-	static bool initialized = false;
-	if(!initialized){
-		SqInit(game->sqvm, modPath() << _SC("models/M16.nut"),
-			IntProcess(maxAmmoValue, "maxammo", false) <<=
-			SingleDoubleProcess(shootCooldownValue, "shootCooldown", false) <<=
-			SingleDoubleProcess(bulletSpeedValue, "bulletSpeed", false) <<=
-			SingleDoubleProcess(bulletDamageValue, "bulletDamage", false) <<=
-			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false) <<=
-			SingleDoubleProcess(aimFovValue, "aimFov", false) <<=
-			SingleDoubleProcess(shootRecoilValue, "shootRecoil", false) <<=
-			SqCallbackProcess(sqShoot, "shoot", false)
+Rifle::FirearmDefs Rifle::firearmDefs;
+
+void Rifle::s_init(){
+	HSQUIRRELVM v = (application.clientGame ? application.clientGame : application.serverGame)->sqvm;
+	register_global_func(v, [](HSQUIRRELVM v){
+		if(sq_gettop(v) < 3)
+			return sq_throwerror(v, _SC("registerFirearm() require 2 arguments"));
+		const SQChar *className;
+		if(SQ_FAILED(sq_getstring(v, 2, &className)))
+			return sq_throwerror(v, _SC("registerFirearm() first argument not convertible to string"));
+		const SQChar *path;
+		if(SQ_FAILED(sq_getstring(v, 3, &path)))
+			return sq_throwerror(v, _SC("registerFirearm() second argument not convertible to string"));
+		FirearmStatic *fs = &firearmDefs[className];
+		SqInit(v, modPath() << path,
+			IntProcess(fs->maxAmmoValue, "maxammo", false) <<=
+			SingleDoubleProcess(fs->shootCooldownValue, "shootCooldown", false) <<=
+			SingleDoubleProcess(fs->bulletSpeedValue, "bulletSpeed", false) <<=
+			SingleDoubleProcess(fs->bulletDamageValue, "bulletDamage", false) <<=
+			SingleDoubleProcess(fs->bulletVarianceValue, "bulletVariance", false) <<=
+			SingleDoubleProcess(fs->aimFovValue, "aimFov", false) <<=
+			SingleDoubleProcess(fs->shootRecoilValue, "shootRecoil", false) <<=
+			SqCallbackProcess(fs->sqShoot, "shoot", false) <<=
+			StringProcess(fs->modelName, "modelName")
 			);
-		initialized = true;
-	}
+		return SQInteger(0);
+	}, _SC("registerFirearm"));
 }
 
+StaticInitializer s_init(Rifle::s_init);
 
-Entity::EntityRegisterNC<M40> M40::entityRegister("M40");
-int M40::maxAmmoValue = 5;
-double M40::shootCooldownValue = 1.5;
-double M40::bulletSpeedValue = 1.0;
-double M40::bulletDamageValue = 5.0;
-double M40::bulletVarianceValue = 0.001;
-double M40::aimFovValue = 0.2;
-double M40::shootRecoilValue = M_PI / 32.;
-HSQOBJECT M40::sqShoot = sq_nullobj();
-
-
-M40::M40(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
-	init();
-	reload();
-}
-
-void M40::init(){
-	static bool initialized = false;
-	if(!initialized){
-		SqInit(game->sqvm, modPath() << _SC("models/M40.nut"),
-			IntProcess(maxAmmoValue, "maxammo", false) <<=
-			SingleDoubleProcess(shootCooldownValue, "shootCooldown", false) <<=
-			SingleDoubleProcess(bulletSpeedValue, "bulletSpeed", false) <<=
-			SingleDoubleProcess(bulletDamageValue, "bulletDamage", false) <<=
-			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false) <<=
-			SingleDoubleProcess(aimFovValue, "aimFov", false) <<=
-			SingleDoubleProcess(shootRecoilValue, "shootRecoil", false) <<=
-			SqCallbackProcess(sqShoot, "shoot", false)
-			);
-		initialized = true;
-	}
-}
 
 
 /// Ignore invocation of GetGunPosCommand from Squirrel. It's not really a command

@@ -31,11 +31,11 @@ void sqa_init(Game *game, HSQUIRRELVM *v = NULL);
 void sqa_anim0(HSQUIRRELVM);
 void sqa_anim(HSQUIRRELVM v, double dt);
 void sqa_exit();
-SQRESULT sqa_dofile(HSQUIRRELVM, const char *filename, SQInteger retval = 0, SQBool printerror = SQTrue);
+EXPORT SQRESULT sqa_dofile(HSQUIRRELVM, const char *filename, SQInteger retval = 0, SQBool printerror = SQTrue);
 
 /// Register a Squirrel native function to the given VM.
-void register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname);
-void register_global_var(HSQUIRRELVM v, int var, const SQChar *vname);
+EXPORT void register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname);
+EXPORT void register_global_var(HSQUIRRELVM v, int var, const SQChar *vname);
 
 /// Register a Squirrel const value.
 EXPORT bool register_const(HSQUIRRELVM v, const SQChar *vname, SQInteger var);
@@ -47,7 +47,7 @@ EXPORT bool register_static(HSQUIRRELVM v, const SQChar *vname, SQInteger var);
 EXPORT bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f, SQInteger nparams = 0, const SQChar *params = NULL);
 
 /// Register a Squirrel scripted closure bound to the top of the stack.
-bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code, bool nested = false);
+EXPORT bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code, bool nested = false);
 
 /// \brief Type for the Squirrel VM initializer callbacks.
 ///

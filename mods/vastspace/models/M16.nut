@@ -13,5 +13,6 @@ local lthis = this;
 dofile("mods/vastspace/models/Firearm.nut");
 
 function shoot(weapon, shooter, dt){
-	return lthis.customShoot(weapon, shooter, dt, lthis);
+	return lthis.customShoot(weapon, shooter, dt, lthis,
+		@() format("mods/vastspace/sound/m16-%d.ogg", weapon.cs.rs.next() % 3 + 1));
 }

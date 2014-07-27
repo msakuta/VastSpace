@@ -1,7 +1,7 @@
 local relpos = Vec3d(0.0002, -0.000, -0.0003);
 local nh0 = Vec3d(0., 0., -1);
 
-function customShoot(weapon, shooter, dt, lthis){
+function customShoot(weapon, shooter, dt, lthis, sound){
 	local shot = false;
 	local w = weapon.cs;
 
@@ -33,9 +33,7 @@ function customShoot(weapon, shooter, dt, lthis){
 		weapon.ammo--;
 
 		// Play the sound
-		local file = format("mods/vastspace/sound/m16-%d.ogg", w.rs.next() % 3 + 1);
-//		print(file);
-		playSound3D(file, weapon.pos, 1, 0.05 * 0.05);
+		playSound3D(sound(), weapon.pos, 1, 0.05 * 0.05);
 	}
 }
 

@@ -82,3 +82,13 @@ m16-1.ogg, m16-2.ogg, m16-3.ogg are retrieved from
 http://www.freesound.org/people/qubodup/sounds/187677/
 
 and edited to fit our project's use.
+
+
+Sniper Rifle's Gunshot Sound (Public Domain)
+-------------------------------------------------
+
+sniper-1.ogg, sniper-2.ogg are retrieved from
+
+http://www.freesound.org/people/qubodup/sounds/182790/
+
+and edited to fit our project's use.

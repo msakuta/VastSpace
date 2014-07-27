@@ -25,6 +25,7 @@
 #include "SqInitProcess-ex.h"
 #include "tent3d.h"
 #include "StaticInitializer.h"
+#include "Shipyard.h"
 
 extern "C"{
 #include <clib/mathdef.h>
@@ -70,6 +71,7 @@ double Soldier::hookSpeed = 0.2;
 double Soldier::hookRange = 0.2;
 double Soldier::hookPullAccel = 0.05;
 double Soldier::hookStopRange = 0.025;
+double standRange = 0.001; // One meter
 Autonomous::ManeuverParams Soldier::maneuverParams = {
 	0.01, // accel
 	0.01, // maxspeed
@@ -372,7 +374,7 @@ void Soldier::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 		pos = mat.vp3(ofs[1]);
 	}
 	else{
-		mat4translate(mat, 0., p->state == STATE_STANDING ? .0016 : .0005, 0.); /* eye position */
+		mat4translate(mat, 0., p->state == STATE_STANDING ? 0.00055 : 0.0005, 0.); /* eye position */
 		pos = mat.vec3(3);
 		if(seatid == 3){
 			WarField::EntityList::iterator it;
@@ -388,6 +390,7 @@ void Soldier::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 }
 
 bool Soldier::buildBody(){
+#if 0
 	if(!bbody){
 		static btSphereShape *shape = NULL;
 		if(!shape){
@@ -416,6 +419,7 @@ bool Soldier::buildBody(){
 		// Set angular factor to 0 to prevent collisions from changing the character's direction.
 		bbody->setAngularFactor(0.);
 	}
+#endif
 	return true;
 }
 
@@ -895,6 +899,9 @@ void Soldier::anim(double dt){
 					hooked = true;
 					hookedEntity = pt;
 					hookhitpart = hh.hitpart;
+					if(standEntity){
+						standEntity = NULL;
+					}
 					HookPosWorldToLocalCommand hpcom(hh.hitpart, &hitpos);
 					if(pt->command(&hpcom)){
 						hookpos = hpcom.pos;
@@ -961,6 +968,11 @@ void Soldier::anim(double dt){
 					this->velo = bvelo;
 			}
 
+			if(delta.slen() < standRange * standRange){
+				standEntity = hookedEntity;
+				standPart = hookhitpart;
+			}
+
 			if(bbody){
 //				bbody->setLinearVelocity(btvc(velo));
 				bbody->applyCentralForce(btvc(dir * hookPullAccel * mass));
@@ -991,6 +1003,31 @@ void Soldier::anim(double dt){
 		}
 		else
 			hookpos -= delta.norm() * hookSpeed * dt;
+	}
+
+	if(standEntity && standPart){
+		GetFaceInfoCommand com;
+		com.hitpart = standPart;
+		com.pos = this->pos;
+		if(standEntity->command(&com)){
+			Vec3d zhat = rot.trans(Vec3d(0,0,-1));
+
+			// Gradually make the viewing rotation upright against the surface
+			Vec3d desiredXhat = zhat.vp(com.retNormal);
+			if(0 < desiredXhat.slen()){
+				desiredXhat.normin();
+				rot = rot.quatrotquat(zhat * (desiredXhat.sp(rot.trans(Vec3d(0,-1,0))) * dt));
+			}
+
+			// Bind position along the surface if we're inside the face polygon.
+			// Otherwise, detach from standing entity.
+			if(com.retPosHit){
+				pos = com.retPos + com.retNormal * this->hitRadius;
+				velo -= com.retNormal * com.retNormal.sp(velo);
+			}
+			else
+				standEntity = NULL;
+		}
 	}
 
 /*	if(p->arms[0].type == arms_shotgun && p->reloading){
@@ -1368,6 +1405,16 @@ void Soldier::control(const input_t *inputs, double dt){
 	getPosition(NULL, &arot);
 
 	Vec3d xomg = arot.trans(Vec3d(0, -inputs->analog[0] * speed, 0));
+
+	// Move the rotation in lathe-like manner instead of trackball-like manner.
+	if(standEntity && standPart != 0){
+		GetFaceInfoCommand com;
+		com.hitpart = standPart;
+		com.pos = this->pos;
+		if(standEntity->command(&com))
+			xomg = com.retNormal * -inputs->analog[0] * speed;
+	}
+
 	Vec3d yomg = arot.trans(Vec3d(-inputs->analog[1] * speed, 0, 0));
 	arot = arot.quatrotquat(xomg);
 	arot = arot.quatrotquat(yomg);

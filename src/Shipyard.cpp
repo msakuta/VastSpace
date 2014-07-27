@@ -104,6 +104,7 @@ void Shipyard::init(){
 	health = getMaxHealth();
 	doorphase[0] = 0.;
 	doorphase[1] = 0.;
+	respondingCommand = NULL;
 }
 
 Shipyard::~Shipyard(){
@@ -324,6 +325,76 @@ Entity::Props Shipyard::props()const{
 	Props ret = st::props();
 //	ret.push_back(cpplib::dstring("?: "));
 	return ret;
+}
+
+bool Shipyard::command(EntityCommand *com){
+	// Trick to prevent infinite recursive call. Should have more intrinsic fix.
+	if(respondingCommand)
+		return false;
+
+	if(GetFaceInfoCommand *gfic = InterpretCommand<GetFaceInfoCommand>(com)){
+		// Retrieving face information from hit part index require model to be loaded.
+		Model *model = getModel();
+		if(!model || model->sufs[0]->np <= gfic->hitpart - 1)
+			return false;
+
+		// Obtain source position in local coordinates
+		Mat4d mat;
+		this->transform(mat);
+		Mat4d imat = mat.scalein(-1. / modelScale, 1. / modelScale, -1. / modelScale).transpose();
+		Vec3d lsrc = imat.dvp3(gfic->pos - this->pos);
+
+		// Hit part number is index of polygon buffer in the model.
+		Mesh::Primitive *pr = model->sufs[0]->p[gfic->hitpart-1];
+
+		// Convert indices for jHitPolygon
+		unsigned short indices[4];
+		int n = 0;
+		if(pr->t == Mesh::ET_Polygon){
+			Mesh::Polygon &p = pr->p;
+			assert(p.n <= 4);
+			n = p.n;
+			for(int j = 0; j < p.n; j++)
+				indices[p.n - j - 1] = p.v[j].pos; // Reverse face direction
+		}
+		else if(pr->t == Mesh::ET_UVPolygon){
+			Mesh::UVPolygon &p = pr->uv;
+			assert(p.n <= 4);
+			n = p.n;
+			for(int j = 0; j < p.n; j++)
+				indices[p.n - j - 1] = p.v[j].pos; // Reverse face direction
+		}
+
+		// Local normal vector
+		Vec3d lnrm = model->sufs[0]->v[pr->t == Mesh::ET_Polygon ? pr->p.v[0].nrm : pr->uv.v[0].nrm];
+
+		// We could have simpler algorithm to determine if the source position projected onto the face
+		// is inside the polygon shape than jHitPolygon(), but for now it's easier to reuse it.
+		int iret = jHitPolygon(model->sufs[0]->v, indices, n, lsrc, -lnrm, 0, 1e8, NULL, NULL, NULL);
+
+		// Return hit state to the caller
+		gfic->retPosHit = iret != 0;
+
+		// Return normal vector in world coordinates
+		lnrm[0] *= -1.;
+		lnrm[2] *= -1.;
+		gfic->retNormal = rot.trans(lnrm);
+
+		// Return projected point in world coordinates
+		Vec3d lpos = model->sufs[0]->v[pr->t == Mesh::ET_Polygon ? pr->p.v[0].pos : pr->uv.v[0].pos];
+		lpos *= modelScale;
+		lpos[0] *= -1.;
+		lpos[2] *= -1.;
+		gfic->retPos = gfic->pos + gfic->retNormal.sp(this->pos + rot.trans(lpos) - gfic->pos) * gfic->retNormal;
+
+		return true;
+	}
+	else{
+		respondingCommand = com;
+		bool ret = st::command(com);
+		respondingCommand = NULL;
+		return ret;
+	}
 }
 
 int Shipyard::armsCount()const{
@@ -553,3 +624,4 @@ void Shipyard::deathEffects(){}
 
 IMPLEMENT_COMMAND(SetBuildPhaseCommand, "SetBuildPhase");
 
+IMPLEMENT_COMMAND(GetFaceInfoCommand, "GetFaceInfo");

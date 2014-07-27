@@ -53,6 +53,7 @@ public:
 	virtual void anim(double dt);
 	virtual void clientUpdate(double);
 	virtual Props props()const;
+	bool command(EntityCommand *)override;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
@@ -79,6 +80,8 @@ protected:
 	double doorphase[2];
 
 	bool clientDead; ///< A flag indicating the death effects are performed in the client.
+
+	EntityCommand *respondingCommand;
 
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
@@ -115,6 +118,17 @@ struct EXPORT SetBuildPhaseCommand : public EntityCommand{
 	SetBuildPhaseCommand(double phase = 0.) : phase(phase){}
 	SetBuildPhaseCommand(HSQUIRRELVM, Entity&){}
 	double phase;
+};
+
+struct EXPORT GetFaceInfoCommand : public EntityCommand{
+	COMMAND_BASIC_MEMBERS(GetFaceInfoCommand, EntityCommand);
+	GetFaceInfoCommand(int hitpart = 0, Vec3d pos = Vec3d(0,0,0)) : hitpart(hitpart), pos(pos){}
+	GetFaceInfoCommand(HSQUIRRELVM, Entity&){}
+	Vec3d pos;
+	Vec3d retNormal;
+	Vec3d retPos;
+	int hitpart;
+	bool retPosHit; ///< Indicate whether input position projected onto the face plane is inside the face.
 };
 
 

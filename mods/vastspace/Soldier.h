@@ -154,7 +154,9 @@ protected:
 	Vec3d hookpos;
 	Vec3d hookvelo;
 	int hookhitpart;
+	int standPart;
 	WeakPtr<Entity> hookedEntity;
+	WeakPtr<Entity> standEntity;
 	bool hookshot;
 	bool hooked;
 	bool hookretract;

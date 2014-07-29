@@ -613,6 +613,24 @@ void Soldier::drawHUD(WarDraw *wd){
 			}
 		}
 
+		// Icon to show the current status (standing on a surface or floating about space)
+		static suftexparam_t params = {STP_ALPHA};
+		static GLuint statusFreeModel = CallCacheBitmap5("Soldier-free.png", modPath() << "models/Soldier-free.png", &params, NULL, NULL);
+		static GLuint statusStandModel = CallCacheBitmap5("Soldier-stand.png", modPath() << "models/Soldier-stand.png", &params, NULL, NULL);
+		GLuint statusModel = standEntity ? statusStandModel : statusFreeModel;
+		if(statusModel != 0){
+			glPushAttrib(GL_TEXTURE_BIT | GL_CURRENT_BIT);
+			glCallList(statusModel);
+			glColor4f(1,1,1,1);
+			glBegin(GL_QUADS);
+			glTexCoord2f(0, 0); glVertex2d(-left - 0.50, -0.40);
+			glTexCoord2f(0, 1); glVertex2d(-left - 0.50, -0.30);
+			glTexCoord2f(1, 1); glVertex2d(-left - 0.40, -0.30);
+			glTexCoord2f(1, 0); glVertex2d(-left - 0.40, -0.40);
+			glEnd();
+			glPopAttrib();
+		}
+
 		// Health value text. Leave space for the task bar on the left.
 		glRasterPos3d(left + 160. / m, -bottom - 40. / m, -0.);
 		gldprintf("health: %g", health);

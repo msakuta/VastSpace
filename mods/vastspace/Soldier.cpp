@@ -157,9 +157,11 @@ void Soldier::unserialize(UnserializeContext &usc){
 
 DERIVE_COMMAND_EXT(ReloadWeaponCommand, SerializableCommand);
 DERIVE_COMMAND_EXT(SwitchWeaponCommand, SerializableCommand);
+DERIVE_COMMAND_EXT(JumpCommand, SerializableCommand);
 
 IMPLEMENT_COMMAND(ReloadWeaponCommand, "ReloadWeapon")
 IMPLEMENT_COMMAND(SwitchWeaponCommand, "SwitchWeapon")
+IMPLEMENT_COMMAND(JumpCommand, "Jump")
 
 
 
@@ -1548,6 +1550,17 @@ bool Soldier::command(EntityCommand *com){
 	else if(GetFovCommand *gf = InterpretCommand<GetFovCommand>(com)){
 		gf->fov = getFov();
 		return true;
+	}
+	else if(InterpretCommand<JumpCommand>(com)){
+		if(standEntity){
+			GetFaceInfoCommand gfic;
+			gfic.hitpart = standPart;
+			gfic.pos = this->pos;
+			if(standEntity->command(&gfic)){
+				this->velo += gfic.retNormal * 0.005;
+			}
+			standEntity = NULL;
+		}
 	}
 	else
 		return st::command(com);

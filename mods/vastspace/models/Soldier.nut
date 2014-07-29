@@ -67,12 +67,18 @@ register_console_command("reload", function(){
 		player.controlled.command("ReloadWeapon");
 });
 
+register_console_command("jump", function(){
+	if(player.controlled)
+		player.controlled.command("Jump");
+});
+
 
 beginControl["Soldier"] <- function (){
 	if("print" in this)
 		print("Soldier::beginControl");
 	cmd("pushbind");
 	cmd("bind r reload");
+	cmd("bind space jump");
 	cmd("r_windows 0");
 }
 

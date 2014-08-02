@@ -335,59 +335,8 @@ bool Shipyard::command(EntityCommand *com){
 	if(GetFaceInfoCommand *gfic = InterpretCommand<GetFaceInfoCommand>(com)){
 		// Retrieving face information from hit part index require model to be loaded.
 		Model *model = getModel();
-		if(!model || model->sufs[0]->np <= gfic->hitpart - 1)
-			return false;
 
-		// Obtain source position in local coordinates
-		Mat4d mat;
-		this->transform(mat);
-		Mat4d imat = mat.scalein(-1. / modelScale, 1. / modelScale, -1. / modelScale).transpose();
-		Vec3d lsrc = imat.dvp3(gfic->pos - this->pos);
-
-		// Hit part number is index of polygon buffer in the model.
-		Mesh::Primitive *pr = model->sufs[0]->p[gfic->hitpart-1];
-
-		// Convert indices for jHitPolygon
-		unsigned short indices[4];
-		int n = 0;
-		if(pr->t == Mesh::ET_Polygon){
-			Mesh::Polygon &p = pr->p;
-			assert(p.n <= 4);
-			n = p.n;
-			for(int j = 0; j < p.n; j++)
-				indices[p.n - j - 1] = p.v[j].pos; // Reverse face direction
-		}
-		else if(pr->t == Mesh::ET_UVPolygon){
-			Mesh::UVPolygon &p = pr->uv;
-			assert(p.n <= 4);
-			n = p.n;
-			for(int j = 0; j < p.n; j++)
-				indices[p.n - j - 1] = p.v[j].pos; // Reverse face direction
-		}
-
-		// Local normal vector
-		Vec3d lnrm = model->sufs[0]->v[pr->t == Mesh::ET_Polygon ? pr->p.v[0].nrm : pr->uv.v[0].nrm];
-
-		// We could have simpler algorithm to determine if the source position projected onto the face
-		// is inside the polygon shape than jHitPolygon(), but for now it's easier to reuse it.
-		int iret = jHitPolygon(model->sufs[0]->v, indices, n, lsrc, -lnrm, 0, 1e8, NULL, NULL, NULL);
-
-		// Return hit state to the caller
-		gfic->retPosHit = iret != 0;
-
-		// Return normal vector in world coordinates
-		lnrm[0] *= -1.;
-		lnrm[2] *= -1.;
-		gfic->retNormal = rot.trans(lnrm);
-
-		// Return projected point in world coordinates
-		Vec3d lpos = model->sufs[0]->v[pr->t == Mesh::ET_Polygon ? pr->p.v[0].pos : pr->uv.v[0].pos];
-		lpos *= modelScale;
-		lpos[0] *= -1.;
-		lpos[2] *= -1.;
-		gfic->retPos = gfic->pos + gfic->retNormal.sp(this->pos + rot.trans(lpos) - gfic->pos) * gfic->retNormal;
-
-		return true;
+		return modelHitPart(this, model, *gfic);
 	}
 	else{
 		respondingCommand = com;
@@ -395,6 +344,60 @@ bool Shipyard::command(EntityCommand *com){
 		respondingCommand = NULL;
 		return ret;
 	}
+}
+
+bool Shipyard::modelHitPart(const Entity *e, Model *model, GetFaceInfoCommand &gfic){
+	if(!model || model->sufs[0]->np <= gfic.hitpart - 1)
+		return false;
+
+	// Obtain source position in local coordinates
+	Mat4d mat;
+	e->transform(mat);
+	Mat4d imat = mat.scalein(-1. / modelScale, 1. / modelScale, -1. / modelScale).transpose();
+	Vec3d lsrc = imat.dvp3(gfic.pos - e->pos);
+
+	// Hit part number is index of polygon buffer in the model.
+	Mesh::Primitive *pr = model->sufs[0]->p[gfic.hitpart-1];
+
+	// Convert indices for jHitPolygon
+	unsigned short indices[4];
+	int n = 0;
+	if(pr->t == Mesh::ET_Polygon){
+		Mesh::Polygon &p = pr->p;
+		assert(p.n <= 4);
+		n = p.n;
+		for(int j = 0; j < p.n; j++)
+			indices[p.n - j - 1] = p.v[j].pos; // Reverse face direction
+	}
+	else if(pr->t == Mesh::ET_UVPolygon){
+		Mesh::UVPolygon &p = pr->uv;
+		assert(p.n <= 4);
+		n = p.n;
+		for(int j = 0; j < p.n; j++)
+			indices[p.n - j - 1] = p.v[j].pos; // Reverse face direction
+	}
+
+	// Local normal vector
+	Vec3d lnrm = model->sufs[0]->v[pr->t == Mesh::ET_Polygon ? pr->p.v[0].nrm : pr->uv.v[0].nrm];
+
+	// We could have simpler algorithm to determine if the source position projected onto the face
+	// is inside the polygon shape than jHitPolygon(), but for now it's easier to reuse it.
+	int iret = jHitPolygon(model->sufs[0]->v, indices, n, lsrc, -lnrm, 0, 1e8, NULL, NULL, NULL);
+
+	// Return hit state to the caller
+	gfic.retPosHit = iret != 0;
+
+	// Return normal vector in world coordinates
+	lnrm[0] *= -1.;
+	lnrm[2] *= -1.;
+	gfic.retNormal = e->rot.trans(lnrm);
+
+	// Return projected point in world coordinates
+	Vec3d lpos = model->sufs[0]->v[pr->t == Mesh::ET_Polygon ? pr->p.v[0].pos : pr->uv.v[0].pos];
+	lpos *= modelScale;
+	lpos[0] *= -1.;
+	lpos[2] *= -1.;
+	gfic.retPos = gfic.pos + gfic.retNormal.sp(e->pos + e->rot.trans(lpos) - gfic.pos) * gfic.retNormal;
 }
 
 int Shipyard::armsCount()const{
@@ -551,23 +554,25 @@ Model *Shipyard::getModel(){
 #define PROFILE_HITPOLY 0
 
 int Shipyard::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	return modelTraceHit(this, src, dir, rad, dt, ret, retp, retn, getModel());
+}
+
+int Shipyard::modelTraceHit(const Entity *e, const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn, const Model *model){
+	if(!model)
+		return 0;
 #if PROFILE_HITPOLY
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 #endif
 	Mat4d mat;
-	this->transform(mat);
+	e->transform(mat);
 	Mat4d imat = mat.scalein(-1. / modelScale, 1. / modelScale, -1. / modelScale).transpose();
 	mat.scalein(-modelScale, modelScale, -modelScale);
-	Vec3d lsrc = imat.dvp3(src - this->pos);
+	Vec3d lsrc = imat.dvp3(src - e->pos);
 	Vec3d ldir = imat.dvp3(dir);
 	int bestiret = 0;
 	double bestdret = dt;
 	Vec3d bestlretn;
-
-	Model *model = getModel();
-	if(!model)
-		return 0;
 
 	for(int i = 0; i < model->sufs[0]->np; i++){
 		unsigned short indices[4];

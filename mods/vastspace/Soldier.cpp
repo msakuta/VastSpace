@@ -970,7 +970,11 @@ void Soldier::anim(double dt){
 					this->velo = bvelo;
 			}
 
-			if(delta.slen() < standRange * standRange){
+			GetFaceInfoCommand gfic;
+			gfic.hitpart = hookhitpart;
+			gfic.pos = this->pos;
+			if(hookedEntity->command(&gfic) && (this->pos - gfic.retPos).sp(gfic.retNormal) < 0
+				|| delta.slen() < standRange * standRange){
 				standEntity = hookedEntity;
 				standPart = hookhitpart;
 			}

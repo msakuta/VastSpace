@@ -28,6 +28,8 @@ public:
 	Shipyard *getent();
 };
 
+class GetFaceInfoCommand;
+
 class EXPORT Shipyard : public Warpable, public Builder{
 public:
 	typedef Warpable st; st *pst(){return static_cast<st*>(this);}
@@ -68,6 +70,10 @@ public:
 
 	bool startBuild();
 	bool finishBuild();
+
+	static bool modelHitPart(const Entity *e, Model *model, GetFaceInfoCommand &);
+	static int modelTraceHit(const Entity *e, const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn, const Model *model);
+
 
 protected:
 	ArmBase **turrets;

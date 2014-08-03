@@ -1031,8 +1031,13 @@ void Soldier::anim(double dt){
 				pos = com.retPos + com.retNormal * this->hitRadius;
 				velo -= com.retNormal * com.retNormal.sp(velo);
 			}
-			else
-				standEntity = NULL;
+			else{
+				int hitPart = standEntity->tracehit(this->pos, -com.retNormal, this->getHitRadius(), this->getHitRadius() * 1.5, NULL, NULL, NULL);
+				if(hitPart)
+					standPart = hitPart;
+				else
+					standEntity = NULL;
+			}
 		}
 	}
 

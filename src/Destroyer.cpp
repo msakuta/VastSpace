@@ -15,6 +15,7 @@
 #include "LTurret.h"
 #include "sqadapt.h"
 #include "Shipyard.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -205,6 +206,10 @@ int Destroyer::takedamage(double damage, int hitpart){
 	return ret;
 }
 
+int Destroyer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	return Shipyard::modelTraceHit(this, src, dir, rad, dt, ret, retp, retn, getModel());
+}
+
 /// \brief Death effects in the client.
 ///
 /// It should be called exactly once per client object.
@@ -297,6 +302,30 @@ ArmBase *Destroyer::armsGet(int i){
 	return turrets[i];
 }
 
+int Destroyer::engineAtrIndex = -1, Destroyer::gradientsAtrIndex = -1;
+
+Model *Destroyer::getModel(){
+	static bool init = false;
+	static Model *model = NULL;
+	if(!init){
+		model = LoadMQOModel("models/destroyer.mqo");
+		if(model && model->sufs[0]){
+			for(int i = 0; i < model->tex[0]->n; i++){
+				const char *colormap = model->sufs[0]->a[i].colormap;
+				if(colormap && !strcmp(colormap, "engine2.bmp")){
+					engineAtrIndex = i;
+				}
+				if(colormap && !strcmp(colormap, "gradients.png")){
+					gradientsAtrIndex = i;
+				}
+			}
+		}
+		init = true;
+	}
+
+	return model;
+}
+
 bool Destroyer::command(EntityCommand *com){
 	if(SetBuildPhaseCommand *sbpc = InterpretCommand<SetBuildPhaseCommand>(com)){
 		buildPhase = sbpc->phase;
@@ -307,6 +336,9 @@ bool Destroyer::command(EntityCommand *com){
 		else
 			for(TurretList::iterator it = turrets.begin(); it != turrets.end(); ++it)
 				(*it)->online = true;
+	}
+	else if(GetFaceInfoCommand *gfic = InterpretCommand<GetFaceInfoCommand>(com)){
+		return Shipyard::modelHitPart(this, getModel(), *gfic);
 	}
 	else
 		return st::command(com);

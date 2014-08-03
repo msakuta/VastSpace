@@ -5,6 +5,7 @@
 #include "Warpable.h"
 #include "Docker.h"
 #include "arms.h"
+#include "Model-forward.h"
 
 class AttackerDocker;
 
@@ -50,10 +51,19 @@ public:
 	virtual const ManeuverParams &getManeuve()const;
 	virtual Docker *getDockerInt();
 	virtual int takedamage(double damage, int hitpart);
+	int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn) override;
 	virtual short bbodyGroup()const;
 protected:
 	bool buildBody();
 	HitBoxList *getTraceHitBoxes()const;
+	static Model *getModel();
+
+	struct TextureParams{
+		Attacker *p;
+		WarDraw *wd;
+		static void onBeginTextureEngine(void *pv);
+		static void onEndTextureEngine(void *pv);
+	};
 };
 
 /// A companion class of Attacker.

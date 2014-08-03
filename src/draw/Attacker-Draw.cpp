@@ -20,49 +20,33 @@ struct AttackerTextureParams{
 	WarDraw *wd;
 };
 
+
+void Attacker::TextureParams::onBeginTextureEngine(void *pv){
+	TextureParams *p = (TextureParams*)pv;
+	if(p && p->wd){
+		p->wd->setAdditive(true);
+		const AdditiveShaderBind *asb = p->wd->getAdditiveShaderBind();
+		if(asb)
+			asb->setIntensity(Vec4f(blackbodyEmit(p->p->engineHeat * 13000.), 1.));
+	}
+}
+
+void Attacker::TextureParams::onEndTextureEngine(void *pv){
+	TextureParams *p = (TextureParams*)pv;
+	if(p && p->wd)
+		p->wd->setAdditive(false);
+}
+
 void Attacker::draw(wardraw_t *wd){
-	static OpenGLState::weak_ptr<bool> init;
-	static Model *model = NULL;
 
 	draw_healthbar(this, wd, health / getMaxHealth(), .3, -1, capacitor / maxenergy());
 
 	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
 
-	struct TextureParams{
-		Attacker *p;
-		WarDraw *wd;
-		static void onBeginTextureEngine(void *pv){
-			TextureParams *p = (TextureParams*)pv;
-			if(p && p->wd){
-				p->wd->setAdditive(true);
-				const AdditiveShaderBind *asb = p->wd->getAdditiveShaderBind();
-				if(asb)
-					asb->setIntensity(Vec4f(blackbodyEmit(p->p->engineHeat * 13000.), 1.));
-			}
-		}
-		static void onEndTextureEngine(void *pv){
-			TextureParams *p = (TextureParams*)pv;
-			if(p && p->wd)
-				p->wd->setAdditive(false);
-		}
-	} tp = {this, wd};
+	TextureParams tp = {this, wd};
 
-	if(!init) do{
-		delete model;
-		model = LoadMQOModel("models/attacker.mqo");
-
-		if(model) for(int n = 0; n < model->n; n++) if(model->sufs[n] && model->tex[n]){
-			MeshTex *tex = model->tex[n];
-			for(int i = 0; i < tex->n; i++) if(!strcmp(model->sufs[n]->a[i].colormap, "attacker_engine.bmp")){
-				tex->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
-				tex->a[i].onEndTexture = TextureParams::onEndTextureEngine;
-			}
-		}
-
-		init.create(*openGLState);
-	} while(0);
-
+	Model *model = getModel();
 	if(model){
 
 		// This values could change every frame, so we assign them here.

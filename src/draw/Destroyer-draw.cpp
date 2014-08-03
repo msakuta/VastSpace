@@ -12,8 +12,6 @@ extern "C"{
 
 
 void Destroyer::draw(wardraw_t *wd){
-	static Model *model = NULL;
-	static OpenGLState::weak_ptr<bool> init;
 
 	draw_healthbar(this, wd, getHealth() / getMaxHealth(), .3, -1, capacitor / maxenergy());
 
@@ -52,23 +50,7 @@ void Destroyer::draw(wardraw_t *wd){
 		}
 	} tp = {this, wd};
 
-	static int engineAtrIndex = -1, gradientsAtrIndex = -1;
-	if(!init) do{
-		model = LoadMQOModel("models/destroyer.mqo");
-		if(model && model->sufs[0]){
-			for(int i = 0; i < model->tex[0]->n; i++){
-				const char *colormap = model->sufs[0]->a[i].colormap;
-				if(colormap && !strcmp(colormap, "engine2.bmp")){
-					engineAtrIndex = i;
-				}
-				if(colormap && !strcmp(colormap, "gradients.png")){
-					gradientsAtrIndex = i;
-				}
-			}
-		}
-
-		init.create(*openGLState);
-	} while(0);
+	Model *model = getModel();
 
 	if(model){
 		// Assumption is that all bone sufs in a Model share the same texture set,

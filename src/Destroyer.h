@@ -6,6 +6,7 @@
 #include "Warpable.h"
 #include "arms.h"
 #include "VariantRegister.h"
+#include "Model-forward.h"
 
 /// \brief A Destroyer class space warship equipped with large turrets and thich armor.
 class Destroyer : public Warpable{
@@ -47,6 +48,7 @@ public:
 	virtual void drawtra(wardraw_t *wd);
 	virtual void drawOverlay(wardraw_t *);
 	virtual int takedamage(double damage, int hitpart);
+	int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn) override;
 	virtual double getHealth()const;
 	virtual double getMaxHealth()const;
 	virtual int armsCount()const;
@@ -58,11 +60,13 @@ public:
 	virtual double warpCostFactor()const;
 
 	static bool static_init(HSQUIRRELVM);
+	static Model *getModel();
 protected:
 	bool buildBody();
 	HitBoxList *getTraceHitBoxes()const;
 	virtual void init();
 	void deathEffects();
+	static int engineAtrIndex, gradientsAtrIndex;
 	friend class WireDestroyer;
 };
 

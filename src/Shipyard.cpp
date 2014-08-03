@@ -383,7 +383,14 @@ bool Shipyard::modelHitPart(const Entity *e, Model *model, GetFaceInfoCommand &g
 	}
 
 	// Local normal vector
-	Vec3d lnrm = mesh->v[pr->t == Mesh::ET_Polygon ? pr->p.v[0].nrm : pr->uv.v[0].nrm];
+	Vec3d lnrm;
+	// Calculate real normal vector by face vertices
+	{
+		Vec3d v0 = mesh->v[indices[0]];
+		Vec3d v01 = Vec3d(mesh->v[indices[1]]) - v0;
+		Vec3d v02 = Vec3d(mesh->v[indices[2]]) - v0;
+		lnrm = v02.vp(v01).norm();
+	}
 
 	// We could have simpler algorithm to determine if the source position projected onto the face
 	// is inside the polygon shape than jHitPolygon(), but for now it's easier to reuse it.

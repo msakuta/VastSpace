@@ -372,29 +372,49 @@ bool Shipyard::modelHitPart(const Entity *e, Model *model, GetFaceInfoCommand &g
 		assert(p.n <= 4);
 		n = p.n;
 		for(int j = 0; j < p.n; j++)
-			indices[p.n - j - 1] = p.v[j].pos; // Reverse face direction
+			indices[j] = p.v[j].pos; // It turned out that reversing face direction is not necessary.
 	}
 	else if(pr->t == Mesh::ET_UVPolygon){
 		Mesh::UVPolygon &p = pr->uv;
 		assert(p.n <= 4);
 		n = p.n;
 		for(int j = 0; j < p.n; j++)
-			indices[p.n - j - 1] = p.v[j].pos; // Reverse face direction
+			indices[j] = p.v[j].pos; // It turned out that reversing face direction is not necessary.
 	}
 
 	// Local normal vector
 	Vec3d lnrm;
+	int iret = 0;
 	// Calculate real normal vector by face vertices
 	{
 		Vec3d v0 = mesh->v[indices[0]];
-		Vec3d v01 = Vec3d(mesh->v[indices[1]]) - v0;
-		Vec3d v02 = Vec3d(mesh->v[indices[2]]) - v0;
-		lnrm = v02.vp(v01).norm();
+//		lnrm = v02.vp(v01).norm();
+		Vec3d lrpos = lsrc - v0; // Local Relative Position
+//		lrpos += -lnrm * lnrm.sp(lrpos) + v0; // Project onto plane
+		for(int m = 0; m < n - 2; m++){
+			bool out = false;
+			Vec3d v01 = *(const Vec3d*)&mesh->v[indices[m + 1]] - v0;
+			Vec3d v02 = *(const Vec3d*)&mesh->v[indices[m + 2]] - v0;
+			lnrm = v01.vp(v02).norm();
+			Mat3d mat3 = Mat3d(v01, v02, lnrm);
+			Mat3d imat3 = mat3.inverse();
+			Vec3d v0p = lsrc - v0;
+			double u = imat3.tvec3(0).sp(v0p);
+			double v = imat3.tvec3(1).sp(v0p);
+
+			// Checking if the point is inside the normalized triangle
+			if(u < 0 || v < 0 || 1 < u + v)
+				out = true;
+			if(!out){
+				iret = 1;
+				break;
+			}
+		}
 	}
 
 	// We could have simpler algorithm to determine if the source position projected onto the face
 	// is inside the polygon shape than jHitPolygon(), but for now it's easier to reuse it.
-	int iret = jHitPolygon(mesh->v, indices, n, lsrc, -lnrm, 0, 1e8, NULL, NULL, NULL);
+//	int iret = jHitPolygon(mesh->v, indices, n, lsrc, -lnrm, 0, 1e8, NULL, NULL, NULL);
 
 	// Return hit state to the caller
 	gfic.retPosHit = iret != 0;

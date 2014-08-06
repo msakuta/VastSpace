@@ -1,0 +1,226 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{462CC813-F69E-4A84-A9AE-E12E2C9EC802}</ProjectGuid>
+    <RootNamespace>clib</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.60315.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\include;..\..\zlib;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\include;..\..\zlib;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\include;..\..\zlib;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/MACHINE:X64 %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\include;..\..\zlib;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN64;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\amat3.c" />
+    <ClCompile Include="..\src\amat4.c" />
+    <ClCompile Include="..\src\aquat.c" />
+    <ClCompile Include="..\src\aquatrot.c" />
+    <ClCompile Include="..\src\avec3.c" />
+    <ClCompile Include="..\src\cfloat.c" />
+    <ClCompile Include="..\src\circut.c" />
+    <ClCompile Include="..\src\crc32.c" />
+    <ClCompile Include="..\src\colseq\cs.c" />
+    <ClCompile Include="..\src\colseq\cs2.c" />
+    <ClCompile Include="..\src\colseq\cs2x.c" />
+    <ClCompile Include="..\src\colseq\cs2xcut.c" />
+    <ClCompile Include="..\src\colseq\cs2xedit.c" />
+    <ClCompile Include="..\src\gl\cull.c" />
+    <ClCompile Include="..\src\dstr.c" />
+    <ClCompile Include="..\src\lzw\lzc.c" />
+    <ClCompile Include="..\src\lzw\lzuc.c" />
+    <ClCompile Include="..\src\rseq.c" />
+    <ClCompile Include="..\src\suf\suf.c" />
+    <ClCompile Include="..\src\suf\sufdraw.c" />
+    <ClCompile Include="..\src\suf\sufloc.c" />
+    <ClCompile Include="..\src\suf\sufreloc.c" />
+    <ClCompile Include="..\src\suf\sufsrc.c" />
+    <ClCompile Include="..\src\suf\sufvbo.c" />
+    <ClCompile Include="..\src\timemeas.c" />
+    <ClCompile Include="..\src\UniformLoader.c" />
+    <ClCompile Include="..\src\UnZip.c" />
+    <ClCompile Include="..\src\sound\wavemixer.c" />
+    <ClCompile Include="..\src\wavsound.c" />
+    <ClCompile Include="..\src\gl\wgltext.c" />
+    <ClCompile Include="..\src\gl\gldraw.c" />
+    <ClCompile Include="..\src\gl\glfont.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\asm\testmove.h" />
+    <ClInclude Include="..\include\clib\amat2.h" />
+    <ClInclude Include="..\include\clib\amat3.h" />
+    <ClInclude Include="..\include\clib\amat4.h" />
+    <ClInclude Include="..\include\clib\aquat.h" />
+    <ClInclude Include="..\include\clib\aquatrot.h" />
+    <ClInclude Include="..\include\clib\avec3.h" />
+    <ClInclude Include="..\include\clib\avec4.h" />
+    <ClInclude Include="..\include\clib\c.h" />
+    <ClInclude Include="..\include\clib\cfloat.h" />
+    <ClInclude Include="..\include\clib\circut.h" />
+    <ClInclude Include="..\include\clib\crc32.h" />
+    <ClInclude Include="..\include\clib\dstr.h" />
+    <ClInclude Include="..\include\clib\lzw\lzw.h" />
+    <ClInclude Include="..\include\clib\mathdef.h" />
+    <ClInclude Include="..\include\clib\random\mt19937ar.h" />
+    <ClInclude Include="..\include\clib\MultiList.h" />
+    <ClInclude Include="..\include\clib\rseq.h" />
+    <ClInclude Include="..\include\clib\stats.h" />
+    <ClInclude Include="..\include\clib\timemeas.h" />
+    <ClInclude Include="..\include\clib\zip\UniformLoader.h" />
+    <ClInclude Include="..\include\clib\zip\UnZip.h" />
+    <ClInclude Include="..\include\clib\wavsound.h" />
+    <ClInclude Include="..\include\GL\glext.h" />
+    <ClInclude Include="..\include\GL\glut.h" />
+    <ClInclude Include="..\include\GL\glut_old.h" />
+    <ClInclude Include="..\include\clib\suf\suf.h" />
+    <ClInclude Include="..\include\clib\suf\sufbin.h" />
+    <ClInclude Include="..\include\clib\suf\sufdraw.h" />
+    <ClInclude Include="..\include\clib\suf\sufvbo.h" />
+    <ClInclude Include="..\include\clib\gl\cull.h" />
+    <ClInclude Include="..\include\clib\gl\fbo.h" />
+    <ClInclude Include="..\include\clib\gl\gldraw.h" />
+    <ClInclude Include="..\include\clib\gl\gltext.h" />
+    <ClInclude Include="..\include\clib\gl\multitex.h" />
+    <ClInclude Include="..\include\clib\colseq\color.h" />
+    <ClInclude Include="..\include\clib\colseq\cs.h" />
+    <ClInclude Include="..\include\clib\colseq\cs2.h" />
+    <ClInclude Include="..\include\clib\colseq\cs2x.h" />
+    <ClInclude Include="..\include\clib\colseq\cs2xcut.h" />
+    <ClInclude Include="..\include\clib\sound\wavemixer.h" />
+    <ClInclude Include="..\include\clib\sound\wavesum.h" />
+    <ClInclude Include="stdint.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

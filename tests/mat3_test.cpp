@@ -15,7 +15,18 @@ static void printmat(const Mat3d &m){
 	printf("[%g,%g,%g;\n %g,%g,%g;\n %g,%g,%g]\n", m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]);
 }
 
+static void printvec3(const Vec3i &m){
+	printf("[%d,%d,%d]\n", m[0], m[1], m[2]);
+}
+
 int main(int argc, char *argv[]){
+
+	Mat3i mati(1,2,3,4,5,6,7,8,9);
+
+	// Member access test
+	printvec3(mati.vec3(0));
+	printvec3(mati.tvec3(0));
+
 	Mat3d test;
 	for(int i = 0; i < 9; i++)
 		test[i] = (double)rand() / RAND_MAX;

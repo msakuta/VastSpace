@@ -41,6 +41,11 @@ public:
 	Vec3 &vec3(int i);
 	const Vec3 &vec3(int i)const{return const_cast<tt*>(this)->vec3(i);}
 
+	/// Retrieve i-th row vector in the matrix, without the last element.
+	/// Note that this 'transposed' version of the vector accessor is slightly slower
+	/// than vec3(), and it doesn't allow modification of the matrix via returned reference.
+	Vec3 tvec3(int i)const;
+
 	tt rotx(T p)const;
 	tt roty(T y)const;
 	tt rotz(T y)const;
@@ -119,6 +124,13 @@ template<typename T> inline Mat3<T> &Mat3<T>::scalein(T sx, T sy, T sz){
 template<typename T> inline Vec3<T> &Mat3<T>::vec3(int i){
 	if(0 <= i && i < 3)
 		return *reinterpret_cast<Vec3*>(&a[i*3]);
+	else
+		throw mathcommon::RangeCheck();
+}
+
+template<typename T> inline Vec3<T> Mat3<T>::tvec3(int i)const{
+	if(0 <= i && i < 3)
+		return Vec3(a[i], a[i+3], a[i+6]);
 	else
 		throw mathcommon::RangeCheck();
 }

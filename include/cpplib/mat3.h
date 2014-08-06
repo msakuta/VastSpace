@@ -175,12 +175,9 @@ template<typename T> Mat3<T> Mat3<T>::rotz(T y)const{
 
 template<typename T> inline Mat3<T> Mat3<T>::inverse()const{
 	T idet = 1. /
-		( elem(0, 0) * elem(1, 1) * elem(2, 2)
-		+ elem(0, 1) * elem(1, 2) * elem(2, 0)
-		+ elem(0, 2) * elem(1, 0) * elem(2, 1)
-		- elem(0, 0) * elem(1, 2) * elem(2, 1)
-		- elem(0, 1) * elem(1, 0) * elem(2, 2)
-		- elem(0, 2) * elem(1, 1) * elem(2, 0) );
+		( elem(0, 0) * (elem(1, 1) * elem(2, 2) - elem(1, 2) * elem(2, 1))
+		+ elem(0, 1) * (elem(1, 2) * elem(2, 0) - elem(1, 0) * elem(2, 2))
+		+ elem(0, 2) * (elem(1, 0) * elem(2, 1) - elem(1, 1) * elem(2, 0)) );
 	tt ret;
 	for(int i = 0; i < 3; i++) for(int j = 0; j < 3; j++)
 		ret.elem(j, i) = elem((i+1) % 3, (j+1) % 3) * elem((i+2) % 3, (j+2) % 3) - elem((i+1) % 3, (j+2) % 3) * elem((i+2) % 3, (j+1) % 3);

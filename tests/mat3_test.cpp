@@ -2,6 +2,9 @@
  * \brief CRC32 C++ version's testing program
  */
 #include "cpplib/mat3.h"
+extern "C"{
+#include "clib/timemeas.h"
+}
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -34,6 +37,32 @@ int main(int argc, char *argv[]){
 
 	printf("iprod = itest * test =\n");
 	printmat(iprod);
+
+	timemeas_t tm;
+	TimeMeasStart(&tm);
+
+	for(int i = 0; i < 1000000; i++){
+		volatile Mat3d itest2 = test.inverse();
+	}
+
+	printf("inverse time 100000: %g\n", TimeMeasLap(&tm));
+
+	TimeMeasStart(&tm);
+
+	for(int i = 0; i < 1000000; i++){
+		const Mat3d &mat3 = test;
+		volatile double det = mat3[0] * mat3[4] * mat3[8] + mat3[1] * mat3[5] * mat3[6] + mat3[2] * mat3[3] * mat3[7]
+			- mat3[0] * mat3[5] * mat3[7] - mat3[2] * mat3[4] * mat3[6] - mat3[1] * mat3[3] * mat3[8];
+		volatile Mat3d imat3 = Mat3d(
+				Vec3d(mat3[4] * mat3[8] - mat3[5] * mat3[7], mat3[7] * mat3[2] - mat3[1] * mat3[8], mat3[1] * mat3[5] - mat3[4] * mat3[2]) / det,
+				Vec3d(mat3[6] * mat3[5] - mat3[3] * mat3[8], mat3[0] * mat3[8] - mat3[6] * mat3[2], mat3[3] * mat3[2] - mat3[0] * mat3[5]) / det,
+				Vec3d(mat3[3] * mat3[7] - mat3[6] * mat3[4], mat3[6] * mat3[1] - mat3[0] * mat3[7], mat3[0] * mat3[4] - mat3[1] * mat3[3]) / det
+				);
+	}
+
+	printf("inverse time 100000: %g\n", TimeMeasLap(&tm));
+
+	getchar();
 
 	return 0;
 }

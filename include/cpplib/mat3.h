@@ -23,6 +23,7 @@ public:
 	typedef cpplib::Vec3<T> Vec3;
 	typedef cpplib::Quat<T> Quat;
 	Mat3(){}
+	Mat3(T a00, T a10, T a20, T a01, T a11, T a21, T a02, T a12, T a22);
 	Mat3(Vec3 x, Vec3 y, Vec3 z);
 	tt transpose()const;
 	tt &scalein(T sx, T sy, T sz);
@@ -83,6 +84,13 @@ extern const Mat3i &mat3i_u();
 //-----------------------------------------------------------------------------
 // Implementation
 //-----------------------------------------------------------------------------
+
+/// Constructor with individual components
+template<typename T> inline Mat3<T>::Mat3(T a00, T a01, T a02, T a10, T a11, T a12, T a20, T a21, T a22){
+	a[0] = a00; a[1] = a10; a[2] = a20;
+	a[3] = a01; a[4] = a11; a[5] = a21;
+	a[6] = a02; a[7] = a12; a[8] = a22;
+}
 
 /// Constructor making matrix with 3 vertical vectors.
 template<typename T> inline Mat3<T>::Mat3(Vec3 x, Vec3 y, Vec3 z){

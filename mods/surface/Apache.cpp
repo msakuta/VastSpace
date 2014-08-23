@@ -142,7 +142,7 @@ void Apache::leaveField(WarField *w){
 void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	amat4_t mat2, mat3;
 	static const Vec3d apache_overview_ofs(0., .010, .025);
-	int camera = (seatid + 5) % 5;
+	int camera = (seatid + 6) % 6;
 	Mat4d mat;
 	transform(mat);
 	if(camera == 1){
@@ -184,6 +184,14 @@ void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 		}
 		else
 			pos = mat.vp3(cockpitOfs);
+	}
+	else if(camera == 5){
+		// Rotation along with the rotor.  Useful on debugging rotor blade pitch control.
+		Vec3d pos0 = Vec3d(sin(rotor), 0.35, cos(rotor)) * 0.010;
+		pos = mat.vp3(pos0);
+		Quatd rot0 = Quatd::rotation(rotor, 0, 1, 0);
+		rot = this->rot * rot0;
+		return;
 	}
 	else
 		pos = mat.vp3(cockpitOfs);

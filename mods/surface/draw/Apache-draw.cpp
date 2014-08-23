@@ -22,35 +22,72 @@ void Apache::draw(WarDraw *wd){
 		return;
 	wd->lightdraws++;
 
-	static Motion *rotorxMotion = NULL;
-	static Motion *rotorzMotion = NULL;
+//	static Motion *rotorxMotion = NULL;
+//	static Motion *rotorzMotion = NULL;
 	static Motion *rotorMotion = NULL;
 	static Motion *tailRotorMotion = NULL;
+	static Motion *featherMotions[4] = {NULL};
 
 	static OpenGLState::weak_ptr<bool> init;
 	if(!init) do{
 		FILE *fp;
 		model = LoadMQOModel(modPath() << "models/apache.mqo");
-		rotorxMotion = LoadMotion(modPath() << "models/apache-rotorx.mot");
-		rotorzMotion = LoadMotion(modPath() << "models/apache-rotorz.mot");
+//		rotorxMotion = LoadMotion(modPath() << "models/apache-rotorx.mot");
+//		rotorzMotion = LoadMotion(modPath() << "models/apache-rotorz.mot");
 		rotorMotion = LoadMotion(modPath() << "models/apache-rotor.mot");
 		tailRotorMotion = LoadMotion(modPath() << "models/apache-tailrotor.mot");
+
+		auto findBone = [](Model *model, const char *name){
+			auto inner = [&](Bone *bone) -> Bone*{
+				for(Bone *b = bone->children; b != NULL; b = b->nextSibling){
+					if(b->name == name)
+						return b;
+				}
+				return NULL;
+			};
+			return inner(model->bones[0]);
+		};
+
+		for(int i = 0; i < 4; i++){
+			gltestp::dstring name = gltestp::dstring() << "apache_blade" << (i + 1);
+//			Bone *b = findBone(model, name);
+//			if(b){
+				featherMotions[i] = new Motion;
+				for(int j = -1; j <= 1; j++){
+					Motion::keyframe &kf = featherMotions[i]->addKeyframe(10);
+					MotionNode *node = kf.addNode(name);
+					node->rot = Quatd::rotation(j * M_PI * 0.5, sin(i * M_PI * 2 / 4), 0, cos(i * M_PI * 2 / 4));
+				}
+//			}
+		}
 		init.create(*openGLState);
 	} while(0);
 
 	if(!model)
 		return;
 
-	MotionPose mp[6];
-	rotorxMotion->interpolate(mp[0], rotoraxis[0] / (M_PI / 2.) * 10. + 10.);
-	rotorzMotion->interpolate(mp[1], rotoraxis[1] / (M_PI / 2.) * 10. + 10.);
-	mp[0].next = &mp[1];
-	rotorMotion->interpolate(mp[2], fmod(rotor, M_PI / 2.) / (M_PI / 2.) * 10.);
-	mp[1].next = &mp[2];
+	MotionPose mp[6 + numof(featherMotions)];
+//	rotorxMotion->interpolate(mp[0], rotoraxis[0] / (M_PI / 2.) * 10. + 10.);
+//	rotorzMotion->interpolate(mp[1], rotoraxis[1] / (M_PI / 2.) * 10. + 10.);
+//	mp[0].next = &mp[1];
+	static const double maxPitchFactor = 3.;
+	double mrotor = fmod(rotor, M_PI / 2.);
+	double rotorPhase = mrotor / (M_PI / 2.) * 10.;
+	rotorMotion->interpolate(mp[2], rotorPhase);
+//	mp[1].next = &mp[2];
 	tailRotorMotion->interpolate(mp[3], fmod(tailrotor, M_PI) / (M_PI) * 20.);
 	mp[2].next = &mp[3];
 	gunMotion(&mp[4]);
 	mp[3].next = &mp[4];
+	
+	// The gyroscopic precession make lift torque appear 90 degrees ahead of swash plate phase with highest blade pitch.
+	// http://en.wikipedia.org/wiki/Gyroscopic_precession#Torque-induced
+	double swash = atan2(rotoraxis[1], rotoraxis[0]) + M_PI;
+	double pitch = sqrt(rotoraxis[1] * rotoraxis[1] + rotoraxis[0] * rotoraxis[0]);
+	for(int i = 0; i < numof(featherMotions); i++){
+		featherMotions[i]->interpolate(mp[5 + i], 10 + maxPitchFactor * (feather + pitch * sin(mrotor + swash + i * M_PI * 2 / numof(featherMotions))));
+		mp[5 + i - 1].next = &mp[5 + i];
+	}
 
 	glPushMatrix();
 
@@ -60,7 +97,7 @@ void Apache::draw(WarDraw *wd){
 
 	glScaled(-modelScale, modelScale, -modelScale);
 
-	DrawMQOPose(model, mp);
+	DrawMQOPose(model, &mp[2]);
 
 	glPopMatrix();
 

@@ -66,7 +66,7 @@ void errorfunc(HSQUIRRELVM v,const SQChar *s,...)
 
 void PrintVersionInfos()
 {
-	scfprintf(stdout,_SC("%s %s (%d bits)\n"),SQUIRREL_VERSION,SQUIRREL_COPYRIGHT,sizeof(SQInteger)*8);
+	scfprintf(stdout,_SC("%s %s (%d bits)\n"),SQUIRREL_VERSION,SQUIRREL_COPYRIGHT,((int)(sizeof(SQInteger)*8)));
 }
 
 void PrintUsage()
@@ -156,7 +156,7 @@ int getargs(HSQUIRRELVM v,int argc, char* argv[],SQInteger *retval)
 			//sq_pop(v,1);
 			if(compiles_only) {
 				if(SQ_SUCCEEDED(sqstd_loadfile(v,filename,SQTrue))){
-					SQChar *outfile = _SC("out.cnut");
+					const SQChar *outfile = _SC("out.cnut");
 					if(output) {
 #ifdef SQUNICODE
 						int len = (int)(strlen(output)+1);
@@ -239,7 +239,7 @@ void Interactive(HSQUIRRELVM v)
 	sq_pushuserpointer(v,&done);
 	sq_newclosure(v,quit,1);
 	sq_setparamscheck(v,1,NULL);
-	sq_createslot(v,-3);
+	sq_newslot(v,-3,SQFalse);
 	sq_pop(v,1);
 
     while (!done) 

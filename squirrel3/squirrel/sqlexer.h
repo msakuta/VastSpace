@@ -19,7 +19,7 @@ struct SQLexer
 private:
 	SQInteger GetIDType(SQChar *s);
 	SQInteger ReadString(SQInteger ndelim,bool verbatim);
-	SQInteger ReadNumber();
+	SQInteger ReadNumber(bool startWithDot = false);
 	void LexBlockComment();
 	void LexLineComment();
 	SQInteger ReadID();

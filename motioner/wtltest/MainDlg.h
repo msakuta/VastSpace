@@ -66,6 +66,7 @@ public:
 		MESSAGE_HANDLER(WM_HSCROLL, OnHScroll)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAppAbout)
 		COMMAND_ID_HANDLER(IDC_PREVIEW, OnPreview)
+		COMMAND_ID_HANDLER(IDC_WIREFRAME, OnWireFrame)
 		COMMAND_ID_HANDLER(IDC_OPENMODEL, OnOpenModel)
 		COMMAND_ID_HANDLER(IDC_OPENMOTION, OnOpenMotion)
 		COMMAND_ID_HANDLER(IDC_SAVEMOTION, OnSaveMotion)
@@ -218,6 +219,13 @@ public:
 	LRESULT OnPreview(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 	{
 		openPreview();
+		return 0;
+	}
+
+	LRESULT OnWireFrame(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+	{
+		m_preview.wireframe = !m_preview.wireframe;
+		m_preview.Invalidate();
 		return 0;
 	}
 

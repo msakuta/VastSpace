@@ -36,6 +36,7 @@ extern "C"{
 #include <stdio.h>
 #include <stdarg.h>
 #include <functional>
+#include <algorithm>
 
 
 

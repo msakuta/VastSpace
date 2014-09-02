@@ -32,6 +32,8 @@ static int cmdcurhist = 0, cmdselhist = 0;
 
 cpplib::dstring cmdline;
 
+void (*CmdPrintHandler)(const char *line) = NULL;
+
 static int cvar_echo = 0;
 static int cvar_cmd_echo = 1;
 static int console_pageskip = 8;
@@ -123,6 +125,10 @@ void CmdPrint(const cpplib::dstring &str){
 	}
 	WideCharToMultiByte(CP_THREAD_ACP, 0, wbuf, wbufsiz, buf, bufsiz, NULL, NULL);
 	buf[cc] = '\0';
+
+	if(CmdPrintHandler){
+		CmdPrintHandler(buf);
+	}
 
 	printf("%s\n", buf);
 #else

@@ -51,6 +51,8 @@
 #include "avi.h"
 #include "sqadapt.h"
 #include "audio/wavemixer.h"
+#include "cmd_int.h"
+#include "../sqscripter/sqscripter.h"
 #include "resource.h"
 
 extern "C"{
@@ -2410,6 +2412,32 @@ static INT_PTR CALLBACK HostGameDlg(HWND hDlg, UINT message, WPARAM wParam, LPAR
 	}
 	return FALSE;
 }
+
+static ScripterWindow *scwin = NULL;
+
+int cmd_scripter(int argc, char *argv[]){
+	return scripter_show(scwin);
+}
+
+static void scripterCmdProc(const char *cmd){
+	CmdExec(cmd);
+}
+
+static void (*scripterPrintProc)(ScripterWindow *, const char *) = NULL;
+
+static void CmdPrintAdapter(const char *s){
+	if(scripterPrintProc)
+		scripterPrintProc(scwin, s);
+}
+
+static void scripterRunProc(const char *file, const char *text){
+	HSQUIRRELVM v = application.clientGame->sqvm;
+	if(SQ_FAILED(sq_compilebuffer(v, text, strlen(text), file && *file ? file : "scriptbuf", SQTrue)))
+		return;
+	sq_pushroottable(v);
+	if(SQ_FAILED(sq_call(v, 1, SQFalse, SQTrue)))
+		return;
+}
 #endif
 
 /// \brief Diamond inherited ServerGame and ClientGame to create a class that
@@ -2474,6 +2502,17 @@ int main(int argc, char *argv[])
 		// Break and continue on success
 		break;
 	}while(true);
+
+	{
+		ScripterConfig sc;
+		sc.commandProc = scripterCmdProc;
+		sc.printProc = &scripterPrintProc;
+		sc.runProc = scripterRunProc;
+		sc.onClose = NULL;
+		CmdPrintHandler = CmdPrintAdapter;
+		sc.sourceFilters = "Squirrel sources (*.nut)\0*.nut\0All (*.*)\0*.*\0";
+		scwin = scripter_init(&sc);
+	}
 #else
 	// If no GUI is available, do not retry and just die.
 	if(!application.joinGame(application.serverParams.hostname, application.serverParams.port))
@@ -2514,6 +2553,9 @@ int main(int argc, char *argv[])
 	CmdAdd("refresh", &Refresh::refresh);
 	CmdAdd("video", video);
 	CmdAdd("video_stop", video_stop);
+#ifdef _WIN32
+	CmdAdd("scripter", cmd_scripter);
+#endif
 //	ServerCmdAdd("m", scmd_m);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);

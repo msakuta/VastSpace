@@ -2416,7 +2416,11 @@ static INT_PTR CALLBACK HostGameDlg(HWND hDlg, UINT message, WPARAM wParam, LPAR
 static ScripterWindow *scwin = NULL;
 
 int cmd_scripter(int argc, char *argv[]){
-	return scripter_show(scwin);
+	if(scripter_show(scwin) == 0){
+		scripter_lexer_squirrel(scwin);
+		return 0;
+	}
+	return 1;
 }
 
 static void scripterCmdProc(const char *cmd){

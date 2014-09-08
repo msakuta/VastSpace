@@ -55,7 +55,10 @@ public:
 	/// The file pointer to write chat logs.
 	FILE *logfile;
 
-	void init();
+	/// \brief Initialize the application.
+	/// \param vmInit Called just after serverGame or clientGame's Squirrel VM is set up.
+	///               Intended for platform dependent VM initialization, namely debug hooks.
+	void init(void vmInit(HSQUIRRELVM) = NULL);
 
 	bool parseArgs(int argc, char *argv[]);
 

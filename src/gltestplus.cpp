@@ -2438,9 +2438,19 @@ static void scripterRunProc(const char *file, const char *text){
 	HSQUIRRELVM v = application.clientGame->sqvm;
 	if(SQ_FAILED(sq_compilebuffer(v, text, strlen(text), file && *file ? file : "scriptbuf", SQTrue)))
 		return;
+	scripter_clearerror(scwin);
 	sq_pushroottable(v);
 	if(SQ_FAILED(sq_call(v, 1, SQFalse, SQTrue)))
 		return;
+}
+
+static void sqError(HSQUIRRELVM v, const SQChar *desc, const SQChar *source, SQInteger line, SQInteger column){
+	// First, clear all indicators in the document.
+	scripter_clearerror(scwin);
+	// Then add the error indicator.
+	scripter_adderror(scwin, desc, source, line, column);
+	// Finally, add the error description to log window.
+	scripterPrintProc(scwin, gltestp::dstring(source) << "(" << int(line) << ":" << int(column) << "): " << desc);
 }
 #endif
 
@@ -2535,7 +2545,9 @@ int main(int argc, char *argv[])
 		application.clientGame = server = new ServerClientGame();
 	application.serverGame = server;
 
-	application.init();
+	application.init([](HSQUIRRELVM v){
+		sq_setcompilererrorhandler(v, sqError);
+	});
 	MotionInit();
 	CmdAdd("bind", cmd_bind);
 	CmdAdd("pushbind", cmd_pushbind);

@@ -268,7 +268,7 @@ Application::~Application(){
 		fclose(logfile);
 }
 
-void Application::init()
+void Application::init(void vmInit(HSQUIRRELVM))
 {
 	viewport vp;
 	CmdInit(&vp);
@@ -291,13 +291,16 @@ void Application::init()
 		// The static_cast is necessary if ServerGame virtually inherits Game.
 		CmdAddParam("ssq", cmd_sq, static_cast<Game*>(serverGame));
 		sqa_init(serverGame);
+		vmInit(serverGame->sqvm);
 	}
 	if(clientGame){
 		// Explicitly add sq command for the client game
 		// The static_cast is necessary if ClientGame virtually inherits Game.
 		CmdAddParam("csq", cmd_sq, static_cast<Game*>(clientGame));
-		if(serverGame != clientGame) // Prevent double initialization
+		if(serverGame != clientGame){ // Prevent double initialization
 			sqa_init(clientGame);
+			vmInit(serverGame->sqvm);
+		}
 	}
 	if(mode & ServerBit){
 		HSQUIRRELVM v = serverGame->sqvm;

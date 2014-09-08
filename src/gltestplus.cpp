@@ -72,6 +72,9 @@ extern "C"{
 #include <cpplib/gl/cullplus.h>
 
 
+#include <sqstdaux.h>
+
+
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -2444,13 +2447,39 @@ static void scripterRunProc(const char *file, const char *text){
 		return;
 }
 
-static void sqError(HSQUIRRELVM v, const SQChar *desc, const SQChar *source, SQInteger line, SQInteger column){
+static void sqCompileError(HSQUIRRELVM v, const SQChar *desc, const SQChar *source, SQInteger line, SQInteger column){
 	// First, clear all indicators in the document.
 	scripter_clearerror(scwin);
 	// Then add the error indicator.
 	scripter_adderror(scwin, desc, source, line, column);
 	// Finally, add the error description to log window.
 	scripterPrintProc(scwin, gltestp::dstring(source) << "(" << int(line) << ":" << int(column) << "): " << desc);
+}
+
+static SQInteger sqRuntimeError(HSQUIRRELVM v){
+	const SQChar *sErr = NULL;
+	if(!(sq_gettop(v)>=1 && SQ_SUCCEEDED(sq_getstring(v,2,&sErr))))
+		sErr = "unknown";
+
+	SQStackInfos si;
+	if(SQ_SUCCEEDED(sq_stackinfos(v, 1, &si))){
+		// First, clear all indicators in the document.
+		scripter_clearerror(scwin);
+		// Then add the error indicator.
+		// Note that we can only retrieve line at which the error occurred; the debug information
+		// does not have a granularity of columns in a line.
+		scripter_adderror(scwin, sErr, si.source, si.line, 1);
+	}
+
+	SQPRINTFUNCTION pf = sq_geterrorfunc(v);
+	if(pf){
+		pf(v,_SC("\nAN ERROR HAS OCCURED [%s]\n"),sErr);
+		// Finally, add the error description to log window.
+		// This is done by printing stack trace by the standard function provided by sqstdlib.
+//		scripterPrintProc(scwin, gltestp::dstring(si.source) << "(" << int(si.line) << "): " << sErr);
+		sqstd_printcallstack(v);
+	}
+	return SQInteger(0);
 }
 #endif
 
@@ -2546,8 +2575,13 @@ int main(int argc, char *argv[])
 	application.serverGame = server;
 
 	application.init([](HSQUIRRELVM v){
-		sq_setcompilererrorhandler(v, sqError);
+#ifdef _WIN32
+		sq_setcompilererrorhandler(v, sqCompileError);
+		sq_newclosure(v, sqRuntimeError, 0);
+		sq_seterrorhandler(v);
+#endif
 	});
+
 	MotionInit();
 	CmdAdd("bind", cmd_bind);
 	CmdAdd("pushbind", cmd_pushbind);

@@ -1466,7 +1466,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 		it->second(v);
 
 	sq_pushstring(v, _SC("stellar_file"), -1);
-	sq_pushstring(v, _SC("space.ssd"), -1);
+	sq_pushstring(v, _SC("data/space.ssd"), -1);
 	sq_createslot(v, 1);
 
 	register_global_func(v, sqf_playSound, _SC("playSound"));

@@ -22,7 +22,7 @@
 void init_Universe();
 
 // The file name of the stellar file.
-string stellar_file = "space.ssd";
+string stellar_file = "data/space.ssd";
 
 */
 
@@ -35,7 +35,7 @@ print("Squirrel script for the server initialized!");
 cvar.pause = "1";
 
 // set stellar file
-stellar_file = 1 || debugBuild() ? "space_debug.ssd" : "space.ssd";
+stellar_file = 1 || debugBuild() ? "data/space_debug.ssd" : "data/space.ssd";
 
 function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){
 	for(local i = 1; i < count + 1; i++){
@@ -320,7 +320,7 @@ function init_Universe(){
 	local paths = [
 //		universe.findcspath("/moon/moonlo"),
 //		universe.findcspath("Alpha Centauri/a/orbit"),
-		universe.findcspath("/earth/Earth/earths"),
+//		universe.findcspath("/earth/Earth/earths"),
 //		universe.findcspath("/earth/moon/moonlo"),
 		universe.findcspath("/saturn/saturno1"),
 //		universe.findcspath("/sunlo"),

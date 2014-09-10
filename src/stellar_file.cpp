@@ -228,7 +228,19 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			continue;
 		}
 		else if(!strcmp(s, "include")){
-			StellarFileLoadInt(ps, cs, vl);
+			// Concatenate current file's path and given file name to obtain a relative path.
+			// Assume ASCII transparent encoding. (Note that it may not be the case if it's Shift-JIS or something,
+			// but for the moment, just do not use multibyte characters for data file names.)
+			const char *slash = strrchr(sc.fname, '\\');
+			const char *backslash = strrchr(sc.fname, '/');
+			const char *pathDelimit = slash ? slash : backslash;
+			gltestp::dstring path;
+			// Assume string before a slash or backslash a path
+			if(pathDelimit)
+				path.strncat(sc.fname, pathDelimit - sc.fname + 1);
+			path.strcat(ps);
+			StellarFileLoadInt(path, cs, vl);
+			// TODO: Avoid recursive includes
 			continue;
 		}
 		if(!strcmp(argv[0], "new"))

@@ -2341,7 +2341,7 @@ static INT_PTR CALLBACK HostGameDlg(HWND hDlg, UINT message, WPARAM wParam, LPAR
 		}
 		break;
 	case WM_MOUSEWHEEL:
-		SetDlgItemText(hDlg, IDC_NAME, gltestp::dstring() << "WM_MOUSEWHEEL " << wParam << " " << lParam);
+		SetDlgItemText(hDlg, IDC_NAME, gltestp::dstring() << "WM_MOUSEWHEEL " << wParam << " " << int(lParam));
 		break;
 	case WM_COMMAND:
 		{

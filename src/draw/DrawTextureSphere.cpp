@@ -631,35 +631,12 @@ bool DrawTextureSphere::draw(){
 	normvertex_params params;
 	Mat4d rot;
 	
-	if(rad == 0.)
-		rad = a->rad;
-
 	params.vw = vw;
 	params.texenable = texenable;
 	params.detail = 0;
 
-	double scale = rad * vw->gc->scale(apos);
-
-	Vec3d tp = apos - vw->pos;
-	double zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
-	scale *= zoom;
-	if(0. < scale && scale < 10.){
-		if(!(flags & TexSphere::DTS_NOGLOBE)){
-			GLubyte color[4], dark[4];
-			color[0] = GLubyte(mat_diffuse[0] * 255);
-			color[1] = GLubyte(mat_diffuse[1] * 255);
-			color[2] = GLubyte(mat_diffuse[2] * 255);
-			color[3] = 255;
-			dark[0] = GLubyte(mat_ambient[0] * 127);
-			dark[1] = GLubyte(mat_ambient[1] * 127);
-			dark[2] = GLubyte(mat_ambient[2] * 127);
-			for(i = 0; i < 3; i++)
-				dark[i] = GLubyte(g_astro_ambient * g_astro_ambient * 255);
-			dark[3] = 255;
-			drawShadeSphere(a, vw, sunpos, color, dark);
-		}
+	if(drawSimple())
 		return true;
-	}
 
 	// Allocate surface texture
 	do if(ptexlist && !*ptexlist && texname && texname[0]){
@@ -907,6 +884,35 @@ void DrawTextureSphere::setupLight(){
 	}
 }
 
+bool DrawTextureSphere::drawSimple(){
+	if(m_rad == 0.)
+		m_rad = a->rad;
+
+	double scale = m_rad * vw->gc->scale(apos);
+
+	Vec3d tp = apos - vw->pos;
+	double zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
+	scale *= zoom;
+	if(0. < scale && scale < 10.){
+		if(!(m_flags & TexSphere::DTS_NOGLOBE)){
+			GLubyte color[4], dark[4];
+			color[0] = GLubyte(m_mat_diffuse[0] * 255);
+			color[1] = GLubyte(m_mat_diffuse[1] * 255);
+			color[2] = GLubyte(m_mat_diffuse[2] * 255);
+			color[3] = 255;
+			dark[0] = GLubyte(m_mat_ambient[0] * 127);
+			dark[1] = GLubyte(m_mat_ambient[1] * 127);
+			dark[2] = GLubyte(m_mat_ambient[2] * 127);
+			for(int i = 0; i < 3; i++)
+				dark[i] = GLubyte(g_astro_ambient * g_astro_ambient * 255);
+			dark[3] = 255;
+			drawShadeSphere(a, vw, sunpos, color, dark);
+		}
+		return true;
+	}
+	return false;
+}
+
 bool DrawTextureSpheroid::draw(){
 	const Vec4f &mat_diffuse = m_mat_diffuse;
 	const Vec4f &mat_ambient = m_mat_ambient;
@@ -922,7 +928,6 @@ bool DrawTextureSpheroid::draw(){
 	double ringminrad = m_ringmin;
 	double ringmaxrad = m_ringmax;
 
-	double scale, zoom;
 	bool texenable = !!texlist;
 	normvertex_params params;
 	Mat4d &mat = params.mat;
@@ -932,25 +937,8 @@ bool DrawTextureSpheroid::draw(){
 	params.texenable = texenable;
 	params.detail = 0;
 
-/*	tocs(sunpos, vw->cs, sun.pos, sun.cs);*/
-	scale = a->rad * vw->gc->scale(apos);
-
-	Vec3d tp = apos - vw->pos;
-	zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
-	scale *= zoom;
-	if(0. < scale && scale < 5.){
-		GLubyte color[4], dark[4];
-		color[0] = GLubyte(mat_diffuse[0] * 255);
-		color[1] = GLubyte(mat_diffuse[1] * 255);
-		color[2] = GLubyte(mat_diffuse[2] * 255);
-		color[3] = 255;
-		dark[0] = GLubyte(mat_ambient[0] * 127);
-		dark[1] = GLubyte(mat_ambient[1] * 127);
-		dark[2] = GLubyte(mat_ambient[2] * 127);
-		dark[3] = 255;
-		drawShadeSphere(a, vw, sunpos, color, dark);
+	if(drawSimple())
 		return true;
-	}
 
 	do if(!texlist && texname){
 //		timemeas_t tm;

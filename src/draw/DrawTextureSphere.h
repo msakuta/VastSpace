@@ -93,6 +93,9 @@ public:
 protected:
 	/// \brief Sets up lights from lightingStars
 	void setupLight();
+	/// <summary> Draw simple shape if apparent size of this celestial body is so small </summary>
+	/// <returns> True if it was small enough to draw simplified version; derived classes should not draw further if so </returns>
+	bool drawSimple();
 };
 
 /// \brief A class that draw textured sphere.

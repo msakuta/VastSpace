@@ -744,7 +744,7 @@ bool StarEnum::newCell(){
 		static std::vector<Syllable> firstDB;
 		static int firstCount = 0;
 		if(!sylsInit){
-			std::ifstream syls("syl.txt");
+			std::ifstream syls("data/syl.txt");
 			int sylcount;
 			syls >> sylcount;
 			while(!syls.eof()){

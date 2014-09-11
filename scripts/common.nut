@@ -215,7 +215,7 @@ if("COMMON_NUT" in this)
 COMMON_NUT <- true;
 
 
-setGalaxyFile("galaxy.png");
+setGalaxyFile("data/galaxy.png");
 
 
 /// \brief Helper class that accumulates sequence numbers and calculate statistical values of them.

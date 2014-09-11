@@ -1126,7 +1126,7 @@ static int ftimecmp(const char *file1, const char *file2){
 
 #define DARKNEBULA 8
 
-static gltestp::dstring g_galaxy_file = "galaxy.png";
+static gltestp::dstring g_galaxy_file = "data/galaxy.png";
 
 Initializer galaxy_init("galaxy_file", [](HSQUIRRELVM v){
 	StackReserver sr(v);

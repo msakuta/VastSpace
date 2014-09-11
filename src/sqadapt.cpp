@@ -990,7 +990,7 @@ SQInteger sqf_glVertex(HSQUIRRELVM v){
 
 SQInteger sqf_glVertex2d(HSQUIRRELVM v){
 	try{
-		GLfloat f[2];
+		SQFloat f[2];
 		if(SQ_FAILED(sq_getfloat(v, 2, &f[0])))
 			return SQ_ERROR;
 		if(SQ_FAILED(sq_getfloat(v, 3, &f[1])))
@@ -1005,14 +1005,14 @@ SQInteger sqf_glVertex2d(HSQUIRRELVM v){
 
 SQInteger sqf_glScaled(HSQUIRRELVM v){
 	try{
-		GLfloat f[3];
+		SQFloat f[3];
 		if(SQ_FAILED(sq_getfloat(v, 2, &f[0])))
 			return SQ_ERROR;
 		if(SQ_FAILED(sq_getfloat(v, 3, &f[1])))
 			return SQ_ERROR;
 		if(SQ_FAILED(sq_getfloat(v, 4, &f[2])))
 			return SQ_ERROR;
-		glScalef(f[0], f[1], f[2]);
+		glScalef(GLfloat(f[0]), GLfloat(f[1]), GLfloat(f[2]));
 	}
 	catch(SQFError &e){
 		return sq_throwerror(v, e.what());
@@ -1022,7 +1022,7 @@ SQInteger sqf_glScaled(HSQUIRRELVM v){
 
 SQInteger sqf_glTranslated(HSQUIRRELVM v){
 	try{
-		GLfloat f[3];
+		SQFloat f[3];
 		if(SQ_FAILED(sq_getfloat(v, 2, &f[0])))
 			return SQ_ERROR;
 		if(SQ_FAILED(sq_getfloat(v, 3, &f[1])))
@@ -1062,33 +1062,33 @@ static SQInteger sqf_glRasterPos(HSQUIRRELVM v){
 }
 
 static SQInteger sqf_glColor4f(HSQUIRRELVM v){
-	GLfloat f[4];
+	SQFloat f[4];
 	for(int i = 0; i < 4; i++){
 		if(SQ_FAILED(sq_getfloat(v, 2 + i, &f[i])))
 			return sq_throwerror(v, _SC("Argument type wrong in glColor4f"));
 	}
-	glColor4fv(f);
+	glColor4dv(Vec4d(f));
 	return SQInteger(0);
 }
 
 static SQInteger sqf_glColor4fv(HSQUIRRELVM v){
-	GLfloat f[4];
+	SQFloat f[4];
 	for(int i = 0; i < 4; i++){
 		sq_pushinteger(v, i);
 		if(SQ_FAILED(sq_get(v, 2)) || SQ_FAILED(sq_getfloat(v, -1, &f[i])))
 			return sq_throwerror(v, _SC("Argument type wrong in glColor4fv"));
 	}
-	glColor4fv(f);
+	glColor4dv(Vec4d(f));
 	return SQInteger(0);
 }
 
 static SQInteger sqf_glScissor(HSQUIRRELVM v){
-	GLfloat f[4];
+	SQFloat f[4];
 	for(int i = 0; i < 4; i++){
 		if(SQ_FAILED(sq_getfloat(v, 2 + i, &f[i])))
 			return sq_throwerror(v, _SC("Argument type wrong in glColor4f"));
 	}
-	glScissor(f[0], f[1], f[2], f[3]);
+	glScissor(GLint(f[0]), GLint(f[1]), GLint(f[2]), GLint(f[3]));
 	return SQInteger(0);
 }
 

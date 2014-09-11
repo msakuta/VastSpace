@@ -8,7 +8,6 @@
 #include "ClientMessage.h"
 #include "Game.h"
 extern "C"{
-#include "calc/calc.h"
 #include <clib/mathdef.h>
 }
 #include <string.h>

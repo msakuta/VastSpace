@@ -7,9 +7,6 @@
 #include "sqadapt.h"
 #include "Universe.h"
 #include "Game.h"
-extern "C"{
-#include "calc/calc.h"
-}
 //#include "cmd.h"
 //#include "spacewar.h"
 #include "astrodef.h"
@@ -332,11 +329,6 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *
 		sc.vl = &local_vl;
 		if(!fp)
 			return -1;
-		sc.vl = (varlist*)malloc(sizeof *sc.vl);
-		sc.vl->c = 0;
-		sc.vl->l = NULL;
-		sc.vl->next = vl;
-		sc.v = univ && univ->getGame ()? univ->getGame()->sqvm : g_sqvm;
 //		sqa_init(&sc.v);
 
 		HSQUIRRELVM v = sqvm;
@@ -358,12 +350,6 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *
 
 /*		CmdPrint("space.dat loaded.");*/
 		fclose(fp);
-		if(sc.vl->l){
-			for(unsigned i = 0; i < sc.vl->c; i++)
-				free(sc.vl->l[i].name);
-			free(sc.vl->l);
-		}
-		free(sc.vl);
 		delete sc.scanner;
 //		sq_close(sc.v);
 //		CmdPrintf("%s loaded time %lg", fname, TimeMeasLap(&tm));

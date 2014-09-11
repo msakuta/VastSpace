@@ -188,10 +188,6 @@
     <ClCompile Include="..\src\bitmap.c" />
     <ClCompile Include="..\src\Builder.cpp" />
     <ClCompile Include="..\src\Bullet.cpp" />
-    <ClCompile Include="..\src\calc\calc.c" />
-    <ClCompile Include="..\src\calc\calc0.c" />
-    <ClCompile Include="..\src\calc\calc3.c" />
-    <ClCompile Include="..\src\calc\mathvars.c" />
     <ClCompile Include="..\src\Client.cpp" />
     <ClCompile Include="..\src\cmd.cpp" />
     <ClCompile Include="..\src\cmddraw.cpp" />

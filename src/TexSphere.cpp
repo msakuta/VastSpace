@@ -12,9 +12,6 @@
 #include "CoordSys-property.h"
 #include "CoordSys-sq.h"
 #include "CoordSys-find.h"
-extern "C"{
-#include "calc/calc.h"
-}
 
 #include <stdlib.h>
 

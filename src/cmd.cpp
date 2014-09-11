@@ -6,7 +6,6 @@
 #include "sqadapt.h"
 #include "Application.h"
 extern "C"{
-#include "calc/calc.h"
 #include <clib/c.h>
 #ifndef DEDICATED
 #include <clib/gl/gldraw.h>

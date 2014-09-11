@@ -24,7 +24,6 @@
 #include "CoordSys-property.h"
 #include "CoordSys-sq.h"
 extern "C"{
-#include "calc/calc.h"
 #include <clib/c.h>
 #include <clib/aquat.h>
 #include <clib/aquatrot.h>

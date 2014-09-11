@@ -21,7 +21,6 @@
 #include "Game.h"
 #include "sqserial.h"
 extern "C"{
-#include "calc/calc.h"
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
 }

@@ -7,9 +7,6 @@
     <Filter Include="Sources\glw">
       <UniqueIdentifier>{5b709e3e-f6cc-4437-8cf9-9332f139c046}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Sources\calc">
-      <UniqueIdentifier>{6cd49d75-427b-448a-a7a6-cfca8d810d4b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Sources\draw">
       <UniqueIdentifier>{ba0a8eef-679a-43b0-883c-a3cae04d7562}</UniqueIdentifier>
     </Filter>
@@ -302,18 +299,6 @@
     </ClCompile>
     <ClCompile Include="..\src\draw\blackbody.cpp">
       <Filter>Sources\draw</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\calc\calc3.c">
-      <Filter>Sources\calc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\calc\mathvars.c">
-      <Filter>Sources\calc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\calc\calc.c">
-      <Filter>Sources\calc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\calc\calc0.c">
-      <Filter>Sources\calc</Filter>
     </ClCompile>
     <ClCompile Include="..\src\glsl.c">
       <Filter>Sources</Filter>

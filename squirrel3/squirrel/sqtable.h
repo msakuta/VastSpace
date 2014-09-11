@@ -16,7 +16,23 @@ inline SQHash HashObj(const SQObjectPtr &key)
 {
 	switch(type(key)) {
 		case OT_STRING:		return _string(key)->_hash;
-		case OT_FLOAT:		return (SQHash)((SQInteger)_float(key));
+		case OT_FLOAT:
+		// If a floating number has the same size as a SQInteger, reinterpret the pointer.
+		// Otherwise, conversion to integer (cvttsd2si or cvttss2si) would raise
+		// a floating point invalid exception when the value could not be expressed by an integer.
+#if defined(_WIN32)
+			// If with constant expressions would be truncated by optimization.
+			if(sizeof(SQHash) == sizeof(SQFloat))
+				return *reinterpret_cast<const SQHash*>(&_float(key));
+			else if(sizeof(SQHash) == sizeof(float)){
+				float f = (float)_float(key);
+				return *reinterpret_cast<const SQHash*>(&f);
+			}
+			else
+				return (SQHash)((SQInteger)(float)_float(key));
+#else
+			return (SQHash)((SQInteger)(float)_float(key));
+#endif
 		case OT_BOOL: case OT_INTEGER:	return (SQHash)((SQInteger)_integer(key));
 		default:			return hashptr(key._unVal.pRefCounted);
 	}

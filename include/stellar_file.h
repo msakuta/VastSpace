@@ -26,6 +26,10 @@ void blackhole_draw(const struct astrobj *, const struct viewer*, int relative);
 
 class StellarStructureScanner;
 
+struct varlist{
+	HSQOBJECT vars;
+};
+
 /// Context object in the process of interpreting a stellar file.
 struct StellarContext{
 	const char *fname;

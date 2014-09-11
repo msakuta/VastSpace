@@ -225,24 +225,24 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 	}
 	else if(!strcmp(s, "orbit_radius") || !strcmp(s, "semimajor_axis")){
 //		if(s = strtok(ps, " \t\r\n"))
-			orbit_rad = calc3(&ps, sc.vl, NULL);
+			orbit_rad = sqcalc(sc, ps, s);
 		return true;
 	}
 	else if(!strcmp(s, "eccentricity")){
 		if(1 < argc){
 			double d;
-			d = calc3(&argv[1], sc.vl, NULL);
+			d = sqcalc(sc, argv[1], s);
 			eccentricity = d;
 		}
 		return true;
 	}
 	else if(!strcmp(s, "orbit_axis")){
 		if(1 < argc)
-			orbit_axis[0] = calc3(&argv[1], sc.vl, NULL);
+			orbit_axis[0] = sqcalc(sc, argv[1], s);
 		if(2 < argc)
-			orbit_axis[1] = calc3(&argv[2], sc.vl, NULL);
+			orbit_axis[1] = sqcalc(sc, argv[2], s);
 		if(3 < argc){
-			orbit_axis[2] = calc3(&argv[3], sc.vl, NULL);
+			orbit_axis[2] = sqcalc(sc, argv[3], s);
 			orbit_axis[3] = sqrt(1. - VECSLEN(orbit_axis));
 		}
 		return true;
@@ -250,7 +250,7 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if(!strcmp(s, "orbit_inclination") || !strcmp(s, "inclination")){
 		if(1 < argc){
 			enable |= 1;
-			inclination = calc3(&argv[1], sc.vl, NULL) / deg_per_rad;
+			inclination = sqcalc(sc, argv[1], s) / deg_per_rad;
 		}
 /*		if(1 < argc){
 			double d;
@@ -267,14 +267,14 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if(!strcmp(s, "ascending_node")){
 		if(1 < argc){
 			enable |= 2;
-			loan = calc3(&argv[1], sc.vl, NULL) / deg_per_rad;
+			loan = sqcalc(sc, argv[1], s) / deg_per_rad;
 		}
 		return true;
 	}
 	else if(!strcmp(s, "argument_of_periapsis")){
 		if(1 < argc){
 			enable |= 4;
-			aop = calc3(&argv[1], sc.vl, NULL) / deg_per_rad;
+			aop = sqcalc(sc, argv[1], s) / deg_per_rad;
 		}
 		return true;
 	}
@@ -568,18 +568,18 @@ bool Astrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	if(0);
 	else if(!strcmp(s, "radius")){
 		if(argv[1]){
-			rad = calc3(&argv[1], sc.vl, NULL);
+			rad = sqcalc(sc, argv[1], s);
 		}
 		return true;
 	}
 	else if(!strcmp(s, "diameter")){
 		if(argv[1])
-			rad = .5 * calc3(&argv[1], sc.vl, NULL);
+			rad = .5 * sqcalc(sc, argv[1], s);
 		return true;
 	}
 	else if(!strcmp(s, "mass")){
 		if(argv[1]){
-			mass = calc3(&argv[1], sc.vl, NULL);
+			mass = sqcalc(sc, argv[1], s);
 			if(flags & AO_BLACKHOLE)
 				rad = 2 * UGC * mass / LIGHT_SPEED / LIGHT_SPEED;
 		}
@@ -625,15 +625,15 @@ bool Astrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if(!strcmp(s, "basecolor")){
 		if(3 < argc){
 			basecolor = Vec4f(
-				float(calc3(&argv[1], sc.vl, NULL)),
-				float(calc3(&argv[2], sc.vl, NULL)),
-				float(calc3(&argv[3], sc.vl, NULL)),
+				float(sqcalc(sc, argv[1], s)),
+				float(sqcalc(sc, argv[2], s)),
+				float(sqcalc(sc, argv[3], s)),
 				1.f);
 		}
 		return true;
 	}
 	else if(!strcmp(s, "absolute_magnitude") || !strcmp(s, "absmag")){
-		absmag = float(calc3(&ps, sc.vl, NULL));
+		absmag = float(sqcalc(sc, ps, s));
 	}
 	else
 		return st::readFile(sc, argc, argv);

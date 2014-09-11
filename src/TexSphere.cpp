@@ -193,7 +193,7 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 #ifndef DEDICATED
 			tex.list = 0;
 #endif
-			tex.cloudSync = 3 < argc && !!calc3(&argv[3], sc.vl, NULL);
+			tex.cloudSync = 3 < argc && 0. != sqcalc(sc, argv[3], s);
 			for(int i = 4; i < argc; i++){
 				if(!strcmp(argv[i], "alpha"))
 					tex.flags |= DTS_ALPHA;
@@ -232,7 +232,7 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 	}
 	else if(!strcmp(s, "cloudheight")){
 		if(1 < argc){
-			this->cloudHeight = calc3(&argv[1], sc.vl, NULL);
+			this->cloudHeight = sqcalc(sc, argv[1], s);
 		}
 		return true;
 	}
@@ -256,33 +256,33 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 	}
 	else if(!strcmp(s, "atmosphere_height")){
 		if(1 < argc){
-			atmodensity = calc3(&ps, sc.vl, NULL);
+			atmodensity = sqcalc(sc, ps, s);
 			flags |= AO_ATMOSPHERE;
 		}
 		return true;
 	}
 	else if(!strcmp(s, "atmosphere_color")){
 		if(1 < argc)
-			atmohor[0] = float(calc3(&argv[1], sc.vl, NULL));
+			atmohor[0] = float(sqcalc(sc, argv[1], s));
 		if(2 < argc)
-			atmohor[1] = float(calc3(&argv[2], sc.vl, NULL));
+			atmohor[1] = float(sqcalc(sc, argv[2], s));
 		if(3 < argc)
-			atmohor[2] = float(calc3(&argv[3], sc.vl, NULL));
+			atmohor[2] = float(sqcalc(sc, argv[3], s));
 		if(4 < argc)
-			atmohor[3] = float(calc3(&argv[4], sc.vl, NULL));
+			atmohor[3] = float(sqcalc(sc, argv[4], s));
 		else
 			atmohor[3] = 1.f;
 		return true;
 	}
 	else if(!strcmp(s, "atmosphere_dawn")){
 		if(1 < argc)
-			atmodawn[0] = float(calc3(&argv[1], sc.vl, NULL));
+			atmodawn[0] = float(sqcalc(sc, argv[1], s));
 		if(2 < argc)
-			atmodawn[1] = float(calc3(&argv[2], sc.vl, NULL));
+			atmodawn[1] = float(sqcalc(sc, argv[2], s));
 		if(3 < argc)
-			atmodawn[2] = float(calc3(&argv[3], sc.vl, NULL));
+			atmodawn[2] = float(sqcalc(sc, argv[3], s));
 		if(4 < argc)
-			atmodawn[3] = float(calc3(&argv[4], sc.vl, NULL));
+			atmodawn[3] = float(sqcalc(sc, argv[4], s));
 		else
 			atmodawn[3] = 1.f;
 		return true;
@@ -290,7 +290,7 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if((!strcmp(s, "ringmin") || !strcmp(s, "ringmax") || !strcmp(s, "ringthick"))){
 		TexSphere *const p = this;
 		p->ring = 1;
-		*(!strcmp(s, "ringmin") ? &p->ringmin : !strcmp(s, "ringmax") ? &p->ringmax : &p->ringthick) = calc3(&ps, sc.vl, NULL);
+		*(!strcmp(s, "ringmin") ? &p->ringmin : !strcmp(s, "ringmax") ? &p->ringmax : &p->ringthick) = sqcalc(sc, ps, s);
 		return true;
 	}
 	else

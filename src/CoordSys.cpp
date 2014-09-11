@@ -827,28 +827,28 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "pos")){
-		pos[0] = calc3(&argv[1], sc.vl, NULL);
+		pos[0] = sqcalc(sc, argv[1], s);
 		if(2 < argc)
-			pos[1] = calc3(&argv[2], sc.vl, NULL);
+			pos[1] = sqcalc(sc, argv[2], s);
 		if(3 < argc)
-			pos[2] = calc3(&argv[3], sc.vl, NULL);
+			pos[2] = sqcalc(sc, argv[3], s);
 		return true;
 	}
 	else if(!strcmp(s, "galactic_coord")){
-		double lon = calc3(&argv[1], sc.vl, NULL) / deg_per_rad;
-		double lat = 2 < argc ? calc3(&argv[2], sc.vl, NULL) / deg_per_rad : 0.;
-		double dist = 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 1e10;
+		double lon = sqcalc(sc, argv[1], s) / deg_per_rad;
+		double lat = 2 < argc ? sqcalc(sc, argv[2], s) / deg_per_rad : 0.;
+		double dist = 3 < argc ? sqcalc(sc, argv[3], s) : 1e10;
 		pos = dist * Vec3d(sin(lon) * cos(lat), cos(lon) * cos(lat), sin(lat));
 		return true;
 	}
 	else if(!strcmp(s, "cs_radius")){
 		if(ps)
-			csrad = atof(ps);
+			csrad = sqcalc(sc, ps, s);
 		return true;
 	}
 	else if(!strcmp(s, "cs_diameter")){
 		if(argv[1])
-			csrad = .5 * calc3(&argv[1], sc.vl, NULL);
+			csrad = .5 * sqcalc(sc, argv[1], s);
 		return true;
 	}
 	else if(!strcmp(s, "parent")){
@@ -874,9 +874,9 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			w = this->w = new WarSpace(this)/*spacewar_create(cs, ppl)*/;
 		pt = Entity::create(argv[1], w);
 		if(pt){
-			pt->pos[0] = 2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.;
-			pt->pos[1] = 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0.;
-			pt->pos[2] = 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.;
+			pt->pos[0] = 2 < argc ? sqcalc(sc, argv[2], s) : 0.;
+			pt->pos[1] = 3 < argc ? sqcalc(sc, argv[3], s) : 0.;
+			pt->pos[2] = 4 < argc ? sqcalc(sc, argv[4], s) : 0.;
 			pt->race = 5 < argc ? atoi(argv[5]) : 0;
 		}
 		else
@@ -964,11 +964,11 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			return true;
 		}
 		if(1 < argc)
-			rot[0] = calc3(&argv[1], sc.vl, NULL);
+			rot[0] = sqcalc(sc, argv[1], s);
 		if(2 < argc)
-			rot[1] = calc3(&argv[2], sc.vl, NULL);
+			rot[1] = sqcalc(sc, argv[2], s);
 		if(3 < argc){
-			rot[2] = calc3(&argv[3], sc.vl, NULL);
+			rot[2] = sqcalc(sc, argv[3], s);
 			rot[3] = sqrt(1. - VECSLEN(rot));
 		}
 		return true;
@@ -988,15 +988,15 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			return true;
 		}
 		if(1 < argc)
-			omg[0] = calc3(&argv[1], sc.vl, NULL);
+			omg[0] = sqcalc(sc, argv[1], s);
 		if(2 < argc)
-			omg[1] = calc3(&argv[2], sc.vl, NULL);
+			omg[1] = sqcalc(sc, argv[2], s);
 		if(3 < argc)
-			omg[2] = calc3(&argv[3], sc.vl, NULL);
+			omg[2] = sqcalc(sc, argv[3], s);
 		if(4 < argc){
 			double d;
 			omg.normin();
-			d = calc3(&argv[4], sc.vl, NULL);
+			d = sqcalc(sc, argv[4], s);
 			omg.scalein(d);
 		}
 		return true;
@@ -1004,11 +1004,11 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if(!strcmp(s, "updirection")){
 		Vec3d v = vec3_000;
 		if(1 < argc)
-			v[0] = calc3(&argv[1], sc.vl, NULL);
+			v[0] = sqcalc(sc, argv[1], s);
 		if(2 < argc)
-			v[1] = calc3(&argv[2], sc.vl, NULL);
+			v[1] = sqcalc(sc, argv[2], s);
 		if(3 < argc)
-			v[2] = calc3(&argv[3], sc.vl, NULL);
+			v[2] = sqcalc(sc, argv[3], s);
 		rot = Quatd::direction(v);
 		if(rot.slen() == 0.){
 			CmdPrint("Quaternion zero!");
@@ -1035,16 +1035,10 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			if(SQ_FAILED(sq_get(v, -2))) // stellarReadFile
 				throw sqa::SQFError(_SC("readFile key is not defined in CoordSys"));
 			sq_pushroottable(v); // stellarReadFile root
-			CoordSys::sq_pushobj(v, this); // readFile root cs
+			CoordSys::sq_pushobj(v, this); // stellarReadFile root cs
 
-			sq_newtable(v); // stellarReadFile root cs defineTable
-			for(const varlist *vl = sc.vl; vl; vl = vl->next){
-				for(int i = 0; i < vl->c; i++){
-					sq_pushstring(v, vl->l[i].name, -1);
-					sq_pushfloat(v, vl->l[i].value.d);
-					sq_createslot(v, -3);
-				}
-			}
+			// Pass current variables table
+			sq_pushobject(v, sc.vl->vars); // stellarReadFile root cs vars
 
 			// Pass all arguments as strings (no conversion is done beforehand).
 			for(int i = 0; i < argc; i++)
@@ -1708,7 +1702,7 @@ double CoordSys::sqcalc(StellarContext &sc, const char *str, const SQChar *conte
 	gltestp::dstring dst = gltestp::dstring("return(") << str << ")";
 	if(SQ_FAILED(sq_compilebuffer(sc.v, dst, dst.len(), context, SQTrue)))
 		throw StellarError(gltestp::dstring() << "sqcalc compile error: " << context);
-	sq_push(sc.v, -2);
+	sq_pushobject(sc.v, sc.vl->vars);
 	if(SQ_FAILED(sq_call(sc.v, 1, SQTrue, SQTrue)))
 		throw StellarError(gltestp::dstring() << "sqcalc call error: " << context);
 	SQFloat f;

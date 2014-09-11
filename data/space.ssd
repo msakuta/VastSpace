@@ -8,7 +8,7 @@
 define MINUTE_SECONDS 60
 define HOUR_SECONDS 60*60
 define DAY_SECONDS 24*60*60
-define RAD_PER_DEG 2*pi/360
+define RAD_PER_DEG 2*PI/360
 define AU 149597870.691
 define LY 9.4605284e12
 define Rsun 6.960e5

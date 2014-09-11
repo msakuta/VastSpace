@@ -8,7 +8,7 @@
 define MINUTE_SECONDS 60
 define HOUR_SECONDS 60*60
 define DAY_SECONDS 24*60*60
-define RAD_PER_DEG 2*pi/360
+define RAD_PER_DEG 2*PI/360
 define AU 149597870.691
 define Rsun 6.960e5
 define Msun 1.9884e30
@@ -75,7 +75,7 @@ coordsys Orbit venus{
 		diameter 12103.6
 		mass 3.3022e23
 		color afafaf
-		omega 0 0 1 -2/243.0187/DAY_SECONDS*pi   #rotation speed
+		omega 0 0 1 -2/243.0187/DAY_SECONDS*PI   #rotation speed
 		texture ven0mss2.jpg
 		updirection 0 1 0
 		planet
@@ -104,8 +104,8 @@ coordsys Orbit earth{
 		radius 6375
 		mass 5.972e24
 		omega (Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))).trans(Vec3d(0,0,1))*PI*2/DAY_SECONDS
-#		omega 0 cos(tilt) sin(tilt) pi*2/DAY_SECONDS  #rotation speed
-#		omega 0 0 1 pi*2/DAY_SECONDS  #rotation speed
+#		omega 0 cos(tilt) sin(tilt) PI*2/DAY_SECONDS  #rotation speed
+#		omega 0 0 1 PI*2/DAY_SECONDS  #rotation speed
 		rotation Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))
 #		rotation 0*sqrt(2)/2 0 sin(tilt/2.) cos(tilt/2.)
 #		updirection 0 cos(tilt) sin(tilt)
@@ -138,8 +138,8 @@ coordsys Orbit earth{
 		atmosphere_dawn 1 .2 .1
 
 		coordsys earths{
-			define theta .13*pi
-			define phi .3*pi
+			define theta .13*PI
+			define phi .3*PI
 			pos 6376*sin(phi) 6376*sin(theta)*cos(phi) -6376*cos(theta)*cos(phi)
 			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
 			teleport "Earth Surface" 0 0 0
@@ -159,7 +159,7 @@ coordsys Orbit earth{
 		astro TextureSphere Moon{
 			radius 1738
 			mass 0.0123*5.977e24
-			omega 0 0 1 pi*2/(27*DAY_SECONDS+7*HOUR_SECONDS+43.7*MINUTE_SECONDS)   #rotation speed
+			omega 0 0 1 PI*2/(27*DAY_SECONDS+7*HOUR_SECONDS+43.7*MINUTE_SECONDS)   #rotation speed
 			texture moon.jpg
 			extexture bumptexture textures/moonbump.jpg 0 normal
 			fragmentshader shaders/moon.fs
@@ -281,7 +281,7 @@ coordsys Orbit marss{
 		diameter 6794.4
 		mass 6.4191e23
 		oblateness .00
-		omega 0 0 1 2/24.6229/3600*pi   #rotation speed
+		omega 0 0 1 2/24.6229/3600*PI   #rotation speed
 		texture mar0kuu2.jpg
 		updirection 0 1 0
 		planet
@@ -381,7 +381,7 @@ coordsys Orbit jupiter{
 		radius 71400.
 		mass 317.904*5.977e24
 		texture jup0vss1.jpg
-		omega 0 0 1 2*pi/(9*HOUR_SECONDS+55.5*MINUTE_SECONDS)
+		omega 0 0 1 2*PI/(9*HOUR_SECONDS+55.5*MINUTE_SECONDS)
 		updirection 0 1 0
 		planet
 		spherehit
@@ -410,7 +410,7 @@ coordsys Orbit jupiter{
 		spherehit
 		orbits Jupiter
 		orbit_radius 671034
-		orbit_axis 0 cos(pi*0.470/360) sin(pi*0.470/360)
+		orbit_axis 0 cos(PI*0.470/360) sin(PI*0.470/360)
 	}
 	new astro Ganymede
 	{
@@ -418,7 +418,7 @@ coordsys Orbit jupiter{
 		planet
 		orbits Jupiter
 		orbit_radius 1070000
-		orbit_axis 0 cos(pi*0.20/360) sin(pi*0.20/360)
+		orbit_axis 0 cos(PI*0.20/360) sin(PI*0.20/360)
 	}
 	new astro Callisto
 	{
@@ -426,7 +426,7 @@ coordsys Orbit jupiter{
 		planet
 		orbits Jupiter
 		orbit_radius 1882700
-		orbit_axis 0 cos(pi*0.20/360) sin(pi*0.20/360)
+		orbit_axis 0 cos(PI*0.20/360) sin(PI*0.20/360)
 		color a0a7b0
 	}
 }
@@ -438,7 +438,7 @@ coordsys Orbit saturn{
 	orbit_radius 1433449370
 #	orbit_radius 14334493
 	eccentricity 0.055723219
-	orbit_axis 0 sin(2*pi*0.7733/360) cos(2*pi*0.7733/360)
+	orbit_axis 0 sin(2*PI*0.7733/360) cos(2*PI*0.7733/360)
 	inclination 2.4886
 	ascending_node 113.7357
 	argument_of_periapsis 93.2143
@@ -456,11 +456,11 @@ coordsys Orbit saturn{
 		radius 60268
 		mass 5.6846e26
 		oblateness .09796
-		omega 0 sin(axis_angle) cos(axis_angle) 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+		omega 0 sin(axis_angle) cos(axis_angle) 2*PI/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
 #			updirection 0 1 0
 #			updirection 0 cos(26.73*RAD_PER_DEG) sin(26.73*RAD_PER_DEG)
 		updirection 0 sin(axis_angle) cos(axis_angle)
-#		omega 0 0 1 2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+#		omega 0 0 1 2*PI/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
 		planet
 		gravity
 		spherehit
@@ -475,7 +475,7 @@ coordsys Orbit saturn{
 	coordsys Orbit saturno1{
 		orbits Saturn
 		orbit_radius 110000
-#		orbit_axis 0 sin(axis_angle/2) cos(axis_angle/2) #2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+#		orbit_axis 0 sin(axis_angle/2) cos(axis_angle/2) #2*PI/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
 		inclination axis_angle/RAD_PER_DEG
 		ascending_node 180
 		fullname "Saturn Low Orbit"
@@ -486,10 +486,10 @@ coordsys Orbit saturn{
 		updirection 0 cos(axis_angle) -sin(axis_angle)
 	}
 	coordsys Orbit saturno2{
-		define incline axis_angle-0.1*pi
+		define incline axis_angle-0.1*PI
 		orbits Saturn
 		orbit_radius 250000
-		orbit_axis 0 sin(incline/2) cos(incline/2) #2*pi/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+		orbit_axis 0 sin(incline/2) cos(incline/2) #2*PI/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
 		fullname "Saturn Low Orbit 2"
 		pos -50000 50000 0
 		bookmark "Saturn Low Orbit 2" 10 0 0

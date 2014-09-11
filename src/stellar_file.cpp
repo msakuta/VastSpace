@@ -177,14 +177,24 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 
 	const char *fname = sc.fname;
 	const CoordSys *root = sc.root;
-	struct varlist *vl = sc.vl;
 	int mode = 1;
 	int enable = 0;
-	HSQUIRRELVM v = sc.v;
+	HSQUIRRELVM v = sqvm;
 	cs->readFileStart(sc);
 	sqa::StackReserver sr(v);
+
+	// Create a temporary table for Squirrel to save CoordSys-local defines.
+	// Defined variables in parent CoordSys's can be referenced by delegation.
 	sq_newtable(v);
+	sq_pushobject(v, sc.vl->vars);
 	sq_setdelegate(v, -2);
+
+	// Replace StellarContext's current variables table with the temporary table.
+	varlist vl, *old_vl;
+	sq_getstackobj(v, -1, &vl.vars);
+	old_vl = sc.vl;
+	sc.vl = &vl;
+
 /*	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_get(v, 1);
 	sq_createinstance(v, -1);
@@ -214,16 +224,8 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 		cpplib::dstring s = argv[0];
 		cpplib::dstring ps = 1 < argv.size() ? argv[1] : "";
 		if(!strcmp(s, "define")){
-			struct var *v;
-			sc.vl->l = (var*)realloc(sc.vl->l, ++sc.vl->c * sizeof *sc.vl->l);
-			v = &sc.vl->l[sc.vl->c-1];
-			v->name = (char*)malloc(strlen(ps) + 1);
-			strcpy(v->name, ps);
-			v->type = var::CALC_D;
-			const char *av2 = argv[2];
-			v->value.d = 2 < argv.size() ? calc3(&av2, sc.vl, NULL) : 0.;
 			sq_pushstring(sc.v, ps, -1);
-			sq_pushfloat(sc.v, SQFloat(v->value.d));
+			sq_pushfloat(sc.v, SQFloat(CoordSys::sqcalc(sc, argv[2], s)));
 			sq_createslot(sc.v, -3);
 			continue;
 		}
@@ -239,7 +241,7 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			if(pathDelimit)
 				path.strncat(sc.fname, pathDelimit - sc.fname + 1);
 			path.strcat(ps);
-			StellarFileLoadInt(path, cs, vl);
+			StellarFileLoadInt(path, cs, sc.vl);
 			// TODO: Avoid recursive includes
 			continue;
 		}
@@ -306,6 +308,7 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	}
 //	sq_poptop(v);
 	cs->readFileEnd(sc);
+	sc.vl = old_vl; // Restore original variables table before returning
 	return mode;
 }
 
@@ -316,6 +319,7 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *
 		FILE *fp;
 		int mode = 0;
 		int inquote = 0;
+		varlist local_vl;
 		StellarContext sc;
 		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;
@@ -325,6 +329,7 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *
 		sc.line = 0;
 		sc.fp = fp = fopen(fname, "r");
 		sc.scanner = new StellarStructureScanner(fp);
+		sc.vl = &local_vl;
 		if(!fp)
 			return -1;
 		sc.vl = (varlist*)malloc(sizeof *sc.vl);
@@ -333,9 +338,23 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *
 		sc.vl->next = vl;
 		sc.v = univ && univ->getGame ()? univ->getGame()->sqvm : g_sqvm;
 //		sqa_init(&sc.v);
-		sq_pushroottable(sc.v);
+
+		HSQUIRRELVM v = sqvm;
+		sc.v = v;
+
+		// Create a temporary table for Squirrel to save file-local defines.
+		sq_newtable(v);
+		sq_getstackobj(v, -1, &sc.vl->vars);
+		sq_addref(v, &sc.vl->vars);
+		if(vl)
+			sq_pushobject(v, vl->vars); // If it's the first invocation, set the root table as delegate
+		else
+			sq_pushroottable(v); // otherwise, obtain a delegate table from calling file
+		sq_setdelegate(v, -2);
 
 		stellar_coordsys(sc, root);
+
+		sq_release(v, &sc.vl->vars);
 
 /*		CmdPrint("space.dat loaded.");*/
 		fclose(fp);
@@ -354,5 +373,5 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *
 }
 
 int Game::StellarFileLoad(const char *fname){
-	return StellarFileLoadInt(fname, universe, const_cast<varlist*>(calc_mathvars()));
+	return StellarFileLoadInt(fname, universe, nullptr);
 }

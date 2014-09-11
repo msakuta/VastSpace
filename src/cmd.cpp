@@ -4,6 +4,7 @@
 #include "argtok.h"
 #include "Viewer.h"
 #include "sqadapt.h"
+#include "Application.h"
 extern "C"{
 #include "calc/calc.h"
 #include <clib/c.h>
@@ -43,6 +44,7 @@ static int cvar_cmdlog = 0;
 
 static int CmdExecD(char *, bool server, ServerClient *);
 struct cmdalias **CmdAliasFindP(const char *name);
+static double cmd_sqcalc(const char *str, const SQChar *context = _SC("expression"));
 
 /* binary tree */
 static struct command{
@@ -333,8 +335,8 @@ int cmd_set(int argc, char *argv[]){
 		struct cvar *cv;
 		if(cv = CvarFind(thekey)) switch(cv->type){
 			case cvar_int: *cv->v.i = atoi(thevalue); break;
-			case cvar_float: *cv->v.f = (float)calc3(&thevalue, calc_mathvars(), NULL); break;
-			case cvar_double: *cv->v.d = calc3(&thevalue, calc_mathvars(), NULL); break;
+			case cvar_float: *cv->v.f = (float)cmd_sqcalc(thevalue); break;
+			case cvar_double: *cv->v.d = cmd_sqcalc(thevalue); break;
 			case cvar_string: cv->v.s = (char*)realloc(cv->v.s, strlen(thevalue) + 1); strcpy(cv->v.s, thevalue); break;
 		}
 		else{
@@ -736,6 +738,29 @@ int argtok(char *argv[], char *s, char **post, int maxargs){
 
 static int aliasnest = 0;
 
+static double cmd_sqcalc(const char *str, const SQChar *context){
+	HSQUIRRELVM v = application.clientGame ? application.clientGame->sqvm : application.serverGame->sqvm;
+	if(!v)
+		return 0.;
+	StackReserver st(v);
+	gltestp::dstring dst = gltestp::dstring("return(") << str << ")";
+	if(SQ_FAILED(sq_compilebuffer(v, dst, dst.len(), context, SQTrue))){
+		CmdPrint(gltestp::dstring() << "expression error: " << context);
+		return 0.;
+	}
+	sq_push(v, -2);
+	if(SQ_FAILED(sq_call(v, 1, SQTrue, SQTrue))){
+		CmdPrint(gltestp::dstring() << "evaluation error: " << context);
+		return 0.;
+	}
+	SQFloat f;
+	if(SQ_FAILED(sq_getfloat(v, -1, &f))){
+		CmdPrint(gltestp::dstring() << "expression not convertible to float: " << context);
+		return 0.;
+	}
+	return f;
+}
+
 /** destructive, i.e. cmdstring is modified by strtok or similar
  * method to tokenize. */
 static int CmdExecD(char *cmdstring, bool server, ServerClient *sc){
@@ -813,8 +838,8 @@ static int CmdExecD(char *cmdstring, bool server, ServerClient *sc){
 			}
 			else switch(cv->type){
 				case cvar_int: *cv->v.i = atoi(arg); break;
-				case cvar_float: *cv->v.f = (float)calc3(&arg, calc_mathvars(), NULL); break;
-				case cvar_double: *cv->v.d = calc3(&arg, calc_mathvars(), NULL); break;
+				case cvar_float: *cv->v.f = (float)cmd_sqcalc(arg); break;
+				case cvar_double: *cv->v.d = cmd_sqcalc(arg); break;
 				case cvar_string: cv->v.s = (char*)realloc(cv->v.s, strlen(arg) + 1); strcpy(cv->v.s, arg); break;
 			}
 			if(cv->vrc)

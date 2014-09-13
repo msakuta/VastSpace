@@ -1037,7 +1037,7 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			CoordSys::sq_pushobj(v, this); // stellarReadFile root cs
 
 			// Pass current variables table
-			sq_pushobject(v, sc.vl->vars); // stellarReadFile root cs vars
+			sq_pushobject(v, sc.vars); // stellarReadFile root cs vars
 
 			// Pass all arguments as strings (no conversion is done beforehand).
 			for(int i = 0; i < argc; i++)
@@ -1701,7 +1701,7 @@ double CoordSys::sqcalc(StellarContext &sc, const char *str, const SQChar *conte
 	gltestp::dstring dst = gltestp::dstring("return(") << str << ")";
 	if(SQ_FAILED(sq_compilebuffer(sc.v, dst, dst.len(), context, SQTrue)))
 		throw StellarError(gltestp::dstring() << "sqcalc compile error: " << context);
-	sq_pushobject(sc.v, sc.vl->vars);
+	sq_pushobject(sc.v, sc.vars);
 	if(SQ_FAILED(sq_call(sc.v, 1, SQTrue, SQTrue)))
 		throw StellarError(gltestp::dstring() << "sqcalc call error: " << context);
 	SQFloat f;

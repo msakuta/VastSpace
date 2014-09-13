@@ -62,10 +62,6 @@ function deltaFormation(classname, team, rot, offset, spacing, count, cs, proc){
 
 
 
-stellarContext <- {
-	LY= 9.4605284e12
-};
-
 // Define an event handler to process unhandled stellar file definition directives.
 function stellarReadFile(cs, varlist, name, ...){
 

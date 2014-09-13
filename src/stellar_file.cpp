@@ -183,14 +183,14 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	// Create a temporary table for Squirrel to save CoordSys-local defines.
 	// Defined variables in parent CoordSys's can be referenced by delegation.
 	sq_newtable(v);
-	sq_pushobject(v, sc.vl->vars);
+	sq_pushobject(v, sc.vars);
 	sq_setdelegate(v, -2);
 
 	// Replace StellarContext's current variables table with the temporary table.
-	varlist vl, *old_vl;
-	sq_getstackobj(v, -1, &vl.vars);
-	old_vl = sc.vl;
-	sc.vl = &vl;
+	HSQOBJECT vars;
+	sq_getstackobj(v, -1, &vars);
+	HSQOBJECT old_vars = sc.vars;
+	sc.vars = vars;
 
 /*	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_get(v, 1);
@@ -238,7 +238,7 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			if(pathDelimit)
 				path.strncat(sc.fname, pathDelimit - sc.fname + 1);
 			path.strcat(ps);
-			StellarFileLoadInt(path, cs, sc.vl);
+			StellarFileLoadInt(path, cs, &sc);
 			// TODO: Avoid recursive includes
 			continue;
 		}
@@ -305,18 +305,17 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	}
 //	sq_poptop(v);
 	cs->readFileEnd(sc);
-	sc.vl = old_vl; // Restore original variables table before returning
+	sc.vars = old_vars; // Restore original variables table before returning
 	return mode;
 }
 
-int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl){
+int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *prev_sc){
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	{
 		FILE *fp;
 		int mode = 0;
 		int inquote = 0;
-		varlist local_vl;
 		StellarContext sc;
 		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;
@@ -326,7 +325,6 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *
 		sc.line = 0;
 		sc.fp = fp = fopen(fname, "r");
 		sc.scanner = new StellarStructureScanner(fp);
-		sc.vl = &local_vl;
 		if(!fp)
 			return -1;
 //		sqa_init(&sc.v);
@@ -334,19 +332,14 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *
 		HSQUIRRELVM v = sqvm;
 		sc.v = v;
 
-		// Create a temporary table for Squirrel to save file-local defines.
-		sq_newtable(v);
-		sq_getstackobj(v, -1, &sc.vl->vars);
-		sq_addref(v, &sc.vl->vars);
-		if(vl)
-			sq_pushobject(v, vl->vars); // If it's the first invocation, set the root table as delegate
-		else
+		if(prev_sc)
+			sc.vars = prev_sc->vars; // If it's the first invocation, set the root table as delegate
+		else{
 			sq_pushroottable(v); // otherwise, obtain a delegate table from calling file
-		sq_setdelegate(v, -2);
+			sq_getstackobj(v, -1, &sc.vars);
+		}
 
 		stellar_coordsys(sc, root);
-
-		sq_release(v, &sc.vl->vars);
 
 /*		CmdPrint("space.dat loaded.");*/
 		fclose(fp);

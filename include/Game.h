@@ -149,7 +149,7 @@ protected:
 	DeleteQue deleteque;
 	bool clientDeleting;
 
-	int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl);
+	int StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *prev_sc);
 	int stellar_coordsys(StellarContext &sc, CoordSys *cs);
 
 	void adjustAutoExposure(Viewer &vw);

@@ -615,11 +615,8 @@ bool Astrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 			flags |= AO_PLANET;
 	}
 	else if(!strcmp(s, "color")){
-/*		if(s = strtok(ps, " \t\r\n"))*/{
-			COLOR32 c;
-			c = strtoul(s, NULL, 16);
-			basecolor = Vec4f(COLOR32B(c)/256.f,COLOR32G(c)/256.f,COLOR32R(c)/256.f,1.);
-		}
+		COLOR32 c = strtoul(ps, NULL, 16);
+		basecolor = Vec4f(COLOR32B(c)/256.f,COLOR32G(c)/256.f,COLOR32R(c)/256.f,1.);
 	}
 	else if(!strcmp(s, "basecolor")){
 		if(3 < argc){

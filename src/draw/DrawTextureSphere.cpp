@@ -23,6 +23,7 @@ extern "C"{
 #include <gl/glext.h>
 #include <fstream>
 #include <algorithm>
+#include <functional>
 
 #define SQRT2P2 (1.4142135623730950488016887242097/2.)
 
@@ -1050,35 +1051,69 @@ bool DrawTextureCubeEx::draw(){
 	for(auto it : orders){
 		glPushMatrix();
 		gldMultQuat(it);
-//		glTranslated(0, 0, 1);
+
+		auto height = [](int ix, int iy){
+			RandomSequence rs(ix, iy);
+			return (rs.nextGauss() * 0.05 + 1.);
+		};
+
+		auto point0 = [](int ix, int iy, std::function<double(int,int)> height){
+			auto vec0 = [&](int ix, int iy, std::function<double(int,int)> height){
+				double x = 2. * ix / divides - 1;
+				double y = 2. * iy / divides - 1;
+				return Vec3d(x, y, 1).norm() * height(ix, iy);
+			};
+			auto vec = [&](int ix, int iy){
+				return vec0(ix, iy, height);
+			};
+			Vec3d v0 = vec(ix, iy);
+			Vec3d dv01 = vec(ix, iy + 1) - v0;
+			Vec3d dv10 = vec(ix + 1, iy) - v0;
+			glNormal3dv(dv10.vp(dv01).norm());
+			glVertex3dv(v0);
+		};
+
+		auto point = [&](int ix, int iy){
+			return point0(ix, iy, height);
+		};
+
 		glBegin(GL_QUADS);
 		for(int ix = 0; ix < divides; ix++){
 			for(int iy = 0; iy < divides; iy++){
-				auto point = [](int ix, int iy){
-					auto height = [](int ix, int iy){
-						RandomSequence rs(ix, iy);
-						return (rs.nextGauss() * 0.05 + 1.);
-					};
-					auto vec0 = [&](int ix, int iy, bool varheight){
-						double x = 2. * ix / divides - 1;
-						double y = 2. * iy / divides - 1;
-						return Vec3d(x, y, 1).norm() * (varheight ? height(ix, iy) : 1.);
-					};
-					auto vec = [&](int ix, int iy){
-						return vec0(ix, iy, true);
-					};
-					Vec3d v0 = vec(ix, iy);
-					Vec3d dv01 = vec(ix, iy + 1) - v0;
-					Vec3d dv10 = vec(ix + 1, iy) - v0;
-					glNormal3dv(dv10.vp(dv01).norm());
-					glVertex3dv(v0);
-				};
 				point(ix, iy);
 				point(ix + 1, iy);
 				point(ix + 1, iy + 1);
 				point(ix, iy + 1);
 			}
 		}
+
+		auto swapper = [](std::function<void()> a, std::function<void()> b, bool order){
+			if(order) a(), b();
+			else b(), a();
+		};
+
+		for(int iy = 0; iy < 2; iy++){
+			for(int ix = 0; ix < divides; ix++){
+				swapper(
+					[&](){point(ix + 0, iy * divides);},
+					[&](){point(ix + 1, iy * divides);}, iy);
+				swapper(
+					[&](){point0(ix + 1, iy * divides, [](int,int){return 0.75;});},
+					[&](){point0(ix + 0, iy * divides, [](int,int){return 0.75;});}, iy);
+			}
+		}
+
+		for(int ix = 0; ix < 2; ix++){
+			for(int iy = 0; iy < divides; iy++){
+				swapper(
+					[&](){point(ix * divides, iy + 1);},
+					[&](){point(ix * divides, iy + 0);}, ix);
+				swapper(
+					[&](){point0(ix * divides, iy + 0, [](int,int){return 0.75;});},
+					[&](){point0(ix * divides, iy + 1, [](int,int){return 0.75;});}, ix);
+			}
+		}
+
 		glEnd();
 		glPopMatrix();
 	}

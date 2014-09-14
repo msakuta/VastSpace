@@ -34,6 +34,12 @@
     <Filter Include="Exported Headers\audio">
       <UniqueIdentifier>{7f0dce78-09be-4d45-8581-dde75bb746ab}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\noises">
+      <UniqueIdentifier>{4e3fc64c-2945-48a2-addb-3f8b74002a87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers\noises">
+      <UniqueIdentifier>{a9b6684b-b6b9-4d4a-931c-6575bf61d19b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Sceptor.cpp">
@@ -335,6 +341,12 @@
     </ClCompile>
     <ClCompile Include="..\src\png.cpp">
       <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\noises\simplexnoise1234.cpp">
+      <Filter>Sources\noises</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\noises\sdnoise1234.cpp">
+      <Filter>Sources\noises</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -656,6 +668,12 @@
     <ClInclude Include="..\include\Entity-property.h\Header.h" />
     <ClInclude Include="..\src\CoordSys-sq.h">
       <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\noises\sdnoise1234.h">
+      <Filter>Headers\noises</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\noises\simplexnoise1234.h">
+      <Filter>Headers\noises</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

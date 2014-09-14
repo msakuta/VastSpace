@@ -1,6 +1,7 @@
 /** \file
  * \brief Implementation of DrawTextureSphere and DrawTextureSpheroid classes.
  */
+#define NOMINMAX
 #include "DrawTextureSphere.h"
 #include "astrodef.h"
 #include "glsl.h"
@@ -21,6 +22,7 @@ extern "C"{
 #include <gl/glu.h>
 #include <gl/glext.h>
 #include <fstream>
+#include <algorithm>
 
 #define SQRT2P2 (1.4142135623730950488016887242097/2.)
 
@@ -182,7 +184,7 @@ void drawIcosaSphere(const Vec3d &org, double radius, const Viewer &vw, const Ve
 //	double maxlevel = 8 * (1. - log(wd->vw->pos.slen() - 1. + 1.));
 //	double maxlevel = 8 * (1. - (1. - pow(wd->vw->pos.slen(), gpow)) * gscale);
 	arg.maxlevel = g_sc < 0 ? maxlevel : g_sc;
-	int pixelminlevel = int(min(sqrt(pixels * .1), 3));
+	int pixelminlevel = int(std::min(sqrt(pixels * .1), 3.));
 	if(arg.maxlevel < pixelminlevel) arg.maxlevel = pixelminlevel;
 	if(8 < arg.maxlevel) arg.maxlevel = 8;
 	arg.culllevel = g_cl < 0 ? arg.maxlevel - 1 : g_cl;
@@ -572,7 +574,7 @@ void DrawTextureSphere::useShader(){
 			glUniform1f(locs.timeLoc, GLfloat(vw->viewtime));
 		}
 		if(0 <= locs.heightLoc){
-			glUniform1f(locs.heightLoc, GLfloat(max(0, dist - a->rad)));
+			glUniform1f(locs.heightLoc, GLfloat(std::max(0., dist - a->rad)));
 		}
 		if(0 <= locs.exposureLoc){
 			glUniform1f(locs.exposureLoc, r_exposure);
@@ -1024,23 +1026,57 @@ bool DrawTextureCubeEx::draw(){
 
 	setupLight();
 
+	glEnable(GL_DEPTH_TEST);
+
+	// Can get close as one meter
+	double nearest = std::max(1e-3, (apos - vw->pos).len() - 2. * m_rad);
+	double farthest = (apos - vw->pos).len() + 2. * m_rad;
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	const_cast<Viewer*>(vw)->frustum(nearest, farthest);
+	glMatrixMode(GL_MODELVIEW);
+
 	glEnable(GL_CULL_FACE);
 
-	for(int i = 0; i < numof(cubedirs); i++){
+	Quatd orders[numof(cubedirs)];
+	std::move(cubedirs, &cubedirs[numof(cubedirs)], orders);
+	std::sort(&orders[0], &orders[numof(orders)], [&](const Quatd &a, const Quatd &b){
+		return (apos + a.trans(Vec3d(0,0,1)) - vw->pos).slen()
+			> (apos + b.trans(Vec3d(0,0,1)) - vw->pos).slen();
+	});
+
+	for(auto it : orders){
 		glPushMatrix();
-		gldMultQuat(cubedirs[i]);
+		gldMultQuat(it);
 //		glTranslated(0, 0, 1);
 		glBegin(GL_QUADS);
 		for(int ix = 0; ix < divides; ix++){
 			for(int iy = 0; iy < divides; iy++){
-				auto point = [](double x, double y){
-					glNormal3dv(Vec3d(x, y, 1));
-					glVertex3dv(Vec3d(x, y, 1).norm());
+				auto point = [](int ix, int iy){
+					auto height = [](int ix, int iy){
+						RandomSequence rs(ix, iy);
+						return (rs.nextGauss() * 0.05 + 1.);
+					};
+					auto vec0 = [&](int ix, int iy, bool varheight){
+						double x = 2. * ix / divides - 1;
+						double y = 2. * iy / divides - 1;
+						return Vec3d(x, y, 1).norm() * (varheight ? height(ix, iy) : 1.);
+					};
+					auto vec = [&](int ix, int iy){
+						return vec0(ix, iy, true);
+					};
+					Vec3d v0 = vec(ix, iy);
+					Vec3d dv01 = vec(ix, iy + 1) - v0;
+					Vec3d dv10 = vec(ix + 1, iy) - v0;
+					glNormal3dv(dv10.vp(dv01).norm());
+					glVertex3dv(v0);
 				};
-				point(2. * ix / divides - 1, 2. * iy / divides - 1);
-				point(2. * (ix+1) / divides - 1, 2. * iy / divides - 1);
-				point(2. * (ix+1) / divides - 1, 2. * (iy+1) / divides - 1);
-				point(2. * ix / divides - 1, 2. * (iy+1) / divides - 1);
+				point(ix, iy);
+				point(ix + 1, iy);
+				point(ix + 1, iy + 1);
+				point(ix, iy + 1);
 			}
 		}
 		glEnd();
@@ -1048,6 +1084,10 @@ bool DrawTextureCubeEx::draw(){
 	}
 
 	glPopAttrib();
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
 
 	glPopMatrix();
 	return true;

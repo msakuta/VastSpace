@@ -348,7 +348,7 @@ void TexSphere::draw(const Viewer *vw){
 					}
 				}
 			}
-			bool ret = DrawTextureSphere(this, vw, sunpos)
+			bool ret = DrawTextureCubeEx(this, vw, sunpos)
 				.flags(DTS_LIGHTING)
 				.mat_diffuse(basecolor)
 				.mat_ambient(basecolor / 2.f)

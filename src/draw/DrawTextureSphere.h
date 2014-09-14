@@ -114,4 +114,13 @@ public:
 };
 
 
+class DrawTextureCubeEx : public DrawTextureSphere{
+public:
+	typedef DrawTextureSphere st;
+	typedef DrawTextureCubeEx tt;
+
+	tt(TexSphere *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos){}
+	bool draw()override;
+};
+
 #endif

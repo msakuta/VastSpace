@@ -1010,6 +1010,49 @@ void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos,
 }
 
 
+bool DrawTextureCubeEx::draw(){
+	if(drawSimple())
+		return true;
+
+	static const int divides = 32;
+
+	glPushMatrix();
+	gldTranslate3dv(this->apos - vw->pos);
+	glScaled(m_rad, m_rad, m_rad);
+
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_LIGHTING_BIT);
+
+	setupLight();
+
+	glEnable(GL_CULL_FACE);
+
+	for(int i = 0; i < numof(cubedirs); i++){
+		glPushMatrix();
+		gldMultQuat(cubedirs[i]);
+//		glTranslated(0, 0, 1);
+		glBegin(GL_QUADS);
+		for(int ix = 0; ix < divides; ix++){
+			for(int iy = 0; iy < divides; iy++){
+				auto point = [](double x, double y){
+					glNormal3dv(Vec3d(x, y, 1));
+					glVertex3dv(Vec3d(x, y, 1).norm());
+				};
+				point(2. * ix / divides - 1, 2. * iy / divides - 1);
+				point(2. * (ix+1) / divides - 1, 2. * iy / divides - 1);
+				point(2. * (ix+1) / divides - 1, 2. * (iy+1) / divides - 1);
+				point(2. * ix / divides - 1, 2. * (iy+1) / divides - 1);
+			}
+		}
+		glEnd();
+		glPopMatrix();
+	}
+
+	glPopAttrib();
+
+	glPopMatrix();
+	return true;
+}
+
 
 
 #define DETAILSIZE 64

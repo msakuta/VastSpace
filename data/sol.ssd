@@ -353,18 +353,7 @@ coordsys Orbit marss{
 	}
 }
 
-astro "Ceres"{
-	radius 487.3
-	mass 9.43e20
-	orbits Sol
-	orbit_radius 414703838
-	eccentricity 0.07976017
-	inclination 10.586712
-	ascending_node 80.40
-	argument_of_periapsis 72.90
-	planet
-	color e0d0c0
-}
+include Ceres.ssd
 
 coordsys Orbit jupiter{
 	fullname "Jupiter"

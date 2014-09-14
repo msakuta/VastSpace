@@ -1,0 +1,27 @@
+coordsys Orbit ceres{
+	orbits Sol
+	semimajor_axis 2.765*AU
+	eccentricity 0.079
+	inclination 10.59
+	cs_radius 10000
+	showorbit
+
+	astro TextureSphere Ceres{
+		radius 959.2
+		mass 9.445e20
+		omega 0 1 0 "2.*PI/(9.074170*HOUR_SECONDS)"
+
+		color e0d0c0
+	}
+
+	coordsys Orbit cereslo{
+		cs_radius 200
+		fullname "Ceres Low orbit"
+		orbits Ceres
+		orbit_radius 100+959.2
+		inclination 10
+		argument_of_periapsis 90
+		ascending_node 0
+		rotation Quatd.rotation(0.65*PI,Vec3d(1,0,0))
+	}
+}

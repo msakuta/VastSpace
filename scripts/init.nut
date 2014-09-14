@@ -318,6 +318,7 @@ function init_Universe(){
 //		universe.findcspath("Alpha Centauri/a/orbit"),
 //		universe.findcspath("/earth/Earth/earths"),
 //		universe.findcspath("/earth/moon/moonlo"),
+		universe.findcspath("/ceres/cereslo"),
 		universe.findcspath("/saturn/saturno1"),
 //		universe.findcspath("/sunlo"),
 		universe.findcspath("/earth/lo"),

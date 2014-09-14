@@ -229,6 +229,8 @@ coordsys Orbit earth{
 	}
 }
 
+include Ceres.ssd
+
 /*coordsys Orbit venus{
 	fullname Venus
 	cs_radius 1000000

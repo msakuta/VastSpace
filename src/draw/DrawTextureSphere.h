@@ -122,6 +122,8 @@ public:
 	tt(TexSphere *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos){}
 	bool draw()override;
 
+	static const int lods = 2;
+
 	/// \brief A set of vertex buffer object indices.
 	struct BufferSet{
 		GLuint pos; ///< Position vector buffer.
@@ -129,6 +131,25 @@ public:
 		GLuint tex; ///< Texture coordinates buffer.
 		GLuint ind; ///< Index buffer into all three buffers above.
 		unsigned count; ///< Count of vertices ind member contains.
+
+		/// Get base index of given LOD and direction ID
+		unsigned getBase(int lod, int direction){
+			if(lod == 0 && direction == 0)
+				return 0;
+			else if(direction == 0)
+				return baseIdx[lod-1][numof(cubedirs)-1];
+			else
+				return baseIdx[lod][direction-1];
+		}
+
+		/// Get count of vertices in given LOD and direction ID
+		unsigned getCount(int lod, int direction){
+			assert(lod < lods && direction < numof(cubedirs));
+			return baseIdx[lod][direction] - getBase(lod, direction);
+		}
+
+		/// Data member to calculate base and count (should be protected?)
+		GLuint baseIdx[lods][numof(cubedirs)];
 	};
 	typedef std::map<Astrobj*, BufferSet> BufferSets;
 

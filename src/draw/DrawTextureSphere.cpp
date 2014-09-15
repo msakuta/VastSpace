@@ -1135,8 +1135,12 @@ bool DrawTextureCubeEx::draw(){
 		// Index array
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs.ind);
 
-		glDrawElements(GL_QUADS, bufs.count, GL_UNSIGNED_INT, 0);
-//		glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+		for(int i = 0; i < 6; i++){
+			int currentLOD = (apos + cubedirs[i].trans(Vec3d(0,0,m_rad)) - vw->pos).len() / m_rad < 2. ? 1 : 0;
+
+			glDrawElements(GL_QUADS, bufs.getCount(currentLOD, i),
+			GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(currentLOD, i)]);
+		}
 
 		glDisableClientState(GL_VERTEX_ARRAY);
 		glDisableClientState(GL_NORMAL_ARRAY);
@@ -1223,59 +1227,66 @@ struct TempVertex{
 /// Compile vertex buffer objects for each attributes.
 void DrawTextureCubeEx::compileVertexBuffers()const{
 
-	static const int divides = 32;
-
 	BufferData bd;
+
+	BufferSet bufs;
 
 	// Note that we need to accumulate primitives for each attributes, because
 	// it's costly to switch attributes between primitives.
-	for(auto it : cubedirs){
+	for(int n = 0; n < lods; n++){
+		const int divides = 16 * (1 << (2 *n));
 
-		static auto sfnoise3 = [](const Vec3d &basepos, int octaves, double persistence){
-			double ret = 0.;
-			double f = 1.;
-			for(int i = 0; i < octaves; i++){
-				double s = 1. / (1 << i);
-				f *= persistence;
-				ret += f * snoise3(basepos[0], basepos[1], basepos[2]);
-			}
-			return ret;
-		};
+		for(int i = 0; i < numof(cubedirs); i++){
+			const Quatd &it = cubedirs[i];
 
-		static auto height = [](const Vec3d &basepos){
-			return (sfnoise3(basepos * 4, 3, 0.5) * 0.01 + 1.);
-		};
-
-		typedef std::function<double(const Vec3d &basepos)> HeightGetter;
-
-		auto point0 = [&](int ix, int iy, HeightGetter height){
-			float gx, gy;
-			auto vec = [&](int ix, int iy, float *gx, float *gy){
-				double x = 2. * ix / divides - 1;
-				double y = 2. * iy / divides - 1;
-				Vec3d basepos = it.trans(Vec3d(x, y, 1).norm());
-				return basepos * height(basepos);
+			static auto sfnoise3 = [](const Vec3d &basepos, int octaves, double persistence){
+				double ret = 0.;
+				double f = 1.;
+				for(int i = 0; i < octaves; i++){
+					double s = 1. / (1 << i);
+					f *= persistence;
+					ret += f * snoise3(basepos[0], basepos[1], basepos[2]);
+				}
+				return ret;
 			};
-			Vec3d v0 = vec(ix, iy, &gx, &gy);
-			Vec3d dv01 = vec(ix, iy + 1, nullptr, nullptr) - v0;
-			Vec3d dv10 = vec(ix + 1, iy, nullptr, nullptr) - v0;
-			Vec3d nrm = dv10.vp(dv01).norm();
-//			glNormal3dv(Vec3d(gx, gy, 1.));
-//			bd.plainVertices.push_back(v0);
-			TempVertex::insert(bd, v0, nrm, v0, *this);
-		};
 
-		auto point = [&](int ix, int iy){
-			return point0(ix, iy, height);
-		};
+			static auto height = [](const Vec3d &basepos){
+				return (sfnoise3(basepos * 4, 3, 0.5) * 0.01 + 1.);
+			};
 
-		for(int ix = 0; ix < divides; ix++){
-			for(int iy = 0; iy < divides; iy++){
-				point(ix, iy);
-				point(ix + 1, iy);
-				point(ix + 1, iy + 1);
-				point(ix, iy + 1);
+			typedef std::function<double(const Vec3d &basepos)> HeightGetter;
+
+			auto point0 = [&](int ix, int iy, HeightGetter height){
+				float gx, gy;
+				auto vec = [&](int ix, int iy, float *gx, float *gy){
+					double x = 2. * ix / divides - 1;
+					double y = 2. * iy / divides - 1;
+					Vec3d basepos = it.trans(Vec3d(x, y, 1).norm());
+					return basepos * height(basepos);
+				};
+				Vec3d v0 = vec(ix, iy, &gx, &gy);
+				Vec3d dv01 = vec(ix, iy + 1, nullptr, nullptr) - v0;
+				Vec3d dv10 = vec(ix + 1, iy, nullptr, nullptr) - v0;
+				Vec3d nrm = dv10.vp(dv01).norm();
+	//			glNormal3dv(Vec3d(gx, gy, 1.));
+	//			bd.plainVertices.push_back(v0);
+				TempVertex::insert(bd, v0, nrm, v0, *this);
+			};
+
+			auto point = [&](int ix, int iy){
+				return point0(ix, iy, height);
+			};
+
+			for(int ix = 0; ix < divides; ix++){
+				for(int iy = 0; iy < divides; iy++){
+					point(ix, iy);
+					point(ix + 1, iy);
+					point(ix + 1, iy + 1);
+					point(ix, iy + 1);
+				}
 			}
+
+			bufs.baseIdx[n][i] = bd.indices.size();
 		}
 	}
 
@@ -1284,8 +1295,6 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 	if(bd.indices.size() == 0){
 		return;
 	}
-
-	BufferSet bufs;
 
 	// Allocate buffer objects only if we're sure that there are at least one primitive.
 	GLuint bs[4];

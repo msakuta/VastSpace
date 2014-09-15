@@ -9,6 +9,7 @@
 #include "StaticInitializer.h"
 #include "bitmap.h"
 #include "draw/HDR.h"
+#include "../noises/sdnoise1234.h"
 #undef exit
 extern "C"{
 #include <clib/timemeas.h>
@@ -1052,24 +1053,41 @@ bool DrawTextureCubeEx::draw(){
 		glPushMatrix();
 		gldMultQuat(it);
 
-		auto height = [](int ix, int iy){
-			RandomSequence rs(ix, iy);
-			return (rs.nextGauss() * 0.05 + 1.);
+		static auto sfnoise2 = [](int ix, int iy, float *gx, float *gy, int octaves, double persistence){
+			double ret = 0.;
+			double f = 1.;
+			float gx0 = 0, gy0 = 0.;
+			for(int i = 0; i < octaves; i++){
+				double s = 1. / (1 << i);
+				f *= persistence;
+				float gx1, gy1;
+				ret += f * sdnoise2(s * ix, s * iy, &gx1, &gy1);
+				gx0 += f * gx1;
+				gy0 += f * gy1;
+			}
+			if(gx) *gx = gx0;
+			if(gy) *gy = gy0;
+			return ret;
 		};
 
-		auto point0 = [](int ix, int iy, std::function<double(int,int)> height){
-			auto vec0 = [&](int ix, int iy, std::function<double(int,int)> height){
+		static auto height = [](int ix, int iy, float *gx, float *gy){
+			return (sfnoise2(ix, iy, gx, gy, 3, 0.5) * 0.05 + 1.);
+		};
+
+		typedef std::function<double(int,int,float*,float*)> HeightGetter;
+
+		auto point0 = [](int ix, int iy, HeightGetter height){
+			float gx, gy;
+			auto vec = [&](int ix, int iy, float *gx, float *gy){
 				double x = 2. * ix / divides - 1;
 				double y = 2. * iy / divides - 1;
-				return Vec3d(x, y, 1).norm() * height(ix, iy);
+				return Vec3d(x, y, 1).norm() * height(ix, iy, gx, gy);
 			};
-			auto vec = [&](int ix, int iy){
-				return vec0(ix, iy, height);
-			};
-			Vec3d v0 = vec(ix, iy);
-			Vec3d dv01 = vec(ix, iy + 1) - v0;
-			Vec3d dv10 = vec(ix + 1, iy) - v0;
+			Vec3d v0 = vec(ix, iy, &gx, &gy);
+			Vec3d dv01 = vec(ix, iy + 1, nullptr, nullptr) - v0;
+			Vec3d dv10 = vec(ix + 1, iy, nullptr, nullptr) - v0;
 			glNormal3dv(dv10.vp(dv01).norm());
+//			glNormal3dv(Vec3d(gx, gy, 1.));
 			glVertex3dv(v0);
 		};
 
@@ -1098,8 +1116,8 @@ bool DrawTextureCubeEx::draw(){
 					[&](){point(ix + 0, iy * divides);},
 					[&](){point(ix + 1, iy * divides);}, iy);
 				swapper(
-					[&](){point0(ix + 1, iy * divides, [](int,int){return 0.75;});},
-					[&](){point0(ix + 0, iy * divides, [](int,int){return 0.75;});}, iy);
+					[&](){point0(ix + 1, iy * divides, [](int,int,float*,float*){return 0.75;});},
+					[&](){point0(ix + 0, iy * divides, [](int,int,float*,float*){return 0.75;});}, iy);
 			}
 		}
 
@@ -1109,8 +1127,8 @@ bool DrawTextureCubeEx::draw(){
 					[&](){point(ix * divides, iy + 1);},
 					[&](){point(ix * divides, iy + 0);}, ix);
 				swapper(
-					[&](){point0(ix * divides, iy + 0, [](int,int){return 0.75;});},
-					[&](){point0(ix * divides, iy + 1, [](int,int){return 0.75;});}, ix);
+					[&](){point0(ix * divides, iy + 0, [](int,int,float*,float*){return 0.75;});},
+					[&](){point0(ix * divides, iy + 1, [](int,int,float*,float*){return 0.75;});}, ix);
 			}
 		}
 

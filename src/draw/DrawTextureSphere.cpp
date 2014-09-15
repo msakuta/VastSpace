@@ -9,7 +9,7 @@
 #include "StaticInitializer.h"
 #include "bitmap.h"
 #include "draw/HDR.h"
-#include "../noises/sdnoise1234.h"
+#include "../noises/simplexnoise1234.h"
 #undef exit
 extern "C"{
 #include <clib/timemeas.h>
@@ -1051,37 +1051,32 @@ bool DrawTextureCubeEx::draw(){
 
 	for(auto it : orders){
 		glPushMatrix();
-		gldMultQuat(it);
+//		gldMultQuat(it);
 
-		static auto sfnoise2 = [](int ix, int iy, float *gx, float *gy, int octaves, double persistence){
+		static auto sfnoise3 = [](const Vec3d &basepos, int octaves, double persistence){
 			double ret = 0.;
 			double f = 1.;
-			float gx0 = 0, gy0 = 0.;
 			for(int i = 0; i < octaves; i++){
 				double s = 1. / (1 << i);
 				f *= persistence;
-				float gx1, gy1;
-				ret += f * sdnoise2(s * ix, s * iy, &gx1, &gy1);
-				gx0 += f * gx1;
-				gy0 += f * gy1;
+				ret += f * snoise3(basepos[0], basepos[1], basepos[2]);
 			}
-			if(gx) *gx = gx0;
-			if(gy) *gy = gy0;
 			return ret;
 		};
 
-		static auto height = [](int ix, int iy, float *gx, float *gy){
-			return (sfnoise2(ix, iy, gx, gy, 3, 0.5) * 0.05 + 1.);
+		static auto height = [](const Vec3d &basepos){
+			return (sfnoise3(basepos * 4, 3, 0.5) * 0.01 + 1.);
 		};
 
-		typedef std::function<double(int,int,float*,float*)> HeightGetter;
+		typedef std::function<double(const Vec3d &basepos)> HeightGetter;
 
-		auto point0 = [](int ix, int iy, HeightGetter height){
+		auto point0 = [&](int ix, int iy, HeightGetter height){
 			float gx, gy;
 			auto vec = [&](int ix, int iy, float *gx, float *gy){
 				double x = 2. * ix / divides - 1;
 				double y = 2. * iy / divides - 1;
-				return Vec3d(x, y, 1).norm() * height(ix, iy, gx, gy);
+				Vec3d basepos = it.trans(Vec3d(x, y, 1).norm());
+				return basepos * height(basepos);
 			};
 			Vec3d v0 = vec(ix, iy, &gx, &gy);
 			Vec3d dv01 = vec(ix, iy + 1, nullptr, nullptr) - v0;
@@ -1104,7 +1099,7 @@ bool DrawTextureCubeEx::draw(){
 				point(ix, iy + 1);
 			}
 		}
-
+#if 0
 		auto swapper = [](std::function<void()> a, std::function<void()> b, bool order){
 			if(order) a(), b();
 			else b(), a();
@@ -1116,8 +1111,8 @@ bool DrawTextureCubeEx::draw(){
 					[&](){point(ix + 0, iy * divides);},
 					[&](){point(ix + 1, iy * divides);}, iy);
 				swapper(
-					[&](){point0(ix + 1, iy * divides, [](int,int,float*,float*){return 0.75;});},
-					[&](){point0(ix + 0, iy * divides, [](int,int,float*,float*){return 0.75;});}, iy);
+					[&](){point0(ix + 1, iy * divides, [](const Vec3d &){return 0.75;});},
+					[&](){point0(ix + 0, iy * divides, [](const Vec3d &){return 0.75;});}, iy);
 			}
 		}
 
@@ -1127,10 +1122,11 @@ bool DrawTextureCubeEx::draw(){
 					[&](){point(ix * divides, iy + 1);},
 					[&](){point(ix * divides, iy + 0);}, ix);
 				swapper(
-					[&](){point0(ix * divides, iy + 0, [](int,int,float*,float*){return 0.75;});},
-					[&](){point0(ix * divides, iy + 1, [](int,int,float*,float*){return 0.75;});}, ix);
+					[&](){point0(ix * divides, iy + 0, [](const Vec3d &){return 0.75;});},
+					[&](){point0(ix * divides, iy + 1, [](const Vec3d &){return 0.75;});}, ix);
 			}
 		}
+#endif
 
 		glEnd();
 		glPopMatrix();

@@ -1109,37 +1109,63 @@ bool DrawTextureCubeEx::draw(){
 		glEnableClientState(GL_NORMAL_ARRAY);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-		/* Vertex array */
-		glBindBuffer(GL_ARRAY_BUFFER, bufs.pos);
-		glVertexPointer(3, GL_DOUBLE, 0, (0));
+		static auto enableBuffer = [](SubBufferSet &bufs){
+			/* Vertex array */
+			glBindBuffer(GL_ARRAY_BUFFER, bufs.pos);
+			glVertexPointer(3, GL_DOUBLE, 0, (0));
 
-		/* Normal array */
-		glBindBuffer(GL_ARRAY_BUFFER, bufs.nrm);
-		glNormalPointer(GL_DOUBLE, 0, (0));
+			/* Normal array */
+			glBindBuffer(GL_ARRAY_BUFFER, bufs.nrm);
+			glNormalPointer(GL_DOUBLE, 0, (0));
 
-		/* Texture coordinates array */
-		// Repeat the same coordinates for the second texture.
-		// This behavior probably should be able to be customized.
-		if(glClientActiveTextureARB){
-			glClientActiveTextureARB(GL_TEXTURE0_ARB);
-			glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
-			glTexCoordPointer(3, GL_DOUBLE, 0, (0));
+			/* Texture coordinates array */
+			// Repeat the same coordinates for the second texture.
+			// This behavior probably should be able to be customized.
+			if(glClientActiveTextureARB){
+				glClientActiveTextureARB(GL_TEXTURE0_ARB);
+				glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
+				glTexCoordPointer(3, GL_DOUBLE, 0, (0));
 
-			glClientActiveTextureARB(GL_TEXTURE1_ARB);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
-			glTexCoordPointer(3, GL_DOUBLE, 0, (0));
-			glClientActiveTextureARB(GL_TEXTURE0_ARB); // Restore the default
-		}
+				glClientActiveTextureARB(GL_TEXTURE1_ARB);
+				glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+				glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
+				glTexCoordPointer(3, GL_DOUBLE, 0, (0));
+				glClientActiveTextureARB(GL_TEXTURE0_ARB); // Restore the default
+			}
 
-		// Index array
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs.ind);
+			// Index array
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs.ind);
+		};
+
+		enableBuffer(bufs);
 
 		for(int i = 0; i < 6; i++){
 			int currentLOD = (apos + cubedirs[i].trans(Vec3d(0,0,m_rad)) - vw->pos).len() / m_rad < 2. ? 1 : 0;
 
-			glDrawElements(GL_QUADS, bufs.getCount(currentLOD, i),
-			GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(currentLOD, i)]);
+			if(0 < currentLOD){
+				for(int ix = 0; ix < lodPatchSize; ix++){
+					for(int iy = 0; iy < lodPatchSize; iy++){
+						double x = 2. * ix / lodPatchSize - 1.;
+						double y = 2. * iy / lodPatchSize - 1.;
+						Vec3d rpos = Vec3d(x,y,1).norm() * m_rad;
+						bool patchDetail = (apos + cubedirs[i].trans(rpos) - vw->pos).len() / (m_rad / lodPatchSize) < 2.;
+						if(!patchDetail)
+							glDrawElements(GL_QUADS, bufs.getPatchCount(currentLOD, i, ix * lodPatchSize + iy),
+								GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(currentLOD, i, ix * lodPatchSize + iy)]);
+						else{
+							auto it2 = bufs.subbufs.find(SubKey(i, ix, iy));
+							if(it2 == bufs.subbufs.end())
+								it2 = compileVertexBuffersSubBuf(it->second, i, ix, iy);
+							enableBuffer(it2->second);
+							glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
+							enableBuffer(bufs);
+						}
+					}
+				}
+			}
+			else
+				glDrawElements(GL_QUADS, bufs.getCount(currentLOD, i),
+					GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(currentLOD, i)]);
 		}
 
 		glDisableClientState(GL_VERTEX_ARRAY);
@@ -1165,7 +1191,7 @@ struct TempVertex;
 typedef std::map<TempVertex, GLuint> VertexIndMap;
 
 /// Set of data buffers that should be inserted during VBO compilation.
-struct BufferData{
+struct DrawTextureCubeEx::BufferData{
 	VertexIndMap mapVertices;
 	VecList plainVertices;
 	VecList plainNormals;
@@ -1209,7 +1235,7 @@ struct TempVertex{
 	}
 
 	// Template function to insert a vertex for either a Polygon or an UVPolygon.
-	static void insert(BufferData &bd, const Vec3d &pos, const Vec3d &nrm, const Vec3d &tex, const DrawTextureCubeEx &mesh){
+	static void insert(DrawTextureCubeEx::BufferData &bd, const Vec3d &pos, const Vec3d &nrm, const Vec3d &tex, const DrawTextureCubeEx &mesh){
 		TempVertex tv(mesh, pos, nrm, tex);
 		VertexIndMap::iterator it = bd.mapVertices.find(tv);
 		if(it != bd.mapVertices.end())
@@ -1222,6 +1248,36 @@ struct TempVertex{
 			bd.plainTextures.push_back(tv.tex);
 		}
 	}
+};
+
+static double sfnoise3(const Vec3d &basepos, int octaves, double persistence){
+	double ret = 0.;
+	double f = 1.;
+	for(int i = 0; i < octaves; i++){
+		double s = (1 << i);
+		f *= persistence;
+		ret += f * snoise3(basepos[0] * s, basepos[1] * s, basepos[2] * s);
+	}
+	return ret;
+};
+
+static double height(const Vec3d &basepos){
+	return (sfnoise3(basepos, 7, 0.65) * 0.02 + 1.);
+};
+
+void DrawTextureCubeEx::point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter height)const{
+	float gx, gy;
+	auto vec = [&](int ix, int iy){
+		double x = 2. * ix / divides - 1;
+		double y = 2. * iy / divides - 1;
+		Vec3d basepos = rot.trans(Vec3d(x, y, 1).norm());
+		return basepos * height(basepos);
+	};
+	Vec3d v0 = vec(ix, iy);
+	Vec3d dv01 = vec(ix, iy + 1) - v0;
+	Vec3d dv10 = vec(ix + 1, iy) - v0;
+	Vec3d nrm = dv10.vp(dv01).norm();
+	TempVertex::insert(bd, v0, nrm, v0, *this);
 };
 
 /// Compile vertex buffer objects for each attributes.
@@ -1239,54 +1295,24 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 		for(int i = 0; i < numof(cubedirs); i++){
 			const Quatd &it = cubedirs[i];
 
-			static auto sfnoise3 = [](const Vec3d &basepos, int octaves, double persistence){
-				double ret = 0.;
-				double f = 1.;
-				for(int i = 0; i < octaves; i++){
-					double s = 1. / (1 << i);
-					f *= persistence;
-					ret += f * snoise3(basepos[0], basepos[1], basepos[2]);
-				}
-				return ret;
-			};
-
-			static auto height = [](const Vec3d &basepos){
-				return (sfnoise3(basepos * 4, 3, 0.5) * 0.01 + 1.);
-			};
-
-			typedef std::function<double(const Vec3d &basepos)> HeightGetter;
-
-			auto point0 = [&](int ix, int iy, HeightGetter height){
-				float gx, gy;
-				auto vec = [&](int ix, int iy, float *gx, float *gy){
-					double x = 2. * ix / divides - 1;
-					double y = 2. * iy / divides - 1;
-					Vec3d basepos = it.trans(Vec3d(x, y, 1).norm());
-					return basepos * height(basepos);
-				};
-				Vec3d v0 = vec(ix, iy, &gx, &gy);
-				Vec3d dv01 = vec(ix, iy + 1, nullptr, nullptr) - v0;
-				Vec3d dv10 = vec(ix + 1, iy, nullptr, nullptr) - v0;
-				Vec3d nrm = dv10.vp(dv01).norm();
-	//			glNormal3dv(Vec3d(gx, gy, 1.));
-	//			bd.plainVertices.push_back(v0);
-				TempVertex::insert(bd, v0, nrm, v0, *this);
-			};
-
 			auto point = [&](int ix, int iy){
-				return point0(ix, iy, height);
+				return point0(divides, it, bd, ix, iy, height);
 			};
 
-			for(int ix = 0; ix < divides; ix++){
-				for(int iy = 0; iy < divides; iy++){
-					point(ix, iy);
-					point(ix + 1, iy);
-					point(ix + 1, iy + 1);
-					point(ix, iy + 1);
+			for(int px = 0; px < lodPatchSize; px++){
+				for(int py = 0; py < lodPatchSize; py++){
+					for(int ix = px * divides / lodPatchSize; ix < (px + 1) * divides / lodPatchSize; ix++){
+						for(int iy = py * divides / lodPatchSize; iy < (py + 1) * divides / lodPatchSize; iy++){
+							point(ix, iy);
+							point(ix + 1, iy);
+							point(ix + 1, iy + 1);
+							point(ix, iy + 1);
+						}
+					}
+					bufs.baseIdx[n][i][px * lodPatchSize + py] = bd.indices.size();
 				}
 			}
 
-			bufs.baseIdx[n][i] = bd.indices.size();
 		}
 	}
 
@@ -1296,6 +1322,46 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 		return;
 	}
 
+	setVertexBuffers(bd, bufs);
+
+	bufsets[a] = bufs;
+}
+
+
+DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubBuf(BufferSet &bs, int direction, int px, int py){
+	const int n = 2;
+	const int divides = 16 * (1 << (2 * n));
+
+	BufferData bd;
+
+	SubBufferSet bufs;
+
+	const Quatd &rot = cubedirs[direction];
+
+	auto point = [&](int ix, int iy){
+		return point0(divides, rot, bd, ix, iy, height);
+	};
+
+	for(int ix = px * divides / lodPatchSize; ix < (px + 1) * divides / lodPatchSize; ix++){
+		for(int iy = py * divides / lodPatchSize; iy < (py + 1) * divides / lodPatchSize; iy++){
+			point(ix, iy);
+			point(ix + 1, iy);
+			point(ix + 1, iy + 1);
+			point(ix, iy + 1);
+		}
+	}
+
+	SubKey key = SubKey(direction, px, py);
+
+	setVertexBuffers(bd, bufs);
+
+	bs.subbufs[key] = bufs;
+
+	return bs.subbufs.find(key);
+}
+
+
+void DrawTextureCubeEx::setVertexBuffers(const BufferData &bd, SubBufferSet &bufs){
 	// Allocate buffer objects only if we're sure that there are at least one primitive.
 	GLuint bs[4];
 	glGenBuffers(4, bs);
@@ -1320,10 +1386,7 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 	// Index array
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs.ind);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, bd.indices.size() * sizeof(bd.indices[0]), &bd.indices.front(), GL_STATIC_DRAW);
-
-	bufsets[a] = bufs;
 }
-
 
 #define DETAILSIZE 64
 #define PROJTS 1024

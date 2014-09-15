@@ -7,6 +7,8 @@
 #include "CoordSys-find.h"
 #include "judge.h"
 
+#include <functional>
+
 
 /// \brief A class that draw textured sphere.
 ///
@@ -123,39 +125,69 @@ public:
 	bool draw()override;
 
 	static const int lods = 2;
+	static const int lodPatchSize = 4;
+	static const int lodPatchSize2 = lodPatchSize * lodPatchSize;
 
-	/// \brief A set of vertex buffer object indices.
-	struct BufferSet{
+	struct SubBufferSet{
 		GLuint pos; ///< Position vector buffer.
 		GLuint nrm; ///< Normal vector buffer.
 		GLuint tex; ///< Texture coordinates buffer.
 		GLuint ind; ///< Index buffer into all three buffers above.
 		unsigned count; ///< Count of vertices ind member contains.
+	};
+
+	/// Tuple indicating indices of direction, x and y
+	typedef std::tuple<int,int,int> SubKey;
+
+	typedef std::map<SubKey, SubBufferSet> SubBufs;
+
+	/// \brief A set of vertex buffer object indices.
+	struct BufferSet : SubBufferSet{
 
 		/// Get base index of given LOD and direction ID
-		unsigned getBase(int lod, int direction){
-			if(lod == 0 && direction == 0)
+		unsigned getBase(int lod, int direction, int patch = 0){
+			if(lod == 0 && direction == 0 && patch == 0)
 				return 0;
-			else if(direction == 0)
-				return baseIdx[lod-1][numof(cubedirs)-1];
+			else if(direction == 0 && patch == 0)
+				return baseIdx[lod-1][numof(cubedirs)-1][lodPatchSize2-1];
+			else if(patch == 0)
+				return baseIdx[lod][direction-1][lodPatchSize2-1];
 			else
-				return baseIdx[lod][direction-1];
+				return baseIdx[lod][direction][patch-1];
 		}
 
 		/// Get count of vertices in given LOD and direction ID
 		unsigned getCount(int lod, int direction){
 			assert(lod < lods && direction < numof(cubedirs));
-			return baseIdx[lod][direction] - getBase(lod, direction);
+			return baseIdx[lod][direction][lodPatchSize2-1] - getBase(lod, direction);
+		}
+
+		unsigned getPatchCount(int lod, int direction, int patch){
+			assert(lod < lods && direction < numof(cubedirs) && patch < lodPatchSize2);
+			return baseIdx[lod][direction][patch] - getBase(lod, direction, patch);
 		}
 
 		/// Data member to calculate base and count (should be protected?)
-		GLuint baseIdx[lods][numof(cubedirs)];
+		GLuint baseIdx[lods][numof(cubedirs)][lodPatchSize2];
+
+		SubBufs subbufs;
 	};
+
 	typedef std::map<Astrobj*, BufferSet> BufferSets;
 
 	static BufferSets bufsets;
 
+	struct BufferData;
+
+	typedef std::function<double(const Vec3d &basepos)> HeightGetter;
+
+	void point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter height)const;
+
 	void compileVertexBuffers()const;
+
+	SubBufs::iterator compileVertexBuffersSubBuf(BufferSet &bs, int direction, int ix, int iy);
+
+	static void setVertexBuffers(const BufferData &bd, SubBufferSet &bs);
 };
 
 #endif

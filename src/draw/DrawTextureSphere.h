@@ -121,6 +121,20 @@ public:
 
 	tt(TexSphere *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos){}
 	bool draw()override;
+
+	/// \brief A set of vertex buffer object indices.
+	struct BufferSet{
+		GLuint pos; ///< Position vector buffer.
+		GLuint nrm; ///< Normal vector buffer.
+		GLuint tex; ///< Texture coordinates buffer.
+		GLuint ind; ///< Index buffer into all three buffers above.
+		unsigned count; ///< Count of vertices ind member contains.
+	};
+	typedef std::map<Astrobj*, BufferSet> BufferSets;
+
+	static BufferSets bufsets;
+
+	void compileVertexBuffers()const;
 };
 
 #endif

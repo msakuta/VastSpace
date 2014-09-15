@@ -1014,11 +1014,47 @@ void drawSphere(const struct astrobj *a, const Viewer *vw, const avec3_t sunpos,
 }
 
 
+struct CubeExVertex{
+	Vec3d pos;
+	Vec3d nrm;
+};
+
+#if defined(WIN32)
+static PFNGLGENBUFFERSPROC glGenBuffers;
+static PFNGLISBUFFERPROC glIsBuffer;
+static PFNGLBINDBUFFERPROC glBindBuffer;
+static PFNGLBUFFERDATAPROC glBufferData;
+static PFNGLBUFFERSUBDATAPROC glBufferSubData;
+static PFNGLMAPBUFFERPROC glMapBuffer;
+static PFNGLUNMAPBUFFERPROC glUnmapBuffer;
+static PFNGLDELETEBUFFERSPROC glDeleteBuffers;
+static bool initBuffers(){
+	static bool init = false;
+	static bool result = false;
+	if(!init){
+		init = true;
+		result = !(!(glGenBuffers = (PFNGLGENBUFFERSPROC)wglGetProcAddress("glGenBuffers"))
+		|| !(glIsBuffer = (PFNGLISBUFFERPROC)wglGetProcAddress("glIsBuffer"))
+		|| !(glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer"))
+		|| !(glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData"))
+		|| !(glBufferSubData = (PFNGLBUFFERSUBDATAPROC)wglGetProcAddress("glBufferSubData"))
+		|| !(glMapBuffer = (PFNGLMAPBUFFERPROC)wglGetProcAddress("glMapBuffer"))
+		|| !(glUnmapBuffer = (PFNGLUNMAPBUFFERPROC)wglGetProcAddress("glUnmapBuffer"))
+		|| !(glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)wglGetProcAddress("glDeleteBuffers")));
+	}
+	return result;
+}
+#else
+static bool initBuffers(){return -1;}
+#endif
+
+DrawTextureCubeEx::BufferSets DrawTextureCubeEx::bufsets;
+
 bool DrawTextureCubeEx::draw(){
 	if(drawSimple())
 		return true;
 
-	static const int divides = 32;
+	static const int divides = 64;
 
 	glPushMatrix();
 	gldTranslate3dv(this->apos - vw->pos);
@@ -1042,16 +1078,143 @@ bool DrawTextureCubeEx::draw(){
 
 	glEnable(GL_CULL_FACE);
 
-	Quatd orders[numof(cubedirs)];
-	std::move(cubedirs, &cubedirs[numof(cubedirs)], orders);
-	std::sort(&orders[0], &orders[numof(orders)], [&](const Quatd &a, const Quatd &b){
-		return (apos + a.trans(Vec3d(0,0,1)) - vw->pos).slen()
-			> (apos + b.trans(Vec3d(0,0,1)) - vw->pos).slen();
-	});
+	if(initBuffers()) do{
+		auto it = bufsets.find(a);
+		if(it == bufsets.end()){
+			compileVertexBuffers();
+			it = bufsets.find(a);
+		}
 
-	for(auto it : orders){
-		glPushMatrix();
-//		gldMultQuat(it);
+		if(it == bufsets.end())
+			continue;
+
+		BufferSet &bufs = it->second;
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		/* Vertex array */
+		glBindBuffer(GL_ARRAY_BUFFER, bufs.pos);
+		glVertexPointer(3, GL_DOUBLE, 0, (0));
+
+		/* Normal array */
+		glBindBuffer(GL_ARRAY_BUFFER, bufs.nrm);
+		glNormalPointer(GL_DOUBLE, 0, (0));
+
+		/* Texture coordinates array */
+		// Repeat the same coordinates for the second texture.
+		// This behavior probably should be able to be customized.
+		if(glClientActiveTextureARB){
+			glClientActiveTextureARB(GL_TEXTURE0_ARB);
+			glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
+			glTexCoordPointer(3, GL_DOUBLE, 0, (0));
+
+			glClientActiveTextureARB(GL_TEXTURE1_ARB);
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
+			glTexCoordPointer(3, GL_DOUBLE, 0, (0));
+			glClientActiveTextureARB(GL_TEXTURE0_ARB); // Restore the default
+		}
+
+		// Index array
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs.ind);
+
+		glDrawElements(GL_QUADS, bufs.count, GL_UNSIGNED_INT, 0);
+//		glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+	}while(false);
+
+
+	glPopAttrib();
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+
+	glPopMatrix();
+	return true;
+}
+
+typedef std::vector<Vec3d> VecList;
+typedef std::vector<GLuint> IndList;
+struct TempVertex;
+typedef std::map<TempVertex, GLuint> VertexIndMap;
+
+/// Set of data buffers that should be inserted during VBO compilation.
+struct BufferData{
+	VertexIndMap mapVertices;
+	VecList plainVertices;
+	VecList plainNormals;
+	VecList plainTextures;
+	IndList indices;
+};
+
+/// Local operator override for Vec3d comparison.
+static bool operator<(const Vec3d &a, const Vec3d &b){
+	for(int i = 0; i < 3; i++){
+		if(a[i] < b[i])
+			return true;
+		else if(b[i] < a[i])
+			return false;
+	}
+	return false;
+}
+
+/// Temporary vertex object to use as a key to vertex map.
+struct TempVertex{
+
+	Vec3d pos;
+	Vec3d nrm;
+	Vec3d tex;
+
+	TempVertex(const DrawTextureCubeEx &mesh, const Vec3d &pos, const Vec3d &nrm, const Vec3d &tex) : pos(pos), nrm(nrm), tex(tex){}
+
+	bool operator<(const TempVertex &o)const{
+		if(pos < o.pos)
+			return true;
+		else if(o.pos < pos)
+			return false;
+		else if(nrm < o.nrm)
+			return true;
+		else if(o.nrm < nrm)
+			return false;
+		else if(tex < o.tex)
+			return true;
+		else
+			return false;
+	}
+
+	// Template function to insert a vertex for either a Polygon or an UVPolygon.
+	static void insert(BufferData &bd, const Vec3d &pos, const Vec3d &nrm, const Vec3d &tex, const DrawTextureCubeEx &mesh){
+		TempVertex tv(mesh, pos, nrm, tex);
+		VertexIndMap::iterator it = bd.mapVertices.find(tv);
+		if(it != bd.mapVertices.end())
+			bd.indices.push_back(it->second);
+		else{
+			bd.mapVertices[tv] = bd.plainVertices.size();
+			bd.indices.push_back(bd.plainVertices.size());
+			bd.plainVertices.push_back(tv.pos);
+			bd.plainNormals.push_back(tv.nrm);
+			bd.plainTextures.push_back(tv.tex);
+		}
+	}
+};
+
+/// Compile vertex buffer objects for each attributes.
+void DrawTextureCubeEx::compileVertexBuffers()const{
+
+	static const int divides = 32;
+
+	BufferData bd;
+
+	// Note that we need to accumulate primitives for each attributes, because
+	// it's costly to switch attributes between primitives.
+	for(auto it : cubedirs){
 
 		static auto sfnoise3 = [](const Vec3d &basepos, int octaves, double persistence){
 			double ret = 0.;
@@ -1081,16 +1244,16 @@ bool DrawTextureCubeEx::draw(){
 			Vec3d v0 = vec(ix, iy, &gx, &gy);
 			Vec3d dv01 = vec(ix, iy + 1, nullptr, nullptr) - v0;
 			Vec3d dv10 = vec(ix + 1, iy, nullptr, nullptr) - v0;
-			glNormal3dv(dv10.vp(dv01).norm());
+			Vec3d nrm = dv10.vp(dv01).norm();
 //			glNormal3dv(Vec3d(gx, gy, 1.));
-			glVertex3dv(v0);
+//			bd.plainVertices.push_back(v0);
+			TempVertex::insert(bd, v0, nrm, vec3_000, *this);
 		};
 
 		auto point = [&](int ix, int iy){
 			return point0(ix, iy, height);
 		};
 
-		glBegin(GL_QUADS);
 		for(int ix = 0; ix < divides; ix++){
 			for(int iy = 0; iy < divides; iy++){
 				point(ix, iy);
@@ -1099,49 +1262,43 @@ bool DrawTextureCubeEx::draw(){
 				point(ix, iy + 1);
 			}
 		}
-#if 0
-		auto swapper = [](std::function<void()> a, std::function<void()> b, bool order){
-			if(order) a(), b();
-			else b(), a();
-		};
-
-		for(int iy = 0; iy < 2; iy++){
-			for(int ix = 0; ix < divides; ix++){
-				swapper(
-					[&](){point(ix + 0, iy * divides);},
-					[&](){point(ix + 1, iy * divides);}, iy);
-				swapper(
-					[&](){point0(ix + 1, iy * divides, [](const Vec3d &){return 0.75;});},
-					[&](){point0(ix + 0, iy * divides, [](const Vec3d &){return 0.75;});}, iy);
-			}
-		}
-
-		for(int ix = 0; ix < 2; ix++){
-			for(int iy = 0; iy < divides; iy++){
-				swapper(
-					[&](){point(ix * divides, iy + 1);},
-					[&](){point(ix * divides, iy + 0);}, ix);
-				swapper(
-					[&](){point0(ix * divides, iy + 0, [](const Vec3d &){return 0.75;});},
-					[&](){point0(ix * divides, iy + 1, [](const Vec3d &){return 0.75;});}, ix);
-			}
-		}
-#endif
-
-		glEnd();
-		glPopMatrix();
 	}
 
-	glPopAttrib();
+	// There could be an attribute without a primitive if a model consists
+	// of multiple meshes.
+	if(bd.indices.size() == 0){
+		return;
+	}
 
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
+	BufferSet bufs;
 
-	glPopMatrix();
-	return true;
+	// Allocate buffer objects only if we're sure that there are at least one primitive.
+	GLuint bs[4];
+	glGenBuffers(4, bs);
+	bufs.pos = bs[0];
+	bufs.nrm = bs[1];
+	bufs.tex = bs[2];
+	bufs.ind = bs[3];
+	bufs.count = bd.indices.size();
+
+	/* Vertex array */
+	glBindBuffer(GL_ARRAY_BUFFER, bufs.pos);
+	glBufferData(GL_ARRAY_BUFFER, bd.plainVertices.size() * sizeof(bd.plainVertices[0]), &bd.plainVertices.front(), GL_STATIC_DRAW);
+
+	/* Normal array */
+	glBindBuffer(GL_ARRAY_BUFFER, bufs.nrm);
+	glBufferData(GL_ARRAY_BUFFER, bd.plainNormals.size() * sizeof(bd.plainNormals[0]), &bd.plainNormals.front(), GL_STATIC_DRAW);
+
+	/* Texture coordinates array */
+	glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
+	glBufferData(GL_ARRAY_BUFFER, bd.plainTextures.size() * sizeof(bd.plainTextures[0]), &bd.plainTextures.front(), GL_STATIC_DRAW);
+
+	// Index array
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs.ind);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, bd.indices.size() * sizeof(bd.indices[0]), &bd.indices.front(), GL_STATIC_DRAW);
+
+	bufsets[a] = bufs;
 }
-
 
 
 #define DETAILSIZE 64

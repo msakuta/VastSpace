@@ -1066,6 +1066,21 @@ bool DrawTextureCubeEx::draw(){
 
 	glEnable(GL_DEPTH_TEST);
 
+	bool texenable = nullptr != ptexlist;
+
+	if(!*ptexlist && m_texname && m_texname[0]){
+//		timemeas_t tm;
+//		TimeMeasStart(&tm);
+		*ptexlist = ProjectSphereCubeImage(m_texname, 0);
+//		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
+	};
+
+	if(texenable){
+		glCallList(*ptexlist);
+	}
+	else
+		glDisable(GL_TEXTURE_2D);
+
 	// Can get close as one meter
 	double nearest = std::max(1e-3, (apos - vw->pos).len() - 2. * m_rad);
 	double farthest = (apos - vw->pos).len() + 2. * m_rad;
@@ -1247,7 +1262,7 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 			Vec3d nrm = dv10.vp(dv01).norm();
 //			glNormal3dv(Vec3d(gx, gy, 1.));
 //			bd.plainVertices.push_back(v0);
-			TempVertex::insert(bd, v0, nrm, vec3_000, *this);
+			TempVertex::insert(bd, v0, nrm, v0, *this);
 		};
 
 		auto point = [&](int ix, int iy){

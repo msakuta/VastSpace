@@ -12,13 +12,14 @@ coordsys Orbit ceres{
 		omega 0 1 0 "2.*PI/(9.074170*HOUR_SECONDS)"
 
 		color e0d0c0
+		texture textures/Ceres.png
 	}
 
 	coordsys Orbit cereslo{
 		cs_radius 200
 		fullname "Ceres Low orbit"
 		orbits Ceres
-		orbit_radius 100+959.2
+		orbit_radius 20+959.2
 		inclination 10
 		argument_of_periapsis 90
 		ascending_node 0

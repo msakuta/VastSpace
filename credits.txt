@@ -92,3 +92,15 @@ sniper-1.ogg, sniper-2.ogg are retrieved from
 http://www.freesound.org/people/qubodup/sounds/182790/
 
 and edited to fit our project's use.
+
+
+Ceres Texture
+-------------
+
+Obtained from NASA (public domain):
+
+http://solarsystem.nasa.gov/multimedia/gallery/Ceres_optimized.jpg
+
+and edited to fit this application as a dwarf plant texture.
+Namely, cropping, mirror repeating, local contrast normalization and
+contrast/brightness tweak is applied.

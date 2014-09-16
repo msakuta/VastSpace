@@ -1265,7 +1265,7 @@ static double height(const Vec3d &basepos){
 	return (sfnoise3(basepos, 7, 0.65) * 0.02 + 1.);
 };
 
-void DrawTextureCubeEx::point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter height)const{
+void DrawTextureCubeEx::point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height)const{
 	float gx, gy;
 	auto vec = [&](int ix, int iy){
 		double x = 2. * ix / divides - 1;
@@ -1287,6 +1287,8 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 
 	BufferSet bufs;
 
+	HeightGetter lheight(height);
+
 	// Note that we need to accumulate primitives for each attributes, because
 	// it's costly to switch attributes between primitives.
 	for(int n = 0; n < lods; n++){
@@ -1296,7 +1298,7 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 			const Quatd &it = cubedirs[i];
 
 			auto point = [&](int ix, int iy){
-				return point0(divides, it, bd, ix, iy, height);
+				return point0(divides, it, bd, ix, iy, lheight);
 			};
 
 			for(int px = 0; px < lodPatchSize; px++){
@@ -1336,18 +1338,52 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 
 	SubBufferSet bufs;
 
+	HeightGetter lheight(height);
+	HeightGetter height75 = [](...){return 0.75;};
+
 	const Quatd &rot = cubedirs[direction];
 
 	auto point = [&](int ix, int iy){
-		return point0(divides, rot, bd, ix, iy, height);
+		return point0(divides, rot, bd, ix, iy, lheight);
 	};
 
-	for(int ix = px * divides / lodPatchSize; ix < (px + 1) * divides / lodPatchSize; ix++){
-		for(int iy = py * divides / lodPatchSize; iy < (py + 1) * divides / lodPatchSize; iy++){
+	auto pointb = [&](int ix, int iy){
+		return point0(divides, rot, bd, ix, iy, height75);
+	};
+
+	const int ixBegin = px * divides / lodPatchSize;
+	const int ixEnd = (px + 1) * divides / lodPatchSize;
+	const int iyBegin = py * divides / lodPatchSize;
+	const int iyEnd = (py + 1) * divides / lodPatchSize;
+
+	for(int ix = ixBegin; ix < ixEnd; ix++){
+		for(int iy = iyBegin; iy < iyEnd; iy++){
 			point(ix, iy);
 			point(ix + 1, iy);
 			point(ix + 1, iy + 1);
 			point(ix, iy + 1);
+		}
+	}
+
+	// Skirt along X axis to hide gaps
+	const int iyArray[2] = {iyBegin, iyEnd};
+	for(int iy = 0; iy < 2; iy++){
+		for(int ix = ixBegin; ix < ixEnd; ix++){
+			point(ix + !iy, iyArray[iy]);
+			point(ix + iy, iyArray[iy]);
+			pointb(ix + iy, iyArray[iy]);
+			pointb(ix + !iy, iyArray[iy]);
+		}
+	}
+
+	// Skirt along Y axis to hide gaps
+	const int ixArray[2] = {ixBegin, ixEnd};
+	for(int ix = 0; ix < 2; ix++){
+		for(int iy = iyBegin; iy < iyEnd; iy++){
+			point(ixArray[ix], iy + ix);
+			point(ixArray[ix], iy + !ix);
+			pointb(ixArray[ix], iy + !ix);
+			pointb(ixArray[ix], iy + ix);
 		}
 	}
 

@@ -181,7 +181,7 @@ public:
 
 	typedef std::function<double(const Vec3d &basepos)> HeightGetter;
 
-	void point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter height)const;
+	void point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height)const;
 
 	void compileVertexBuffers()const;
 

@@ -1140,8 +1140,6 @@ bool DrawTextureCubeEx::draw(){
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs.ind);
 		};
 
-		enableBuffer(bufs);
-
 #if PROFILE_CUBEEX
 		timemeas_t tm;
 		TimeMeasStart(&tm);
@@ -1157,20 +1155,30 @@ bool DrawTextureCubeEx::draw(){
 						double y = 2. * iy / lodPatchSize - 1.;
 						Vec3d rpos = Vec3d(x,y,1).norm() * m_rad;
 						bool patchDetail = (apos + cubedirs[i].trans(rpos) - vw->pos).len() / (m_rad / lodPatchSize) < 2.;
-						if(!patchDetail)
-							glDrawElements(GL_QUADS, bufs.getPatchCount(currentLOD, i, ix * lodPatchSize + iy),
-								GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(currentLOD, i, ix * lodPatchSize + iy)]);
-						else{
-							auto it2 = bufs.subbufs.find(SubKey(i, ix, iy));
-							if(it2 == bufs.subbufs.end())
-								it2 = compileVertexBuffersSubBuf(it->second, i, ix, iy);
+						if(!patchDetail){
+							auto it2 = bufs.subbufs[0].find(SubKey(i, ix, iy));
+							if(it2 == bufs.subbufs[0].end())
+								it2 = compileVertexBuffersSubBuf(it->second, 0, i, ix, iy);
 #if PROFILE_CUBEEX
 							timemeas_t tms;
 							TimeMeasStart(&tms);
 #endif
 							enableBuffer(it2->second);
 							glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
-							enableBuffer(bufs);
+#if PROFILE_CUBEEX
+							GLWchart::addSampleToCharts("dtstime1", TimeMeasLap(&tms));
+#endif
+						}
+						else{
+							auto it2 = bufs.subbufs[1].find(SubKey(i, ix, iy));
+							if(it2 == bufs.subbufs[1].end())
+								it2 = compileVertexBuffersSubBuf(it->second, 1, i, ix, iy);
+#if PROFILE_CUBEEX
+							timemeas_t tms;
+							TimeMeasStart(&tms);
+#endif
+							enableBuffer(it2->second);
+							glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
 #if PROFILE_CUBEEX
 							GLWchart::addSampleToCharts("dtstime2", TimeMeasLap(&tms));
 #endif
@@ -1178,9 +1186,11 @@ bool DrawTextureCubeEx::draw(){
 					}
 				}
 			}
-			else
-				glDrawElements(GL_QUADS, bufs.getCount(currentLOD, i),
-					GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(currentLOD, i)]);
+			else{
+				enableBuffer(bufs);
+				glDrawElements(GL_QUADS, bufs.getCount(i),
+					GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(i)]);
+			}
 		}
 
 #if PROFILE_CUBEEX
@@ -1299,7 +1309,7 @@ void DrawTextureCubeEx::point0(int divides, const Quatd &rot, BufferData &bd, in
 	TempVertex::insert(bd, v0, nrm, v0, *this);
 };
 
-/// Compile vertex buffer objects for each attributes.
+/// Compile vertex buffer objects for the least detailed LOD.
 void DrawTextureCubeEx::compileVertexBuffers()const{
 
 	BufferData bd;
@@ -1308,37 +1318,32 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 
 	HeightGetter lheight(height);
 
-	// Note that we need to accumulate primitives for each attributes, because
-	// it's costly to switch attributes between primitives.
-	for(int n = 0; n < lods; n++){
-		const int divides = 16 * (1 << (2 *n));
+	// Least detailed LOD's division per cube face
+	const int divides = 16;
 
-		for(int i = 0; i < numof(cubedirs); i++){
-			const Quatd &it = cubedirs[i];
+	for(int i = 0; i < numof(cubedirs); i++){
+		const Quatd &it = cubedirs[i];
 
-			auto point = [&](int ix, int iy){
-				return point0(divides, it, bd, ix, iy, lheight);
-			};
+		auto point = [&](int ix, int iy){
+			return point0(divides, it, bd, ix, iy, lheight);
+		};
 
-			for(int px = 0; px < lodPatchSize; px++){
-				for(int py = 0; py < lodPatchSize; py++){
-					for(int ix = px * divides / lodPatchSize; ix < (px + 1) * divides / lodPatchSize; ix++){
-						for(int iy = py * divides / lodPatchSize; iy < (py + 1) * divides / lodPatchSize; iy++){
-							point(ix, iy);
-							point(ix + 1, iy);
-							point(ix + 1, iy + 1);
-							point(ix, iy + 1);
-						}
+		for(int px = 0; px < lodPatchSize; px++){
+			for(int py = 0; py < lodPatchSize; py++){
+				for(int ix = px * divides / lodPatchSize; ix < (px + 1) * divides / lodPatchSize; ix++){
+					for(int iy = py * divides / lodPatchSize; iy < (py + 1) * divides / lodPatchSize; iy++){
+						point(ix, iy);
+						point(ix + 1, iy);
+						point(ix + 1, iy + 1);
+						point(ix, iy + 1);
 					}
-					bufs.baseIdx[n][i][px * lodPatchSize + py] = bd.indices.size();
 				}
+				bufs.baseIdx[i][px * lodPatchSize + py] = bd.indices.size();
 			}
-
 		}
+
 	}
 
-	// There could be an attribute without a primitive if a model consists
-	// of multiple meshes.
 	if(bd.indices.size() == 0){
 		return;
 	}
@@ -1349,16 +1354,18 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 }
 
 
-DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubBuf(BufferSet &bs, int direction, int px, int py){
-	const int n = 2;
-	const int divides = 16 * (1 << (2 * n));
+/// Compile vertex buffer objects for a given LOD and location.
+DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubBuf(BufferSet &bs, int lod, int direction, int px, int py){
+	static const double skirtHeight = 0.9;
+
+	const int divides = 16 << (2 * (lod + 1));
 
 	BufferData bd;
 
 	SubBufferSet bufs;
 
 	HeightGetter lheight(height);
-	HeightGetter height75 = [](...){return 0.75;};
+	HeightGetter height75 = [](...){return skirtHeight;};
 
 	const Quatd &rot = cubedirs[direction];
 
@@ -1410,9 +1417,9 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 
 	setVertexBuffers(bd, bufs);
 
-	bs.subbufs[key] = bufs;
+	bs.subbufs[lod][key] = bufs;
 
-	return bs.subbufs.find(key);
+	return bs.subbufs[lod].find(key);
 }
 
 

@@ -145,32 +145,30 @@ public:
 	struct BufferSet : SubBufferSet{
 
 		/// Get base index of given LOD and direction ID
-		unsigned getBase(int lod, int direction, int patch = 0){
-			if(lod == 0 && direction == 0 && patch == 0)
+		unsigned getBase(int direction, int patch = 0){
+			if(direction == 0 && patch == 0)
 				return 0;
-			else if(direction == 0 && patch == 0)
-				return baseIdx[lod-1][numof(cubedirs)-1][lodPatchSize2-1];
 			else if(patch == 0)
-				return baseIdx[lod][direction-1][lodPatchSize2-1];
+				return baseIdx[direction-1][lodPatchSize2-1];
 			else
-				return baseIdx[lod][direction][patch-1];
+				return baseIdx[direction][patch-1];
 		}
 
 		/// Get count of vertices in given LOD and direction ID
-		unsigned getCount(int lod, int direction){
-			assert(lod < lods && direction < numof(cubedirs));
-			return baseIdx[lod][direction][lodPatchSize2-1] - getBase(lod, direction);
+		unsigned getCount(int direction){
+			assert(direction < numof(cubedirs));
+			return baseIdx[direction][lodPatchSize2-1] - getBase(direction);
 		}
 
-		unsigned getPatchCount(int lod, int direction, int patch){
-			assert(lod < lods && direction < numof(cubedirs) && patch < lodPatchSize2);
-			return baseIdx[lod][direction][patch] - getBase(lod, direction, patch);
+		unsigned getPatchCount(int direction, int patch){
+			assert(direction < numof(cubedirs) && patch < lodPatchSize2);
+			return baseIdx[direction][patch] - getBase(direction, patch);
 		}
 
 		/// Data member to calculate base and count (should be protected?)
-		GLuint baseIdx[lods][numof(cubedirs)][lodPatchSize2];
+		GLuint baseIdx[numof(cubedirs)][lodPatchSize2];
 
-		SubBufs subbufs;
+		SubBufs subbufs[lods];
 	};
 
 	typedef std::map<Astrobj*, BufferSet> BufferSets;
@@ -185,7 +183,7 @@ public:
 
 	void compileVertexBuffers()const;
 
-	SubBufs::iterator compileVertexBuffersSubBuf(BufferSet &bs, int direction, int ix, int iy);
+	SubBufs::iterator compileVertexBuffersSubBuf(BufferSet &bs, int lod, int direction, int ix, int iy);
 
 	static void setVertexBuffers(const BufferData &bd, SubBufferSet &bs);
 };

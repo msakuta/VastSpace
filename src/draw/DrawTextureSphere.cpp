@@ -9,6 +9,7 @@
 #include "StaticInitializer.h"
 #include "bitmap.h"
 #include "draw/HDR.h"
+#include "glw/GLWchart.h"
 #include "../noises/simplexnoise1234.h"
 #undef exit
 extern "C"{
@@ -1050,6 +1051,8 @@ static bool initBuffers(){return -1;}
 
 DrawTextureCubeEx::BufferSets DrawTextureCubeEx::bufsets;
 
+#define PROFILE_CUBEEX 1
+
 bool DrawTextureCubeEx::draw(){
 	if(drawSimple())
 		return true;
@@ -1139,6 +1142,11 @@ bool DrawTextureCubeEx::draw(){
 
 		enableBuffer(bufs);
 
+#if PROFILE_CUBEEX
+		timemeas_t tm;
+		TimeMeasStart(&tm);
+#endif
+
 		for(int i = 0; i < 6; i++){
 			int currentLOD = (apos + cubedirs[i].trans(Vec3d(0,0,m_rad)) - vw->pos).len() / m_rad < 2. ? 1 : 0;
 
@@ -1156,9 +1164,16 @@ bool DrawTextureCubeEx::draw(){
 							auto it2 = bufs.subbufs.find(SubKey(i, ix, iy));
 							if(it2 == bufs.subbufs.end())
 								it2 = compileVertexBuffersSubBuf(it->second, i, ix, iy);
+#if PROFILE_CUBEEX
+							timemeas_t tms;
+							TimeMeasStart(&tms);
+#endif
 							enableBuffer(it2->second);
 							glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
 							enableBuffer(bufs);
+#if PROFILE_CUBEEX
+							GLWchart::addSampleToCharts("dtstime2", TimeMeasLap(&tms));
+#endif
 						}
 					}
 				}
@@ -1167,6 +1182,10 @@ bool DrawTextureCubeEx::draw(){
 				glDrawElements(GL_QUADS, bufs.getCount(currentLOD, i),
 					GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(currentLOD, i)]);
 		}
+
+#if PROFILE_CUBEEX
+		GLWchart::addSampleToCharts("dtstime", TimeMeasLap(&tm));
+#endif
 
 		glDisableClientState(GL_VERTEX_ARRAY);
 		glDisableClientState(GL_NORMAL_ARRAY);

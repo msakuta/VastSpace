@@ -1155,10 +1155,10 @@ bool DrawTextureCubeEx::draw(){
 						double y = 2. * iy / lodPatchSize - 1.;
 						Vec3d rpos = Vec3d(x,y,1).norm() * m_rad;
 						bool patchDetail = (apos + cubedirs[i].trans(rpos) - vw->pos).len() / (m_rad / lodPatchSize) < 2.;
+						bool drawn = false;
 						if(!patchDetail){
-							auto it2 = bufs.subbufs[0].find(SubKey(i, ix, iy));
-							if(it2 == bufs.subbufs[0].end())
-								it2 = compileVertexBuffersSubBuf(it->second, 0, i, ix, iy);
+							auto it2 = compileVertexBuffersSubBuf(it->second, 0, i, ix, iy);
+							if(it2 != bufs.subbufs[0].end()){
 #if PROFILE_CUBEEX
 							timemeas_t tms;
 							TimeMeasStart(&tms);
@@ -1168,11 +1168,12 @@ bool DrawTextureCubeEx::draw(){
 #if PROFILE_CUBEEX
 							GLWchart::addSampleToCharts("dtstime1", TimeMeasLap(&tms));
 #endif
+							drawn = true;
+							}
 						}
-						else{
-							auto it2 = bufs.subbufs[1].find(SubKey(i, ix, iy));
-							if(it2 == bufs.subbufs[1].end())
-								it2 = compileVertexBuffersSubBuf(it->second, 1, i, ix, iy);
+						if(!drawn){
+							auto it2 = compileVertexBuffersSubBuf(it->second, 1, i, ix, iy);
+							if(it2 != bufs.subbufs[1].end()){
 #if PROFILE_CUBEEX
 							timemeas_t tms;
 							TimeMeasStart(&tms);
@@ -1182,6 +1183,7 @@ bool DrawTextureCubeEx::draw(){
 #if PROFILE_CUBEEX
 							GLWchart::addSampleToCharts("dtstime2", TimeMeasLap(&tms));
 #endif
+							}
 						}
 					}
 				}
@@ -1314,7 +1316,7 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 
 	BufferData bd;
 
-	BufferSet bufs;
+	BufferSet &bufs = bufsets[a];
 
 	HeightGetter lheight(height);
 
@@ -1349,8 +1351,6 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 	}
 
 	setVertexBuffers(bd, bufs);
-
-	bufsets[a] = bufs;
 }
 
 
@@ -1358,72 +1358,104 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubBuf(BufferSet &bs, int lod, int direction, int px, int py){
 	static const double skirtHeight = 0.9;
 
-	const int divides = 16 << (2 * (lod + 1));
-
-	BufferData bd;
-
-	SubBufferSet bufs;
-
-	HeightGetter lheight(height);
-	HeightGetter height75 = [](...){return skirtHeight;};
-
-	const Quatd &rot = cubedirs[direction];
-
-	auto point = [&](int ix, int iy){
-		return point0(divides, rot, bd, ix, iy, lheight);
-	};
-
-	auto pointb = [&](int ix, int iy){
-		return point0(divides, rot, bd, ix, iy, height75);
-	};
-
-	const int ixBegin = px * divides / lodPatchSize;
-	const int ixEnd = (px + 1) * divides / lodPatchSize;
-	const int iyBegin = py * divides / lodPatchSize;
-	const int iyEnd = (py + 1) * divides / lodPatchSize;
-
-	for(int ix = ixBegin; ix < ixEnd; ix++){
-		for(int iy = iyBegin; iy < iyEnd; iy++){
-			point(ix, iy);
-			point(ix + 1, iy);
-			point(ix + 1, iy + 1);
-			point(ix, iy + 1);
-		}
-	}
-
-	// Skirt along X axis to hide gaps
-	const int iyArray[2] = {iyBegin, iyEnd};
-	for(int iy = 0; iy < 2; iy++){
-		for(int ix = ixBegin; ix < ixEnd; ix++){
-			point(ix + !iy, iyArray[iy]);
-			point(ix + iy, iyArray[iy]);
-			pointb(ix + iy, iyArray[iy]);
-			pointb(ix + !iy, iyArray[iy]);
-		}
-	}
-
-	// Skirt along Y axis to hide gaps
-	const int ixArray[2] = {ixBegin, ixEnd};
-	for(int ix = 0; ix < 2; ix++){
-		for(int iy = iyBegin; iy < iyEnd; iy++){
-			point(ixArray[ix], iy + ix);
-			point(ixArray[ix], iy + !ix);
-			pointb(ixArray[ix], iy + !ix);
-			pointb(ixArray[ix], iy + ix);
-		}
-	}
-
 	SubKey key = SubKey(direction, px, py);
 
-	setVertexBuffers(bd, bufs);
+	SubBufferSet &bufs = bs.subbufs[lod][key];
+	if(bufs.t == NULL){
+		bufs.pbd = new BufferData;
 
-	bs.subbufs[lod][key] = bufs;
+		bufs.t = new std::thread([=](SubBufferSet *pbufs){
 
-	return bs.subbufs[lod].find(key);
+			const int divides = 16 << (2 * (lod + 1));
+
+			SubBufferSet &bufs = *pbufs;
+			BufferData &bd = *bufs.pbd;
+
+			HeightGetter lheight(height);
+			HeightGetter height75 = [](...){return skirtHeight;};
+
+			const Quatd &rot = cubedirs[direction];
+
+			auto point = [&](int ix, int iy){
+				return point0(divides, rot, bd, ix, iy, lheight);
+			};
+
+			auto pointb = [&](int ix, int iy){
+				return point0(divides, rot, bd, ix, iy, height75);
+			};
+
+			const int ixBegin = px * divides / lodPatchSize;
+			const int ixEnd = (px + 1) * divides / lodPatchSize;
+			const int iyBegin = py * divides / lodPatchSize;
+			const int iyEnd = (py + 1) * divides / lodPatchSize;
+
+			for(int ix = ixBegin; ix < ixEnd; ix++){
+				for(int iy = iyBegin; iy < iyEnd; iy++){
+					point(ix, iy);
+					point(ix + 1, iy);
+					point(ix + 1, iy + 1);
+					point(ix, iy + 1);
+				}
+			}
+
+			// Skirt along X axis to hide gaps
+			const int iyArray[2] = {iyBegin, iyEnd};
+			for(int iy = 0; iy < 2; iy++){
+				for(int ix = ixBegin; ix < ixEnd; ix++){
+					point(ix + !iy, iyArray[iy]);
+					point(ix + iy, iyArray[iy]);
+					pointb(ix + iy, iyArray[iy]);
+					pointb(ix + !iy, iyArray[iy]);
+				}
+			}
+
+			// Skirt along Y axis to hide gaps
+			const int ixArray[2] = {ixBegin, ixEnd};
+			for(int ix = 0; ix < 2; ix++){
+				for(int iy = iyBegin; iy < iyEnd; iy++){
+					point(ixArray[ix], iy + ix);
+					point(ixArray[ix], iy + !ix);
+					pointb(ixArray[ix], iy + !ix);
+					pointb(ixArray[ix], iy + ix);
+				}
+			}
+
+	#ifdef _WIN32
+			InterlockedExchange(&bufs.ready, 1);
+	#else
+			bufs.ready = 1;
+	#endif
+		}, &bufs);
+	}
+
+	if(bufs.ready){
+		if(bufs.pbd == NULL)
+			return bs.subbufs[lod].find(key);
+		if(bufs.t->joinable())
+			bufs.t->join();
+
+		setVertexBuffers(*bufs.pbd, bufs);
+
+		delete bufs.pbd;
+		bufs.pbd = NULL;
+
+		return bs.subbufs[lod].find(key);
+	}
+	else
+		return bs.subbufs[lod].end();
 }
 
 
 void DrawTextureCubeEx::setVertexBuffers(const BufferData &bd, SubBufferSet &bufs){
+	if(bd.indices.size() == 0){
+		bufs.pos = 0;
+		bufs.nrm = 0;
+		bufs.tex = 0;
+		bufs.ind = 0;
+		bufs.count = 0;
+		return;
+	}
+
 	// Allocate buffer objects only if we're sure that there are at least one primitive.
 	GLuint bs[4];
 	glGenBuffers(4, bs);

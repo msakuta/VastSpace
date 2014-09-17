@@ -8,6 +8,7 @@
 #include "judge.h"
 
 #include <functional>
+#include <thread>
 
 
 /// \brief A class that draw textured sphere.
@@ -128,12 +129,22 @@ public:
 	static const int lodPatchSize = 4;
 	static const int lodPatchSize2 = lodPatchSize * lodPatchSize;
 
+	struct BufferData;
+
 	struct SubBufferSet{
+		std::thread *t;
+		BufferData *pbd;
+		volatile long ready; ///< We should use std::atomic<bool>, but it would prohibit copying of this struct.
 		GLuint pos; ///< Position vector buffer.
 		GLuint nrm; ///< Normal vector buffer.
 		GLuint tex; ///< Texture coordinates buffer.
 		GLuint ind; ///< Index buffer into all three buffers above.
 		unsigned count; ///< Count of vertices ind member contains.
+
+		SubBufferSet() : t(NULL), ready(0){}
+		~SubBufferSet(){
+			delete t;
+		}
 	};
 
 	/// Tuple indicating indices of direction, x and y
@@ -174,8 +185,6 @@ public:
 	typedef std::map<Astrobj*, BufferSet> BufferSets;
 
 	static BufferSets bufsets;
-
-	struct BufferData;
 
 	typedef std::function<double(const Vec3d &basepos)> HeightGetter;
 

@@ -25,6 +25,16 @@ Features
 * Ships can hyperdrive to several lightyears distant solar systems.
 
 
+Screenshots
+-----------
+
+![Screenshot](images/gltestss0189.jpg)
+
+![Screenshot](images/gltestss0230.jpg)
+
+![Screenshot](images/gltestss0276.jpg)
+
+
 Supported platforms
 -------------------
 
@@ -117,5 +127,3 @@ a fully simulated space war game is great.
 Several years later, I switched the main language for the project to C++
 from plain C.  The project's name was changed to Gltestplus at that time.
 Subversion history starts since that time.
-
-

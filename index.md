@@ -1,8 +1,7 @@
 ---
-title: VastSpace Readme
+title: VastSpace Introduction Main Page
+layout: main
 ---
-
-# {{ page.title }}
 
 
 ** This document is a draft.
@@ -126,3 +125,10 @@ Several years later, I switched the main language for the project to C++
 from plain C.  The project's name was changed to Gltestplus at that time.
 Subversion history starts since that time.
 
+## Implementation Notes
+
+[jHitSphere](jHitSphere.html)
+
+[jHitCylinder](jHitCylinder.html)
+
+[Converting_Quaternion_to_Euler_angles](Quaternion_to_Euler_angles.html)

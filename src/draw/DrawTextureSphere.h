@@ -8,7 +8,6 @@
 #include "judge.h"
 
 #include <functional>
-#include <thread>
 
 
 /// \brief A class that draw textured sphere.
@@ -131,20 +130,19 @@ public:
 
 	struct BufferData;
 
+	struct WorkerThread;
+
 	struct SubBufferSet{
-		std::thread *t;
+		WorkerThread *t;
 		BufferData *pbd;
-		volatile long ready; ///< We should use std::atomic<bool>, but it would prohibit copying of this struct.
 		GLuint pos; ///< Position vector buffer.
 		GLuint nrm; ///< Normal vector buffer.
 		GLuint tex; ///< Texture coordinates buffer.
 		GLuint ind; ///< Index buffer into all three buffers above.
 		unsigned count; ///< Count of vertices ind member contains.
+		bool ready; ///< This need not be std::atomic<bool>.
 
-		SubBufferSet() : t(NULL), ready(0){}
-		~SubBufferSet(){
-			delete t;
-		}
+		SubBufferSet() : t(NULL), ready(false){}
 	};
 
 	/// Tuple indicating indices of direction, x and y

@@ -25,7 +25,10 @@ extern "C"{
 #include <gl/glext.h>
 #include <fstream>
 #include <algorithm>
-#include <functional>
+#include <atomic>
+#include <thread>
+#include <condition_variable>
+#include <mutex>
 
 #define SQRT2P2 (1.4142135623730950488016887242097/2.)
 
@@ -1228,6 +1231,10 @@ struct DrawTextureCubeEx::BufferData{
 	VecList plainNormals;
 	VecList plainTextures;
 	IndList indices;
+	/// Flag to notify that this buffer data is filled.
+	std::atomic<bool> ready;
+
+	BufferData() : ready(false){}
 };
 
 /// Local operator override for Vec3d comparison.
@@ -1353,6 +1360,48 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 	setVertexBuffers(bd, bufs);
 }
 
+struct DrawTextureCubeEx::WorkerThread{
+	std::thread *t;
+	std::mutex *mu;
+	std::function<void ()> job;
+	std::condition_variable *cv;
+	bool cv_ready;
+	bool free;
+
+	WorkerThread() : free(true), cv_ready(false),
+		mu(new std::mutex), cv(new std::condition_variable)
+	{
+		t = new std::thread(std::ref(*this));
+	}
+	~WorkerThread(){
+		// Deleting the thread causes an error on program exit
+//		delete t;
+	}
+
+	void operator()(){
+		while(true){
+			std::unique_lock<std::mutex> lk(*mu);
+			while(!cv_ready)
+				cv->wait(lk);
+			cv_ready = false;
+			job();
+			free = true;
+		}
+	}
+
+	/// Intended to be called by the main thread
+	void startJob(std::function<void()> job){
+		free = false;
+		this->job = job;
+		std::lock_guard<std::mutex> lk(*mu);
+		cv_ready = true;
+		cv->notify_one();
+	}
+};
+
+typedef std::vector<DrawTextureCubeEx::WorkerThread> WorkerThreads;
+
+static WorkerThreads threads;
 
 /// Compile vertex buffer objects for a given LOD and location.
 DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubBuf(BufferSet &bs, int lod, int direction, int px, int py){
@@ -1361,83 +1410,99 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 	SubKey key = SubKey(direction, px, py);
 
 	SubBufferSet &bufs = bs.subbufs[lod][key];
+	if(bufs.ready)
+		return bs.subbufs[lod].find(key);
+
 	if(bufs.t == NULL){
 		bufs.pbd = new BufferData;
 
-		bufs.t = new std::thread([=](SubBufferSet *pbufs){
+		if(threads.empty()){
+			threads.resize(8);
+		}
 
-			const int divides = 16 << (2 * (lod + 1));
+		for(auto &it : threads){
+			if(it.free){
+				bufs.t = &it;
+				it.startJob([=, &bufs](){
 
-			SubBufferSet &bufs = *pbufs;
-			BufferData &bd = *bufs.pbd;
+					const int divides = 16 << (2 * (lod + 1));
 
-			HeightGetter lheight(height);
-			HeightGetter height75 = [](...){return skirtHeight;};
+					BufferData &bd = *bufs.pbd;
 
-			const Quatd &rot = cubedirs[direction];
+					HeightGetter lheight(height);
+					HeightGetter height75 = [](...){return skirtHeight;};
 
-			auto point = [&](int ix, int iy){
-				return point0(divides, rot, bd, ix, iy, lheight);
-			};
+					const Quatd &rot = cubedirs[direction];
 
-			auto pointb = [&](int ix, int iy){
-				return point0(divides, rot, bd, ix, iy, height75);
-			};
+					auto point = [&](int ix, int iy){
+						return point0(divides, rot, bd, ix, iy, lheight);
+					};
 
-			const int ixBegin = px * divides / lodPatchSize;
-			const int ixEnd = (px + 1) * divides / lodPatchSize;
-			const int iyBegin = py * divides / lodPatchSize;
-			const int iyEnd = (py + 1) * divides / lodPatchSize;
+					auto pointb = [&](int ix, int iy){
+						return point0(divides, rot, bd, ix, iy, height75);
+					};
 
-			for(int ix = ixBegin; ix < ixEnd; ix++){
-				for(int iy = iyBegin; iy < iyEnd; iy++){
-					point(ix, iy);
-					point(ix + 1, iy);
-					point(ix + 1, iy + 1);
-					point(ix, iy + 1);
-				}
+					const int ixBegin = px * divides / lodPatchSize;
+					const int ixEnd = (px + 1) * divides / lodPatchSize;
+					const int iyBegin = py * divides / lodPatchSize;
+					const int iyEnd = (py + 1) * divides / lodPatchSize;
+
+					for(int ix = ixBegin; ix < ixEnd; ix++){
+						for(int iy = iyBegin; iy < iyEnd; iy++){
+							point(ix, iy);
+							point(ix + 1, iy);
+							point(ix + 1, iy + 1);
+							point(ix, iy + 1);
+						}
+					}
+
+					// Skirt along X axis to hide gaps
+					const int iyArray[2] = {iyBegin, iyEnd};
+					for(int iy = 0; iy < 2; iy++){
+						for(int ix = ixBegin; ix < ixEnd; ix++){
+							point(ix + !iy, iyArray[iy]);
+							point(ix + iy, iyArray[iy]);
+							pointb(ix + iy, iyArray[iy]);
+							pointb(ix + !iy, iyArray[iy]);
+						}
+					}
+
+					// Skirt along Y axis to hide gaps
+					const int ixArray[2] = {ixBegin, ixEnd};
+					for(int ix = 0; ix < 2; ix++){
+						for(int iy = iyBegin; iy < iyEnd; iy++){
+							point(ixArray[ix], iy + ix);
+							point(ixArray[ix], iy + !ix);
+							pointb(ixArray[ix], iy + !ix);
+							pointb(ixArray[ix], iy + ix);
+						}
+					}
+
+					bd.ready = true;
+				});
+				break;
 			}
-
-			// Skirt along X axis to hide gaps
-			const int iyArray[2] = {iyBegin, iyEnd};
-			for(int iy = 0; iy < 2; iy++){
-				for(int ix = ixBegin; ix < ixEnd; ix++){
-					point(ix + !iy, iyArray[iy]);
-					point(ix + iy, iyArray[iy]);
-					pointb(ix + iy, iyArray[iy]);
-					pointb(ix + !iy, iyArray[iy]);
-				}
-			}
-
-			// Skirt along Y axis to hide gaps
-			const int ixArray[2] = {ixBegin, ixEnd};
-			for(int ix = 0; ix < 2; ix++){
-				for(int iy = iyBegin; iy < iyEnd; iy++){
-					point(ixArray[ix], iy + ix);
-					point(ixArray[ix], iy + !ix);
-					pointb(ixArray[ix], iy + !ix);
-					pointb(ixArray[ix], iy + ix);
-				}
-			}
-
-	#ifdef _WIN32
-			InterlockedExchange(&bufs.ready, 1);
-	#else
-			bufs.ready = 1;
-	#endif
-		}, &bufs);
+		}
 	}
 
-	if(bufs.ready){
-		if(bufs.pbd == NULL)
-			return bs.subbufs[lod].find(key);
-		if(bufs.t->joinable())
-			bufs.t->join();
-
+	if(bufs.t && bufs.pbd && bufs.pbd->ready){
+		// Although vertex data generation can be parallelized, registration of
+		// vertex buffer objects has to be done in the main thread.
+		// So we do it once the BufferData is filled.
 		setVertexBuffers(*bufs.pbd, bufs);
 
+		// Make sure to delete the temporary vertex buffer, since it can take up
+		// much memory for thousands of vertices.
+		// TODO: It can be the case that the thread job is started but the invoker
+		// is no longer need the result at the time processing is done.
+		// For example, if the view point quickly fly over surface of a celestial
+		// body in a grazing distance, worker threads start preparing detailed
+		// vertices, but the viewpoint is far from the surface when they're done.
 		delete bufs.pbd;
 		bufs.pbd = NULL;
+
+		// This flag is only written and read by the main thread, so need not be atomic.
+		bufs.ready = true;
 
 		return bs.subbufs[lod].find(key);
 	}

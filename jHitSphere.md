@@ -24,29 +24,29 @@ $$\vec{r}=\vec{a}+t\vec{d}$$
 
 and a sphere:
 
-$$|\vec{r}-\vec{b}|=R$$
+$$\vert \vec{r}-\vec{b}\vert =R$$
 
 The intersecting points are obtained by forming a system of equations.
 
-$$|\vec{a}+t\vec{d}-\vec{b}|=R$$
+$$\vert \vec{a}+t\vec{d}-\vec{b}\vert =R$$
 
 The relative position can be assumed as a constant vector $\vec{r_0}=\vec{a}-\vec{b}$ and the equation becomes:
 
-$$|\vec{r_0}+t\vec{d}|=R$$
+$$\vert \vec{r_0}+t\vec{d}\vert =R$$
 
 Expanding the absolute value term yields following equation.
 
-$$\|\vec{r_0}\|^2+2t\vec{r_0}\cdot\vec{d}+t^2\|\vec{d}\|^2=R^2$$
+$$\vert \vec{r_0}\vert ^2+2t\vec{r_0}\cdot\vec{d}+t^2\vert \vec{d}\vert ^2=R^2$$
 
 Solving the 2nd order equation about $t$ yields the following answer.
 
-$$t=\frac{-\vec{r_0}\cdot\vec{d}\pm\sqrt{(\vec{r_0}\cdot\vec{d})^2-|\vec{d}|^2(|\vec{r_0}|^2-R^2)}}{|\vec{d}|^2}$$
+$$t=\frac{-\vec{r_0}\cdot\vec{d}\pm\sqrt{(\vec{r_0}\cdot\vec{d})^2-\vert \vec{d}\vert ^2(\vert \vec{r_0}\vert ^2-R^2)}}{\vert \vec{d}\vert ^2}$$
 
 This two $t$ values are the vector equation parameters of the intersecting points.
 
 Examining sign of the discriminant of the equation
 
-$$D=(\vec{r_0}\cdot\vec{d})^2-|\vec{d}|^2(|\vec{r_0}|^2-R^2)$$
+$$D=(\vec{r_0}\cdot\vec{d})^2-\vert \vec{d}\vert ^2(\vert \vec{r_0}\vert ^2-R^2)$$
 
 tells us if the intersection occurs at all.
 
@@ -84,6 +84,6 @@ All other codes in actual source are options or implementation details. The core
 
 Also, you can retrieve the position closest to the sphere's center by using average of the intersecting points,
 
-$$t_m=-\frac{\vec{r_0}\cdot\vec{d}}{|\vec{d}|^2}$$
+$$t_m=-\frac{\vec{r_0}\cdot\vec{d}}{\vert \vec{d}\vert ^2}$$
 
 even if the solution is imaginary.

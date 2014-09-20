@@ -59,7 +59,7 @@ thus we can know if it really hits cylinder's ends by measuring distance between
 Solving cylinder's side is much like sphere.
 We just project the ray to the plane perpendicular to cylinder's axis and do the same thing as in jHitSphere.
 
-First, we define normalized cylinder's axis vector $\hat{b} \equiv \vec{b}/\|\vec{b}\|$.
+First, we define normalized cylinder's axis vector $\hat{b} \equiv \vec{b}/\vert \vec{b}\vert $.
 
 Let's have some vectors projected onto plane perpendicular to cylinder axis.
 
@@ -69,14 +69,14 @@ $$\vec{d'} \equiv \vec{d} - (\vec{d} \cdot \hat{b}) \hat{b}$$
 
 The same argument as jHitSphere results in following solution.
 
-$$t=\frac{-\vec{r_0'}\cdot\vec{d'}\pm\sqrt{(\vec{r_0'}\cdot\vec{d'})^2-|\vec{d'}|^2(|\vec{r_0'}|^2-R^2)}}{|\vec{d'}|^2}$$
+$$t=\frac{-\vec{r_0'}\cdot\vec{d'}\pm\sqrt{(\vec{r_0'}\cdot\vec{d'})^2-\vert \vec{d'}\vert ^2(\vert \vec{r_0'}\vert ^2-R^2)}}{\vert \vec{d'}\vert ^2}$$
 
 By substituting this $t$ to the vector equation of the ray and measuring distance along axis, we can tell whether this $t$
 indicates intersection with the cylinder.
 
 Also note that if the discriminant of the solution
 
-$$D=(\vec{r_0'}\cdot\vec{d'})^2-|\vec{d'}|^2(|\vec{r_0'}|^2-R^2)$$
+$$D=(\vec{r_0'}\cdot\vec{d'})^2-\vert \vec{d'}\vert ^2(\vert \vec{r_0'}\vert ^2-R^2)$$
 
 is less than 0, intersection never occurs, because infinitely extended cylinder and the ray are in relationship like skew lines.
 

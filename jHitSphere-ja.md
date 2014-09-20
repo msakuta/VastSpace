@@ -22,29 +22,29 @@ $$\vec{r}=\vec{a}+t\vec{d}$$
 
 そして球体も：
 
-$$|\vec{r}-\vec{b}|=R$$
+$$\vert \vec{r}-\vec{b}\vert =R$$
 
 共有点は方程式を連立することで求まります。
 
-$$|\vec{a}+t\vec{d}-\vec{b}|=R$$
+$$\vert \vec{a}+t\vec{d}-\vec{b}\vert =R$$
 
 相対的な位置を定ベクトル $\vec{r_0}=\vec{a}-\vec{b}$ と見なすと方程式は次のようになります：
 
-$$|\vec{r_0}+t\vec{d}|=R$$
+$$\vert \vec{r_0}+t\vec{d}\vert =R$$
 
 絶対値の項を展開すると次の式になります。
 
-$$|\vec{r_0}|^2+2t\vec{r_0}\cdot\vec{d}+t^2|\vec{d}|^2=R^2$$
+$$\vert \vec{r_0}\vert ^2+2t\vec{r_0}\cdot\vec{d}+t^2\vert \vec{d}\vert ^2=R^2$$
 
 tについて2次方程式を解くと次の答えが出ます。
 
-$$t=\frac{-\vec{r_0}\cdot\vec{d}\pm\sqrt{(\vec{r_0}\cdot\vec{d})^2-|\vec{d}|^2(|\vec{r_0}|^2-R^2)}}{|\vec{d}|^2}$$
+$$t=\frac{-\vec{r_0}\cdot\vec{d}\pm\sqrt{(\vec{r_0}\cdot\vec{d})^2-\vert \vec{d}\vert ^2(\vert \vec{r_0}\vert ^2-R^2)}}{\vert \vec{d}\vert ^2}$$
 
 この $t$ の2つの値は、共有点を示すベクトル方程式のパラメータです。
 
 判別式
 
-$$D=(\vec{r_0}\cdot\vec{d})^2-|\vec{d}|^2(|\vec{r_0}|^2-R^2)$$
+$$D=(\vec{r_0}\cdot\vec{d})^2-\vert \vec{d}\vert ^2(\vert \vec{r_0}\vert ^2-R^2)$$
 
 の符号を調べることで、共有点があるかどうかを知ることができます。
 
@@ -82,4 +82,4 @@ $$D=(\vec{r_0}\cdot\vec{d})^2-|\vec{d}|^2(|\vec{r_0}|^2-R^2)$$
 
 なお、虚数解であろうとも、直線と球の中心との最近点は共有点の中点をとることでわかります。
 
-$$t_m=-\frac{\vec{r_0}\cdot\vec{d}}{|\vec{d}|^2}$$
+$$t_m=-\frac{\vec{r_0}\cdot\vec{d}}{\vert \vec{d}\vert ^2}$$

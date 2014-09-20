@@ -57,7 +57,7 @@ $$t = \frac{(\vec{a} \pm \vec{b}) \cdot \vec{b}}{\vec{d} \cdot \vec{b}}$$
 円柱の側面の解きかたは球の場合とよく似ています。
 光線を円柱の軸と垂直な平面に投影し、 jHitSphere と同じことをするだけです。
 
-最初に、円柱の軸を正規化したベクトルを $\hat{b} \equiv \vec{b}/\|\vec{b}\|$ と定義します。
+最初に、円柱の軸を正規化したベクトルを $\hat{b} \equiv \vec{b}/\vert \vec{b}\vert $ と定義します。
 
 円柱の軸に垂直な平面に投影したベクトルをいくつか作りましょう。
 
@@ -67,13 +67,13 @@ $$\vec{d'} \equiv \vec{d} - (\vec{d} \cdot \hat{b}) \hat{b}$$
 
 jHitSphere と同じ理屈で次の解が得られます。
 
-$$t=\frac{-\vec{r_0'}\cdot\vec{d'}\pm\sqrt{(\vec{r_0'}\cdot\vec{d'})^2-|\vec{d'}|^2(|\vec{r_0'}|^2-R^2)}}{|\vec{d'}|^2}$$
+$$t=\frac{-\vec{r_0'}\cdot\vec{d'}\pm\sqrt{(\vec{r_0'}\cdot\vec{d'})^2-\vert \vec{d'}\vert ^2(\vert \vec{r_0'}\vert ^2-R^2)}}{\vert \vec{d'}\vert ^2}$$
 
 この $t$ を光線のベクトル方程式に代入し、軸方向の距離を測ることによって、この $t$ が円柱との交点を示しているかどうかを知ることができます。
 
 また、この解の判別式
 
-$$D=(\vec{r_0'}\cdot\vec{d'})^2-|\vec{d'}|^2(|\vec{r_0'}|^2-R^2)$$
+$$D=(\vec{r_0'}\cdot\vec{d'})^2-\vert \vec{d'}\vert ^2(\vert \vec{r_0'}\vert ^2-R^2)$$
 
 が 0 より小さい場合は、円柱両端の面に対してすら、交差は生じません。というのも、無限に延長した円柱と光線の間にはねじれの位置のような関係があるからです。
 

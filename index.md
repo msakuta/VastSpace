@@ -84,13 +84,14 @@ support gcc 4.8.2 but older versions.  In such case
 from source.
 
 You'll need various external libraries:
-  libpng
-  The IJG's JPEG library (version 7 or later)
-  zlib
-  Bullet Dynamics Engine (version 2.76 or later)
-  Squirrel Scripting Language version 3
-  libogg
-  libvorbis
+
+* libpng
+* The IJG's JPEG library (version 7 or later)
+* zlib
+* Bullet Dynamics Engine (version 2.76 or later)
+* Squirrel Scripting Language version 3
+* libogg
+* libvorbis
 
 All sources are included in the source tree except Bullet,
 but GNUMakefile does not automatically build them.

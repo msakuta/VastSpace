@@ -131,4 +131,6 @@ Subversion history starts since that time.
 
 [jHitCylinder](jHitCylinder.html)
 
-[Converting_Quaternion_to_Euler_angles](Quaternion_to_Euler_angles.html)
+[Converting Quaternion to Euler angles](Quaternion_to_Euler_angles.html)
+
+[Determining if a point is inside a triangle (日本語)](Triangle-ja.html)

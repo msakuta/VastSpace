@@ -1,44 +1,21 @@
-<html>
-  <head>
-    <meta charset='utf-8' />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="jHitSphere" />
-<script type="text/x-mathjax-config">
-MathJax.Hub.Config({
-  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
-  TeX: {
-    TagSide: "left",
-    Macros: {
-      T: '^{\\mathrm T}',
-      RR: '{\\bf R}',
-      bold: ['{\\bf #1}',1]
-    }
-  }
-});
-</script>
-    <script type="text/javascript"
-     src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
-    </script>
+---
+title: jHitCylinder
+---
 
+[日本語](jHitCylinder-ja.html)
 
-    <title>jHitSphere</title>
-  </head>
+# Overview
 
-<body>
-
-<a href="index.html">Go back to main page</a>
-
-<h1> Overview </h1>
-
-The jHitCylinder function checks if a ray of light is blocked by a cylinder in 3-D space, just like <a href="jHitSphere.html">jHitSphere</a>.
+The jHitCylinder function checks if a ray of light is blocked by a cylinder in 3-D space,
+just like [jHitSphere](jHitSphere.html).
 
 This function is used relatively less frequently.
-It's used to create complex hit shapes in conjunction with jHitSphere and <a href="jHitSphere.html">jHitBox</a>.
+It's used to create complex hit shapes in conjunction with jHitSphere and [jHitBox](jHitBox.html).
 
 I have been forgotten the rationale of jHitSphere, so this time I would write it in advance to implement.
 
 
-<h1> Rationale </h1>
+# Rationale
 
 Suppose we've got an axis vector $\vec{b}$, who has a length of $L$.
 It's a vector indicating axis of the cylinder and normal vector of planes at both ends of the cylinder.
@@ -49,11 +26,9 @@ The cylinder's radius is written as $R$.
 The following figure illustrates those variables.
 Note that $2R$ is the diameter and $2L$ is the total length of the cylinder.
 
-<p>
-<img src="Cylinder-dimensions.png">
-</p>
+![Cylinder-dimensions](Cylinder-dimensions.png)
 
-<h2> Solving intersecting points between the ray and the planes at both ends of the cylinder </h2>
+## Solving intersecting points between the ray and the planes at both ends of the cylinder
 
 The first thing we can obtain is the vector equation representation of the planes.
 
@@ -79,12 +54,12 @@ Substituting this $t$ to the ray's vector equation gives us the position of the 
 thus we can know if it really hits cylinder's ends by measuring distance between the points and the cylinder's axis.
 
 
-<h2> Solving intersecting points between the ray and the cylinder's side </h2>
+## Solving intersecting points between the ray and the cylinder's side
 
 Solving cylinder's side is much like sphere.
 We just project the ray to the plane perpendicular to cylinder's axis and do the same thing as in jHitSphere.
 
-First, we define normalized cylinder's axis vector $\hat{b} \equiv \vec{b}/|\vec{b}|$.
+First, we define normalized cylinder's axis vector $\hat{b} \equiv \vec{b}/\|\vec{b}\|$.
 
 Let's have some vectors projected onto plane perpendicular to cylinder axis.
 
@@ -107,7 +82,7 @@ is less than 0, intersection never occurs, because infinitely extended cylinder 
 
 
 
-<h1> Isn't it re-inventing wheels? </h1>
+# Isn't it re-inventing wheels?
 
 Usually you should use external libraries for this sort of things, because libraries are naturally more tested and robust than home-made algorithms.
 
@@ -115,14 +90,3 @@ We already have Bullet dynamics engine's ray test algorithm, which supports not 
 but also variety of shapes including arbitrary convex polygon.
 The problem with Bullet is that it's not reliable, by an unclear reason, to determine if a flying bullet hits objects.
 It may be something to do with collision margins, but I'm not sure since I have not gone deep into internals of Bullet dynamics engine.
-
-<hr>
-
-<p>
-<a href="jHitCylinder-ja.html">日本語</a>
-</p>
-
-
-
-</body>
-</html>

@@ -1,45 +1,20 @@
-<html>
-  <head>
-    <meta charset='utf-8' />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="jHitSphere" />
-<script type="text/x-mathjax-config">
-MathJax.Hub.Config({
-  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
-  TeX: {
-    TagSide: "left",
-    Macros: {
-      T: '^{\\mathrm T}',
-      RR: '{\\bf R}',
-      bold: ['{\\bf #1}',1]
-    }
-  }
-});
-</script>
-    <script type="text/javascript"
-     src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
-    </script>
+---
+title: jHitCylinder
+---
 
+[English](jHitCylinder.html)
 
-    <title>jHitSphere</title>
-  </head>
+# 概要
 
-<body>
-
-<a href="index.html">Go back to main page</a>
-
-<h1> 概要 </h1>
-
-jHitCylinder 関数は <a href="jHitSphere-ja.html">jHitSphere</a> と同じように、3D空間中で光線が円柱によって遮られるか否かを判定します。
+jHitCylinder 関数は [jHitSphere](jHitSphere-ja.html) と同じように、3D空間中で光線が円柱によって遮られるか否かを判定します。
 
 この関数は比較的稀にしか使われません。
 
-jHitSphere や <a href="jHitBox-ja.html">jHitBox</a> と組み合わせて複雑な衝突形状を作るのに用いられます。
+jHitSphere や [jHitBox](jHitBox-ja.html) と組み合わせて複雑な衝突形状を作るのに用いられます。
 
 私は jHitSphere の原理を忘れてしまっていたので、今回は実装より先に書いておきます。
 
-
-<h1> 原理 </h1>
+# 原理
 
 長さ $L$ の軸を表すベクトル $\vec{b}$ が与えられたとしましょう。
 このベクトルは円柱の軸を表し、円柱両端の平面の法線ベクトルにもなっています。
@@ -51,12 +26,9 @@ jHitSphere や <a href="jHitBox-ja.html">jHitBox</a> と組み合わせて複雑
 
 $2R$ は直径を表し、 $2L$ は円柱の長さを表すことに注意してください。
 
-<p>
-<img src="Cylinder-dimensions.png">
-</p>
+![円柱の寸法](Cylinder-dimensions.png)
 
-
-<h2> 光線と円柱両端の平面との交点の解法 </h2>
+## 光線と円柱両端の平面との交点の解法
 
 最初に得られるのは平面のベクトル方程式での表現です。
 
@@ -80,12 +52,12 @@ $$t = \frac{(\vec{a} \pm \vec{b}) \cdot \vec{b}}{\vec{d} \cdot \vec{b}}$$
 したがって、交点と円柱の軸との距離を求めることでヒットしたかどうかを判定することができます。
 
 
-<h2> 光線と円柱の側面との交点の解法 </h2>
+## 光線と円柱の側面との交点の解法
 
 円柱の側面の解きかたは球の場合とよく似ています。
 光線を円柱の軸と垂直な平面に投影し、 jHitSphere と同じことをするだけです。
 
-最初に、円柱の軸を正規化したベクトルを $\hat{b} \equiv \vec{b}/|\vec{b}|$ と定義します。
+最初に、円柱の軸を正規化したベクトルを $\hat{b} \equiv \vec{b}/\|\vec{b}\|$ と定義します。
 
 円柱の軸に垂直な平面に投影したベクトルをいくつか作りましょう。
 
@@ -107,20 +79,10 @@ $$D=(\vec{r_0'}\cdot\vec{d'})^2-|\vec{d'}|^2(|\vec{r_0'}|^2-R^2)$$
 
 
 
-<h1> これって車輪の再発明じゃないの？ </h1>
+# これって車輪の再発明じゃないの？
 
 こういう場合、普段は外部のライブラリを使うべきです。というのも外部のライブラリはお手製のアルゴリズムよりもテストされ頑健であるのが普通だからです。
 
 我々はすでに直方体や球や円柱だけでなく任意の凸形ポリゴンをサポートする Bullet dynamics engine の光線テストアルゴリズムを手にしています。
 Bullet の問題は、理由は不明なのですが、弾丸と物体の当たりを判定する用途には信頼性がないということです。
 衝突マージンとの関係があるのかもしれませんが、 Bullet dynamics engine の奥深くまで追求しいていないので確かなことは言えません。
-
-
-<hr>
-
-<p>
-<a href="jHitCylinder.html">English</a>
-</p>
-
-</body>
-</html>

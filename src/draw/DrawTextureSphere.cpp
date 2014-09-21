@@ -623,6 +623,11 @@ void DrawTextureSphere::useShader(){
 	}
 }
 
+void DrawTextureSphere::stopShader(){
+	if(m_shader && g_shader_enable)
+		glUseProgram(0);
+}
+
 /// Draws a sphere textured
 bool DrawTextureSphere::draw(){
 	const Vec4f &mat_diffuse = m_mat_diffuse;
@@ -850,8 +855,7 @@ bool DrawTextureSphere::draw(){
 	}
 	glEnd();*/
 
-	if(shader && g_shader_enable)
-		glUseProgram(0);
+	stopShader();
 
 	glPopAttrib();
 	glPopMatrix();
@@ -1000,8 +1004,8 @@ bool DrawTextureSpheroid::draw(){
 
 	if(ring && m_shader)
 		ring->ring_setsphereshadow_end();
-	if(shader && g_shader_enable)
-		glUseProgram(0);
+
+	stopShader();
 
 	glMatrixMode(GL_TEXTURE);
 	glPopMatrix();
@@ -1071,6 +1075,8 @@ bool DrawTextureCubeEx::draw(){
 	glScaled(m_rad, m_rad, m_rad);
 
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_LIGHTING_BIT);
+
+	useShader();
 
 	setupLight();
 
@@ -1231,6 +1237,7 @@ bool DrawTextureCubeEx::draw(){
 
 	}while(false);
 
+	stopShader();
 
 	glPopAttrib();
 

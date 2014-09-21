@@ -39,6 +39,7 @@ protected:
 	Quatd m_cloudRotation;
 	Vec3f m_noisePos;
 	void useShader();
+	void stopShader();
 public:
 	typedef DrawTextureSphere tt;
 	tt(Astrobj *a, const Viewer *vw, const Vec3d &sunpos) : a(a), vw(vw), sunpos(sunpos)

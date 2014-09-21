@@ -354,3 +354,31 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *
 int Game::StellarFileLoad(const char *fname){
 	return StellarFileLoadInt(fname, universe, nullptr);
 }
+
+bool stellar_util::sqcalcb(StellarContext &sc, const char *str, const SQChar *context){
+	StackReserver st(sc.v);
+	gltestp::dstring dst = gltestp::dstring("return(") << str << ")";
+	if(SQ_FAILED(sq_compilebuffer(sc.v, dst, dst.len(), context, SQTrue)))
+		throw StellarError(gltestp::dstring() << "sqcalc compile error: " << context);
+	sq_pushobject(sc.v, sc.vars);
+	if(SQ_FAILED(sq_call(sc.v, 1, SQTrue, SQTrue)))
+		throw StellarError(gltestp::dstring() << "sqcalc call error: " << context);
+	SQBool f;
+	if(SQ_FAILED(sq_getbool(sc.v, -1, &f)))
+		throw StellarError(gltestp::dstring() << "sqcalc returned value not convertible to bool: " << context);
+	return f != SQFalse;
+}
+
+int stellar_util::sqcalci(StellarContext &sc, const char *str, const SQChar *context){
+	StackReserver st(sc.v);
+	gltestp::dstring dst = gltestp::dstring("return(") << str << ")";
+	if(SQ_FAILED(sq_compilebuffer(sc.v, dst, dst.len(), context, SQTrue)))
+		throw StellarError(gltestp::dstring() << "sqcalc compile error: " << context);
+	sq_pushobject(sc.v, sc.vars);
+	if(SQ_FAILED(sq_call(sc.v, 1, SQTrue, SQTrue)))
+		throw StellarError(gltestp::dstring() << "sqcalc call error: " << context);
+	SQInteger f;
+	if(SQ_FAILED(sq_getinteger(sc.v, -1, &f)))
+		throw StellarError(gltestp::dstring() << "sqcalc returned value not convertible to int: " << context);
+	return int(f);
+}

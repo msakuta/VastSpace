@@ -28,4 +28,12 @@ struct StellarError : std::exception{
 	StellarError(const char *s) : std::exception(s){}
 };
 
+namespace stellar_util{
+
+double sqcalcd(StellarContext &sc, const char *str, const SQChar *context);
+int sqcalci(StellarContext &sc, const char *str, const SQChar *context);
+bool sqcalcb(StellarContext &sc, const char *str, const SQChar *context);
+
+}
+
 #endif

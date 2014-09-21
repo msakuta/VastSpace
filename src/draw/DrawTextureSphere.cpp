@@ -1163,28 +1163,28 @@ bool DrawTextureCubeEx::draw(){
 							auto it2 = compileVertexBuffersSubBuf(it->second, 0, i, ix, iy);
 							if(it2 != bufs.subbufs[0].end()){
 #if PROFILE_CUBEEX
-							timemeas_t tms;
-							TimeMeasStart(&tms);
+								timemeas_t tms;
+								TimeMeasStart(&tms);
 #endif
-							enableBuffer(it2->second);
-							glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
+								enableBuffer(it2->second);
+								glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
 #if PROFILE_CUBEEX
-							GLWchart::addSampleToCharts("dtstime1", TimeMeasLap(&tms));
+								GLWchart::addSampleToCharts("dtstime1", TimeMeasLap(&tms));
 #endif
-							drawn = true;
+								drawn = true;
 							}
 						}
 						if(!drawn){
 							auto it2 = compileVertexBuffersSubBuf(it->second, 1, i, ix, iy);
 							if(it2 != bufs.subbufs[1].end()){
-#if PROFILE_CUBEEX
-							timemeas_t tms;
-							TimeMeasStart(&tms);
+#if PROFILE_CUBEEX	
+								timemeas_t tms;
+								TimeMeasStart(&tms);
 #endif
-							enableBuffer(it2->second);
-							glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
+								enableBuffer(it2->second);
+								glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
 #if PROFILE_CUBEEX
-							GLWchart::addSampleToCharts("dtstime2", TimeMeasLap(&tms));
+								GLWchart::addSampleToCharts("dtstime2", TimeMeasLap(&tms));
 #endif
 							}
 						}

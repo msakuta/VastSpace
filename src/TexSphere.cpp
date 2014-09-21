@@ -42,7 +42,11 @@ TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
 	cloudHeight(0.),
 #endif
 	cloudPhase(0.),
-	noisePos(0,0,0)
+	noisePos(0,0,0),
+	terrainNoiseHeight(1.),
+	terrainNoisePersistence(0.65),
+	terrainNoiseOctaves(7),
+	terrainNoiseEnable(false)
 {
 	texlist = cloudtexlist = 0;
 	ringmin = ringmax = ringthick = 0;
@@ -126,6 +130,10 @@ void TexSphere::serialize(SerializeContext &sc){
 		sc.o << ringtexname;
 		sc.o << ringbacktexname;
 	}
+	sc.o << terrainNoiseEnable;
+	sc.o << terrainNoiseHeight;
+	sc.o << terrainNoiseOctaves;
+	sc.o << terrainNoisePersistence;
 }
 
 void TexSphere::unserialize(UnserializeContext &sc){
@@ -153,6 +161,10 @@ void TexSphere::unserialize(UnserializeContext &sc){
 		sc.i >> ringtexname;
 		sc.i >> ringbacktexname;
 	}
+	sc.i >> terrainNoiseEnable;
+	sc.i >> terrainNoiseHeight;
+	sc.i >> terrainNoiseOctaves;
+	sc.i >> terrainNoisePersistence;
 
 	// Postprocessing
 	if(textures.size() != this->textures.size())
@@ -162,6 +174,7 @@ void TexSphere::unserialize(UnserializeContext &sc){
 }
 
 bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
+	using namespace stellar_util;
 	const char *s = argv[0], *ps = argv[1];
 	if(0);
 	else if(!strcmp(s, "oblateness")){
@@ -288,6 +301,22 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 		TexSphere *const p = this;
 		p->ring = 1;
 		*(!strcmp(s, "ringmin") ? &p->ringmin : !strcmp(s, "ringmax") ? &p->ringmax : &p->ringthick) = sqcalc(sc, ps, s);
+		return true;
+	}
+	else if(!scstrcmp(s, "terrainNoiseEnable")){
+		terrainNoiseEnable = sqcalcb(sc, ps, s);
+		return true;
+	}
+	else if(!scstrcmp(s, "terrainNoiseHeight")){
+		terrainNoiseHeight = sqcalc(sc, ps, s);
+		return true;
+	}
+	else if(!scstrcmp(s, "terrainNoisePersistence")){
+		terrainNoisePersistence = sqcalc(sc, ps, s);
+		return true;
+	}
+	else if(!scstrcmp(s, "terrainNoiseOctaves")){
+		terrainNoiseOctaves = sqcalci(sc, ps, s);
 		return true;
 	}
 	else

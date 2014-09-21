@@ -348,7 +348,8 @@ void TexSphere::draw(const Viewer *vw){
 					}
 				}
 			}
-			bool ret = DrawTextureCubeEx(this, vw, sunpos)
+			auto proc = [&](DrawTextureSphere &ds){
+				return ds
 				.flags(DTS_LIGHTING)
 				.mat_diffuse(basecolor)
 				.mat_ambient(basecolor / 2.f)
@@ -360,6 +361,13 @@ void TexSphere::draw(const Viewer *vw){
 				.noisePos(noisePos.cast<float>())
 				.lightingStar(param.results)
 				.draw();
+			};
+			bool ret = terrainNoiseEnable ?
+				proc(DrawTextureCubeEx(this, vw, sunpos)
+				.noiseHeight(terrainNoiseHeight)
+				.noisePersistence(terrainNoisePersistence)
+				.noiseOctaves(terrainNoiseOctaves))
+				: proc(DrawTextureSphere(this, vw, sunpos));
 			if(!ret && *texname){
 				texname = "";
 			}

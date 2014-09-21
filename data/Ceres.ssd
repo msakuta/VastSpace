@@ -13,6 +13,11 @@ coordsys Orbit ceres{
 
 		color e0d0c0
 		texture textures/Ceres.png
+
+		terrainNoiseEnable true
+		terrainNoiseHeight 35.
+		terrainNoisePersistence 0.75
+		terrainNoiseOctaves 7
 	}
 
 	coordsys Orbit cereslo{

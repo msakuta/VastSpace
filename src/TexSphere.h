@@ -48,6 +48,11 @@ protected:
 	AstroRing astroRing;
 #endif
 
+	double terrainNoiseHeight;
+	double terrainNoisePersistence;
+	int terrainNoiseOctaves;
+	bool terrainNoiseEnable;
+
 	void updateInt(double dt);
 public:
 	/// drawTextureSphere flags

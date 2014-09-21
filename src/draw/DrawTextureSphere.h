@@ -123,14 +123,23 @@ public:
 
 	tt(TexSphere *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos){}
 	bool draw()override;
+	tt &noiseHeight(double v){m_noiseHeight = v; return *this;}
+	tt &noisePersistence(double v){m_noisePersistence = v; return *this;}
+	tt &noiseOctaves(int v){m_noiseOctaves = v; return *this;}
 
 	static const int lods = 2;
 	static const int lodPatchSize = 4;
 	static const int lodPatchSize2 = lodPatchSize * lodPatchSize;
 
+protected:
 	struct BufferData;
 
 	struct WorkerThread;
+	typedef std::vector<DrawTextureCubeEx::WorkerThread> WorkerThreads;
+	static WorkerThreads threads;
+
+	struct TempVertex;
+	typedef std::map<DrawTextureCubeEx::TempVertex, GLuint> VertexIndMap;
 
 	struct SubBufferSet{
 		WorkerThread *t;
@@ -186,6 +195,7 @@ public:
 
 	typedef std::function<double(const Vec3d &basepos)> HeightGetter;
 
+	static double height(const Vec3d &basepos, int octaves, double persistence, double aheight);
 	void point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height)const;
 
 	void compileVertexBuffers()const;
@@ -193,6 +203,10 @@ public:
 	SubBufs::iterator compileVertexBuffersSubBuf(BufferSet &bs, int lod, int direction, int ix, int iy);
 
 	static void setVertexBuffers(const BufferData &bd, SubBufferSet &bs);
+
+	double m_noiseHeight;
+	double m_noisePersistence;
+	int m_noiseOctaves;
 };
 
 #endif

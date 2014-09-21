@@ -1092,8 +1092,8 @@ bool DrawTextureCubeEx::draw(){
 		glDisable(GL_TEXTURE_2D);
 
 	// Can get close as one meter
-	double nearest = std::max(1e-3, (apos - vw->pos).len() - 2. * m_rad);
-	double farthest = (apos - vw->pos).len() + 2. * m_rad;
+	double nearest = std::max(1e-3, (apos - vw->pos).len() - (1.5 * m_rad + 2. * m_noiseHeight));
+	double farthest = (apos - vw->pos).len() + (1.5 * m_rad + 2. * m_noiseHeight);
 
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
@@ -1244,8 +1244,6 @@ bool DrawTextureCubeEx::draw(){
 
 typedef std::vector<Vec3d> VecList;
 typedef std::vector<GLuint> IndList;
-struct TempVertex;
-typedef std::map<TempVertex, GLuint> VertexIndMap;
 
 /// Set of data buffers that should be inserted during VBO compilation.
 struct DrawTextureCubeEx::BufferData{
@@ -1272,7 +1270,7 @@ static bool operator<(const Vec3d &a, const Vec3d &b){
 }
 
 /// Temporary vertex object to use as a key to vertex map.
-struct TempVertex{
+struct DrawTextureCubeEx::TempVertex{
 
 	Vec3d pos;
 	Vec3d nrm;
@@ -1311,20 +1309,24 @@ struct TempVertex{
 	}
 };
 
+/// Simplex Fractal Noise in 3D
 static double sfnoise3(const Vec3d &basepos, int octaves, double persistence){
+	assert(0 < octaves);
 	double ret = 0.;
 	double f = 1.;
+	double fsum = 0.;
 	for(int i = 0; i < octaves; i++){
 		double s = (1 << i);
 		f *= persistence;
 		ret += f * snoise3(basepos[0] * s, basepos[1] * s, basepos[2] * s);
+		fsum += f;
 	}
-	return ret;
-};
+	return ret / fsum;
+}
 
-static double height(const Vec3d &basepos){
-	return (sfnoise3(basepos, 7, 0.65) * 0.02 + 1.);
-};
+double DrawTextureCubeEx::height(const Vec3d &basepos, int octaves, double persistence, double aheight){
+	return (sfnoise3(basepos, octaves, persistence) * aheight + 1.);
+}
 
 void DrawTextureCubeEx::point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height)const{
 	float gx, gy;
@@ -1339,7 +1341,7 @@ void DrawTextureCubeEx::point0(int divides, const Quatd &rot, BufferData &bd, in
 	Vec3d dv10 = vec(ix + 1, iy) - v0;
 	Vec3d nrm = dv10.vp(dv01).norm();
 	TempVertex::insert(bd, v0, nrm, v0, *this);
-};
+}
 
 /// Compile vertex buffer objects for the least detailed LOD.
 void DrawTextureCubeEx::compileVertexBuffers()const{
@@ -1348,7 +1350,10 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 
 	BufferSet &bufs = bufsets[a];
 
-	HeightGetter lheight(height);
+	// This function is synchronized, so using this object's members is valid.
+	HeightGetter lheight = [this](const Vec3d &v){
+		return height(v, m_noiseOctaves, m_noisePersistence, m_noiseHeight / m_rad);
+	};
 
 	// Least detailed LOD's division per cube face
 	const int divides = 16;
@@ -1422,9 +1427,8 @@ struct DrawTextureCubeEx::WorkerThread{
 	}
 };
 
-typedef std::vector<DrawTextureCubeEx::WorkerThread> WorkerThreads;
 
-static WorkerThreads threads;
+DrawTextureCubeEx::WorkerThreads DrawTextureCubeEx::threads;
 
 /// Compile vertex buffer objects for a given LOD and location.
 DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubBuf(BufferSet &bs, int lod, int direction, int px, int py){
@@ -1445,6 +1449,11 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 
 		for(auto &it : threads){
 			if(it.free){
+				// Temporary variables for capturing by the lambda.
+				double aheight = m_noiseHeight / m_rad;
+				double persistence = m_noisePersistence;
+				int octaves = m_noiseOctaves;
+
 				bufs.t = &it;
 				it.startJob([=, &bufs](){
 
@@ -1452,7 +1461,12 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 
 					BufferData &bd = *bufs.pbd;
 
-					HeightGetter lheight(height);
+					// This function is asynchoronous, so using this object to
+					// refer to parameters is invalid.  Capturing parameters by
+					// values is the valid method.
+					HeightGetter lheight = [=](const Vec3d &v){
+						return height(v, octaves, persistence, aheight);
+					};
 					HeightGetter height75 = [](...){return skirtHeight;};
 
 					const Quatd &rot = cubedirs[direction];

@@ -112,10 +112,10 @@ static SQInteger sqf_GLWtaskBar_addButton(HSQUIRRELVM v){
 bool GLWtaskBar::sq_define(HSQUIRRELVM v){
 	st::sq_define(v);
 	sq_pushstring(v, _SC("GLWtaskBar"), -1);
-	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_pushstring(v, st::s_sqClassName(), -1);
 	sq_get(v, -3);
 	sq_newclass(v, SQTrue);
-	sq_settypetag(v, -1, "GLWchat");
+	sq_settypetag(v, -1, "GLWtaskBar");
 	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
 	register_closure(v, _SC("constructor"), sqf_constructor);
 	register_closure(v, _SC("addButton"), sqf_GLWtaskBar_addButton);

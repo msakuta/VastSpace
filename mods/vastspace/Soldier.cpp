@@ -5,6 +5,8 @@
 #include <winsock2.h>
 #endif
 #include "Soldier.h"
+#include "EntityRegister.h"
+#include "vastspace.h"
 #include "Player.h"
 #include "Bullet.h"
 #include "arms.h"
@@ -22,6 +24,8 @@
 #include "GetFov.h"
 #include "SqInitProcess-ex.h"
 #include "tent3d.h"
+#include "StaticInitializer.h"
+#include "Shipyard.h"
 
 extern "C"{
 #include <clib/mathdef.h>
@@ -67,6 +71,7 @@ double Soldier::hookSpeed = 0.2;
 double Soldier::hookRange = 0.2;
 double Soldier::hookPullAccel = 0.05;
 double Soldier::hookStopRange = 0.025;
+double standRange = 0.001; // One meter
 Autonomous::ManeuverParams Soldier::maneuverParams = {
 	0.01, // accel
 	0.01, // maxspeed
@@ -152,9 +157,11 @@ void Soldier::unserialize(UnserializeContext &usc){
 
 DERIVE_COMMAND_EXT(ReloadWeaponCommand, SerializableCommand);
 DERIVE_COMMAND_EXT(SwitchWeaponCommand, SerializableCommand);
+DERIVE_COMMAND_EXT(JumpCommand, SerializableCommand);
 
 IMPLEMENT_COMMAND(ReloadWeaponCommand, "ReloadWeapon")
 IMPLEMENT_COMMAND(SwitchWeaponCommand, "SwitchWeapon")
+IMPLEMENT_COMMAND(JumpCommand, "Jump")
 
 
 
@@ -283,8 +290,9 @@ void Soldier::init(){
 		reloading = 0;
 		muzzle = 0;
 		aiming = false;
-		arms[0] = new M16(this, soldierHP[0]);
-		arms[1] = new M40(this, soldierHP[1]);
+		cooldown2 = 0.;
+		arms[0] = new Rifle(this, soldierHP[0], &Rifle::firearmDefs["M16"]);
+		arms[1] = new Rifle(this, soldierHP[1], &Rifle::firearmDefs["M40"]);
 		if(w) for(int i = 0; i < numof(arms); i++) if(arms[i])
 			w->addent(arms[i]);
 		hookshot = false;
@@ -368,7 +376,7 @@ void Soldier::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 		pos = mat.vp3(ofs[1]);
 	}
 	else{
-		mat4translate(mat, 0., p->state == STATE_STANDING ? .0016 : .0005, 0.); /* eye position */
+		mat4translate(mat, 0., p->state == STATE_STANDING ? 0.00055 : 0.0005, 0.); /* eye position */
 		pos = mat.vec3(3);
 		if(seatid == 3){
 			WarField::EntityList::iterator it;
@@ -384,6 +392,7 @@ void Soldier::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 }
 
 bool Soldier::buildBody(){
+#if 0
 	if(!bbody){
 		static btSphereShape *shape = NULL;
 		if(!shape){
@@ -412,6 +421,7 @@ bool Soldier::buildBody(){
 		// Set angular factor to 0 to prevent collisions from changing the character's direction.
 		bbody->setAngularFactor(0.);
 	}
+#endif
 	return true;
 }
 
@@ -891,6 +901,9 @@ void Soldier::anim(double dt){
 					hooked = true;
 					hookedEntity = pt;
 					hookhitpart = hh.hitpart;
+					if(standEntity){
+						standEntity = NULL;
+					}
 					HookPosWorldToLocalCommand hpcom(hh.hitpart, &hitpos);
 					if(pt->command(&hpcom)){
 						hookpos = hpcom.pos;
@@ -957,6 +970,15 @@ void Soldier::anim(double dt){
 					this->velo = bvelo;
 			}
 
+			GetFaceInfoCommand gfic;
+			gfic.hitpart = hookhitpart;
+			gfic.pos = this->pos;
+			if(hookedEntity->command(&gfic) && (this->pos - gfic.retPos).sp(gfic.retNormal) < 0
+				|| delta.slen() < standRange * standRange){
+				standEntity = hookedEntity;
+				standPart = hookhitpart;
+			}
+
 			if(bbody){
 //				bbody->setLinearVelocity(btvc(velo));
 				bbody->applyCentralForce(btvc(dir * hookPullAccel * mass));
@@ -987,6 +1009,36 @@ void Soldier::anim(double dt){
 		}
 		else
 			hookpos -= delta.norm() * hookSpeed * dt;
+	}
+
+	if(standEntity && standPart){
+		GetFaceInfoCommand com;
+		com.hitpart = standPart;
+		com.pos = this->pos;
+		if(standEntity->command(&com)){
+			Vec3d zhat = rot.trans(Vec3d(0,0,-1));
+
+			// Gradually make the viewing rotation upright against the surface
+			Vec3d desiredXhat = zhat.vp(com.retNormal);
+			if(0 < desiredXhat.slen()){
+				desiredXhat.normin();
+				rot = rot.quatrotquat(zhat * (desiredXhat.sp(rot.trans(Vec3d(0,-1,0))) * dt));
+			}
+
+			// Bind position along the surface if we're inside the face polygon.
+			// Otherwise, detach from standing entity.
+			if(com.retPosHit){
+				pos = com.retPos + com.retNormal * this->hitRadius;
+				velo -= com.retNormal * com.retNormal.sp(velo);
+			}
+			else{
+				int hitPart = standEntity->tracehit(this->pos, -com.retNormal, this->getHitRadius(), this->getHitRadius() * 1.5, NULL, NULL, NULL);
+				if(hitPart)
+					standPart = hitPart;
+				else
+					standEntity = NULL;
+			}
+		}
 	}
 
 /*	if(p->arms[0].type == arms_shotgun && p->reloading){
@@ -1041,7 +1093,8 @@ void Soldier::anim(double dt){
 		}
 		else{
 			cooldown2 += arms[0]->shootCooldown();
-			arms[0]->shoot();
+			arms[0]->shoot(dt);
+
 			if(game->isClient())
 				muzzle |= 1;
 			p->kickvelo[0] += kickf * (w->rs.nextd() - .3);
@@ -1363,6 +1416,16 @@ void Soldier::control(const input_t *inputs, double dt){
 	getPosition(NULL, &arot);
 
 	Vec3d xomg = arot.trans(Vec3d(0, -inputs->analog[0] * speed, 0));
+
+	// Move the rotation in lathe-like manner instead of trackball-like manner.
+	if(standEntity && standPart != 0){
+		GetFaceInfoCommand com;
+		com.hitpart = standPart;
+		com.pos = this->pos;
+		if(standEntity->command(&com))
+			xomg = com.retNormal * -inputs->analog[0] * speed;
+	}
+
 	Vec3d yomg = arot.trans(Vec3d(-inputs->analog[1] * speed, 0, 0));
 	arot = arot.quatrotquat(xomg);
 	arot = arot.quatrotquat(yomg);
@@ -1496,6 +1559,17 @@ bool Soldier::command(EntityCommand *com){
 	else if(GetFovCommand *gf = InterpretCommand<GetFovCommand>(com)){
 		gf->fov = getFov();
 		return true;
+	}
+	else if(InterpretCommand<JumpCommand>(com)){
+		if(standEntity){
+			GetFaceInfoCommand gfic;
+			gfic.hitpart = standPart;
+			gfic.pos = this->pos;
+			if(standEntity->command(&gfic)){
+				this->velo += gfic.retNormal * 0.005;
+			}
+			standEntity = NULL;
+		}
 	}
 	else
 		return st::command(com);
@@ -1782,8 +1856,53 @@ static int infantry_tracehit(struct entity *pt, warf_t *w, const double src[3], 
 
 
 
+SQInteger Soldier::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("cooldown"))){
+		sq_pushfloat(v, cooldown2);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("arms"))){
+		// Prepare an empty array in Squirrel VM for adding arms.
+		sq_newarray(v, 0); // array
 
-void Firearm::shoot(){
+		// Retrieve library-provided "append" method for an array.
+		// We'll reuse the method for all the elements, which is not exactly the same way as
+		// an ordinally Squirrel codes evaluate.
+		sq_pushstring(v, _SC("append"), -1); // array "append"
+		if(SQ_FAILED(sq_get(v, -2))) // array array.append
+			return sq_throwerror(v, _SC("append not found"));
+
+		for(int i = 0; i < numof(arms); i++){
+			ArmBase *arm = arms[i];
+			if(arm){
+				sq_push(v, -2); // array array.append array
+				Entity::sq_pushobj(v, arm); // array array.append array Entity-instance
+				sq_call(v, 2, SQFalse, SQFalse); // array array.append
+			}
+		}
+
+		// Pop the saved "append" method
+		sq_poptop(v); // array
+
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger Soldier::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("cooldown"))){
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
+			return sq_throwerror(v, _SC("Value not convertible to float for cooldown2"));
+		cooldown2 = retf;
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
+}
+
+void Firearm::shoot(double dt){
 	Entity *p = base;
 	static const Vec3d nh0(0., 0., -1);
 	double v = bulletSpeed();
@@ -1792,6 +1911,20 @@ void Firearm::shoot(){
 	GetGunPosCommand ggp(0);
 	if(base->command(&ggp)){
 		gunRot = ggp.gunRot;
+	}
+
+	HSQOBJECT sqShoot = getSqShoot();
+	if(!sq_isnull(sqShoot)){
+		// If we have a custom callback for gun shooting logic defined in Squirrel, use it
+		HSQUIRRELVM v = game->sqvm;
+		StackReserver sr(v);
+		sq_pushobject(v, sqShoot);
+		sq_pushroottable(v);
+		Entity::sq_pushobj(v, this);
+		Entity::sq_pushobj(v, this->getOwner());
+		sq_pushfloat(v, dt);
+		sq_call(v, 4, SQFalse, SQTrue);
+		return;
 	}
 
 	Bullet *pb = new Bullet(this, bulletLifeTime(), bulletDamage());
@@ -1829,73 +1962,85 @@ void Firearm::reload(){
 	ammo = maxammo();
 }
 
+SQInteger Firearm::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("ammo"))){
+		sq_pushinteger(v, ammo);
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger Firearm::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("ammo"))){
+		SQInteger reti;
+		if(SQ_FAILED(sq_getinteger(v, 3, &reti)))
+			return sq_throwerror(v, _SC("Value not convertible to int for cooldown2"));
+		ammo = (int)reti;
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
+}
 
 
-const unsigned M16::classid = registerClass("M16", Conster<M16>);
-const char *M16::classname()const{return "M16";}
-int M16::maxAmmoValue = 20;
-double M16::shootCooldownValue = 0.1;
-double M16::bulletSpeedValue = 0.7;
-double M16::bulletDamageValue = 1.0;
-double M16::bulletVarianceValue = 0.01;
-double M16::aimFovValue = 0.7;
-double M16::shootRecoilValue = M_PI / 128.;
+
+Entity::EntityRegisterNC<Rifle> Rifle::entityRegister("M16");
+FirearmStatic Rifle::defaultFS;
+
+FirearmStatic::FirearmStatic() :
+	maxAmmoValue(20),
+	shootCooldownValue(0.1),
+	bulletSpeedValue(0.7),
+	bulletDamageValue(1.0),
+	bulletVarianceValue(0.01),
+	aimFovValue(0.7),
+	shootRecoilValue(M_PI / 128.),
+	sqShoot(sq_nullobj()),
+	model(NULL),
+	overlayIcon(0)
+{
+}
 
 
 
-M16::M16(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
+Rifle::Rifle(Entity *abase, const hardpoint_static *hp, FirearmStatic *fs) : st(abase, hp), fs(fs ? fs : &defaultFS){
 	init();
 	reload();
 }
 
-void M16::init(){
-	static bool initialized = false;
-	if(!initialized){
-		SqInit(game->sqvm, modPath() << _SC("models/M16.nut"),
-			IntProcess(maxAmmoValue, "maxammo", false) <<=
-			SingleDoubleProcess(shootCooldownValue, "shootCooldown", false) <<=
-			SingleDoubleProcess(bulletSpeedValue, "bulletSpeed", false) <<=
-			SingleDoubleProcess(bulletDamageValue, "bulletDamage", false) <<=
-			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false) <<=
-			SingleDoubleProcess(aimFovValue, "aimFov", false) <<=
-			SingleDoubleProcess(shootRecoilValue, "shootRecoil", false)
+Rifle::FirearmDefs Rifle::firearmDefs;
+
+void Rifle::s_init(){
+	HSQUIRRELVM v = (application.clientGame ? application.clientGame : application.serverGame)->sqvm;
+	register_global_func(v, [](HSQUIRRELVM v){
+		if(sq_gettop(v) < 3)
+			return sq_throwerror(v, _SC("registerFirearm() require 2 arguments"));
+		const SQChar *className;
+		if(SQ_FAILED(sq_getstring(v, 2, &className)))
+			return sq_throwerror(v, _SC("registerFirearm() first argument not convertible to string"));
+		const SQChar *path;
+		if(SQ_FAILED(sq_getstring(v, 3, &path)))
+			return sq_throwerror(v, _SC("registerFirearm() second argument not convertible to string"));
+		FirearmStatic *fs = &firearmDefs[className];
+		SqInit(v, modPath() << path,
+			IntProcess(fs->maxAmmoValue, "maxammo", false) <<=
+			SingleDoubleProcess(fs->shootCooldownValue, "shootCooldown", false) <<=
+			SingleDoubleProcess(fs->bulletSpeedValue, "bulletSpeed", false) <<=
+			SingleDoubleProcess(fs->bulletDamageValue, "bulletDamage", false) <<=
+			SingleDoubleProcess(fs->bulletVarianceValue, "bulletVariance", false) <<=
+			SingleDoubleProcess(fs->aimFovValue, "aimFov", false) <<=
+			SingleDoubleProcess(fs->shootRecoilValue, "shootRecoil", false) <<=
+			SqCallbackProcess(fs->sqShoot, "shoot", false) <<=
+			StringProcess(fs->modelName, "modelName") <<=
+			StringProcess(fs->overlayIconFile, "overlayIconFile")
 			);
-		initialized = true;
-	}
+		return SQInteger(0);
+	}, _SC("registerFirearm"));
 }
 
+StaticInitializer s_init(Rifle::s_init);
 
-const unsigned M40::classid = registerClass("M40", Conster<M40>);
-const char *M40::classname()const{return "M40";}
-int M40::maxAmmoValue = 5;
-double M40::shootCooldownValue = 1.5;
-double M40::bulletSpeedValue = 1.0;
-double M40::bulletDamageValue = 5.0;
-double M40::bulletVarianceValue = 0.001;
-double M40::aimFovValue = 0.2;
-double M40::shootRecoilValue = M_PI / 32.;
-
-
-M40::M40(Entity *abase, const hardpoint_static *hp) : st(abase, hp){
-	init();
-	reload();
-}
-
-void M40::init(){
-	static bool initialized = false;
-	if(!initialized){
-		SqInit(game->sqvm, modPath() << _SC("models/M40.nut"),
-			IntProcess(maxAmmoValue, "maxammo", false) <<=
-			SingleDoubleProcess(shootCooldownValue, "shootCooldown", false) <<=
-			SingleDoubleProcess(bulletSpeedValue, "bulletSpeed", false) <<=
-			SingleDoubleProcess(bulletDamageValue, "bulletDamage", false) <<=
-			SingleDoubleProcess(bulletVarianceValue, "bulletVariance", false) <<=
-			SingleDoubleProcess(aimFovValue, "aimFov", false) <<=
-			SingleDoubleProcess(shootRecoilValue, "shootRecoil", false)
-			);
-		initialized = true;
-	}
-}
 
 
 /// Ignore invocation of GetGunPosCommand from Squirrel. It's not really a command

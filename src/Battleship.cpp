@@ -1,4 +1,5 @@
 #include "Battleship.h"
+#include "EntityRegister.h"
 #include "judge.h"
 #include "serial_util.h"
 #include "EntityCommand.h"

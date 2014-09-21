@@ -21,8 +21,9 @@
 #include "draw/WarDraw.h"
 #endif
 #include "Game.h"
+#include "CoordSys-property.h"
+#include "CoordSys-sq.h"
 extern "C"{
-#include "calc/calc.h"
 #include <clib/c.h>
 #include <clib/aquat.h>
 #include <clib/aquatrot.h>
@@ -48,7 +49,7 @@ long tocs_children_invokes = 0;
 void CoordSys::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << name;
-	sc.o << (fullname ? fullname : "");
+	sc.o << fullname;
 	sc.o << parent;
 	sc.o << children;
 	sc.o << w;
@@ -61,7 +62,6 @@ void CoordSys::serialize(SerializeContext &sc){
 
 void CoordSys::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	cpplib::dstring name, fullname;
 	sc.i >> name;
 	sc.i >> fullname;
 	sc.i >> parent;
@@ -73,8 +73,6 @@ void CoordSys::unserialize(UnserializeContext &sc){
 	sc.i >> csrad;
 	sc.i >> flags;
 
-	this->name = strnewdup(name, name.len());
-	this->fullname = fullname.len() ? strnewdup(fullname, fullname.len()) : NULL;
 	CoordSys *eis = findeisystem();
 	if(eis)
 		eis->addToDrawList(this);
@@ -493,7 +491,7 @@ CoordSys *CoordSys::findcspath(const char *path){
 		else
 			return parent->findcspath(p+1);
 	}
-	if(p) for(cs = this->children; cs; cs = cs->next) if(strlen(cs->name) == p - path && !strncmp(cs->name, path, p - path)){
+	if(p) for(cs = this->children; cs; cs = cs->next) if(cs->name.len() == p - path && !strncmp(cs->name, path, p - path)){
 		if(!*p)
 			return cs;
 		else
@@ -550,6 +548,8 @@ bool CoordSys::find(FindCallback &fc){
 bool CoordSys::find(FindCallbackConst &fc)const{
 	return tempFindParent(this, fc);
 }
+
+CoordSys::FindCallbackConst::~FindCallbackConst(){}
 
 static std::map<double, CoordSys*> drawnlist;
 
@@ -751,10 +751,8 @@ void CoordSys::init(const char *path, CoordSys *root){
 	ret->parent = root;
 	if(!name)
 		name = "?";
-	char *newname = new char[strlen(name) + 1];
-	strcpy(newname, name);
-	ret->name = newname;
-	ret->fullname = NULL;
+	ret->name = name;
+	ret->fullname = "";
 	ret->flags = 0;
 	ret->vwvalid = 0;
 	ret->w = NULL;
@@ -768,10 +766,6 @@ extern int 	cs_destructs;
 int cs_destructs = 0;
 
 CoordSys::~CoordSys(){
-	if(name)
-		delete[] name;
-	if(fullname)
-		delete[] fullname;
 //	delete children;
 	// Do not delete siblings, they may be alive after this death.
 //	delete next;
@@ -817,21 +811,13 @@ std::map<const CoordSys *, std::vector<dstring> > linemap;
 bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 	const char *s = argv[0], *ps = argv[1];
 	if(!strcmp(s, "name")){
-		if(s = ps/*strtok(ps, " \t\r\n")*/){
-			char *name;
-			if(this->name)
-				delete[] this->name;
-			name = new char[strlen(s) + 1];
-			strcpy(name, s);
-			this->name = name;
-		}
+		if(ps)
+			name = ps;
 		return true;
 	}
 	else if(!strcmp(s, "fullname")){
-		if(s = ps){
-			fullname = new char[strlen(s) + 1];
-			strcpy(const_cast<char *>(fullname), s);
-		}
+		if(ps)
+			fullname = ps;
 		return true;
 	}
 	else if(!strcmp(s, "extraname")){
@@ -840,28 +826,28 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "pos")){
-		pos[0] = calc3(&argv[1], sc.vl, NULL);
+		pos[0] = sqcalc(sc, argv[1], s);
 		if(2 < argc)
-			pos[1] = calc3(&argv[2], sc.vl, NULL);
+			pos[1] = sqcalc(sc, argv[2], s);
 		if(3 < argc)
-			pos[2] = calc3(&argv[3], sc.vl, NULL);
+			pos[2] = sqcalc(sc, argv[3], s);
 		return true;
 	}
 	else if(!strcmp(s, "galactic_coord")){
-		double lon = calc3(&argv[1], sc.vl, NULL) / deg_per_rad;
-		double lat = 2 < argc ? calc3(&argv[2], sc.vl, NULL) / deg_per_rad : 0.;
-		double dist = 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 1e10;
+		double lon = sqcalc(sc, argv[1], s) / deg_per_rad;
+		double lat = 2 < argc ? sqcalc(sc, argv[2], s) / deg_per_rad : 0.;
+		double dist = 3 < argc ? sqcalc(sc, argv[3], s) : 1e10;
 		pos = dist * Vec3d(sin(lon) * cos(lat), cos(lon) * cos(lat), sin(lat));
 		return true;
 	}
 	else if(!strcmp(s, "cs_radius")){
 		if(ps)
-			csrad = atof(ps);
+			csrad = sqcalc(sc, ps, s);
 		return true;
 	}
 	else if(!strcmp(s, "cs_diameter")){
 		if(argv[1])
-			csrad = .5 * calc3(&argv[1], sc.vl, NULL);
+			csrad = .5 * sqcalc(sc, argv[1], s);
 		return true;
 	}
 	else if(!strcmp(s, "parent")){
@@ -878,33 +864,6 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 		}
 		return true;
 	}
-	else if(!strcmp(s, "teleport") || !strcmp(s, "warp")){
-		struct teleport *tp;
-		const char *name = argc < 2 ? fullname ? fullname : this->name : argv[1];
-		Player *player = game->player;
-		if(tp = player->findTeleport(name)){
-			tp->flags |= !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP;
-			return true;
-		}
-		tp = player->addTeleport();
-		*tp = teleport(this, name, !strcmp(s, "teleport") ? TELEPORT_TP : TELEPORT_WARP,
-			Vec3d(2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0., 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0., 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.));
-		return true;
-	}
-	else if(!strcmp(s, "rstation")){
-/*		extern struct player *ppl;
-		warf_t *w;
-		entity_t *pt;
-		if(cs->w)
-			w = cs->w;
-		else
-			w = spacewar_create(cs, ppl);
-		pt = RstationNew(w);
-		pt->pos[0] = 1 < argc ? calc3(&argv[1], vl, NULL) : 0.;
-		pt->pos[1] = 2 < argc ? calc3(&argv[2], vl, NULL) : 0.;
-		pt->pos[2] = 3 < argc ? calc3(&argv[3], vl, NULL) : 0.;*/
-		return true;
-	}
 	else if(!strcmp(s, "addent")){
 		WarField *w;
 		Entity *pt;
@@ -914,9 +873,9 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			w = this->w = new WarSpace(this)/*spacewar_create(cs, ppl)*/;
 		pt = Entity::create(argv[1], w);
 		if(pt){
-			pt->pos[0] = 2 < argc ? calc3(&argv[2], sc.vl, NULL) : 0.;
-			pt->pos[1] = 3 < argc ? calc3(&argv[3], sc.vl, NULL) : 0.;
-			pt->pos[2] = 4 < argc ? calc3(&argv[4], sc.vl, NULL) : 0.;
+			pt->pos[0] = 2 < argc ? sqcalc(sc, argv[2], s) : 0.;
+			pt->pos[1] = 3 < argc ? sqcalc(sc, argv[3], s) : 0.;
+			pt->pos[2] = 4 < argc ? sqcalc(sc, argv[4], s) : 0.;
 			pt->race = 5 < argc ? atoi(argv[5]) : 0;
 		}
 		else
@@ -1004,11 +963,11 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			return true;
 		}
 		if(1 < argc)
-			rot[0] = calc3(&argv[1], sc.vl, NULL);
+			rot[0] = sqcalc(sc, argv[1], s);
 		if(2 < argc)
-			rot[1] = calc3(&argv[2], sc.vl, NULL);
+			rot[1] = sqcalc(sc, argv[2], s);
 		if(3 < argc){
-			rot[2] = calc3(&argv[3], sc.vl, NULL);
+			rot[2] = sqcalc(sc, argv[3], s);
 			rot[3] = sqrt(1. - VECSLEN(rot));
 		}
 		return true;
@@ -1028,15 +987,15 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 			return true;
 		}
 		if(1 < argc)
-			omg[0] = calc3(&argv[1], sc.vl, NULL);
+			omg[0] = sqcalc(sc, argv[1], s);
 		if(2 < argc)
-			omg[1] = calc3(&argv[2], sc.vl, NULL);
+			omg[1] = sqcalc(sc, argv[2], s);
 		if(3 < argc)
-			omg[2] = calc3(&argv[3], sc.vl, NULL);
+			omg[2] = sqcalc(sc, argv[3], s);
 		if(4 < argc){
 			double d;
 			omg.normin();
-			d = calc3(&argv[4], sc.vl, NULL);
+			d = sqcalc(sc, argv[4], s);
 			omg.scalein(d);
 		}
 		return true;
@@ -1044,11 +1003,11 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if(!strcmp(s, "updirection")){
 		Vec3d v = vec3_000;
 		if(1 < argc)
-			v[0] = calc3(&argv[1], sc.vl, NULL);
+			v[0] = sqcalc(sc, argv[1], s);
 		if(2 < argc)
-			v[1] = calc3(&argv[2], sc.vl, NULL);
+			v[1] = sqcalc(sc, argv[2], s);
 		if(3 < argc)
-			v[2] = calc3(&argv[3], sc.vl, NULL);
+			v[2] = sqcalc(sc, argv[3], s);
 		rot = Quatd::direction(v);
 		if(rot.slen() == 0.){
 			CmdPrint("Quaternion zero!");
@@ -1069,26 +1028,16 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 
 		// This code is somewhat similar to sqa_console_command.
 		try{
+			// Try to delegate the directive to a Squirrel function.
 			sq_pushroottable(v);
-			sq_pushstring(v, _SC("CoordSys"), -1);
-			sq_get(v, -2);
-			sq_pushstring(v, _SC("readFile"), -1);
-			sq_get(v, -2);
-			sq_pushinteger(v, 0);
-
-			if(SQ_FAILED(sq_get(v, -2))) // readFile
+			sq_pushstring(v, _SC("stellarReadFile"), -1);
+			if(SQ_FAILED(sq_get(v, -2))) // stellarReadFile
 				throw sqa::SQFError(_SC("readFile key is not defined in CoordSys"));
-			sq_pushroottable(v); // readFile root
-			CoordSys::sq_pushobj(v, this); // readFile root cs
+			sq_pushroottable(v); // stellarReadFile root
+			CoordSys::sq_pushobj(v, this); // stellarReadFile root cs
 
-			sq_newtable(v); // readFile root cs defineTable
-			for(const varlist *vl = sc.vl; vl; vl = vl->next){
-				for(int i = 0; i < vl->c; i++){
-					sq_pushstring(v, vl->l[i].name, -1);
-					sq_pushfloat(v, vl->l[i].value.d);
-					sq_createslot(v, -3);
-				}
-			}
+			// Pass current variables table
+			sq_pushobject(v, sc.vars); // stellarReadFile root cs vars
 
 			// Pass all arguments as strings (no conversion is done beforehand).
 			for(int i = 0; i < argc; i++)
@@ -1151,7 +1100,7 @@ int CoordSys::getpathint(char *buf, size_t size)const{
 	ret = parent->getpathint(buf, size);
 	buf[ret] = '/';
 	strcpy(&buf[ret+1], name);
-	return strlen(name) + 1 + ret;
+	return name.len() + 1 + ret;
 }
 
 cpplib::dstring CoordSys::getpath()const{
@@ -1454,14 +1403,19 @@ static void pushCoordSys(HSQUIRRELVM v, Serializable *s){
 }
 
 void CoordSys::sq_pushobj(HSQUIRRELVM v, CoordSys *cs){
-	sqserial_findobj(v, cs, pushCoordSys);
+	if(!cs)
+		sq_pushnull(v);
+	else
+		sqserial_findobj(v, cs, pushCoordSys);
 }
 
 CoordSys *CoordSys::sq_refobj(HSQUIRRELVM v, SQInteger idx){
 	SQUserPointer up;
 	// If the instance does not have a user pointer, it's a serious exception that might need some codes fixed.
 	if(SQ_FAILED(sq_getinstanceup(v, idx, &up, NULL)) || !up)
-		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
+		return NULL;
+	// Do not throw error here because it's not an error if a CoordSys is destroyed.
+//		throw SQFError("Something's wrong with Squirrel Class Instace of CoordSys.");
 	return *(SqSerialPtr<CoordSys>*)up;
 }
 
@@ -1512,32 +1466,6 @@ static SQInteger sqf_addent(HSQUIRRELVM v){
 	return 1;
 }
 
-static SQInteger sqf_name(HSQUIRRELVM v){
-	CoordSys *p = CoordSys::sq_refobj(v);
-	sq_pushstring(v, p->name, -1);
-	return 1;
-}
-
-static SQInteger sqf_child(HSQUIRRELVM v){
-	CoordSys *p = CoordSys::sq_refobj(v);
-	if(!p->children){
-		sq_pushnull(v);
-		return 1;
-	}
-	CoordSys::sq_pushobj(v, p->children);
-	return 1;
-}
-
-static SQInteger sqf_next(HSQUIRRELVM v){
-	CoordSys *p = CoordSys::sq_refobj(v);
-	if(!p->next){
-		sq_pushnull(v);
-		return 1;
-	}
-	CoordSys::sq_pushobj(v, p->next);
-	return 1;
-}
-
 static SQInteger sqf_transPosition(HSQUIRRELVM v){
 	try{
 		CoordSys *p = CoordSys::sq_refobj(v);
@@ -1576,6 +1504,19 @@ static SQInteger sqf_getpath(HSQUIRRELVM v){
 	return 1;
 }
 
+static SQInteger sqf_findcs(HSQUIRRELVM v){
+	CoordSys *p = CoordSys::sq_refobj(v);
+	const SQChar *s;
+	sq_getstring(v, -1, &s);
+	CoordSys *cs = p->findcs(s);
+	if(cs){
+		CoordSys::sq_pushobj(v, cs);
+		return 1;
+	}
+	sq_pushnull(v);
+	return 1;
+}
+
 static SQInteger sqf_findcspath(HSQUIRRELVM v){
 	CoordSys *p = CoordSys::sq_refobj(v);
 	const SQChar *s;
@@ -1589,13 +1530,94 @@ static SQInteger sqf_findcspath(HSQUIRRELVM v){
 	return 1;
 }
 
+template<int MASK>
+static SQInteger sqFlagGetter(HSQUIRRELVM v, const CoordSys *cs){
+	sq_pushbool(v, cs->flags & MASK);
+	return 1;
+}
+
+template<int MASK>
+static SQInteger sqFlagSetter(HSQUIRRELVM v, CoordSys *cs){
+	SQBool b;
+	if(SQ_FAILED(sq_getbool(v, 3, &b)))
+		return sq_throwerror(v, _SC("Could not convert to bool"));
+	if(b)
+		cs->flags |= MASK;
+	else
+		cs->flags &= ~MASK;
+	return 0;
+}
+
+const CoordSys::PropertyMap &CoordSys::propertyMap()const{
+	static PropertyMap pmap;
+	static bool propInit = false;
+	if(!propInit){
+		propInit = true;
+		pmap[_SC("id")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){sq_pushinteger(v, cs->getid()); return SQInteger(1);}, NULL);
+		pmap[_SC("name")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){sq_pushstring(v, cs->name, -1); return SQInteger(1);}, NULL);
+		pmap[_SC("pos")] = PropertyEntry(tgetter<Vec3d, &CoordSys::pos>, tsetter<Vec3d, &CoordSys::pos>);
+		pmap[_SC("velo")] = PropertyEntry(tgetter<Vec3d, &CoordSys::velo>, tsetter<Vec3d, &CoordSys::velo>);
+		pmap[_SC("rot")] = PropertyEntry(tgetter<Quatd, &CoordSys::rot>, tsetter<Quatd, &CoordSys::rot>);
+		pmap[_SC("omg")] = PropertyEntry(tgetter<Vec3d, &CoordSys::omg>, tsetter<Vec3d, &CoordSys::omg>);
+		pmap[_SC("child")] = PropertyEntry(
+			[](HSQUIRRELVM v, const CoordSys *cs){
+				sq_pushobj(v, cs->children);
+				return SQInteger(1);
+			},
+			[](HSQUIRRELVM v, CoordSys *cs){
+				// TODO: Scripts can screw up CoordSys tree structure by assigning invalid value to child.
+				// Probably we should return a list to Squirrel VM.
+				cs->children = sq_refobj(v, 3);
+				return SQInteger(0);
+			}
+		);
+		pmap[_SC("next")] = PropertyEntry(
+			[](HSQUIRRELVM v, const CoordSys *cs){
+				sq_pushobj(v, cs->next);
+				return SQInteger(1);
+			},
+			[](HSQUIRRELVM v, CoordSys *cs){
+				// TODO: Same apply as child
+				cs->next = CoordSys::sq_refobj(v, 3);
+				return SQInteger(0);
+			}
+		);
+		pmap[_SC("parent")] = PropertyEntry(
+			[](HSQUIRRELVM v, const CoordSys *cs){
+				sq_pushobj(v, cs->parent);
+				return SQInteger(1);
+			},
+			[](HSQUIRRELVM v, CoordSys *cs){
+				// TODO: Same apply as child
+				cs->parent = CoordSys::sq_refobj(v, 3);
+				return SQInteger(0);
+			}
+		);
+		pmap[_SC("solarSystem")] = PropertyEntry(sqFlagGetter<CS_SOLAR>, sqFlagSetter<CS_SOLAR>);
+		pmap[_SC("extent")] = PropertyEntry(sqFlagGetter<CS_EXTENT>, sqFlagSetter<CS_EXTENT>);
+		pmap[_SC("isolated")] = PropertyEntry(sqFlagGetter<CS_ISOLATED>, sqFlagSetter<CS_ISOLATED>);
+		pmap[_SC("cs_radius")] = PropertyEntry(
+			[](HSQUIRRELVM v, const CoordSys *cs){
+				sq_pushfloat(v, cs->csrad);
+				return SQInteger(1);
+			},
+			[](HSQUIRRELVM v, CoordSys *cs){
+				SQFloat f;
+				if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+					return sq_throwerror(v, _SC("Cannot convert to float"));
+				cs->csrad = f;
+				return SQInteger(0);
+		});
+	}
+	return pmap;
+}
+
 SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 	CoordSys *p = CoordSys::sq_refobj(v);
 	const SQChar *wcs;
 	sq_getstring(v, 2, &wcs);
-	// TODO: return alive first
-	if(!scstrcmp(wcs, _SC("id"))){
-		sq_pushinteger(v, p->getid());
+	if(!scstrcmp(wcs, _SC("alive"))){
+		sq_pushbool(v, p ? SQTrue : SQFalse);
 		return 1;
 	}
 	else if(!strcmp(wcs, _SC("entlist"))){
@@ -1632,14 +1654,6 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 		}
 		return 1;
 	}
-	else if(!strcmp(wcs, _SC("parentcs"))){
-		if(!p->parent){
-			sq_pushnull(v);
-			return 1;
-		}
-		sq_pushobj(v, p->parent);
-		return 1;
-	}
 	else if(!strcmp(wcs, _SC("extranames"))){
 		sq_newarray(v, p->extranames.size());
 		for(int i = 0; i < p->extranames.size(); i++){
@@ -1668,17 +1682,51 @@ SQInteger CoordSys::sqf_get(HSQUIRRELVM v){
 		sq_setinstanceup(v, -1, &p->w->rs);
 		return 1;
 	}
-	else
-		return SQ_ERROR;
+	else{
+		const CoordSys::PropertyMap &pmap = p->propertyMap();
+
+		CoordSys::PropertyMap::const_iterator it = pmap.find(wcs);
+		if(it != pmap.end()){
+			if(!it->second.get)
+				return sq_throwerror(v, gltestp::dstring(_SC("Property \"")) << wcs << _SC("\" is not readable"));
+			return it->second.get(v, p);
+		}
+		else
+			return sq_throwerror(v, gltestp::dstring(_SC("Property \"")) << wcs << _SC("\" not found"));
+	}
+}
+
+double CoordSys::sqcalc(StellarContext &sc, const char *str, const SQChar *context){
+	StackReserver st(sc.v);
+	gltestp::dstring dst = gltestp::dstring("return(") << str << ")";
+	if(SQ_FAILED(sq_compilebuffer(sc.v, dst, dst.len(), context, SQTrue)))
+		throw StellarError(gltestp::dstring() << "sqcalc compile error: " << context);
+	sq_pushobject(sc.v, sc.vars);
+	if(SQ_FAILED(sq_call(sc.v, 1, SQTrue, SQTrue)))
+		throw StellarError(gltestp::dstring() << "sqcalc call error: " << context);
+	SQFloat f;
+	if(SQ_FAILED(sq_getfloat(sc.v, -1, &f)))
+		throw StellarError(gltestp::dstring() << "sqcalc returned value not convertible to float: " << context);
+	return f;
 }
 
 SQInteger sqf_set(HSQUIRRELVM v){
 	if(sq_gettop(v) < 3)
-		return SQ_ERROR;
+		return sq_throwerror(v, _SC("Invalid _set call"));
 	CoordSys *p = CoordSys::sq_refobj(v);
-	const SQChar *wcs;
-	sq_getstring(v, 2, &wcs);
-	return SQ_ERROR;
+	const SQChar *scs;
+	sq_getstring(v, 2, &scs);
+
+	const CoordSys::PropertyMap &pmap = p->propertyMap();
+
+	CoordSys::PropertyMap::const_iterator it = pmap.find(scs);
+	if(it != pmap.end()){
+		if(!it->second.set)
+			return sq_throwerror(v, gltestp::dstring(_SC("Property \"")) << scs << _SC("\" is not writable"));
+		return it->second.set(v, p);
+	}
+	else
+		return sq_throwerror(v, gltestp::dstring(_SC("Property \"")) << scs << _SC("\" not found"));
 }
 
 SQInteger sqf_cmp(HSQUIRRELVM v){
@@ -1719,10 +1767,14 @@ static SQInteger sqf_accel(HSQUIRRELVM v){
 
 bool CoordSys::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, _SC("CoordSys"), -1);
+	if(SQ_SUCCEEDED(sq_get(v, -2))){
+		sq_poptop(v);
+		return false;
+	}
+	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_newclass(v, SQFalse);
 	sq_settypetag(v, -1, const_cast<char*>("CoordSys"));
 	sq_setclassudsize(v, -1, sq_udsize);
-	register_closure(v, _SC("name"), sqf_name);
 	register_closure(v, _SC("getclass"), sqf_getclass);
 	register_closure(v, _SC("getpos"), sqf_getintrinsic2<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::pos>, CoordSys::sq_refobj >);
 	register_closure(v, _SC("setpos"), sqf_setintrinsic2<CoordSys, Vec3d, &CoordSys::pos, CoordSys::sq_refobj>);
@@ -1732,21 +1784,60 @@ bool CoordSys::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("setrot"), sqf_setintrinsic2<CoordSys, Quatd, &CoordSys::rot, CoordSys::sq_refobj>);
 	register_closure(v, _SC("getomg"), sqf_getintrinsic2<CoordSys, Vec3d, membergetter<CoordSys, Vec3d, &CoordSys::omg>, CoordSys::sq_refobj>);
 	register_closure(v, _SC("setomg"), sqf_setintrinsic2<CoordSys, Vec3d, &CoordSys::omg, CoordSys::sq_refobj>);
-	register_closure(v, _SC("child"), sqf_child);
-	register_closure(v, _SC("next"), sqf_next);
 	register_closure(v, _SC("transPosition"), sqf_transPosition);
 	register_closure(v, _SC("transRotation"), sqf_transRotation);
 	register_code_func(v, _SC("transVelocity"), _SC("return function(velo, cs){return this.transPosition(velo, cs, true);}"), true);
 	register_closure(v, _SC("getpath"), sqf_getpath);
+	register_closure(v, _SC("findcs"), sqf_findcs, 2, _SC("xs"));
 	register_closure(v, _SC("findcspath"), sqf_findcspath, 2, _SC("xs"));
 	register_closure(v, _SC("addent"), sqf_addent, 3, "xsx");
 	register_closure(v, _SC("accel"), sqf_accel, 3, "xxx");
 	register_closure(v, _SC("_get"), sqf_get);
 	register_closure(v, _SC("_set"), sqf_set);
 	register_closure(v, _SC("_cmp"), sqf_cmp);
-	sq_pushstring(v, _SC("readFile"), -1);
-	sq_newarray(v, 1);
-	sq_newslot(v, -3, SQFalse); // The last argument is important to designate the readFile handler is static.
+	register_closure(v, _SC("_tostring"), [](HSQUIRRELVM v){
+		CoordSys *p = sq_refobj(v, 1);
+
+		// It's not uncommon that a customized Squirrel code accesses a destroyed object.
+		if(!p){
+			sq_pushstring(v, _SC("(deleted)"), -1);
+			return SQInteger(1);
+		}
+
+		// Probably we could return CoordSys::name...
+		sq_pushstring(v, gltestp::dstring() << "{" << p->classname() << ":" << p->getid() << "}", -1);
+
+		return SQInteger(1);
+	}, 1);
+
+	// Property iterator
+	register_closure(v, _SC("_nexti"), [](HSQUIRRELVM v){
+		CoordSys *p = sq_refobj(v, 1);
+
+		if(!p){
+			return sq_throwerror(v, _SC("Iterated CoordSys object is destroyed"));
+		}
+
+		auto &pmap = p->propertyMap();
+		if(sq_gettype(v, 2) == OT_NULL){
+			sq_pushstring(v, pmap.begin()->first, -1);
+			return SQInteger(1);
+		}
+		else{
+			const SQChar *prev;
+			if(SQ_FAILED(sq_getstring(v, 2, &prev)))
+				return sq_throwerror(v, _SC("CoordSys iterator is not a string"));
+			auto it = pmap.find(prev);
+			if(it == pmap.end())
+				return SQInteger(0);
+			++it; // Obtain next
+			if(it == pmap.end())
+				return SQInteger(0);
+			sq_pushstring(v, it->first, -1);
+			return SQInteger(1);
+		}
+	});
+
 	sq_createslot(v, -3);
 	return true;
 }

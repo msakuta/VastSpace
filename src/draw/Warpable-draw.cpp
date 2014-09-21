@@ -16,6 +16,11 @@
 #include "Frigate.h"
 #include "Game.h"
 #include "StaticInitializer.h"
+#include "astrodraw.h"
+#include "astrodef.h"
+#include "EntityCommand.h"
+#include "antiglut.h"
+#include "draw/material.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -24,6 +29,7 @@ extern "C"{
 #include <clib/GL/multitex.h>
 #endif
 }
+#include <algorithm>
 
 
 
@@ -173,100 +179,6 @@ void Autonomous::drawtra(wardraw_t *wd){
 	}
 }
 
-static int cmd_togglewarpmenu(int argc, char *argv[], void *pv){
-	ClientGame *game = (ClientGame*)pv;
-	Player *player = game->player;
-//	extern coordsys *g_galaxysystem;
-	char *cmds[64]; /* not much of menu items as 64 are able to displayed after all */
-	const char *subtitles[64];
-//	coordsys *reta[64], **retp = reta;
-	static const char *windowtitle = "Warp Destination";
-	GLwindow *wnd, **ppwnd;
-	int left, i;
-	ppwnd = GLwindow::findpp(&glwlist, &GLwindow::TitleCmp(windowtitle));
-	if(ppwnd){
-		glwActivate(ppwnd);
-		return 0;
-	}
-/*	for(ppwnd = &glwlist; *ppwnd; ppwnd = &(*ppwnd)->next) if((*ppwnd)->title == windowtitle){
-		glwActivate(ppwnd);
-		return 0;
-	}*/
-/*	for(Player::teleport_iterator it = Player::beginTeleport(), left = 0; it != Player::endTeleport() && left < numof(cmds); it++){
-		teleport *tp = Player::getTeleport(it);
-		if(!(tp->flags & TELEPORT_WARP))
-			continue;
-		cmds[left] = (char*)malloc(sizeof "warp \"\"" + strlen(tp->name));
-		strcpy(cmds[left], "warp \"");
-		strcat(cmds[left], tp->name);
-		strcat(cmds[left], "\"");
-		subtitles[left] = tp->name;
-		left++;
-	}*/
-	if(!player)
-		return -1;
-	PopupMenu pm;
-	for(Player::teleport_iterator it = player->beginTeleport(); it != player->endTeleport(); it++){
-		teleport *tp = player->getTeleport(it);
-		if(!(tp->flags & TELEPORT_WARP))
-			continue;
-
-		// Since teleport structure is not Observable, we cannot define a callback to directly invoke WarpCommand.
-		// Instead, the warp console command is registered along with destination teleport name.
-		// This way, we can avoid dangling references when the destination teleport is deleted or renamed while
-		// the user is choosing from the menu.
-		// Note that just making teleport structure Observable won't fix the problem. The telepot objects can
-		// be reallocated between frames, so it doesn't necessarily keep the same address.
-		// The true solution would be that making teleport structure Serializable too.
-		pm.append(tp->name, 0, gltestp::dstring("warp \"") << tp->name << '"');
-	}
-//	wnd = glwMenu(windowtitle, left, subtitles, NULL, cmds, 0);
-	wnd = glwMenu(windowtitle, pm, GLW_CLOSE | GLW_COLLAPSABLE);
-
-	// Align the window to the center.
-	// TODO: Window object itself should have an option to adjust itself to the center.
-	GLWrect er = wnd->extentRect();
-	GLint vp[4];
-	glGetIntegerv(GL_VIEWPORT, vp);
-	er.move((vp[2] - vp[0]) / 2 - er.width() / 2, (vp[3] - vp[1]) / 2 - er.height() / 2);
-	wnd->setExtent(er);
-
-	glwAppend(wnd);
-/*	for(i = 0; i < left; i++){
-		free(cmds[i]);
-	}*/
-/*	left = enum_cs_flags(g_galaxysystem, CS_WARPABLE, CS_WARPABLE, &retp, numof(reta));
-	{
-		int i;
-		for(i = 0; i < numof(cmds) - left; i++){
-			cmds[i] = malloc(sizeof "warp \"\"" + strlen(reta[i]->name));
-			strcpy(cmds[i], "warp \"");
-			strcat(cmds[i], reta[i]->name);
-			strcat(cmds[i], "\"");
-			subtitles[i] = reta[i]->fullname ? reta[i]->fullname : reta[i]->name;
-		}
-	}
-	wnd = glwMenu(numof(reta) - left, subtitles, NULL, cmds, 0);*/
-//	wnd->title = windowtitle;
-	return 0;
-}
-
-static void register_Warpable_draw_cmd(ClientGame &game){
-	CmdAddParam("togglewarpmenu", cmd_togglewarpmenu, &game);
-}
-
-static void register_Warpable_draw(){
-	Game::addClientInits(register_Warpable_draw_cmd);
-}
-
-static StaticInitializer sss(register_Warpable_draw);
-
-
-int Warpable::popupMenu(PopupMenu &list){
-	int ret = st::popupMenu(list);
-	list.appendSeparator().append("Warp to...", 'w', "togglewarpmenu");
-	return ret;
-}
 
 void Autonomous::drawHUD(wardraw_t *wd){
 	Autonomous *p = this;
@@ -520,13 +432,37 @@ void ModelEntity::drawNavlights(WarDraw *wd, const NavlightList &navlights, cons
 	const Mat4d &mat = transmat ? *transmat : defaultmat;
 	/* color calculation of static navlights */
 	double t0 = RandomSequence((unsigned long)this).nextd();
+	static suftexparam_t texParams = {STP_ALPHA};
+	static GLuint navlightList = CallCacheBitmap5("navlight.png", "textures/navlight.png", &texParams, NULL, NULL);
 	for(int i = 0 ; i < navlights.size(); i++){
 		const Navlight &nv = navlights[i];
 		double t = fmod(wd->vw->viewtime + t0 + nv.phase, double(nv.period)) / nv.period;
 		double luminance = nv.patternIntensity(wd->vw->viewtime + t0 + nv.phase);
 		double rad = (luminance + 1.) / 2.;
-		GLubyte col1[4] = {GLubyte(nv.color[0] * 255), GLubyte(nv.color[1] * 255), GLubyte(nv.color[2] * 255), GLubyte(nv.color[3] * 255 * luminance)};
-		gldSpriteGlow(mat.vp3(nv.pos), nv.radius * rad, col1, wd->vw->irot);
+		if(navlightList){
+			glCallList(navlightList);
+			Vec4<GLfloat> fcol = nv.color;
+			fcol[3] *= luminance;
+			glPushAttrib(GL_TEXTURE_BIT | GL_PIXEL_MODE_BIT);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+			glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, fcol);
+			glPushMatrix();
+			gldTranslate3dv(mat.vp3(nv.pos));
+			glMultMatrixd(wd->vw->irot);
+			gldScaled(nv.radius * rad);
+			glBegin(GL_QUADS);
+			glTexCoord2d(0., 0.); glVertex2d(-1., -1.);
+			glTexCoord2d(1., 0.); glVertex2d( 1., -1.);
+			glTexCoord2d(1., 1.); glVertex2d( 1.,  1.);
+			glTexCoord2d(0., 1.); glVertex2d(-1.,  1.);
+			glEnd();
+			glPopMatrix();
+			glPopAttrib();
+		}
+		else{
+			GLubyte col1[4] = {GLubyte(nv.color[0] * 255), GLubyte(nv.color[1] * 255), GLubyte(nv.color[2] * 255), GLubyte(nv.color[3] * 255 * luminance)};
+			gldSpriteGlow(mat.vp3(nv.pos), nv.radius * rad, col1, wd->vw->irot);
+		}
 	}
 
 }

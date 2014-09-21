@@ -2,6 +2,7 @@
  * \brief Implementation of Destroyer and WireDestroyer classes.
  */
 #include "Destroyer.h"
+#include "EntityRegister.h"
 #include "judge.h"
 #include "serial_util.h"
 #include "EntityCommand.h"
@@ -14,6 +15,7 @@
 #include "LTurret.h"
 #include "sqadapt.h"
 #include "Shipyard.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -90,50 +92,8 @@ Destroyer::~Destroyer(){
 }
 
 bool Destroyer::buildBody(){
-	if(!w || bbody)
-		return false;
-	WarSpace *ws = *w;
-	if(ws && ws->bdw){
-		static btCompoundShape *shape = NULL;
-		if(!shape){
-			shape = new btCompoundShape();
-			for(int i = 0; i < hitboxes.size(); i++){
-				const Vec3d &sc = hitboxes[i].sc;
-				const Quatd &rot = hitboxes[i].rot;
-				const Vec3d &pos = hitboxes[i].org;
-				btBoxShape *box = new btBoxShape(btvc(sc));
-				btTransform trans = btTransform(btqc(rot), btvc(pos));
-				shape->addChildShape(trans, box);
-			}
-		}
-
-		btTransform startTransform;
-		startTransform.setIdentity();
-		startTransform.setOrigin(btvc(pos));
-
-		//rigidbody is dynamic if and only if mass is non zero, otherwise static
-		bool isDynamic = (mass != 0.f);
-
-		btVector3 localInertia(0,0,0);
-		if (isDynamic)
-			shape->calculateLocalInertia(mass,localInertia);
-
-		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
-
-		// The space does not have friction whatsoever.
-//		rbInfo.m_linearDamping = .5;
-//		rbInfo.m_angularDamping = .25;
-		bbody = new btRigidBody(rbInfo);
-
-//		bbody->setSleepingThresholds(.0001, .0001);
-
-		//add the body to the dynamics world
-//		ws->bdw->addRigidBody(bbody);
-		return true;
-	}
-	return false;
+	static btCompoundShape *shape = NULL;
+	return buildBodyByHitboxes(hitboxes, shape);
 }
 
 bool Destroyer::static_init(HSQUIRRELVM v){
@@ -246,6 +206,10 @@ int Destroyer::takedamage(double damage, int hitpart){
 	return ret;
 }
 
+int Destroyer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	return Shipyard::modelTraceHit(this, src, dir, rad, dt, ret, retp, retn, getModel());
+}
+
 /// \brief Death effects in the client.
 ///
 /// It should be called exactly once per client object.
@@ -338,6 +302,30 @@ ArmBase *Destroyer::armsGet(int i){
 	return turrets[i];
 }
 
+int Destroyer::engineAtrIndex = -1, Destroyer::gradientsAtrIndex = -1;
+
+Model *Destroyer::getModel(){
+	static bool init = false;
+	static Model *model = NULL;
+	if(!init){
+		model = LoadMQOModel("models/destroyer.mqo");
+		if(model && model->sufs[0]){
+			for(int i = 0; i < model->tex[0]->n; i++){
+				const char *colormap = model->sufs[0]->a[i].colormap;
+				if(colormap && !strcmp(colormap, "engine2.bmp")){
+					engineAtrIndex = i;
+				}
+				if(colormap && !strcmp(colormap, "gradients.png")){
+					gradientsAtrIndex = i;
+				}
+			}
+		}
+		init = true;
+	}
+
+	return model;
+}
+
 bool Destroyer::command(EntityCommand *com){
 	if(SetBuildPhaseCommand *sbpc = InterpretCommand<SetBuildPhaseCommand>(com)){
 		buildPhase = sbpc->phase;
@@ -348,6 +336,9 @@ bool Destroyer::command(EntityCommand *com){
 		else
 			for(TurretList::iterator it = turrets.begin(); it != turrets.end(); ++it)
 				(*it)->online = true;
+	}
+	else if(GetFaceInfoCommand *gfic = InterpretCommand<GetFaceInfoCommand>(com)){
+		return Shipyard::modelHitPart(this, getModel(), *gfic);
 	}
 	else
 		return st::command(com);

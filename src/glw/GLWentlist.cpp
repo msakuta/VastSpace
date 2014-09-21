@@ -1164,10 +1164,10 @@ static SQInteger sqf_screenheight(HSQUIRRELVM v){
 
 
 bool GLWentlist::sq_define(HSQUIRRELVM v){
-	GLwindow::sq_define(v);
+	st::sq_define(v);
 	// Define class GLWentlist
 	sq_pushstring(v, _SC("GLWentlist"), -1);
-	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_pushstring(v, st::s_sqClassName(), -1);
 	sq_get(v, -3);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, "GLWentlist");

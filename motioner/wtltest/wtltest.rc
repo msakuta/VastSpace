@@ -79,6 +79,7 @@ FONT 9, "MS UI Gothic", 400, 0, 128
     PUSHBUTTON      "Save Motion V2", IDC_SAVEMOTION2, 422, 89, 50, 14
     EDITTEXT        IDC_AMPLITUDE, 437, 229, 35, 14, ES_AUTOHSCROLL
     LTEXT           "Amplitude", IDC_STATIC, 406, 229, 30, 8, SS_LEFT
+    AUTOCHECKBOX    "Wireframe", IDC_WIREFRAME, 58, 269, 45, 8
 }
 
 

@@ -2,6 +2,7 @@
  * \brief Implements Attacker and AttackerDocker.
  */
 #include "Attacker.h"
+#include "EntityRegister.h"
 #include "war.h"
 #include "btadapt.h"
 #include "judge.h"
@@ -15,6 +16,8 @@
 #endif
 #include "serial_util.h"
 #include "motion.h"
+#include "Shipyard.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
@@ -129,7 +132,11 @@ void Attacker::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 }
 
 bool Attacker::command(EntityCommand *com){
-	return st::command(com);
+	if(GetFaceInfoCommand *gfic = InterpretCommand<GetFaceInfoCommand>(com)){
+		return Shipyard::modelHitPart(this, getModel(), *gfic);
+	}
+	else
+		return st::command(com);
 }
 
 double Attacker::getHitRadius()const{return .3;}
@@ -284,6 +291,30 @@ bool Attacker::buildBody(){
 
 HitBoxList *Attacker::getTraceHitBoxes()const{
 	return &hitboxes;
+}
+
+int Attacker::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	return Shipyard::modelTraceHit(this, src, dir, rad, dt, ret, retp, retn, getModel());
+}
+
+Model *Attacker::getModel(){
+	static bool init = false;
+	static Model *model = NULL;
+	if(!init){
+		model = LoadMQOModel("models/attacker.mqo");
+
+		if(model) for(int n = 0; n < model->n; n++) if(model->sufs[n] && model->tex[n]){
+			MeshTex *tex = model->tex[n];
+			for(int i = 0; i < tex->n; i++) if(!strcmp(model->sufs[n]->a[i].colormap, "attacker_engine.bmp")){
+				tex->a[i].onBeginTexture = TextureParams::onBeginTextureEngine;
+				tex->a[i].onEndTexture = TextureParams::onEndTextureEngine;
+			}
+		}
+
+		init = true;
+	}
+
+	return model;
 }
 
 

@@ -94,7 +94,7 @@ static void drawIcosaSphereInt(int level, drawIcosaSphereArg *arg, const Vec3d &
 			Vec3d rpos = arg->qrot.trans(tpos);
 			Vec3d ipos = arg->imodel.dvp3(pos[n]);
 			glNormal3dv(arg->qrot.trans(ipos));
-			glTexCoord3dv(tpos);
+			glTexCoord3dv(-tpos); // Texture coordinates direction look better when negated
 			if(glMultiTexCoord3dvARB)
 				glMultiTexCoord3dvARB(GL_TEXTURE1_ARB, rpos / arg->radius);
 			glVertex3dv(rpos + arg->org);
@@ -527,6 +527,8 @@ void DrawTextureSphere::useShader(){
 			GLint heightLoc;
 			GLint exposureLoc;
 			GLint tonemapLoc;
+			GLint lightCountLoc;
+			GLint rotationLoc;
 			void getLocs(GLuint shader){
 				textureLoc = glGetUniformLocation(shader, "texture");
 				noise3DLoc = glGetUniformLocation(shader, "noise3D");
@@ -536,6 +538,8 @@ void DrawTextureSphere::useShader(){
 				heightLoc = glGetUniformLocation(shader, "height");
 				exposureLoc = glGetUniformLocation(shader, "exposure");
 				tonemapLoc = glGetUniformLocation(shader, "tonemap");
+				lightCountLoc = glGetUniformLocation(shader, "lightCount");
+				rotationLoc = glGetUniformLocation(shader, "rotation");
 			}
 		};
 		static std::map<GLuint, Locs> locmap;
@@ -576,6 +580,18 @@ void DrawTextureSphere::useShader(){
 		if(0 <= locs.tonemapLoc){
 			glUniform1i(locs.tonemapLoc, r_tonemap);
 		}
+		if(0 <= locs.lightCountLoc){
+			glUniform1i(locs.lightCountLoc, lightingStars.size());
+		}
+		if(0 <= locs.rotationLoc){
+			TexSphere *ts = dynamic_cast<TexSphere*>(a);
+			Mat4d src = (vw->cs->tocsq(a->parent).cnj() * a->rot).tomat4();
+			// When drawing oblate sphere, we need to rotate normal map texture manually.
+			if(ts && ts->oblateness != 0.)
+				src = vw->rot * src;
+			Mat3<float> rot3 = src.tomat3().cast<float>();
+			glUniformMatrix3fv(locs.rotationLoc, 1, GL_FALSE, rot3);
+		}
 
 		TexSphere::TextureIterator it;
 		int i;
@@ -615,38 +631,15 @@ bool DrawTextureSphere::draw(){
 	normvertex_params params;
 	Mat4d rot;
 	
-	if(rad == 0.)
-		rad = a->rad;
-
 	params.vw = vw;
 	params.texenable = texenable;
 	params.detail = 0;
 
-	double scale = rad * vw->gc->scale(apos);
-
-	Vec3d tp = apos - vw->pos;
-	double zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
-	scale *= zoom;
-	if(0. < scale && scale < 10.){
-		if(!(flags & TexSphere::DTS_NOGLOBE)){
-			GLubyte color[4], dark[4];
-			color[0] = GLubyte(mat_diffuse[0] * 255);
-			color[1] = GLubyte(mat_diffuse[1] * 255);
-			color[2] = GLubyte(mat_diffuse[2] * 255);
-			color[3] = 255;
-			dark[0] = GLubyte(mat_ambient[0] * 127);
-			dark[1] = GLubyte(mat_ambient[1] * 127);
-			dark[2] = GLubyte(mat_ambient[2] * 127);
-			for(i = 0; i < 3; i++)
-				dark[i] = GLubyte(g_astro_ambient * g_astro_ambient * 255);
-			dark[3] = 255;
-			drawShadeSphere(a, vw, sunpos, color, dark);
-		}
+	if(drawSimple())
 		return true;
-	}
 
 	// Allocate surface texture
-	do if(ptexlist && !*ptexlist && texname){
+	do if(ptexlist && !*ptexlist && texname && texname[0]){
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 //		texlist = *ptexlist = ProjectSphereJpg(texname);
@@ -667,7 +660,7 @@ bool DrawTextureSphere::draw(){
 	if(rad / dist < 1. / vw->vp.m)
 		return texenable;
 
-	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT | GL_LIGHTING_BIT);
 /*	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glLineWidth(1);
 	glDisable(GL_BLEND);
@@ -698,29 +691,7 @@ bool DrawTextureSphere::draw(){
 	glPushMatrix();
 	glLoadIdentity();
 
-	if(m_flags & TexSphere::DTS_LIGHTING){
-		const GLfloat mat_specular[] = {0., 0., 0., 1.};
-		const GLfloat mat_shininess[] = { 50.0 };
-		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
-
-		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-		glMaterialfv(GL_FRONT, GL_DIFFUSE, texenable ? color : mat_diffuse);
-		glMaterialfv(GL_FRONT, GL_AMBIENT, texenable ? amb : mat_ambient);
-		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-		glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
-
-		Vec4<GLfloat> light_position = (sunpos - apos).normin().cast<GLfloat>();
-		light_position[3] = 0.;
-		glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-		glEnable(GL_LIGHTING);
-		glEnable(GL_LIGHT0);
-		glEnable(GL_NORMALIZE);
-	}
-	else{
-		glColor4fv(mat_diffuse);
-		glDisable(GL_LIGHTING);
-	}
+	setupLight();
 
 	if(flags & TexSphere::DTS_ADD){
 		glEnable(GL_BLEND);
@@ -880,6 +851,68 @@ bool DrawTextureSphere::draw(){
 	return texenable;
 }
 
+void DrawTextureSphere::setupLight(){
+	bool texenable = ptexlist && *ptexlist && m_texmat;
+	if(m_flags & TexSphere::DTS_LIGHTING){
+		const GLfloat mat_specular[] = {0., 0., 0., 1.};
+		const GLfloat mat_shininess[] = { 50.0 };
+		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
+
+		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, texenable ? color : m_mat_diffuse);
+		glMaterialfv(GL_FRONT, GL_AMBIENT, texenable ? amb : m_mat_ambient);
+		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+
+		glEnable(GL_LIGHTING);
+		glEnable(GL_NORMALIZE);
+		for(int i = 0; i < lightingStars.size(); i++){
+			FindBrightestAstrobj::ResultSet &rs = lightingStars[i];
+			Vec3d sunpos = rs.pos - apos;
+			if(sunpos.slen() == 0.)
+				continue;
+			Vec4<GLfloat> light_position = sunpos.normin().cast<GLfloat>();
+			light_position[3] = 0.;
+			glLightfv(GL_LIGHT0 + i, GL_AMBIENT, amb);
+			glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, rs.cs->basecolor * GLfloat(sqrt(rs.brightness)));
+			glLightfv(GL_LIGHT0 + i, GL_POSITION, light_position);
+			glEnable(GL_LIGHT0 + i);
+		}
+	}
+	else{
+		glColor4fv(m_mat_diffuse);
+		glDisable(GL_LIGHTING);
+	}
+}
+
+bool DrawTextureSphere::drawSimple(){
+	if(m_rad == 0.)
+		m_rad = a->rad;
+
+	double scale = m_rad * vw->gc->scale(apos);
+
+	Vec3d tp = apos - vw->pos;
+	double zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
+	scale *= zoom;
+	if(0. < scale && scale < 10.){
+		if(!(m_flags & TexSphere::DTS_NOGLOBE)){
+			GLubyte color[4], dark[4];
+			color[0] = GLubyte(m_mat_diffuse[0] * 255);
+			color[1] = GLubyte(m_mat_diffuse[1] * 255);
+			color[2] = GLubyte(m_mat_diffuse[2] * 255);
+			color[3] = 255;
+			dark[0] = GLubyte(m_mat_ambient[0] * 127);
+			dark[1] = GLubyte(m_mat_ambient[1] * 127);
+			dark[2] = GLubyte(m_mat_ambient[2] * 127);
+			for(int i = 0; i < 3; i++)
+				dark[i] = GLubyte(g_astro_ambient * g_astro_ambient * 255);
+			dark[3] = 255;
+			drawShadeSphere(a, vw, sunpos, color, dark);
+		}
+		return true;
+	}
+	return false;
+}
+
 bool DrawTextureSpheroid::draw(){
 	const Vec4f &mat_diffuse = m_mat_diffuse;
 	const Vec4f &mat_ambient = m_mat_ambient;
@@ -895,7 +928,6 @@ bool DrawTextureSpheroid::draw(){
 	double ringminrad = m_ringmin;
 	double ringmaxrad = m_ringmax;
 
-	double scale, zoom;
 	bool texenable = !!texlist;
 	normvertex_params params;
 	Mat4d &mat = params.mat;
@@ -905,25 +937,8 @@ bool DrawTextureSpheroid::draw(){
 	params.texenable = texenable;
 	params.detail = 0;
 
-/*	tocs(sunpos, vw->cs, sun.pos, sun.cs);*/
-	scale = a->rad * vw->gc->scale(apos);
-
-	Vec3d tp = apos - vw->pos;
-	zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
-	scale *= zoom;
-	if(0. < scale && scale < 5.){
-		GLubyte color[4], dark[4];
-		color[0] = GLubyte(mat_diffuse[0] * 255);
-		color[1] = GLubyte(mat_diffuse[1] * 255);
-		color[2] = GLubyte(mat_diffuse[2] * 255);
-		color[3] = 255;
-		dark[0] = GLubyte(mat_ambient[0] * 127);
-		dark[1] = GLubyte(mat_ambient[1] * 127);
-		dark[2] = GLubyte(mat_ambient[2] * 127);
-		dark[3] = 255;
-		drawShadeSphere(a, vw, sunpos, color, dark);
+	if(drawSimple())
 		return true;
-	}
 
 	do if(!texlist && texname){
 //		timemeas_t tm;
@@ -932,7 +947,7 @@ bool DrawTextureSpheroid::draw(){
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
-	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT);
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_LIGHTING_BIT);
 /*	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glLineWidth(1);
 	glDisable(GL_BLEND);
@@ -952,24 +967,9 @@ bool DrawTextureSpheroid::draw(){
 	Quatd qrot = vw->cs->tocsq(a->parent).cnj() * a->rot;
 	Vec3d pos(vw->cs->tocs(a->pos, a->parent));
 
-	if(m_flags & TexSphere::DTS_LIGHTING){
-		const GLfloat mat_specular[] = {0., 0., 0., 1.};
-		const GLfloat mat_shininess[] = { 50.0 };
-		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
+	setupLight();
 
-		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-		glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-		glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
-		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-		glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
-		glEnable(GL_NORMALIZE);
-		glEnable(GL_CULL_FACE);
-		glEnable(GL_LIGHTING);
-		glEnable(GL_LIGHT0);
-
-		glLightfv(GL_LIGHT0, GL_POSITION, Vec4<float>(/*qrot.cnj().trans*/(sunpos - pos).cast<float>()));
-	}
+	glEnable(GL_CULL_FACE);
 
 	// Temporarily create dummy Viewer (in other words, latch) with position of zero vector, to avoid cancellation errors.
 	// It does not remove subtraction, but many OpenGL implementation treats matrices with float, so using double inside CPU would help.
@@ -980,7 +980,7 @@ bool DrawTextureSpheroid::draw(){
 	glMatrixMode(GL_TEXTURE);
 	glPushMatrix();
 	glMultMatrixd(texmat);
-	glRotatef(90, 1, 0, 0);
+//	glRotatef(90, 1, 0, 0);
 	glMatrixMode(GL_MODELVIEW);
 
 	useShader();
@@ -1078,17 +1078,26 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 					*dst = zero;
 					continue;
 				}*/
-				Vec3d epos = cubedirs[nn].cnj().trans(Vec3d(j / (PROJC / 2.) - 1., i / (PROJC / 2.) - 1., -1));
-				double lon = -atan2(epos[0], -(epos[2]));
-				double lat = (raw->bmiHeader.biHeight < 0 ? 1 : -1) * atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2])) + M_PI / 2.;
-//					double lon = -atan2(epos[0], -(epos[1]));
-//					double lat = atan2(epos[2], sqrt(epos[0] * epos[0] + epos[1] * epos[1]));
-				double dj1 = (raww-1) * (lon / (2. * M_PI) - floor(lon / (2. * M_PI)));
-				double di1 = (rawh-1) * (lat / (M_PI) - floor(lat / (M_PI)));
-				double fj1 = dj1 - floor(dj1); // fractional part
-				double fi1 = di1 - floor(di1);
-				int i1 = (int(floor(di1)) + rawh) % rawh;
-				int j1 = (int(floor(dj1)) + raww) % raww;
+
+				// Local function to obtain pixel coordinates in equirectangular projection
+				auto castEquirectRay = [&](const Vec3d &epos, int &j1, int &i1, double &fj1, double &fi1){
+					double lon = -atan2(epos[0], epos[1]);
+					double lat = (raw->bmiHeader.biHeight < 0 ? 1 : -1) * atan2(epos[2], sqrt(epos[0] * epos[0] + epos[1] * epos[1])) + M_PI / 2.;
+					double dj1 = (raww-1) * (lon / (2. * M_PI) - floor(lon / (2. * M_PI)));
+					double di1 = (rawh-1) * (lat / (M_PI) - floor(lat / (M_PI)));
+					// Whole part
+					i1 = (int(floor(di1)) + rawh) % rawh;
+					j1 = (int(floor(dj1)) + raww) % raww;
+					// fractional part
+					fj1 = dj1 - floor(dj1);
+					fi1 = di1 - floor(di1);
+				};
+
+				Vec3d localRay(j / (PROJC / 2.) - 1., i / (PROJC / 2.) - 1., -1);
+				Vec3d epos = cubedirs[nn].cnj().trans(localRay);
+				int i1, j1;
+				double fj1, fi1;
+				castEquirectRay(epos, j1, i1, fj1, fi1);
 
 				if(raw->bmiHeader.biBitCount == 4){ // untested
 					double accum[3] = {0}; // accumulator
@@ -1107,20 +1116,36 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 						*dst8 = (GLubyte)(accum);
 					}
 					else if(flags & TexSphere::DTS_NORMALMAP){
-						double accum[3] = {0.};
-						for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++){
-							const unsigned char *src = ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed]);
-							int y = (i1 + ii) % rawh;
-							int x = (j1 + jj) % raww;
-							int wb = linebytes, w = raww, h = rawh;
-							double f = (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1);
-							accum[0] += f * (unsigned char)rangein(127 + (double)1. * (src[x + y * wb] - src[(x - 1 + w) % w + y * wb]) / 4, 0, 255);
-							accum[1] += f * (unsigned char)rangein(127 + 1. * (src[x + y * wb] - src[x + (y - 1 + h) % h * wb]) / 4, 0, 255);
-							accum[2] = 255;
-						}
-						dst->rgbRed = (GLubyte)accum[0];
-						dst->rgbGreen = (GLubyte)accum[1];
-						dst->rgbBlue = (GLubyte)accum[2];
+						const unsigned char *src = ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed]);
+						double heights[3] = {0.};
+
+						// Local function to obtain pixel intensity in equirectangular projection in 8 bit texture
+						auto sampler8 = [&](const Vec3d &epos){
+							int j1, i1;
+							double fj1, fi1;
+							castEquirectRay(epos, j1, i1, fj1, fi1);
+							double accum = 0.;
+							for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++){
+								const unsigned char *src = ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed]);
+								accum += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * src[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww];
+							}
+							return accum;
+						};
+
+						// Obtain heights at adjacent pixels in this cube face.
+						for(int k = 0; k < 3; k++)
+							heights[k] = sampler8(cubedirs[nn].cnj().trans(Vec3d((j + (k == 1)) / (PROJC / 2.) - 1., (i + (k == 2)) / (PROJC / 2.) - 1., -1)));
+
+						// Normal vector modulation before rotation for cube faces
+						Vec3d localVec((heights[0] - heights[1]) / 256., (heights[0] - heights[2]) / 256., 0.);
+
+						// Normal vector after rotation.  Negated direction seems right.
+						Vec3d globalVec = -(epos + cubedirs[nn].cnj().trans(localVec));
+
+						// Store the normal vector in BGR order
+						dst->rgbRed = (GLubyte)rangein(127 + globalVec[2] * 128, 0, 255);
+						dst->rgbGreen = (GLubyte)rangein(127 + globalVec[1] * 128, 0, 255);
+						dst->rgbBlue = (GLubyte)rangein(127 + globalVec[0] * 128, 0, 255);
 						dst->rgbReserved = 255;
 					}
 					else{

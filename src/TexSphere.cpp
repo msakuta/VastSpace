@@ -9,9 +9,9 @@
 #include "sqadapt.h"
 #include "cmd.h"
 #include "Game.h"
-extern "C"{
-#include "calc/calc.h"
-}
+#include "CoordSys-property.h"
+#include "CoordSys-sq.h"
+#include "CoordSys-find.h"
 
 #include <stdlib.h>
 
@@ -33,6 +33,7 @@ TexSphere::TexSphere(Game *game) :
 TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
 	oblateness(0.),
 	ring(0),
+	albedo(1),
 #ifndef DEDICATED
 	shader(0),
 	shaderGiveup(false),
@@ -112,6 +113,7 @@ void TexSphere::serialize(SerializeContext &sc){
 	sc.o << atmodensity;
 	sc.o << *(Vec4<float>*)(atmohor);
 	sc.o << *(Vec4<float>*)(atmodawn);
+	sc.o << albedo;
 	sc.o << ring;
 	sc.o << textures;
 	sc.o << vertexShaderName;
@@ -138,6 +140,7 @@ void TexSphere::unserialize(UnserializeContext &sc){
 	sc.i >> atmodensity;
 	sc.i >> *(Vec4<float>*)(atmohor);
 	sc.i >> *(Vec4<float>*)(atmodawn);
+	sc.i >> albedo;
 	sc.i >> ring;
 	sc.i >> textures;
 	sc.i >> vertexShaderName;
@@ -187,7 +190,7 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 #ifndef DEDICATED
 			tex.list = 0;
 #endif
-			tex.cloudSync = 3 < argc && !!calc3(&argv[3], sc.vl, NULL);
+			tex.cloudSync = 3 < argc && 0. != sqcalc(sc, argv[3], s);
 			for(int i = 4; i < argc; i++){
 				if(!strcmp(argv[i], "alpha"))
 					tex.flags |= DTS_ALPHA;
@@ -226,7 +229,7 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 	}
 	else if(!strcmp(s, "cloudheight")){
 		if(1 < argc){
-			this->cloudHeight = calc3(&argv[1], sc.vl, NULL);
+			this->cloudHeight = sqcalc(sc, argv[1], s);
 		}
 		return true;
 	}
@@ -242,35 +245,41 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 		}
 		return true;
 	}
+	else if(!strcmp(s, "albedo")){
+		if(1 < argc){
+			this->albedo = float(sqcalc(sc, argv[1], "albedo"));
+		}
+		return true;
+	}
 	else if(!strcmp(s, "atmosphere_height")){
 		if(1 < argc){
-			atmodensity = calc3(&ps, sc.vl, NULL);
+			atmodensity = sqcalc(sc, ps, s);
 			flags |= AO_ATMOSPHERE;
 		}
 		return true;
 	}
 	else if(!strcmp(s, "atmosphere_color")){
 		if(1 < argc)
-			atmohor[0] = float(calc3(&argv[1], sc.vl, NULL));
+			atmohor[0] = float(sqcalc(sc, argv[1], s));
 		if(2 < argc)
-			atmohor[1] = float(calc3(&argv[2], sc.vl, NULL));
+			atmohor[1] = float(sqcalc(sc, argv[2], s));
 		if(3 < argc)
-			atmohor[2] = float(calc3(&argv[3], sc.vl, NULL));
+			atmohor[2] = float(sqcalc(sc, argv[3], s));
 		if(4 < argc)
-			atmohor[3] = float(calc3(&argv[4], sc.vl, NULL));
+			atmohor[3] = float(sqcalc(sc, argv[4], s));
 		else
 			atmohor[3] = 1.f;
 		return true;
 	}
 	else if(!strcmp(s, "atmosphere_dawn")){
 		if(1 < argc)
-			atmodawn[0] = float(calc3(&argv[1], sc.vl, NULL));
+			atmodawn[0] = float(sqcalc(sc, argv[1], s));
 		if(2 < argc)
-			atmodawn[1] = float(calc3(&argv[2], sc.vl, NULL));
+			atmodawn[1] = float(sqcalc(sc, argv[2], s));
 		if(3 < argc)
-			atmodawn[2] = float(calc3(&argv[3], sc.vl, NULL));
+			atmodawn[2] = float(sqcalc(sc, argv[3], s));
 		if(4 < argc)
-			atmodawn[3] = float(calc3(&argv[4], sc.vl, NULL));
+			atmodawn[3] = float(sqcalc(sc, argv[4], s));
 		else
 			atmodawn[3] = 1.f;
 		return true;
@@ -278,11 +287,38 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if((!strcmp(s, "ringmin") || !strcmp(s, "ringmax") || !strcmp(s, "ringthick"))){
 		TexSphere *const p = this;
 		p->ring = 1;
-		*(!strcmp(s, "ringmin") ? &p->ringmin : !strcmp(s, "ringmax") ? &p->ringmax : &p->ringthick) = calc3(&ps, sc.vl, NULL);
+		*(!strcmp(s, "ringmin") ? &p->ringmin : !strcmp(s, "ringmax") ? &p->ringmax : &p->ringthick) = sqcalc(sc, ps, s);
 		return true;
 	}
 	else
 		return st::readFile(sc, argc, argv);
+}
+
+void TexSphere::anim(double dt){
+	st::anim(dt);
+	updateAbsMag(dt);
+}
+
+void TexSphere::updateAbsMag(double dt){
+	FindBrightestAstrobj finder(this, vec3_000);
+	finder.threshold = 1e-6;
+	find(finder);
+	if(0 < finder.results.size()){
+		// We use the brightest light source only since reflected lights tend to be so dim.
+		// Absolute magnitude induced by another light source is calculated by dividing all light
+		// intensity emitted from the other light source by apparent radius of the object seen
+		// from a distance of 1 parsec.
+
+		// First, obtain apparent solid angle seen from a distance of 1 parsec.
+		double appArea = rad * rad / 3.e14 / 3.e14;
+
+		// Second, calculate absolute brightness by multiplying the brightness of the other
+		// light source by albedo and radius.
+		double absBrightness = albedo * finder.brightness * appArea;
+
+		// Last, convert the brightness to absolute magnitude (logarithmic scale).
+		absmag = float(-log(absBrightness) / log(2.512) - 26.7);
+	}
 }
 
 double TexSphere::atmoScatter(const Viewer &vw)const{
@@ -303,48 +339,90 @@ void TexSphere::updateInt(double dt){
 	cloudPhase += 1e-4 * dt * game->universe->astro_timescale;
 }
 
-
-SQInteger TexSphere::sqf_get(HSQUIRRELVM v){
-	TexSphere *p = static_cast<TexSphere*>(sq_refobj(v));
-	const SQChar *wcs;
-	sq_getstring(v, -1, &wcs);
-
-	if(!strcmp(wcs, _SC("alive"))){
-		sq_pushbool(v, !!p);
-		return 1;
+/// StringList getter template function for propertyMap.
+template<TexSphere::StringList TexSphere::*memb>
+SQInteger TexSphere::slgetter(HSQUIRRELVM v, const CoordSys *cs){
+	const TexSphere *a = static_cast<const TexSphere*>(cs);
+	sq_newarray(v, (a->*memb).size());
+	for(int i = 0; i < (a->*memb).size(); i++){
+		sq_pushinteger(v, i);
+		sq_pushstring(v, (a->*memb)[i], -1);
+		sq_set(v, -2);
 	}
-
-	// It's not uncommon that a customized Squirrel code accesses a destroyed object.
-	if(!p)
-		return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
-
-	if(!strcmp(wcs, _SC("oblateness"))){
-		sq_pushfloat(v, SQFloat(p->oblateness));
-		return 1;
-	}
-	else
-		return st::sqf_get(v);
+	return SQInteger(1);
 }
 
-SQInteger TexSphere::sqf_set(HSQUIRRELVM v){
-	if(sq_gettop(v) < 3)
-		return SQ_ERROR;
-	TexSphere *p = static_cast<TexSphere*>(sq_refobj(v));
-	const SQChar *wcs;
-	sq_getstring(v, 2, &wcs);
-
-	// It's not uncommon that a customized Squirrel code accesses a destroyed object.
-	if(!p)
-		return sq_throwerror(v, _SC("The object being accessed is destructed in the game engine"));
-
-	if(!strcmp(wcs, _SC("oblateness"))){
-		SQFloat f;
-		sq_getfloat(v, 3, &f);
-		p->oblateness = double(f);
-		return 0;
+/// StringList setter template function for propertyMap.
+template<TexSphere::StringList TexSphere::*memb>
+SQInteger TexSphere::slsetter(HSQUIRRELVM v, CoordSys *cs){
+	TexSphere *a = static_cast<TexSphere*>(cs);
+	if(sq_gettype(v, 3) == OT_STRING){
+		const SQChar *str;
+		if(SQ_FAILED(sq_getstring(v, 3, &str)))
+			return sq_throwerror(v, _SC("shader set fail"));
+		(a->*memb).push_back(str);
 	}
-	else
-		return st::sqf_get(v);
+	else if(sq_gettype(v, 3) == OT_ARRAY){
+		SQInteger size = sq_getsize(v, 3);
+		for(auto i = 0; i < size; i++){
+			sq_pushinteger(v, i);
+			if(SQ_FAILED(sq_get(v, -2)))
+				return sq_throwerror(v, _SC("shader set fail"));
+			const SQChar *str;
+			if(SQ_FAILED(sq_getstring(v, 3, &str)))
+				return sq_throwerror(v, _SC("shader set fail"));
+			(a->*memb).push_back(str);
+		}
+	}
+	return SQInteger(0);
+}
+
+
+const CoordSys::PropertyMap &TexSphere::propertyMap()const{
+	static PropertyMap pmap = st::propertyMap();
+	static bool init = false;
+	if(!init){
+		init = true;
+		pmap["oblateness"] = PropertyEntry(
+			[](HSQUIRRELVM v, const CoordSys *cs){
+				const TexSphere *a = static_cast<const TexSphere*>(cs);
+				sq_pushfloat(v, SQFloat(a->oblateness));
+				return SQInteger(1);
+			},
+			[](HSQUIRRELVM v, CoordSys *cs){
+				TexSphere *a = static_cast<TexSphere*>(cs);
+				SQFloat f;
+				if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+					return sq_throwerror(v, _SC("TexSphere.oblateness could not convert to float"));
+				a->oblateness = f;
+				return SQInteger(0);
+			}
+		);
+		pmap["texture"] = PropertyEntry(
+			[](HSQUIRRELVM v, const CoordSys *cs){
+				const TexSphere *a = static_cast<const TexSphere*>(cs);
+				sq_pushstring(v, a->texname, -1);
+				return SQInteger(1);
+			},
+			[](HSQUIRRELVM v, CoordSys *cs){
+				TexSphere *a = static_cast<TexSphere*>(cs);
+				const SQChar *str;
+				if(SQ_FAILED(sq_getstring(v, 3, &str)))
+					return sq_throwerror(v, _SC("TexSphere.texture could not convert to string"));
+				a->texname = str;
+				return SQInteger(0);
+			}
+		);
+		pmap["vertexshader"] = PropertyEntry(
+			slgetter<&TexSphere::vertexShaderName>, slsetter<&TexSphere::vertexShaderName>);
+		pmap["fragmentshader"] = PropertyEntry(
+			slgetter<&TexSphere::fragmentShaderName>, slsetter<&TexSphere::fragmentShaderName>);
+		pmap["cloudvertexshader"] = PropertyEntry(
+			slgetter<&TexSphere::cloudVertexShaderName>, slsetter<&TexSphere::cloudVertexShaderName>);
+		pmap["cloudfragmentshader"] = PropertyEntry(
+			slgetter<&TexSphere::cloudFragmentShaderName>, slsetter<&TexSphere::cloudFragmentShaderName>);
+	}
+	return pmap;
 }
 
 bool TexSphere::sq_define(HSQUIRRELVM v){
@@ -354,8 +432,7 @@ bool TexSphere::sq_define(HSQUIRRELVM v){
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
-	register_closure(v, _SC("_get"), sqf_get);
-	register_closure(v, _SC("_set"), sqf_set);
+	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<TexSphere>);
 	sq_createslot(v, -3);
 	return true;
 }

@@ -31,7 +31,6 @@ Motion *Shipyard::motions[2];
 
 void Shipyard::draw(wardraw_t *wd){
 	Shipyard *const p = this;
-	static Model *model = NULL;
 	static OpenGLState::weak_ptr<bool> init;
 	static suftex_t *pst;
 	static suf_t *sufbase = NULL;
@@ -49,11 +48,12 @@ void Shipyard::draw(wardraw_t *wd){
 		return;
 #if 1
 	if(!init) do{
-		model = LoadMQOModel("models/shipyard.mqo");
 		motions[0] = LoadMotion("models/shipyard_door.mot");
 		motions[1] = LoadMotion("models/shipyard_door2.mot");
 		init.create(*openGLState);
 	} while(0);
+
+	Model *model = getModel();
 	if(model){
 		MotionPose mp[2];
 		motions[0]->interpolate(mp[0], doorphase[0] * 10.);

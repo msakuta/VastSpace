@@ -2,6 +2,7 @@
  * \brief Implementation of Beamer class.
  */
 #include "Beamer.h"
+#include "EntityRegister.h"
 #include "cmd.h"
 #include "judge.h"
 #include "serial_util.h"

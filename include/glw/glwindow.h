@@ -261,7 +261,12 @@ public:
 	/// The type tag for this class in Squirrel VM.
 	static const SQUserPointer tt_GLwindow;
 
-	const SQChar *sqClassName()const;
+	static const SQChar *s_sqClassName();
+	const SQChar *sqClassName()const override;
+
+	HSQOBJECT sq_onDraw; ///< Squirrel event handler on drawing
+	HSQOBJECT sq_onMouse; ///< Squirrel event handler on mouse pointer action
+	HSQOBJECT sq_onMouseState; ///< Squirrel event handler to query desired mouse pointer
 
 	void (*onFocusEnter)(GLwindow*); ///< Assignable event handler for focusEnter event.
 	void (*onFocusLeave)(GLwindow*); ///< Assignable event handler for focusLeave event.
@@ -345,6 +350,7 @@ EXPORT int glwGetSizeTextureString(const char *s, int size = -1);
 EXPORT int glwPutStringML(const char *s, int size = GLwindow::getFontHeight());
 EXPORT void glwGetSizeStringML(const char *s, int size = GLwindow::getFontHeight(), int *retxsize = NULL, int *retysize = NULL);
 EXPORT void glwpos2d(double x, double y);
+EXPORT int glwprint(const char *f);
 EXPORT int glwprintf(const char *f, ...);
 EXPORT int glwsizef(const char *f, ...);
 EXPORT void glwVScrollBarDraw(GLwindow *wnd, int x0, int y0, int w, int h, int range, int iy);
@@ -360,13 +366,22 @@ protected:
 	float ratio; /* ratio of window size if it is to be reserved */
 	int sizing; /* edge flags of changing borders */
 	int minw, minh, maxw, maxh;
+	int mouseCursorStateInt(int mousex, int mousey)const; ///< Internal mouse state query function
 public:
+	typedef GLwindow st;
+
 	/// The constructor that can initialize the game object pointer.
 	GLwindowSizeable(Game *game, const char *title = NULL);
 
 	int mouseCursorState(int mousex, int mousey)const;
 	int mouse(GLwindowState &ws, int button, int state, int x, int y);
 	bool mouseNC(GLwindowState &ws, int button, int state, int x, int y);
+
+	static const SQChar *s_sqClassName();
+	const SQChar *sqClassName()const override;
+
+	/// Define this class for Squirrel VM.
+	static bool sq_define(HSQUIRRELVM v);
 };
 
 

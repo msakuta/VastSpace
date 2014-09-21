@@ -1,5 +1,12 @@
 // Earth surface simulation test
 
+local earthlo = universe.findcspath("/sol/earth/Earth/earths");
+if(!earthlo)
+	earthlo = universe.findcspath("/earth/Earth/earths");
+
+if(earthlo != null)
+	player.cs = earthlo;
+
 local birds = [];
 
 /*
@@ -65,7 +72,8 @@ local apache = player.cs.addent("Apache", Vec3d(0, 2.71, 5. - 0.2));
 player.chase = apache;
 apache.enemy = tank;
 */
-cmd("pause 0");
+
+universe.paused = false;
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook
 player.setmover("tactical");
 

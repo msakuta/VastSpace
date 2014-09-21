@@ -19,12 +19,14 @@ struct SQLexer
 private:
 	SQInteger GetIDType(SQChar *s);
 	SQInteger ReadString(SQInteger ndelim,bool verbatim);
-	SQInteger ReadNumber();
+	SQInteger ReadNumber(bool startWithDot = false);
 	void LexBlockComment();
+	void LexLineComment();
 	SQInteger ReadID();
 	void Next();
 	SQInteger _curtoken;
 	SQTable *_keywords;
+	SQBool _reached_eof;
 public:
 	SQInteger _prevtoken;
 	SQInteger _currentline;

@@ -25,6 +25,7 @@
 #include "CoordSys-find.h"
 #include "stellar_file.h"
 #include "astrodraw.h"
+#include "StarEnum.h"
 #include "cmd.h"
 #include "keybind.h"
 #include "motion.h"
@@ -50,6 +51,8 @@
 #include "avi.h"
 #include "sqadapt.h"
 #include "audio/wavemixer.h"
+#include "cmd_int.h"
+#include "../sqscripter/sqscripter.h"
 #include "resource.h"
 
 extern "C"{
@@ -67,6 +70,9 @@ extern "C"{
 #include <cpplib/vec3.h>
 #include <cpplib/quat.h>
 #include <cpplib/gl/cullplus.h>
+
+
+#include <sqstdaux.h>
 
 
 #include <assert.h>
@@ -116,6 +122,7 @@ int gl_wireframe = 0;
 //double gravityfactor = 1.;
 int g_gear_toggle_mode = 0;
 static int show_planets_name = 0;
+static int r_star_name_sectors = 1;
 static int cmdwnd = 0;
 //static bool g_focusset = false;
 //GLwindow *glwcmdmenu = NULL;
@@ -209,7 +216,7 @@ void Game::lightOn(Viewer &vw){
 	fba.returnBrightness = true;
 	fba.threshold = 1e-20;
 	vw.cs->find(fba);
-	const Astrobj *sun = fba.result;
+	const Astrobj *sun = fba.results.size() ? fba.results[0].cs : NULL;
 //	const Astrobj *sun = player->cs->findBrightest(player->getpos(), param);
 	GLfloat val = 0.;
 	if(sun){
@@ -221,14 +228,22 @@ void Game::lightOn(Viewer &vw){
 		else{
 			// This conversion formula is very temporary and qualitative. This should be shared among 
 			// TexSphere's drawing methods and WarSpace's ones.
-			val = GLfloat(sqrt(fba.brightness * 1e18));
+			val = GLfloat(sqrt(fba.brightness));
 			if(val < 0.)
 				val = 0.;
 		}
 	}
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	g_light = sun ? player->cs->tocs(vec3_000, sun).normin() : vec3_010;
+	if(sun){
+		Vec3d light = player->cs->tocs(vec3_000, sun);
+		if(light.slen())
+			g_light = light.norm();
+		else
+			g_light = vec3_010;
+	}
+	else
+		g_light = vec3_010;
 	glLightfv(GL_LIGHT0, GL_POSITION, sun ? Vec4<GLfloat>(g_light.cast<GLfloat>()) : light_pos);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vec3f(val, val, val));
 	GLfloat dif[4];
@@ -302,6 +317,19 @@ void Game::draw_gear(double dt){
 	}
 }
 
+static void drawLabel(const char *text){
+	int x = glwGetSizeTextureString(text);
+	glColor4f(0,0,0,0.5);
+	glBegin(GL_QUADS);
+	glVertex2d(0, 0);
+	glVertex2d(x, 0);
+	glVertex2d(x, -GLwindow::getFontHeight());
+	glVertex2d(0, -GLwindow::getFontHeight());
+	glEnd();
+	glColor4f(1,1,1,1);
+	glwPutTextureString(text);
+}
+
 static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 	OrbitCS *a = cs->toOrbitCS();
 	do if(a){
@@ -339,7 +367,7 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 		}
 
 		bool parentBarycenter = a->orbit_center;
-		if((a->orbit_home || parentBarycenter) && a->flags2 & OCS_SHOWORBIT){
+		if((a->orbit_home || parentBarycenter) && a->getShowOrbit()){
 			int j;
 			double (*cuts)[2], rad;
 			const CoordSys *home = parentBarycenter ? a->orbit_center : a->orbit_home;
@@ -444,7 +472,7 @@ static void drawastro(Viewer *vw, CoordSys *cs, const Mat4d &model){
 			glEnd();
 			glTranslated(0.05 * vw->fov, 0.05 * vw->fov, 0);
 			glScaled(2. / vw->vp.m * vw->fov, -2. / vw->vp.m * vw->fov, 1.);
-			glwPutTextureString(s);
+			drawLabel(s);
 		}while(0);
 
 		glPopMatrix();
@@ -470,13 +498,41 @@ int bullet_shoots = 0, bullet_hits = 0;
 void Game::drawindics(Viewer *vw){
 	viewport &gvp = vw->vp;
 	if(show_planets_name){
-		Mat4d model;
-		model = vw->rot;
-		model.translatein(-vw->pos[0], -vw->pos[1], -vw->pos[2]);
-		GLpmatrix();
-//		projection(vw->frustum(g_space_near_clip, g_space_far_clip));
+		Mat4d model = vw->rot.translate(-vw->pos);
 		drawastro(vw, universe, model);
 //		drawCSOrbit(vw, &galaxysystem);
+
+		// Recalculate transform matrix from the universe to the viewing coordinates
+		model = vw->rot.translate(vw->cs->tocs(vec3_000, universe) - vw->pos) * vw->cs->tocsim(universe);
+
+		extern double g_star_num;
+		Vec3d plpos = universe->tocs(vw->pos, vw->cs);
+		Vec3d pos;
+		StarCache *sc;
+//		gltestp::dstring name;
+		StarEnum se(plpos, r_star_name_sectors, true);
+		while(se.next(pos, &sc)){
+			double cellsize = 1.;
+			Vec3d wpos = model.vp3(pos) / StarEnum::sectorSize;
+			double wx = -wpos[0] / wpos[2];
+			double wy = -wpos[1] / wpos[2];
+			if(wx < -1 || 1 < wx || wy < -1 || 1 < wy || 0. <= wpos[2] /*|| rad / -wpos[2] < .00001*/)
+				continue;
+			// We cannot print a name for unnamed star.  We also don't need to print a name for a materialized star.
+			if(!sc || sc->system)
+				continue;
+			glPushMatrix();
+			glLoadIdentity();
+			glTranslated(wx, wy, -1.);
+			glBegin(GL_LINES);
+			glVertex2d(0., 0.);
+			glVertex2d(.05 * vw->fov, .05 * vw->fov);
+			glEnd();
+			glTranslated(0.05 * vw->fov, 0.05 * vw->fov, 0);
+			glScaled(2. / vw->vp.m * vw->fov, -2. / vw->vp.m * vw->fov, 1.);
+			drawLabel(sc->name);
+			glPopMatrix();
+		}
 	}
 	if(player->chase && player->chase->w){
 		wardraw_t wd;
@@ -1036,7 +1092,7 @@ void Game::adjustAutoExposure(Viewer &vw){
 	// Note that it won't be effective if the shader is off.
 	if(r_auto_exposure){
 		// Exposure limits. It affects the target exposure.
-		static const double minExposure = 1e-1;
+		static const double minExposure = 1e-3;
 		static const double maxExposure = 1e3;
 		double accum = 0.;
 		static RandomSequence rs(12321); // Random source
@@ -2359,6 +2415,72 @@ static INT_PTR CALLBACK HostGameDlg(HWND hDlg, UINT message, WPARAM wParam, LPAR
 	}
 	return FALSE;
 }
+
+static ScripterWindow *scwin = NULL;
+
+int cmd_scripter(int argc, char *argv[]){
+	if(scripter_show(scwin) == 0){
+		scripter_lexer_squirrel(scwin);
+		return 0;
+	}
+	return 1;
+}
+
+static void scripterCmdProc(const char *cmd){
+	CmdExec(cmd);
+}
+
+static void (*scripterPrintProc)(ScripterWindow *, const char *) = NULL;
+
+static void CmdPrintAdapter(const char *s){
+	if(scripterPrintProc)
+		scripterPrintProc(scwin, s);
+}
+
+static void scripterRunProc(const char *file, const char *text){
+	HSQUIRRELVM v = application.clientGame->sqvm;
+	if(SQ_FAILED(sq_compilebuffer(v, text, strlen(text), file && *file ? file : "scriptbuf", SQTrue)))
+		return;
+	scripter_clearerror(scwin);
+	sq_pushroottable(v);
+	if(SQ_FAILED(sq_call(v, 1, SQFalse, SQTrue)))
+		return;
+}
+
+static void sqCompileError(HSQUIRRELVM v, const SQChar *desc, const SQChar *source, SQInteger line, SQInteger column){
+	// First, clear all indicators in the document.
+	scripter_clearerror(scwin);
+	// Then add the error indicator.
+	scripter_adderror(scwin, desc, source, line, column);
+	// Finally, add the error description to log window.
+	scripterPrintProc(scwin, gltestp::dstring(source) << "(" << int(line) << ":" << int(column) << "): " << desc);
+}
+
+static SQInteger sqRuntimeError(HSQUIRRELVM v){
+	const SQChar *sErr = NULL;
+	if(!(sq_gettop(v)>=1 && SQ_SUCCEEDED(sq_getstring(v,2,&sErr))))
+		sErr = "unknown";
+
+	SQStackInfos si;
+	if(SQ_SUCCEEDED(sq_stackinfos(v, 1, &si))){
+		// First, clear all indicators in the document.
+		scripter_clearerror(scwin);
+		// Then add the error indicator.
+		// Note that we can only retrieve line at which the error occurred; the debug information
+		// does not have a granularity of columns in a line.
+		scripter_adderror(scwin, sErr, si.source, si.line, 1);
+	}
+
+	SQPRINTFUNCTION pf = sq_geterrorfunc(v);
+	if(pf){
+		pf(v,_SC("\nAN ERROR HAS OCCURED [%s]\n"),sErr);
+		// Finally, add the error description to log window.
+		// This is done by printing stack trace by the standard function provided by sqstdlib.
+//		scripterPrintProc(scwin, gltestp::dstring(si.source) << "(" << int(si.line) << "): " << sErr);
+		sqstd_printcallstack(v);
+	}
+	return SQInteger(0);
+}
 #endif
 
 /// \brief Diamond inherited ServerGame and ClientGame to create a class that
@@ -2423,6 +2545,17 @@ int main(int argc, char *argv[])
 		// Break and continue on success
 		break;
 	}while(true);
+
+	{
+		ScripterConfig sc;
+		sc.commandProc = scripterCmdProc;
+		sc.printProc = &scripterPrintProc;
+		sc.runProc = scripterRunProc;
+		sc.onClose = NULL;
+		CmdPrintHandler = CmdPrintAdapter;
+		sc.sourceFilters = "Squirrel sources (*.nut)\0*.nut\0All (*.*)\0*.*\0";
+		scwin = scripter_init(&sc);
+	}
 #else
 	// If no GUI is available, do not retry and just die.
 	if(!application.joinGame(application.serverParams.hostname, application.serverParams.port))
@@ -2441,7 +2574,14 @@ int main(int argc, char *argv[])
 		application.clientGame = server = new ServerClientGame();
 	application.serverGame = server;
 
-	application.init();
+	application.init([](HSQUIRRELVM v){
+#ifdef _WIN32
+		sq_setcompilererrorhandler(v, sqCompileError);
+		sq_newclosure(v, sqRuntimeError, 0);
+		sq_seterrorhandler(v);
+#endif
+	});
+
 	MotionInit();
 	CmdAdd("bind", cmd_bind);
 	CmdAdd("pushbind", cmd_pushbind);
@@ -2463,10 +2603,14 @@ int main(int argc, char *argv[])
 	CmdAdd("refresh", &Refresh::refresh);
 	CmdAdd("video", video);
 	CmdAdd("video_stop", video_stop);
+#ifdef _WIN32
+	CmdAdd("scripter", cmd_scripter);
+#endif
 //	ServerCmdAdd("m", scmd_m);
 	CvarAdd("gl_wireframe", &gl_wireframe, cvar_int);
 	CvarAdd("g_gear_toggle_mode", &g_gear_toggle_mode, cvar_int);
 	CvarAdd("g_drawastrofig", &show_planets_name, cvar_int);
+	CvarAdd("r_star_name_sectors", &r_star_name_sectors, cvar_int);
 	CvarAdd("g_otdrawflags", &WarSpace::g_otdrawflags, cvar_int);
 	CvarAdd("g_nlips_factor", &g_nlips_factor, cvar_double);
 	CvarAdd("g_space_near_clip", &g_space_near_clip, cvar_double);

@@ -3,9 +3,6 @@
  */
 #include "serial_util.h"
 #include "astro_star.h"
-extern "C"{
-#include "calc/calc.h"
-}
 
 extern double gravityfactor;
 

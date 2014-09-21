@@ -3,6 +3,7 @@
  */
 #define NOMINMAX
 #include "A10.h"
+#include "EntityRegister.h"
 #include "ExplosiveBullet.h"
 #include "Missile.h"
 #include "tefpol3d.h"

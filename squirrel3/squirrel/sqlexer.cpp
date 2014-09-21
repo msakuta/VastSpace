@@ -71,6 +71,7 @@ void SQLexer::Init(SQSharedState *ss, SQLEXREADFUNC rg, SQUserPointer up,Compile
 	_lasttokenline = _currentline = 1;
 	_currentcolumn = 0;
 	_prevtoken = -1;
+	_reached_eof = SQFalse;
 	Next();
 }
 
@@ -88,6 +89,7 @@ void SQLexer::Next()
 		return;
 	}
 	_currdata = SQUIRREL_EOB;
+	_reached_eof = SQTrue;
 }
 
 const SQChar *SQLexer::Tok2Str(SQInteger tok)
@@ -114,6 +116,10 @@ void SQLexer::LexBlockComment()
 		}
 	}
 }
+void SQLexer::LexLineComment()
+{
+	do { NEXT(); } while (CUR_CHAR != _SC('\n') && (!IS_EOB()));
+}
 
 SQInteger SQLexer::Lex()
 {
@@ -128,6 +134,7 @@ SQInteger SQLexer::Lex()
 			NEXT();
 			_currentcolumn=1;
 			continue;
+		case _SC('#'): LexLineComment(); continue;
 		case _SC('/'):
 			NEXT();
 			switch(CUR_CHAR){
@@ -136,7 +143,7 @@ SQInteger SQLexer::Lex()
 				LexBlockComment();
 				continue;	
 			case _SC('/'):
-				do { NEXT(); } while (CUR_CHAR != _SC('\n') && (!IS_EOB()));
+				LexLineComment();
 				continue;
 			case _SC('='):
 				NEXT();
@@ -210,6 +217,10 @@ SQInteger SQLexer::Lex()
 			NEXT(); RETURN_TOKEN(ret); }
 		case _SC('.'):
 			NEXT();
+			if (scisdigit(CUR_CHAR)){
+				SQInteger ret = ReadNumber(true);
+				RETURN_TOKEN(ret);
+			}
 			if (CUR_CHAR != _SC('.')){ RETURN_TOKEN('.') }
 			NEXT();
 			if (CUR_CHAR != _SC('.')){ Error(_SC("invalid token '..'")); }
@@ -396,16 +407,18 @@ SQInteger isexponent(SQInteger c) { return c == 'e' || c=='E'; }
 
 
 #define MAX_HEX_DIGITS (sizeof(SQInteger)*2)
-SQInteger SQLexer::ReadNumber()
+SQInteger SQLexer::ReadNumber(bool startWithDot)
 {
 #define TINT 1
 #define TFLOAT 2
 #define THEX 3
 #define TSCIENTIFIC 4
 #define TOCTAL 5
-	SQInteger type = TINT, firstchar = CUR_CHAR;
+	SQInteger type = startWithDot ? TFLOAT : TINT, firstchar = CUR_CHAR;
 	SQChar *sTemp;
 	INIT_TEMP_STRING();
+	if(startWithDot)
+		APPEND_CHAR(_SC('.'));
 	NEXT();
 	if(firstchar == _SC('0') && (toupper(CUR_CHAR) == _SC('X') || scisodigit(CUR_CHAR)) ) {
 		if(scisodigit(CUR_CHAR)) {
@@ -429,7 +442,7 @@ SQInteger SQLexer::ReadNumber()
 	else {
 		APPEND_CHAR((int)firstchar);
 		while (CUR_CHAR == _SC('.') || scisdigit(CUR_CHAR) || isexponent(CUR_CHAR)) {
-            if(CUR_CHAR == _SC('.')) type = TFLOAT;
+            if(CUR_CHAR == _SC('.') || isexponent(CUR_CHAR)) type = TFLOAT;
 			if(isexponent(CUR_CHAR)) {
 				if(type != TFLOAT) Error(_SC("invalid numeric format"));
 				type = TSCIENTIFIC;

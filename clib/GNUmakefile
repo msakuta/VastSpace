@@ -9,7 +9,7 @@ DEBUG = -s -O3 -D NDEBUG # essentially release
 OUTDIR = Release
 endif
 
-CFLAGS = ${DEBUG} -I include -fPIC
+CFLAGS += ${DEBUG} -I include -fPIC
 OUT = ${OUTDIR}/clib.a
 all: ${OUT}
 
@@ -43,6 +43,7 @@ ${OUTDIR}:
 	mkdir $@
 
 ${OUT}(UnZip.o): src/UnZip.c
+	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 ${OUT}(amat3.o): src/amat3.c
 	${CC} $(CFLAGS) $(CPPFLAGS) -c $< -o $% && $(AR) r $@ $% && $(RM) $%
 ${OUT}(amat4.o): src/amat4.c
@@ -93,4 +94,6 @@ tests/crc32_test: tests/crc32_test.c ${OUT}
 	${CC} $(CFLAGS) $^ -o $@
 tests/rseq_test: tests/rseq_test.c ${OUT}
 	${CC} $(CFLAGS) $^ -o $@
+tests/UnZip_test: tests/UnZip_test.c src/UnZip.c
+	${CC} $(CFLAGS) $< -o $@ -lz
 

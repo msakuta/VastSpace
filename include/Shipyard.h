@@ -9,6 +9,7 @@
 #include "glw/glwindow.h"
 #include "Docker.h"
 #include "libmotion.h"
+#include "Model-forward.h"
 
 class Shipyard;
 
@@ -26,6 +27,8 @@ public:
 	virtual Quatd getPortRot(Dockable *)const;
 	Shipyard *getent();
 };
+
+class GetFaceInfoCommand;
 
 class EXPORT Shipyard : public Warpable, public Builder{
 public:
@@ -52,6 +55,7 @@ public:
 	virtual void anim(double dt);
 	virtual void clientUpdate(double);
 	virtual Props props()const;
+	bool command(EntityCommand *)override;
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
 	virtual void drawOverlay(wardraw_t *);
@@ -62,9 +66,14 @@ public:
 	virtual Docker *getDockerInt();
 	virtual Entity *toEntity(){return this;}
 	virtual const ManeuverParams &getManeuve()const;
+	int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn) override;
 
 	bool startBuild();
 	bool finishBuild();
+
+	static bool modelHitPart(const Entity *e, Model *model, GetFaceInfoCommand &);
+	static int modelTraceHit(const Entity *e, const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn, const Model *model);
+
 
 protected:
 	ArmBase **turrets;
@@ -77,6 +86,8 @@ protected:
 	double doorphase[2];
 
 	bool clientDead; ///< A flag indicating the death effects are performed in the client.
+
+	EntityCommand *respondingCommand;
 
 	static hardpoint_static *hardpoints;
 	static int nhardpoints;
@@ -91,6 +102,7 @@ protected:
 
 	static GLuint disp;
 
+	static Model *getModel();
 	static Motion *motions[2];
 
 	bool cancelBuild(int index, bool recalc_time);
@@ -112,6 +124,17 @@ struct EXPORT SetBuildPhaseCommand : public EntityCommand{
 	SetBuildPhaseCommand(double phase = 0.) : phase(phase){}
 	SetBuildPhaseCommand(HSQUIRRELVM, Entity&){}
 	double phase;
+};
+
+struct EXPORT GetFaceInfoCommand : public EntityCommand{
+	COMMAND_BASIC_MEMBERS(GetFaceInfoCommand, EntityCommand);
+	GetFaceInfoCommand(int hitpart = 0, Vec3d pos = Vec3d(0,0,0)) : hitpart(hitpart), pos(pos){}
+	GetFaceInfoCommand(HSQUIRRELVM, Entity&){}
+	Vec3d pos;
+	Vec3d retNormal;
+	Vec3d retPos;
+	int hitpart;
+	bool retPosHit; ///< Indicate whether input position projected onto the face plane is inside the face.
 };
 
 

@@ -12,23 +12,28 @@
 
 /// Astrobj drawn as a textured sphere
 class TexSphere : public Astrobj{
+public:
+	typedef Astrobj st;
+	typedef gltestp::dstring String;
+	typedef std::vector<String> StringList;
 protected:
-	cpplib::dstring texname, cloudtexname;
-	cpplib::dstring ringtexname, ringbacktexname;
+	String texname, cloudtexname;
+	String ringtexname, ringbacktexname;
 	unsigned int texlist, cloudtexlist; // should not really be here
 	double ringmin, ringmax, ringthick;
 	double atmodensity;
 	double oblateness;
 	float atmohor[4];
 	float atmodawn[4];
+	float albedo; ///< Albedo of this celestial body, (0,1)
 	int ring;
-	std::vector<cpplib::dstring> vertexShaderName, fragmentShaderName;
+	StringList vertexShaderName, fragmentShaderName;
 #ifndef DEDICATED
 	GLuint shader;
 	bool shaderGiveup; ///< Flag whether compilation of shader has been given up, to prevent the compiler to try the same code in vain.
 	/// Cloud sphere is separate geometry than the globe itself, so shaders and extra textures must be allocated separately.
 #endif
-	std::vector<cpplib::dstring> cloudVertexShaderName, cloudFragmentShaderName;
+	StringList cloudVertexShaderName, cloudFragmentShaderName;
 #ifndef DEDICATED
 	GLuint cloudShader;
 #endif
@@ -56,8 +61,8 @@ public:
 	};
 
 	struct Texture{
-		cpplib::dstring uniformname;
-		cpplib::dstring filename;
+		String uniformname;
+		String filename;
 #ifndef DEDICATED
 		mutable GLuint list;
 		mutable GLint shaderLoc;
@@ -70,7 +75,6 @@ public:
 #endif
 			cloudSync(false), flags(false){}
 	};
-	typedef Astrobj st;
 	typedef TexSphere tt;
 	TexSphere(Game *game);
 	TexSphere(const char *name, CoordSys *cs);
@@ -80,6 +84,7 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual bool readFile(StellarContext &, int argc, const char *argv[]);
+	void anim(double dt)override;
 	void draw(const Viewer *);
 	virtual double atmoScatter(const Viewer &vw)const;
 	virtual double getAtmosphericScaleHeight()const{return atmodensity;}
@@ -90,12 +95,15 @@ public:
 	TextureIterator endTextures()const{return textures.end();} ///< End of iteration.
 	Quatd cloudRotation()const{return rot.rotate(cloudPhase, 0, 1, 0);}
 	static bool sq_define(HSQUIRRELVM v);
+protected:
+	virtual void updateAbsMag(double dt); ///< Update absolute magnitude of this celestial body by other light sources
 private:
 	std::vector<Texture> textures;
-	static SQInteger sqf_get(HSQUIRRELVM);
-	static SQInteger sqf_set(HSQUIRRELVM);
+	const PropertyMap &propertyMap()const;
 	friend class DrawTextureSphere;
 	friend class DrawTextureSpheroid;
+	template<StringList TexSphere::*memb> static SQInteger slgetter(HSQUIRRELVM v, const CoordSys *);
+	template<StringList TexSphere::*memb> static SQInteger slsetter(HSQUIRRELVM v, CoordSys *);
 };
 
 

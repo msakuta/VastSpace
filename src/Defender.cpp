@@ -5,6 +5,7 @@
 #define NOMINMAX
 
 #include "Defender.h"
+#include "EntityRegister.h"
 #include "Player.h"
 #include "Bullet.h"
 #include "judge.h"
@@ -20,6 +21,7 @@
 #include "motion.h"
 #include "Game.h"
 #include "glw/PopupMenu.h"
+#include "SqInitProcess-ex.h"
 #ifndef DEDICATED
 #include "draw/effects.h"
 #include "mqo.h"

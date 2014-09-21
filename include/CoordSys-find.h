@@ -45,6 +45,7 @@ struct EXPORT CoordSys::FindCallback{
 
 /// \brief The const version of CoordSys::FindCallback.
 struct EXPORT CoordSys::FindCallbackConst{
+	virtual ~FindCallbackConst();
 	/// \brief The function to be called for each CoordSys it finds.
 	/// \return true if continue, otherwise enumeration aborts.
 	virtual bool invoke(const CoordSys *) = 0;
@@ -98,6 +99,9 @@ struct EXPORT FindBrightestAstrobj : CoordSys::FindCallbackConst{
 	/// those stars will improve performance if there are many stars.
 	///
 	/// Setting 0 will disable truncation.
+	double eclipseThreshold;
+
+	/// \brief The threshold to omit enumerating too faint light sources.
 	double threshold;
 
 	/// \brief The returned Astrobj that is casting shadow.
@@ -112,14 +116,29 @@ struct EXPORT FindBrightestAstrobj : CoordSys::FindCallbackConst{
 	/// \brief Tell the function to return the brightness in the brightness member variable.
 	bool returnBrightness;
 
+	/// \brief Desired count of Astrobjs to return in a list.  Default is 1.
+	int resultCount;
+
 	const CoordSys *retcs; ///< The CoordSys for returned point.
 	Vec3d src; ///< The source position from where observing brightness.
-	const Astrobj *result; ///< The returned Astrobj
+
+	const CoordSys *ignorecs; ///< The CoordSys to skip checking
+
+	struct ResultSet{
+		const Astrobj *cs;
+		double brightness;
+		Vec3d pos; ///< Position cache in returning CoordSys
+	};
+	std::vector<ResultSet> results; ///< The returned Astrobj
 
 	/// \brief The constructor with default parameters.
-	FindBrightestAstrobj(const CoordSys *retcs, const Vec3d &src) :
-		checkEclipse(false), returnBrightness(false), brightness(0), threshold(0), eclipseCaster(NULL),
-		retcs(retcs), src(src), result(NULL){}
+	FindBrightestAstrobj(const CoordSys *retcs, const Vec3d &src, int resultCount = 1, const CoordSys *ignorecs = NULL) :
+		checkEclipse(false), returnBrightness(false), brightness(0),
+		eclipseThreshold(0),
+		threshold(0),
+		eclipseCaster(NULL),
+		retcs(retcs), src(src), ignorecs(ignorecs),
+		resultCount(resultCount){}
 	bool invoke(const CoordSys *cs);
 };
 

@@ -2,6 +2,7 @@
  * \brief Implementation of TorusStation class's graphics related routines.
  */
 #include "../TorusStation.h"
+#include "../vastspace.h"
 #include "astrodraw.h"
 #include "CoordSys.h"
 #include "Universe.h"

@@ -2,23 +2,53 @@
  * \brief Implementation of LTurret and LMissileTurret.
  */
 #include "LTurret.h"
+#include "EntityRegister.h"
 #include "Bullet.h"
 #include "serial_util.h"
 #include "Missile.h"
+#include "SqInitProcess.h"
+#include "Game.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
 }
 
-#define LTURRET_VARIANCE (.001 * M_PI)
-#define LTURRETROTSPEED (.4*M_PI)
+double LTurret::modelScale = 0.001;
+double LTurret::hitRadius = 0.03;
+double LTurret::turretVariance = 0.001 * M_PI;
+double LTurret::turretIntolerance = M_PI / 20.;
+double LTurret::rotateSpeed = 0.4 * M_PI;
+double LTurret::manualRotateSpeed = rotateSpeed * 0.5;
+gltestp::dstring LTurret::modelFile = "models/lturret1.mqo";
+gltestp::dstring LTurret::turretObjName = "lturret";
+gltestp::dstring LTurret::barrelObjName = "lbarrel";
+gltestp::dstring LTurret::muzzleObjName = "lmuzzle";
 
 static const double lturret_range[2][2] = {-M_PI / 16., M_PI / 2, -M_PI, M_PI};
 
 
-const char *LTurret::classname()const{return "LTurret";}
-const unsigned LTurret::classid = registerClass("LTurret", Conster<LTurret>);
+Entity::EntityRegisterNC<LTurret> LTurret::entityRegister("LTurret");
+Entity::EntityStatic &LTurret::getStatic()const{return entityRegister;}
+
+void LTurret::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, _SC("models/LTurret.nut"),
+			SingleDoubleProcess(modelScale, _SC("modelScale")) <<=
+			SingleDoubleProcess(hitRadius, _SC("hitRadius")) <<=
+			SingleDoubleProcess(turretVariance, _SC("turretVariance")) <<=
+			SingleDoubleProcess(turretIntolerance, _SC("turretIntolerance")) <<=
+			SingleDoubleProcess(rotateSpeed, _SC("rotateSpeed")) <<=
+			SingleDoubleProcess(manualRotateSpeed, _SC("manualRotateSpeed")) <<=
+			StringProcess(modelFile, _SC("modelFile")) <<=
+			StringProcess(turretObjName, _SC("turretObjName")) <<=
+			StringProcess(barrelObjName, _SC("barrelObjName")) <<=
+			StringProcess(muzzleObjName, _SC("muzzleObjName"))
+			);
+		initialized = true;
+	}
+}
 
 void LTurret::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -45,7 +75,7 @@ void LTurret::unserialize(UnserializeContext &sc){
 }
 
 
-double LTurret::getHitRadius()const{return .03;}
+double LTurret::getHitRadius()const{return hitRadius;}
 
 void LTurret::anim(double dt){
 	st::anim(dt);
@@ -60,8 +90,10 @@ void LTurret::clientUpdate(double dt){
 	anim(dt);
 }
 
-float LTurret::reloadtime()const{return 4.;}
-float LTurret::bulletlife()const{return 5.;}
+float LTurret::getShootInterval()const{return 4.;}
+float LTurret::getBulletLife()const{return 5.;}
+double LTurret::getTurretVariance()const{return turretVariance;}
+double LTurret::getTurretIntolerance()const{return turretIntolerance;}
 
 /// \brief Returns transformation matrix and optional rotation quaternion indicating shooting bullet's orientation.
 /// \param mat Filled with transformation matrix.
@@ -73,8 +105,8 @@ void LTurret::shootTransform(Mat4d &mat, Quatd *qrot)const{
 	Mat4d rot = hp->rot.tomat4();
 	mat = mat2 * rot;
 	mat.translatein(0., .005, -0.0025);
-	double yaw = this->py[1] + (drseq(&w->rs) - .5) * LTURRET_VARIANCE;
-	double pitch = this->py[0] + (drseq(&w->rs) - .5) * LTURRET_VARIANCE;
+	double yaw = this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance();
+	double pitch = this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance();
 	mat2 = mat.roty(yaw);
 	mat = mat2.rotx(pitch);
 	if(qrot)
@@ -88,7 +120,7 @@ void LTurret::tryshoot(){
 	// Do not actually shoot in the client.
 	// Yes, we can shoot in the client.
 /*	if(!game->isServer()){
-		this->cooldown += reloadtime();
+		this->cooldown += getShootInterval();
 		return;
 	}*/
 
@@ -99,14 +131,14 @@ void LTurret::tryshoot(){
 		Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, -0.030);
 		Vec3d direction = -mat.vec3(2);
 		Bullet *pz;
-		pz = new Bullet(base, bulletlife(), 800.);
+		pz = new Bullet(base, getBulletLife(), 800.);
 		w->addent(pz);
 		pz->pos = mat.vp3(lturret_ofs);
-		pz->velo = direction * bulletspeed() + this->velo;
+		pz->velo = direction * getBulletSpeed() + this->velo;
 		pz->rot = qrot;
 		shootEffect(pz->pos, direction);
 	}
-	this->cooldown += reloadtime();
+	this->cooldown += getShootInterval();
 	this->mf += .3;
 	blowbackspeed += .05;
 	ammo -= 2;
@@ -131,35 +163,61 @@ void LTurret::shootEffect(const Vec3d&, const Vec3d&){}
 
 
 
+
+double LMissileTurret::modelScale = 0.0001 / 2.;
+double LMissileTurret::hitRadius = 0.03;
+double LMissileTurret::turretVariance = 0.001 * M_PI;
+double LMissileTurret::turretIntolerance = M_PI / 20.;
+double LMissileTurret::rotateSpeed = 0.4 * M_PI;
+double LMissileTurret::manualRotateSpeed = rotateSpeed * 0.5;
+gltestp::dstring LMissileTurret::modelFile = "models/missile_launcher.mqo";
+gltestp::dstring LMissileTurret::deployMotionFile = "models/missile_launcher_deploy.mot";
+
+
 LMissileTurret::LMissileTurret(Game *game) : st(game), deploy(0){
+	init();
 }
 
 LMissileTurret::LMissileTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), deploy(0){
+	init();
 	ammo = 6;
 }
 
-LMissileTurret::~LMissileTurret(){
+void LMissileTurret::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, _SC("models/LMissileTurret.nut"),
+			SingleDoubleProcess(modelScale, _SC("modelScale")) <<=
+			SingleDoubleProcess(hitRadius, _SC("hitRadius")) <<=
+			SingleDoubleProcess(turretVariance, _SC("turretVariance")) <<=
+			SingleDoubleProcess(turretIntolerance, _SC("turretIntolerance")) <<=
+			SingleDoubleProcess(rotateSpeed, _SC("rotateSpeed")) <<=
+			SingleDoubleProcess(manualRotateSpeed, _SC("manualRotateSpeed")) <<=
+			StringProcess(modelFile, _SC("modelFile")) <<=
+			StringProcess(deployMotionFile, _SC("deployMotionFile"))
+			);
+		initialized = true;
+	}
 }
 
-const char *LMissileTurret::classname()const{return "LMissileTurret";}
-const unsigned LMissileTurret::classid = registerClass("LMissileTurret", Conster<LMissileTurret>);
-double LMissileTurret::getHitRadius()const{return .03;}
+Entity::EntityRegisterNC<LMissileTurret> LMissileTurret::entityRegister("LMissileTurret");
 
-const double LMissileTurret::bscale = .0001 / 2.;
+double LMissileTurret::getHitRadius()const{return hitRadius;}
+
 
 int LMissileTurret::wantsFollowTarget()const{
-	return cooldown < 2. * reloadtime();
+	return cooldown < 2. * getShootInterval();
 }
 
 void LMissileTurret::anim(double dt){
 	st::anim(dt);
-	if(target && cooldown < 2. * reloadtime()){
+	if(target && cooldown < 2. * getShootInterval()){
 		deploy = approach(deploy, 1., dt, 0.);
 	}
 	else{
 		deploy = approach(deploy, 0., dt, 0.);
 		py[0] = approach(py[0], 0., dt, 0.);
-		py[0] = rangein(approach(py[0] + M_PI, 0. + M_PI, LTURRETROTSPEED * dt, 2 * M_PI) - M_PI, lturret_range[0][0], lturret_range[0][1]);
+		py[0] = rangein(approach(py[0] + M_PI, 0. + M_PI, getRotateSpeed() * dt, 2 * M_PI) - M_PI, lturret_range[0][0], lturret_range[0][1]);
 //		py[1] = approach(py[1], 0., dt, 0.);
 	}
 }
@@ -168,8 +226,8 @@ void LMissileTurret::clientUpdate(double dt){
 	anim(dt);
 }
 
-double LMissileTurret::bulletspeed()const{return 1.;}
-float LMissileTurret::reloadtime()const{return .5;}
+double LMissileTurret::getBulletSpeed()const{return 1.;}
+float LMissileTurret::getShootInterval()const{return .5;}
 
 void LMissileTurret::tryshoot(){
 	if(ammo <= 0)
@@ -181,10 +239,10 @@ void LMissileTurret::tryshoot(){
 	Mat4d rot = hp->rot.tomat4();
 	Mat4d mat = mat2 * rot;
 	mat.translatein(0., .01, 0.);
-	double yaw = this->py[1] + (drseq(&w->rs) - .5) * LTURRET_VARIANCE;
-	double pitch = this->py[0] + (drseq(&w->rs) - .5) * LTURRET_VARIANCE;
-	const Vec3d barrelpos = bscale * Vec3d(0, 200, 0) * deploy;
-	const Vec3d joint = bscale * Vec3d(0, 120, 60);
+	double yaw = this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance();
+	double pitch = this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance();
+	const Vec3d barrelpos = modelScale * Vec3d(0, 200, 0) * deploy;
+	const Vec3d joint = modelScale * Vec3d(0, 120, 60);
 	mat2 = mat.roty(yaw);
 	mat2.translatein(joint + barrelpos);
 	mat = mat2.rotx(pitch);
@@ -193,12 +251,12 @@ void LMissileTurret::tryshoot(){
 	Quatd qrot = base->rot * hp->rot * Quatd(0, sin(yaw / 2.), 0, cos(yaw / 2.)) * Quatd(sin(pitch / 2.), 0, 0, cos(pitch / 2.));
 	ammo--;
 	{
-		Vec3d lturret_ofs = bscale * Vec3d(80. * (ammo % 3 - 1), (40. + 40. + 80. * (ammo / 3)), 0);
+		Vec3d lturret_ofs = modelScale * Vec3d(80. * (ammo % 3 - 1), (40. + 40. + 80. * (ammo / 3)), 0);
 		Bullet *pz;
 		pz = new Missile(base, 15., 500., target);
 		w->addent(pz);
 		pz->pos = mat.vp3(lturret_ofs);
-		pz->velo = mat.dvp3(forward) * .1*bulletspeed() + this->velo;
+		pz->velo = mat.dvp3(forward) * .1*getBulletSpeed() + this->velo;
 		pz->rot = qrot;
 	}
 	targets[numof(targets) - ammo - 1] = target;
@@ -207,7 +265,7 @@ void LMissileTurret::tryshoot(){
 		ammo = 6;
 	}
 	else
-		this->cooldown += reloadtime();
+		this->cooldown += getShootInterval();
 	this->mf += .3;
 }
 

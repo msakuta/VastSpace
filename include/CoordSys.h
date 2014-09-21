@@ -60,9 +60,9 @@ public:
 	Vec3d omg; ///< Angular velocity
 	double csrad; ///< Bounding sphere radius around origin, used for culling or conversion.
 	CoordSys *parent; ///< Parent node
-	const char *name; ///< Reference name
-	const char *fullname; ///< Detailed name for displaying, etc.
-	std::vector<cpplib::dstring> extranames; ///< Aliases
+	gltestp::dstring name; ///< Reference name
+	gltestp::dstring fullname; ///< Detailed name for displaying, etc.
+	std::vector<gltestp::dstring> extranames; ///< Aliases
 	unsigned flags; ///< Utility flags
 
 	/* These trivial variables are only used on drawing to enhance speed by caching
@@ -294,6 +294,11 @@ public:
 	/// Universe is known to need this function to invoke Serializable's constructor.
 	CoordSys(Game *game);
 
+
+	struct PropertyEntry;
+	typedef std::map<gltestp::dstring, PropertyEntry> PropertyMap;
+	virtual const PropertyMap &propertyMap()const;
+
 protected:
 	static bool sq_define(HSQUIRRELVM);
 	static unsigned registerClass(Static &st);
@@ -302,6 +307,11 @@ protected:
 
 	/// The default getter
 	static SQInteger sqf_get(HSQUIRRELVM v);
+
+	/// Evaluate an expression with Squirrel one-linear compiler
+	/// \param str The Squirrel expression to evaluate
+	/// \param context The context name for the compiled buffer, printed on error
+	static double sqcalc(StellarContext&, const char *str, const SQChar *context = _SC("sqcalc"));
 
 private:
 	template<typename T, typename Callback>

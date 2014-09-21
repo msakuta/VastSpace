@@ -8,6 +8,9 @@
 #include "arms.h"
 #include "judge.h"
 #include "EntityCommand.h"
+#include "EntityRegister.h"
+#include "SqInitProcess-ex.h"
+#include "draw/OpenGLState.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -18,6 +21,28 @@ struct MotionPose;
 
 struct GetGunPosCommand;
 
+/// \biref Parameters for firearms
+struct FirearmStatic{
+	int maxAmmoValue;
+	double shootCooldownValue;
+	double bulletSpeedValue;
+	double bulletDamageValue;
+	double bulletVarianceValue;
+	double aimFovValue;
+	double shootRecoilValue;
+	HSQOBJECT sqShoot;
+	gltestp::dstring modelName;
+	gltestp::dstring overlayIconFile;
+
+	// Following variables are not configurable from Squirrel source,
+	// just automatically set by the program.
+	Model *model;
+	OpenGLState::weak_ptr<bool> modelInit;
+	GLuint overlayIcon;
+
+	FirearmStatic();
+};
+
 /// \brief The abstract class for personal firearms.
 class Firearm : public ArmBase{
 public:
@@ -25,7 +50,7 @@ public:
 
 	Firearm(Game *game) : st(game){}
 	Firearm(Entity *abase, const hardpoint_static *hp) : st(abase, hp){}
-	void shoot();
+	void shoot(double dt);
 	void reload();
 	virtual int maxammo()const = 0;
 	virtual double shootCooldown()const = 0;
@@ -35,6 +60,12 @@ public:
 	virtual double bulletVariance()const{return 0.01;}
 	virtual double aimFov()const{return 0.7;} ///< Magnitude of zoom when aiming expressed in FOV.
 	virtual double shootRecoil()const{return M_PI / 64.;}
+	virtual HSQOBJECT getSqShoot()const{return sq_nullobj();} ///< Returns shoot event handler for this firearm
+	virtual FirearmStatic *getFirearmStatic()const{return NULL;}
+
+protected:
+	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
+	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
 };
 
 
@@ -78,13 +109,13 @@ public:
 
 	static double getModelScale(){return modelScale;}
 
-	/// \brief Retrieves root path for this extension module.
-	static gltestp::dstring modPath(){return "mods/vastspace/";}
-
 	static Model *model;
 	static Motion *motions[];
 
 protected:
+	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
+	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
+
 	void init();
 	int shoot_infgun(double phi0, double theta0, double v, double damage, double variance, double t, Mat4d &gunmat);
 	void swapWeapon();
@@ -123,7 +154,9 @@ protected:
 	Vec3d hookpos;
 	Vec3d hookvelo;
 	int hookhitpart;
+	int standPart;
 	WeakPtr<Entity> hookedEntity;
+	WeakPtr<Entity> standEntity;
 	bool hookshot;
 	bool hooked;
 	bool hookretract;
@@ -146,72 +179,38 @@ protected:
 
 
 /// \brief M16A1 assault rifle. It's silly to see it in space.
-class M16 : public Firearm{
+class Rifle : public Firearm{
 public:
 	typedef Firearm st;
 
-	static const unsigned classid;
+	static EntityRegisterNC<Rifle> entityRegister;
 
-	M16(Game *game) : st(game){}
-	M16(Entity *abase, const hardpoint_static *hp);
-	const char *classname()const;
+	Rifle(Game *game) : st(game){init();}
+	Rifle(Entity *abase, const hardpoint_static *hp, FirearmStatic *fs);
+	EntityStatic &getStatic()const override{return entityRegister;}
 	void anim(double dt){}
 	void draw(WarDraw *);
 
-	static gltestp::dstring modPath(){return Soldier::modPath();}
+	static void s_init();
+
+	typedef std::map<gltestp::dstring, FirearmStatic> FirearmDefs;
+	static FirearmDefs firearmDefs;
 
 protected:
-	void init();
-	int maxammo()const{return maxAmmoValue;}
-	double shootCooldown()const{return shootCooldownValue;}
-	double bulletSpeed()const{return bulletSpeedValue;}
-	double bulletDamage()const{return bulletDamageValue;}
-	double bulletVariance()const{return bulletVarianceValue;}
-	double aimFov()const{return aimFovValue;}
-	double shootRecoil()const{return shootRecoilValue;}
+	int maxammo()const{return fs->maxAmmoValue;}
+	double shootCooldown()const{return fs->shootCooldownValue;}
+	double bulletSpeed()const{return fs->bulletSpeedValue;}
+	double bulletDamage()const{return fs->bulletDamageValue;}
+	double bulletVariance()const{return fs->bulletVarianceValue;}
+	double aimFov()const{return fs->aimFovValue;}
+	double shootRecoil()const{return fs->shootRecoilValue;}
+	HSQOBJECT getSqShoot()const override{return fs->sqShoot;}
+	FirearmStatic *getFirearmStatic()const override{return fs;}
 
-	static int maxAmmoValue;
-	static double shootCooldownValue;
-	static double bulletSpeedValue;
-	static double bulletDamageValue;
-	static double bulletVarianceValue;
-	static double aimFovValue;
-	static double shootRecoilValue;
+	FirearmStatic *fs;
+	static FirearmStatic defaultFS;
 };
 
-/// \brief M40 sniper rifle. It's silly to see it in space.
-class M40 : public Firearm{
-public:
-	typedef Firearm st;
-
-	static const unsigned classid;
-
-	M40(Game *game) : st(game){}
-	M40(Entity *abase, const hardpoint_static *hp);
-	const char *classname()const;
-	void anim(double dt){}
-	void draw(WarDraw *);
-
-	static gltestp::dstring modPath(){return Soldier::modPath();}
-
-protected:
-	void init();
-	int maxammo()const{return maxAmmoValue;}
-	double shootCooldown()const{return shootCooldownValue;}
-	double bulletSpeed()const{return bulletSpeedValue;}
-	double bulletDamage()const{return bulletDamageValue;}
-	double bulletVariance()const{return bulletVarianceValue;}
-	double aimFov()const{return aimFovValue;}
-	double shootRecoil()const{return shootRecoilValue;}
-
-	static int maxAmmoValue;
-	static double shootCooldownValue;
-	static double bulletSpeedValue;
-	static double bulletDamageValue;
-	static double bulletVarianceValue;
-	static double aimFovValue;
-	static double shootRecoilValue;
-};
 
 
 

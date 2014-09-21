@@ -5,6 +5,7 @@
 #define NOMINMAX // Prevent Windows.h from defining min and max macros
 
 #include "Sceptor.h"
+#include "EntityRegister.h"
 #include "Docker.h"
 #include "Bullet.h"
 #include "tefpol3d.h"
@@ -19,6 +20,7 @@
 #include "SqInitProcess-ex.h"
 #include "audio/playSound.h"
 #include "audio/wavemixer.h"
+#include "cmd.h"
 extern "C"{
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>

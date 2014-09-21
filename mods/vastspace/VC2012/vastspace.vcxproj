@@ -105,7 +105,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../squirrel3/include;../../../bullet/src;../../../lpng/;../../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;VASTSPACE_EXPORT=__declspec(dllexport);BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;SQUSEDOUBLE;_DEBUG;_WINDOWS;_USRDLL;VASTSPACE_EXPORT=__declspec(dllexport);BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -113,7 +113,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <DisableSpecificWarnings>4819;4251;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4819;4251;4275;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalDependencies>clib.lib;cpplib.lib;gltestplus.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010_debug.lib;BulletCollision_vs2010_debug.lib;LinearMath_vs2010_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -127,14 +127,14 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../squirrel3/include;../../../bullet/src;../../../lpng/;../../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;VASTSPACE_EXPORT=__declspec(dllexport);BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;SQUSEDOUBLE;_WINDOWS;_USRDLL;VASTSPACE_EXPORT=__declspec(dllexport);BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <DisableSpecificWarnings>4819;4251;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4819;4251;4275;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalDependencies>clib.lib;cpplib.lib;gltestplus.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -148,7 +148,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../squirrel3/include;../../../bullet/src;../../../lpng/;../../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;VASTSPACE_EXPORT=__declspec(dllexport);BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;SQUSEDOUBLE;NDEBUG;_WINDOWS;_USRDLL;VASTSPACE_EXPORT=__declspec(dllexport);BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -156,7 +156,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <DisableSpecificWarnings>4819;4251;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4819;4251;4275;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalDependencies>clib.lib;cpplib.lib;gltestplus.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010.lib;BulletCollision_vs2010.lib;LinearMath_vs2010.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -173,7 +173,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../squirrel3/include;../../../bullet/src;../../../lpng/;../../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;VASTSPACE_EXPORT=__declspec(dllexport);BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;SQUSEDOUBLE;_WINDOWS;_USRDLL;VASTSPACE_EXPORT=__declspec(dllexport);BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -181,7 +181,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <DisableSpecificWarnings>4819;4251;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4819;4251;4275;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalDependencies>clib.lib;cpplib.lib;gltestplus.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>

@@ -7,9 +7,6 @@
 #include "sqadapt.h"
 #include "Universe.h"
 #include "Game.h"
-extern "C"{
-#include "calc/calc.h"
-}
 //#include "cmd.h"
 //#include "spacewar.h"
 #include "astrodef.h"
@@ -28,33 +25,6 @@ extern "C"{
 #include <ctype.h>
 
 extern double gravityfactor;
-
-
-teleport::teleport(CoordSys *acs, const char *aname, int aflags, const Vec3d &apos) : cs(acs), name(aname), flags(aflags), pos(apos){
-}
-
-teleport::~teleport(){
-}
-
-void teleport::serialize(SerializeContext &sc){
-//	st::serialize(sc);
-	sc.o << cs;
-	sc.o << name;
-	sc.o << flags;
-	sc.o << pos;
-}
-
-void teleport::unserialize(UnserializeContext &sc){
-//	st::unserialize(sc);
-	cpplib::dstring name;
-	sc.i >> cs;
-	sc.i >> name;
-	sc.i >> flags;
-	sc.i >> pos;
-
-	this->name = strnewdup(name, name.len());
-}
-
 
 
 
@@ -204,14 +174,24 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 
 	const char *fname = sc.fname;
 	const CoordSys *root = sc.root;
-	struct varlist *vl = sc.vl;
 	int mode = 1;
 	int enable = 0;
-	HSQUIRRELVM v = sc.v;
+	HSQUIRRELVM v = sqvm;
 	cs->readFileStart(sc);
 	sqa::StackReserver sr(v);
+
+	// Create a temporary table for Squirrel to save CoordSys-local defines.
+	// Defined variables in parent CoordSys's can be referenced by delegation.
 	sq_newtable(v);
+	sq_pushobject(v, sc.vars);
 	sq_setdelegate(v, -2);
+
+	// Replace StellarContext's current variables table with the temporary table.
+	HSQOBJECT vars;
+	sq_getstackobj(v, -1, &vars);
+	HSQOBJECT old_vars = sc.vars;
+	sc.vars = vars;
+
 /*	sq_pushstring(v, _SC("CoordSys"), -1);
 	sq_get(v, 1);
 	sq_createinstance(v, -1);
@@ -241,21 +221,25 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 		cpplib::dstring s = argv[0];
 		cpplib::dstring ps = 1 < argv.size() ? argv[1] : "";
 		if(!strcmp(s, "define")){
-			struct var *v;
-			sc.vl->l = (var*)realloc(sc.vl->l, ++sc.vl->c * sizeof *sc.vl->l);
-			v = &sc.vl->l[sc.vl->c-1];
-			v->name = (char*)malloc(strlen(ps) + 1);
-			strcpy(v->name, ps);
-			v->type = var::CALC_D;
-			const char *av2 = argv[2];
-			v->value.d = 2 < argv.size() ? calc3(&av2, sc.vl, NULL) : 0.;
 			sq_pushstring(sc.v, ps, -1);
-			sq_pushfloat(sc.v, SQFloat(v->value.d));
+			sq_pushfloat(sc.v, SQFloat(CoordSys::sqcalc(sc, argv[2], s)));
 			sq_createslot(sc.v, -3);
 			continue;
 		}
 		else if(!strcmp(s, "include")){
-			StellarFileLoadInt(ps, cs, vl);
+			// Concatenate current file's path and given file name to obtain a relative path.
+			// Assume ASCII transparent encoding. (Note that it may not be the case if it's Shift-JIS or something,
+			// but for the moment, just do not use multibyte characters for data file names.)
+			const char *slash = strrchr(sc.fname, '\\');
+			const char *backslash = strrchr(sc.fname, '/');
+			const char *pathDelimit = slash ? slash : backslash;
+			gltestp::dstring path;
+			// Assume string before a slash or backslash a path
+			if(pathDelimit)
+				path.strncat(sc.fname, pathDelimit - sc.fname + 1);
+			path.strcat(ps);
+			StellarFileLoadInt(path, cs, &sc);
+			// TODO: Avoid recursive includes
 			continue;
 		}
 		if(!strcmp(argv[0], "new"))
@@ -307,19 +291,25 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			std::vector<const char *> cargs(argv.size());
 			for(int i = 0; i < argv.size(); i++)
 				cargs[i] = argv[i];
-			if(cs->readFile(sc, argv.size(), &cargs[0]));
-			else{
-	//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
-				printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s.operator const char *());
+			try{
+				if(cs->readFile(sc, argv.size(), &cargs[0]));
+				else{
+		//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
+					printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s.operator const char *());
+				}
+			}
+			catch(StellarError &e){
+				printf("%s(%ld): Error %s: %s\n", sc.fname, sc.line, cs->classname(), e.what());
 			}
 		}
 	}
 //	sq_poptop(v);
 	cs->readFileEnd(sc);
+	sc.vars = old_vars; // Restore original variables table before returning
 	return mode;
 }
 
-int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl){
+int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *prev_sc){
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	{
@@ -337,24 +327,22 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *
 		sc.scanner = new StellarStructureScanner(fp);
 		if(!fp)
 			return -1;
-		sc.vl = (varlist*)malloc(sizeof *sc.vl);
-		sc.vl->c = 0;
-		sc.vl->l = NULL;
-		sc.vl->next = vl;
-		sc.v = univ && univ->getGame ()? univ->getGame()->sqvm : g_sqvm;
 //		sqa_init(&sc.v);
-		sq_pushroottable(sc.v);
+
+		HSQUIRRELVM v = sqvm;
+		sc.v = v;
+
+		if(prev_sc)
+			sc.vars = prev_sc->vars; // If it's the first invocation, set the root table as delegate
+		else{
+			sq_pushroottable(v); // otherwise, obtain a delegate table from calling file
+			sq_getstackobj(v, -1, &sc.vars);
+		}
 
 		stellar_coordsys(sc, root);
 
 /*		CmdPrint("space.dat loaded.");*/
 		fclose(fp);
-		if(sc.vl->l){
-			for(unsigned i = 0; i < sc.vl->c; i++)
-				free(sc.vl->l[i].name);
-			free(sc.vl->l);
-		}
-		free(sc.vl);
 		delete sc.scanner;
 //		sq_close(sc.v);
 //		CmdPrintf("%s loaded time %lg", fname, TimeMeasLap(&tm));
@@ -364,5 +352,5 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *
 }
 
 int Game::StellarFileLoad(const char *fname){
-	return StellarFileLoadInt(fname, universe, const_cast<varlist*>(calc_mathvars()));
+	return StellarFileLoadInt(fname, universe, nullptr);
 }

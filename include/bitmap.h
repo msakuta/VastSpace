@@ -1,7 +1,45 @@
 #ifndef BITMAP_H
 #define BITMAP_H
 #include "export.h"
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <stdint.h>
+
+#define BI_RGB 0
+
+typedef uint32_t DWORD;
+typedef int32_t LONG;
+typedef uint16_t WORD;
+typedef uint16_t BYTE;
+
+typedef struct tagBITMAPINFOHEADER{
+        DWORD      biSize;
+        LONG       biWidth;
+        LONG       biHeight;
+        WORD       biPlanes;
+        WORD       biBitCount;
+        DWORD      biCompression;
+        DWORD      biSizeImage;
+        LONG       biXPelsPerMeter;
+        LONG       biYPelsPerMeter;
+        DWORD      biClrUsed;
+        DWORD      biClrImportant;
+} BITMAPINFOHEADER;
+
+typedef struct tagRGBQUAD {
+        BYTE    rgbBlue;
+        BYTE    rgbGreen;
+        BYTE    rgbRed;
+        BYTE    rgbReserved;
+} RGBQUAD;
+
+typedef struct tagBITMAPINFO {
+    BITMAPINFOHEADER    bmiHeader;
+    RGBQUAD             bmiColors[1];
+} BITMAPINFO;
+
+#endif
 
 #ifdef __cplusplus
 extern "C"{
@@ -24,6 +62,7 @@ EXPORT BITMAPINFO *ReadPNG(const char *, void (**freeproc)(BITMAPINFO*));
 
 // Following is obsolete functions
 
+#ifdef _WIN32
 typedef struct drawdata{
 	HDC hdc;
 	BITMAP bm;
@@ -35,7 +74,7 @@ void DrawBitmapPaletteTransparent(drawdata_t *dd, const BITMAPINFO *bi, const RG
 void DrawBitmapTransparent(drawdata_t *dd, const BITMAPINFO *bi, int x0, int y0, const RECT *r, unsigned tp);
 void DrawBitmapPaletteMask(drawdata_t *dd, const BITMAPINFO *image, const RGBQUAD *pal, int x0, int y0, const RECT *r, const BITMAPINFO *mask, unsigned maskindex);
 void DrawBitmapMask(drawdata_t *dd, const BITMAPINFO *image, int x0, int y0, const RECT *r, const BITMAPINFO *mask, unsigned maskindex);
-
+#endif
 
 BITMAPINFO *LoadJpeg(const char *jpgfilename);
 

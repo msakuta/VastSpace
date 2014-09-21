@@ -24,6 +24,7 @@ public:
 	virtual void draw(const Viewer*);
 	virtual bool readFile(StellarContext &sc, int argc, const char *argv[]);
 	virtual bool readFileEnd(StellarContext &sc);
+	const PropertyMap &propertyMap()const override;
 
 	double appmag(const Vec3d &pos, const CoordSys &cs)const; ///< Apparent magnitude
 
@@ -32,8 +33,6 @@ public:
 	static Vec3<float> spectralHSB(SpectralType);
 	static Vec3<float> spectralRGB(SpectralType);
 	static void drawsuncorona(Astrobj *a, const Viewer *vw);
-protected:
-	static SQInteger sqf_get(HSQUIRRELVM v);
 };
 
 #endif

@@ -32,6 +32,7 @@ extern cpplib::dstring cmdline;
 extern int console_cursorposdisp;
 #endif
 
+extern void (*CmdPrintHandler)(const char *line);
 
 #ifdef __cplusplus
 }

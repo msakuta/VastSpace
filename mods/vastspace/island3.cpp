@@ -2,6 +2,7 @@
  * \brief Implementation of Island3 class.
  */
 #include "island3.h"
+#include "EntityRegister.h"
 #include "ContainerHead.h"
 #include "SpacePlane.h"
 #include "astrodraw.h"

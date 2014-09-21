@@ -2,12 +2,16 @@
  * \brief Implementation of ArmBase derived classes.
  */
 #include "arms.h"
+#include "MTurret.h"
+#include "EntityRegister.h"
 #include "Bullet.h"
 #include "serial_util.h"
 #include "Missile.h"
 #include "EntityCommand.h"
 #include "motion.h"
 #include "Game.h"
+#include "SqInitProcess.h"
+#include "SqInitProcess-ex.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
@@ -133,33 +137,46 @@ void ArmBase::align(){
 
 
 
-#define STURRET_SCALE (.000005 * 3)
-#define MTURRET_SCALE (.00005)
-#define MTURRET_MAX_GIBS 30
-#define MTURRET_BULLETSPEED 2.
-#define MTURRET_VARIANCE (.001 * M_PI)
-#define MTURRET_INTOLERANCE (M_PI / 20.)
-#define MTURRETROTSPEED (.4*M_PI)
-#define MTURRETMANUALROTSPEED (MTURRETROTSPEED * .5)
+double MTurret::modelScale = 0.00005;
+double MTurret::hitRadius = 0.005;
+double MTurret::turretVariance = .001 * M_PI;
+double MTurret::turretIntolerance = M_PI / 20.;
+double MTurret::rotateSpeed = 0.4 * M_PI;
+double MTurret::manualRotateSpeed = rotateSpeed * 0.5;
+gltestp::dstring MTurret::modelFile = "models/turretz1.mqo";
+gltestp::dstring MTurret::turretObjName = "turretz1";
+gltestp::dstring MTurret::barrelObjName = "barrelz1";
+gltestp::dstring MTurret::muzzleObjName = "muzzlez1";
 
-
+Entity::EntityRegisterNC<MTurret> MTurret::entityRegister("MTurret");
 
 MTurret::MTurret(Entity *abase, const hardpoint_static *ahp) : st(abase, ahp), cooldown(0), mf(0), forceEnemy(false){
+	init();
 	health = getMaxHealth();
 	ammo = 1500;
 	py[0] = 0;
 	py[1] = 0;
 }
 
-const char *MTurret::idname()const{
-	return "mturret";
-};
+void MTurret::init(){
 
-const char *MTurret::classname()const{
-	return "MTurret";
-};
-
-const unsigned MTurret::classid = registerClass("MTurret", Conster<MTurret>);
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, _SC("models/MTurret.nut"),
+			SingleDoubleProcess(modelScale, _SC("modelScale")) <<=
+			SingleDoubleProcess(hitRadius, _SC("hitRadius")) <<=
+			SingleDoubleProcess(turretVariance, _SC("turretVariance")) <<=
+			SingleDoubleProcess(turretIntolerance, _SC("turretIntolerance")) <<=
+			SingleDoubleProcess(rotateSpeed, _SC("rotateSpeed")) <<=
+			SingleDoubleProcess(manualRotateSpeed, _SC("manualRotateSpeed")) <<=
+			StringProcess(modelFile, _SC("modelFile")) <<=
+			StringProcess(turretObjName, _SC("turretObjName")) <<=
+			StringProcess(barrelObjName, _SC("barrelObjName")) <<=
+			StringProcess(muzzleObjName, _SC("muzzleObjName"))
+			);
+		initialized = true;
+	}
+}
 
 void MTurret::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -181,6 +198,8 @@ const char *MTurret::dispname()const{
 	return "Mounted Turret";
 };
 
+Entity::EntityStatic &MTurret::getStatic()const{return entityRegister;}
+
 void MTurret::cockpitView(Vec3d &pos, Quatd &rot, int)const{
 	rot = this->rot * Quatd(0, sin(py[1]/2), 0, cos(py[1]/2)) * Quatd(sin(py[0]/2), 0, 0, cos(py[0]/2));
 	pos = this->pos + rot.trans(Vec3d(.0, .005, .015));
@@ -192,7 +211,7 @@ static const double mturret_range[2][2] = {-M_PI / 16., M_PI / 2, -M_PI, M_PI};
 void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[], int nignore_list){
 	MTurret *pt = this;
 	WarField *w = pb->w;
-	double bulletrange = bulletspeed() * bulletlife(); /* sense range */
+	double bulletrange = getBulletSpeed() * getBulletLife(); /* sense range */
 	double best = bulletrange * bulletrange;
 	static const Vec3d right(1., 0., 0.), left(-1., 0., 0.);
 	Entity *pt2, *closest = NULL;
@@ -254,13 +273,13 @@ int MTurret::wantsFollowTarget()const{return 2;}
 
 void MTurret::tryshoot(){
 	if(ammo <= 0){
-		this->cooldown += reloadtime();
+		this->cooldown += getShootInterval();
 		return;
 	}
 	static const avec3_t forward = {0., 0., -1.};
 	Bullet *pz;
 	Quatd qrot;
-	pz = new Bullet(base, bulletlife(), 120.);
+	pz = new Bullet(base, getBulletLife(), 120.);
 	w->addent(pz);
 	Mat4d mat2;
 	base->transform(mat2);
@@ -268,11 +287,11 @@ void MTurret::tryshoot(){
 	Mat4d rot = hp->rot.tomat4();
 	Mat4d mat = mat2 * rot;
 	mat.translatein(0., .001, -0.002);
-	mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
-	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
+	mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance());
+	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance());
 	pz->pos = mat.vp3(mturret_ofs);
-	pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
-	this->cooldown += reloadtime();
+	pz->velo = mat.dvp3(forward) * getBulletSpeed() + this->velo;
+	this->cooldown += getShootInterval();
 	this->mf += .2;
 	ammo--;
 }
@@ -308,15 +327,15 @@ void MTurret::anim(double dt){
 		if(game->player && controller){
 			double pydst[2] = {py[0], py[1]};
 			if(inputs.press & PL_A)
-				pydst[1] += MTURRETMANUALROTSPEED * dt;
+				pydst[1] += getManualRotateSpeed() * dt;
 			if(inputs.press & PL_D)
-				pydst[1] -= MTURRETMANUALROTSPEED * dt;
+				pydst[1] -= getManualRotateSpeed() * dt;
 			if(inputs.press & PL_W)
-				pydst[0] += MTURRETMANUALROTSPEED * dt;
+				pydst[0] += getManualRotateSpeed() * dt;
 			if(inputs.press & PL_S)
-				pydst[0] -= MTURRETMANUALROTSPEED * dt;
-			a->py[1] = approach(a->py[1] + M_PI, pydst[1] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
-			a->py[0] = rangein(approach(a->py[0] + M_PI, pydst[0] + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
+				pydst[0] -= getManualRotateSpeed() * dt;
+			a->py[1] = approach(a->py[1] + M_PI, pydst[1] + M_PI, getRotateSpeed() * dt, 2 * M_PI) - M_PI;
+			a->py[0] = rangein(approach(a->py[0] + M_PI, pydst[0] + M_PI, getRotateSpeed() * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
 			/*if(game->isServer())*/{
 				if(inputs.press & (PL_ENTER | PL_LCLICK)) while(a->cooldown < dt){
 					tryshoot();
@@ -324,7 +343,7 @@ void MTurret::anim(double dt){
 			}
 		}
 		else if(target && wantsFollowTarget()) do{/* estimating enemy position */
-			double bulletRange = bulletspeed() * bulletlife();
+			double bulletRange = getBulletSpeed() * getBulletLife();
 			bool notReachable = bulletRange * bulletRange < (target->pos - this->pos).slen();
 
 			// If not forced to attack certain target, forget about target that bullets have no way to reach.
@@ -342,14 +361,14 @@ void MTurret::anim(double dt){
 			velo = mat2.dvp3(target->velo);
 			pvelo = mat2.dvp3(pt->velo);
 
-			estimate_pos(epos, pos, velo, vec3_000, pvelo, bulletspeed(), w);
+			estimate_pos(epos, pos, velo, vec3_000, pvelo, getBulletSpeed(), w);
 				
 			/* these angles are in local coordinates */
 			phi = -atan2(epos[0], -(epos[2]));
 			theta = atan2(epos[1], sqrt(epos[0] * epos[0] + epos[2] * epos[2]));
-			a->py[1] = approach(a->py[1] + M_PI, phi + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI;
+			a->py[1] = approach(a->py[1] + M_PI, phi + M_PI, getRotateSpeed() * dt, 2 * M_PI) - M_PI;
 			if(1 < wantsFollowTarget())
-				a->py[0] = rangein(approach(a->py[0] + M_PI, theta + M_PI, MTURRETROTSPEED * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
+				a->py[0] = rangein(approach(a->py[0] + M_PI, theta + M_PI, getRotateSpeed() * dt, 2 * M_PI) - M_PI, mturret_range[0][0], mturret_range[0][1]);
 
 			/* shooter logic */
 			/*if(game->isServer())*/ while(a->cooldown < dt){
@@ -357,7 +376,7 @@ void MTurret::anim(double dt){
 				double pitch = a->py[0];
 
 				// Do not waste bullets at not reachable target.
-				if(!notReachable && fabs(phi - yaw) < MTURRET_INTOLERANCE && fabs(pitch - theta) < MTURRET_INTOLERANCE){
+				if(!notReachable && fabs(phi - yaw) < getTurretIntolerance() && fabs(pitch - theta) < getTurretIntolerance()){
 					tryshoot();
 				}
 				else
@@ -373,7 +392,7 @@ void MTurret::anim(double dt){
 }
 
 double MTurret::getHitRadius()const{
-	return .005;
+	return hitRadius;
 }
 
 Entity::Props MTurret::props()const{
@@ -386,15 +405,15 @@ cpplib::dstring MTurret::descript()const{
 	return cpplib::dstring() << idname() << " " << health << " " << ammo;
 }
 
-float MTurret::reloadtime()const{
+float MTurret::getShootInterval()const{
 	return 2.;
 }
 
-double MTurret::bulletspeed()const{
+double MTurret::getBulletSpeed()const{
 	return 2.;
 }
 
-float MTurret::bulletlife()const{
+float MTurret::getBulletLife()const{
 	return 3.;
 }
 
@@ -439,19 +458,65 @@ void MTurret::drawtra(WarDraw *){}
 
 
 
+double GatlingTurret::modelScale = 0.00005;
+double GatlingTurret::hitRadius = 0.005;
+double GatlingTurret::turretVariance = .001 * M_PI;
+double GatlingTurret::turretIntolerance = M_PI / 20.;
+double GatlingTurret::rotateSpeed = 0.4 * M_PI;
+double GatlingTurret::manualRotateSpeed = rotateSpeed * 0.5;
+double GatlingTurret::bulletDamage = 10.;
+double GatlingTurret::bulletLife = 10.;
+double GatlingTurret::shootInterval = 0.1;
+double GatlingTurret::bulletSpeed = 4.;
+int GatlingTurret::magazineSize = 50;
+double GatlingTurret::reloadTime = 5.;
+double GatlingTurret::muzzleFlashDuration = 0.075;
+double GatlingTurret::barrelRotSpeed = 2. * M_PI / shootInterval / 3.;
+Vec3d GatlingTurret::shootOffset = Vec3d(0., 30, 0.) * modelScale;
+gltestp::dstring GatlingTurret::modelFile = "models/turretg1.mqo";
+gltestp::dstring GatlingTurret::turretObjName = "turretg1";
+gltestp::dstring GatlingTurret::barrelObjName = "barrelg1";
+gltestp::dstring GatlingTurret::barrelRotObjName = "barrelsg1";
+gltestp::dstring GatlingTurret::muzzleObjName = "muzzleg1";
 
-GatlingTurret::GatlingTurret(Game *game) : st(game), barrelrot(0), barrelomg(0){}
+GatlingTurret::GatlingTurret(Game *game) : st(game), barrelrot(0), barrelomg(0){init();}
 
 GatlingTurret::GatlingTurret(Entity *abase, const hardpoint_static *hp) : st(abase, hp), barrelrot(0), barrelomg(0){
-	ammo = 50;
+	init();
+	ammo = magazineSize;
 }
 
-const Vec3d GatlingTurret::barrelpos(0., 30, 0.);
+void GatlingTurret::init(){
 
-const char *GatlingTurret::idname()const{return "GatlingTurret";}
-const char *GatlingTurret::classname()const{return "GatlingTurret";}
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, _SC("models/GatlingTurret.nut"),
+			SingleDoubleProcess(modelScale, _SC("modelScale")) <<=
+			SingleDoubleProcess(hitRadius, _SC("hitRadius")) <<=
+			SingleDoubleProcess(turretVariance, _SC("turretVariance")) <<=
+			SingleDoubleProcess(turretIntolerance, _SC("turretIntolerance")) <<=
+			SingleDoubleProcess(rotateSpeed, _SC("rotateSpeed")) <<=
+			SingleDoubleProcess(manualRotateSpeed, _SC("manualRotateSpeed")) <<=
+			SingleDoubleProcess(bulletDamage, _SC("bulletDamage")) <<=
+			SingleDoubleProcess(bulletLife, _SC("bulletLife")) <<=
+			SingleDoubleProcess(shootInterval, _SC("shootInterval")) <<=
+			SingleDoubleProcess(bulletSpeed, _SC("bulletSpeed")) <<=
+			IntProcess(magazineSize, _SC("magazineSize")) <<=
+			SingleDoubleProcess(reloadTime, _SC("reloadTime")) <<=
+			SingleDoubleProcess(barrelRotSpeed, _SC("barrelRotSpeed")) <<=
+			Vec3dProcess(shootOffset, "shootOffset") <<=
+			StringProcess(modelFile, _SC("modelFile")) <<=
+			StringProcess(turretObjName, _SC("turretObjName")) <<=
+			StringProcess(barrelObjName, _SC("barrelObjName")) <<=
+			StringProcess(barrelRotObjName, _SC("barrelRotObjName")) <<=
+			StringProcess(muzzleObjName, _SC("muzzleObjName"))
+			);
+		initialized = true;
+	}
+}
 
-const unsigned GatlingTurret::classid = registerClass("GatlingTurret", Conster<GatlingTurret>);
+
+Entity::EntityRegisterNC<GatlingTurret> GatlingTurret::entityRegister("GatlingTurret");
 
 void GatlingTurret::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -460,6 +525,8 @@ void GatlingTurret::serialize(SerializeContext &sc){
 void GatlingTurret::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 }
+
+Entity::EntityStatic &GatlingTurret::getStatic()const{return entityRegister;}
 
 const char *GatlingTurret::dispname()const{
 	return "Gatling Turret";
@@ -471,36 +538,41 @@ void GatlingTurret::anim(double dt){
 	st::anim(dt);
 }
 
-float GatlingTurret::reloadtime()const{
-	return .1;
+float GatlingTurret::getShootInterval()const{
+	return shootInterval;
 }
 
-double GatlingTurret::bulletspeed()const{
-	return 4.;
+double GatlingTurret::getBulletSpeed()const{
+	return bulletSpeed;
+}
+
+float GatlingTurret::getBulletLife()const{
+	return bulletLife;
 }
 
 void GatlingTurret::tryshoot(){
-	if(ammo <= 0)
+	if(ammo <= 0){
+		ammo = magazineSize;
+		this->cooldown += reloadTime;
 		return;
-	static const avec3_t forward = {0., 0., -1.};
-	Bullet *pz;
-	Quatd qrot;
-	pz = new Bullet(base, 3., 10.);
+	}
+	static const Vec3d forward(0., 0., -1.);
+	Bullet *pz = new Bullet(base, getBulletLife(), bulletDamage);
 	w->addent(pz);
 	Mat4d mat;
 	this->transform(mat);
-	mat.translatein(barrelpos * MTURRET_SCALE);
-	Mat4d mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
-	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * MTURRET_VARIANCE);
+	mat.translatein(shootOffset);
+	Mat4d mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance());
+	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance());
 	pz->pos = mat.vp3(mturret_ofs);
-	pz->velo = mat.dvp3(forward) * bulletspeed() + this->velo;
-	this->cooldown += reloadtime();
-	this->mf += .075;
-	this->barrelomg = 2. * M_PI / reloadtime() / 3.;
+	pz->velo = mat.dvp3(forward) * getBulletSpeed() + this->velo;
+	this->cooldown += getShootInterval();
+	this->mf += muzzleFlashDuration;
+	this->barrelomg = barrelRotSpeed;
 	ammo--;
-	if(!ammo){
-		ammo = 50;
-		this->cooldown += 5.;
+	if(ammo <= 0){
+		ammo = magazineSize;
+		this->cooldown += reloadTime;
 	}
 }
 

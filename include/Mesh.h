@@ -9,7 +9,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#include <GL/GL.h>
+#include <GL/gl.h>
 #include <vector>
 
 #define EXTENDABLE 1
@@ -146,7 +146,7 @@ struct EXPORT Mesh{
 	void polyDraw(Flags flags, Cache *c, int i, Index *plast, const MeshTex *)const;
 	void drawPoly(int i, Flags flags, Cache *c)const;
 	void decalDraw(Flags flags, Cache *c, const MeshTex *tex, Decal *sd, void *sdg)const;
-	Index Mesh::add_vertex(const Vec &v);
+	Index add_vertex(const Vec &v);
 	Primitive **add_poly();
 	static void add_polyvert(Polygon **p, Index i, Index j);
 	static void add_uvpolyvert(UVPolygon **uv, Index i, Index j, Index k);

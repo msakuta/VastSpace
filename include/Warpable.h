@@ -29,7 +29,6 @@ public:
 	virtual void enterField(WarField*);
 	virtual void anim(double dt);
 	virtual void drawHUD(wardraw_t *);
-	virtual int popupMenu(PopupMenu &list);
 	virtual Warpable *toWarpable();
 	virtual Props props()const;
 	virtual double maxenergy()const = 0;
@@ -45,6 +44,12 @@ public:
 
 protected:
 	virtual void init();
+
+	static HSQOBJECT sqPopupMenu;
+	HSQOBJECT getSqPopupMenu()override;
+
+	virtual SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const;
+	virtual SQInteger sqSet(HSQUIRRELVM v, const SQChar *name);
 };
 
 

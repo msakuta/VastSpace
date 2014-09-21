@@ -4,6 +4,7 @@
 #ifndef DRAWTEXTURESPHERE_H
 #define DRAWTEXTURESPHERE_H
 #include "../TexSphere.h"
+#include "CoordSys-find.h"
 #include "judge.h"
 
 
@@ -17,6 +18,7 @@ protected:
 	const Viewer *vw;
 	const Vec3d sunpos;
 	const Vec3d apos;
+	std::vector<FindBrightestAstrobj::ResultSet> lightingStars;
 	Vec4f m_mat_diffuse;
 	Vec4f m_mat_ambient;
 	GLuint *ptexlist;
@@ -66,6 +68,7 @@ public:
 	tt &ringRange(double ringmin, double ringmax){m_ringmin = ringmin; m_ringmax = ringmax; return *this;}
 	tt &cloudRotation(const Quatd &acloudrot){m_cloudRotation = acloudrot; return *this;}
 	tt &noisePos(const Vec3f &apos){m_noisePos = apos; return *this;}
+	tt &lightingStar(const std::vector<FindBrightestAstrobj::ResultSet> &a){lightingStars = a; return *this;}
 	virtual bool draw();
 
 	static const GLenum cubetarget[6]; ///< The target OpenGL texture units for each direction of the cube.
@@ -87,6 +90,12 @@ public:
 	/// \param flags DrawTextureSphere flags.
 	static GLuint ProjectSphereCubeImage(const char *fname, int flags);
 
+protected:
+	/// \brief Sets up lights from lightingStars
+	void setupLight();
+	/// <summary> Draw simple shape if apparent size of this celestial body is so small </summary>
+	/// <returns> True if it was small enough to draw simplified version; derived classes should not draw further if so </returns>
+	bool drawSimple();
 };
 
 /// \brief A class that draw textured sphere.

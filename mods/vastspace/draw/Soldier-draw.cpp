@@ -4,6 +4,7 @@
 #define NOMINMAX
 
 #include "../Soldier.h"
+#include "../vastspace.h"
 #include "Viewer.h"
 #include "Player.h"
 #include "Game.h"
@@ -569,6 +570,65 @@ void Soldier::drawHUD(WarDraw *wd){
 			gldprintf("%s", arms[0]->classname());
 			glRasterPos3d(-left - 200. / m, - 12. / m, -1);
 			gldprintf("%d / %d", arms[0]->ammo, arms[0]->maxammo());
+
+			static suftexparam_t params = {STP_ALPHA};
+			glPushAttrib(GL_TEXTURE_BIT | GL_CURRENT_BIT);
+			for(int i = 0; i < numof(arms); i++){
+				FirearmStatic *fs = arms[i]->getFirearmStatic();
+				if(!fs)
+					continue;
+				if(fs->overlayIcon == 0)
+					fs->overlayIcon = CallCacheBitmap5(fs->overlayIconFile, modPath() << fs->overlayIconFile, &params, NULL, NULL);
+				if(fs->overlayIcon == 0)
+					continue;
+				glCallList(fs->overlayIcon);
+				glColor4fv(i == 0 ? Vec4f(1,1,1,1) : Vec4f(0.5,0.5,0.5,1.));
+				glBegin(GL_QUADS);
+				glTexCoord2f(0,0); glVertex2d(-left - 0.40, 0.250 - i * 0.125);
+				glTexCoord2f(0,1); glVertex2d(-left - 0.40, 0.375 - i * 0.125);
+				glTexCoord2f(1,1); glVertex2d(-left - 0.15, 0.375 - i * 0.125);
+				glTexCoord2f(1,0); glVertex2d(-left - 0.15, 0.250 - i * 0.125);
+				glEnd();
+			}
+			glPopAttrib();
+
+			static GLuint roundModel = CallCacheBitmap5("round.png", modPath() << "models/round.png", &params, NULL, NULL);
+			if(roundModel != 0){
+				glPushAttrib(GL_TEXTURE_BIT | GL_CURRENT_BIT);
+				// Is it OK to share the same texture for all the firearms?
+				glCallList(roundModel);
+				for(int i = 0; i < numof(arms); i++){
+					Firearm *arm = arms[i];
+					glColor4fv(i == 0 ? Vec4f(1,1,1,1) : Vec4f(0.5,0.5,0.5,1.));
+					// The texture has only one round, so we repeat the texture to show multiple rounds.
+					float f = (double)arm->ammo / arm->maxammo();
+					glBegin(GL_QUADS);
+					glTexCoord2f(0, 0); glVertex2d(-left - 0.50, 0.375 - i * 0.125);
+					glTexCoord2f(0, arm->ammo); glVertex2d(-left - 0.50, 0.375 - (f + i) * 0.125);
+					glTexCoord2f(1, arm->ammo); glVertex2d(-left - 0.40, 0.375 - (f + i) * 0.125);
+					glTexCoord2f(1, 0); glVertex2d(-left - 0.40, 0.375 - i * 0.125);
+					glEnd();
+				}
+				glPopAttrib();
+			}
+		}
+
+		// Icon to show the current status (standing on a surface or floating about space)
+		static suftexparam_t params = {STP_ALPHA};
+		static GLuint statusFreeModel = CallCacheBitmap5("Soldier-free.png", modPath() << "models/Soldier-free.png", &params, NULL, NULL);
+		static GLuint statusStandModel = CallCacheBitmap5("Soldier-stand.png", modPath() << "models/Soldier-stand.png", &params, NULL, NULL);
+		GLuint statusModel = standEntity ? statusStandModel : statusFreeModel;
+		if(statusModel != 0){
+			glPushAttrib(GL_TEXTURE_BIT | GL_CURRENT_BIT);
+			glCallList(statusModel);
+			glColor4f(1,1,1,1);
+			glBegin(GL_QUADS);
+			glTexCoord2f(0, 0); glVertex2d(-left - 0.50, -0.40);
+			glTexCoord2f(0, 1); glVertex2d(-left - 0.50, -0.30);
+			glTexCoord2f(1, 1); glVertex2d(-left - 0.40, -0.30);
+			glTexCoord2f(1, 0); glVertex2d(-left - 0.40, -0.40);
+			glEnd();
+			glPopAttrib();
 		}
 
 		// Health value text. Leave space for the task bar on the left.
@@ -781,9 +841,7 @@ bool Soldier::getGunPos(GetGunPosCommand &ggp){
 
 
 
-void M16::draw(WarDraw *wd){
-	static OpenGLState::weak_ptr<bool> init;
-	static Model *model = NULL;
+void Rifle::draw(WarDraw *wd){
 	double pixels;
 
 	/* cull object */
@@ -791,11 +849,11 @@ void M16::draw(WarDraw *wd){
 		return;
 	wd->lightdraws++;
 
-	if(!init){
-		model = LoadMQOModel(modPath() << "models/m16.mqo");
-		init.create(*openGLState);
+	if(!fs->modelInit){
+		fs->model = LoadMQOModel(modPath() << fs->modelName);
+		fs->modelInit.create(*openGLState);
 	}
-	if(!model)
+	if(!fs->model)
 		return;
 
 	double scale = Soldier::getModelScale();
@@ -816,48 +874,7 @@ void M16::draw(WarDraw *wd){
 		gldTranslate3dv(ggp.pos);
 		gldMultQuat(ggp.rot);
 		glScaled(-scale, scale, -scale);
-		DrawMQOPose(model, NULL);
-		glPopMatrix();
-	}
-}
-
-
-void M40::draw(WarDraw *wd){
-	static OpenGLState::weak_ptr<bool> init;
-	static Model *model = NULL;
-	double pixels;
-
-	/* cull object */
-	if(wd->vw->gc->cullFrustum(pos, .003))
-		return;
-	wd->lightdraws++;
-
-	if(!init){
-		model = LoadMQOModel(modPath() << "models/m40.mqo");
-		init.create(*openGLState);
-	}
-	if(!model)
-		return;
-
-	double scale = Soldier::getModelScale();
-
-	// Retrieve gun id
-	int gunId = 0;
-	for(int i = 0; i < base->armsCount(); i++){
-		if(base->armsGet(i) == this){
-			gunId = i;
-			break;
-		}
-	}
-
-	// Send GetGunPosCommand to base Entity to query transformation for held weapons.
-	GetGunPosCommand ggp(gunId);
-	if(base->command(&ggp)){
-		glPushMatrix();
-		gldTranslate3dv(ggp.pos);
-		gldMultQuat(ggp.rot);
-		glScaled(-scale, scale, -scale);
-		DrawMQOPose(model, NULL);
+		DrawMQOPose(fs->model, NULL);
 		glPopMatrix();
 	}
 }

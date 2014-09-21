@@ -8,6 +8,7 @@
 #include "Game.h"
 #include "SqInitProcess.h"
 #include "judge.h"
+#include <btBulletDynamicsCommon.h> // btCompoundShape
 #ifdef DEDICATED
 typedef unsigned GLuint;
 #else
@@ -47,16 +48,6 @@ protected:
 	class EXPORT MassProcess : public SingleDoubleProcess{
 	public:
 		MassProcess(double &mass) : SingleDoubleProcess(mass, "mass"){}
-	};
-
-	/// \brief Processes single Vec3d with given variable name.
-	class EXPORT Vec3dProcess : public SqInitProcess{
-	public:
-		Vec3d &vec;
-		const SQChar *name;
-		bool mandatory;
-		Vec3dProcess(Vec3d &vec, const SQChar *name, bool mandatory = true) : vec(vec), name(name), mandatory(mandatory){}
-		virtual void process(HSQUIRRELVM)const;
 	};
 
 	class EXPORT HitboxProcess : public SqInitProcess{
@@ -109,6 +100,13 @@ protected:
 	/// \param transmat The transformation for the lights. Can be NULL to specify
 	///        the default transformation, i.e. return value of transform().
 	void drawNavlights(WarDraw *wd, const NavlightList &navlights, const Mat4d *transmat = NULL);
+
+	/// \brief An utility function that constructs a shape by a HitBoxList.
+	/// \param hitboxes The input hitboxes, probably loaded from a initialization script.
+	/// \param shapeStorage The static storage for a class to store shape object for reuse.
+	///        Entities have distinct shapes, but the same Entity class instances usually share
+	///        the shape.  In this case, pass a static shape object to this argument.
+	bool buildBodyByHitboxes(const HitBoxList &hitboxes, btCompoundShape *&shapeStorage);
 };
 
 
@@ -117,7 +115,7 @@ protected:
 //    Inline Implementation
 //-----------------------------------------------------------------------------
 
-inline ModelEntity::Navlight::Navlight() : pos(0,0,0), color(1,0,0,1), radius(0.01f), period(1.), phase(0.), pattern(Triangle), duty(0.1){
+inline ModelEntity::Navlight::Navlight() : pos(0,0,0), color(1,0,0,1), radius(0.01f), period(1.), phase(0.), pattern(Triangle), duty(0.1f){
 }
 
 

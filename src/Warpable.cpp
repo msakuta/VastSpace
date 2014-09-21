@@ -1,79 +1,37 @@
 /** \file
  * \brief Implementation of Warpable class.
  */
+#define NOMINMAX
+#define _CRT_SECURE_NO_WARNINGS
 #include "Warpable.h"
-#include "Player.h"
-#include "Bullet.h"
-#include "CoordSys.h"
-#include "Viewer.h"
 #include "cmd.h"
-#include "judge.h"
 #include "astrodef.h"
-#include "stellar_file.h"
 #include "astro_star.h"
-#include "serial_util.h"
-#include "EntityCommand.h"
 #include "btadapt.h"
-#include "sqadapt.h"
-#include "arms.h"
-#include "Docker.h"
 #include "Builder.h"
-//#include "sensor.h"
-#include "motion.h"
 #ifndef DEDICATED
-#include "draw/WarDraw.h"
-#include "glstack.h"
-#include "glsl.h"
+#include "astrodraw.h"
 #endif
-#include "dstring.h"
-#include "Game.h"
+#include "StarEnum.h"
 #include "StaticInitializer.h"
-extern "C"{
-#ifdef _WIN32
+#include "sqadapt.h"
+#include "SqInitProcess-ex.h"
+#include "galaxy_field.h"
 #include "bitmap.h"
-#endif
-#include <clib/c.h>
-#include <clib/cfloat.h>
+#include "Viewer.h"
+extern "C"{
 #include <clib/mathdef.h>
-#include <clib/suf/sufbin.h>
 #include <clib/timemeas.h>
-#ifdef _WIN32
-#include <clib/suf/sufdraw.h>
-#include <clib/GL/gldraw.h>
-#include <clib/GL/multitex.h>
-#include <clib/wavsound.h>
-#endif
-#include <clib/zip/UnZip.h>
 }
-#include <cpplib/vec4.h>
-#include <assert.h>
-#include <string.h>
+#include <cpplib/CRC32.h>
 #include <fstream>
-#include <btBulletDynamicsCommon.h>
-#include "BulletCollision/CollisionDispatch/btCollisionWorld.h"
-
-/*
-Raytracer uses the Convex rayCast to visualize the Collision Shapes/Minkowski Sum.
-Very basic raytracer, rendering into a texture.
-*/
-
-///Low level demo, doesn't include btBulletCollisionCommon.h
-
-#include "LinearMath/btQuaternion.h"
-#include "LinearMath/btTransform.h"
-
-//#include "BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h"
-//#include "BulletCollision/NarrowPhaseCollision/btSubSimplexConvexCast.h"
-#include "BulletCollision/NarrowPhaseCollision/btGjkConvexCast.h"
-//#include "BulletCollision/NarrowPhaseCollision/btContinuousConvexCollision.h"
-
-//#include "BulletCollision/CollisionShapes/btSphereShape.h"
-//#include "BulletCollision/CollisionShapes/btMultiSphereShape.h"
-
-//#include "BulletCollision/CollisionShapes/btConvexHullShape.h"
-//#include "LinearMath/btAabbUtil2.h"
-//#include "BulletCollision/CollisionShapes/btBoxShape.h"
-//#include "BulletCollision/CollisionShapes/btCompoundShape.h"
+#include <tuple>
+#include <functional>
+#include <deque>
+#ifndef _WIN32
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
 
 
 
@@ -92,234 +50,6 @@ Very basic raytracer, rendering into a texture.
 
 double g_capacitor_gen_factor = 1.;
 
-/* color sequences */
-#if 0
-#define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
-static const struct color_node cnl_orangeburn[] = {
-	{0.1, COLOR32RGBA(255,255,191,255)},
-	{0.15, COLOR32RGBA(255,255,31,191)},
-	{0.45, COLOR32RGBA(255,127,31,95)},
-	{2.3, COLOR32RGBA(255,31,0,63)},
-};
-static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 3.);
-static const struct color_node cnl_shortburn[] = {
-	{0.1, COLOR32RGBA(255,255,191,255)},
-	{0.15, COLOR32RGBA(255,255,31,191)},
-	{0.25, COLOR32RGBA(255,127,31,0)},
-};
-static const struct color_sequence cs_shortburn = DEFINE_COLSEQ(cnl_shortburn, (COLOR32)-1, 0.5);
-#endif
-
-
-#if 0
-
-
-static void warp_anim(struct war_field *, double dt);
-static void warp_draw(struct war_field *, struct war_draw_data *);
-static int warp_pointhit(warf_t *w, const avec3_t *pos, const avec3_t *velo, double dt, const struct contact_info *);
-static void warp_accel(warf_t *w, avec3_t *dst, const avec3_t *srcpos, const avec3_t *srcvelo);
-static double warp_atmospheric_pressure(warf_t *w, const avec3_t *pos);
-static int warp_spherehit(warf_t *w, const avec3_t *pos, double rad, struct contact_info *ci);
-static int warp_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos);
-
-static struct war_field_static warp_static = {
-	warp_anim,
-	WarPostFrame,
-	WarEndFrame,
-	warp_draw,
-	warp_pointhit,
-	warp_accel,
-	warp_atmospheric_pressure,
-	warp_atmospheric_pressure,
-	warp_spherehit,
-	warp_orientation,
-};
-
-
-#endif
-
-#if 0
-static void Warp::anim(struct war_field *w, double dt){
-	struct bullet **ppb = &w->bl;
-	static int wingfile = 0;
-	static int walks = 0, apaches = 2;
-
-	w->effects = 0;
-
-	w->war_time += dt;
-
-	while(*ppb){
-		struct bullet *pb = *ppb;
-		if(!pb->vft->anim(pb, w, w->tell, dt)){
-			pb->active = 0;
-		}
-		ppb = &pb->next;
-	}
-
-	/* tank think */
-	{
-		entity_t **ppt = &w->tl;
-		for(; *ppt; ppt = &(*ppt)->next){
-			((struct entity_private_static*)(*ppt)->vft)->anim(*ppt, w, dt);
-		}
-	}
-#if 0
-
-	/* postframe process. do not change activity state while in postframe functions. */
-	{
-		struct bullet *pb = w->bl;
-		for(; pb; pb = pb->next)
-			pb->vft->postframe(pb);
-	}
-	{
-		entity_t *pt = w->tl;
-		for(; pt; pt = pt->next) if(((struct entity_private_static*)pt->vft)->postframe)
-			((struct entity_private_static*)pt->vft)->postframe(pt);
-	}
-
-	/* purge inactive entities */
-/*	ppb = &w->bl;
-	while(*ppb){
-		struct bullet *pb = *ppb;
-		if(!pb->active){
-			if(pb == (struct bullet*)w->pl->chase)
-				w->pl->chase = NULL;
-			{
-				struct bullet *pb = (*ppb)->next;
-				free(*ppb);
-				*ppb = pb;
-			}
-			continue;
-		}
-		ppb = &pb->next;
-	}*/
-	{
-		entity_t **ppt;
-		warf_t *dw;
-		for(ppt = &w->tl; *ppt; ) if(!(*ppt)->active && !(1 & ((struct entity_private_static*)(*ppt)->vft)->reuse) /*&& ((*ppt)->vft == &flare_s || (*ppt)->vft != &fly_s && (*ppt)->vft != &tank_s)*/){
-
-			/* there are two possibilities to disappear from a warfield, that is
-			  to be destroyed or to be transported to another field. we determine
-			  this by calling the virtual function designed for this. 
-			   note that activity state must be disabled prior to transportation,
-			  to force referrers to clear their inter-field references that tend to
-			  cause problems due to assumption referrer and referree belongs to the
-			  same field. */
-			if((*ppt)->vft->warp_dest && (dw = (*ppt)->vft->warp_dest(*ppt, w)) && dw != w){
-				entity_t *pt = *ppt;
-				*ppt = pt->next;
-				pt->next = dw->tl;
-				dw->tl = pt;
-				pt->active = 1;
-			}
-			else{
-				entity_t *next = (*ppt)->next;
-				if(!(2 & ((struct entity_private_static*)(*ppt)->vft)->reuse)){
-					if(*ppt == w->pl->chase)
-						w->pl->chase = NULL;
-					if(*ppt == w->pl->control)
-						w->pl->control = NULL;
-					if(*ppt == w->pl->selected)
-						w->pl->selected = NULL;
-					if((*ppt)->vft->destruct)
-						(*ppt)->vft->destruct(*ppt);
-				}
-				if(!(2 & ((struct entity_private_static*)(*ppt)->vft)->reuse))
-					free(*ppt);
-				*ppt = next;
-			}
-		}
-		else
-			ppt = &(*ppt)->next;
-	}
-#endif
-
-}
-
-static void warp_draw(struct war_field *w, struct war_draw_data *wd){
-	amat4_t lightmats[3];
-	struct bullet **ppb;
-
-	wd->lightdraws = 0;
-	wd->light_on(wd);
-
-	g_gldcache.valid = 0;
-	{
-		entity_t *pt;
-		for(pt = w->tl; pt; pt = pt->next) if(((const struct entity_private_static*)pt->vft)->draw){
-			((const struct entity_private_static*)pt->vft)->draw(pt, wd);
-		}
-	}
-	{
-		GLfloat whity[4] = {1., 1., 1., 1.};
-		gldMaterialfv(GL_FRONT, GL_DIFFUSE, &whity, &g_gldcache);
-		gldMaterialfv(GL_FRONT, GL_AMBIENT, &whity, &g_gldcache);
-	}
-	for(ppb = &w->bl; *ppb; ppb = &(*ppb)->next){
-		struct bullet *pb = *ppb;
-		pb->vft->drawmodel(pb, wd);
-	}
-	if(w->gibs){
-		struct Teline3CallbackData dd;
-/*		glPushAttrib(GL_ENABLE_BIT);*/
-		glDisable(GL_CULL_FACE);
-		VECCPY(dd.viewpoint, wd->view);
-		VECCPY(dd.viewdir, wd->viewdir);
-		VECNULL(dd.pyr);
-		memcpy(dd.invrot, wd->irot, sizeof dd.invrot);
-		dd.fov = wd->fov;
-		dd.pgc = wd->pgc;
-		DrawTeline3D(w->gibs, &dd);
-/*		glPopAttrib();*/
-	}
-/*	glCallList(wd->listLight + 1);*/
-	wd->light_off(wd);
-
-
-	glPushAttrib(GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST);
-	glDepthMask(0);
-	{
-		entity_t *pt;
-		for(pt = w->tl; pt; pt = pt->next){
-			if(((const struct entity_private_static*)pt->vft)->drawtra)
-				((const struct entity_private_static*)pt->vft)->drawtra(pt, wd);
-		}
-	}
-	for(ppb = &w->bl; *ppb; ppb = &(*ppb)->next){
-		struct bullet *pb = *ppb;
-		pb->vft->draw(pb, wd);
-	}
-	if(w->tepl)
-		DrawTefpol3D(w->tepl, wd->view, wd->pgc);
-
-	glPopAttrib();
-}
-
-static int warp_pointhit(warf_t *w, const avec3_t *pos, const avec3_t *velo, double dt, struct contact_info *ci){
-	return 0;
-}
-
-static void warp_accel(warf_t *w, avec3_t *dst, const avec3_t *srcpos, const avec3_t *srcvelo){
-	VECNULL(*dst);
-}
-
-static double warp_atmospheric_pressure(warf_t *w, const avec3_t *pos){
-	return 0.;
-}
-
-static int warp_spherehit(warf_t *w, const avec3_t *pos, double plrad, struct contact_info *ci){
-	return 0;
-}
-
-static int warp_orientation(warf_t *w, amat3_t *dst, const avec3_t *pos){
-	MATIDENTITY(*dst);
-	return 1;
-}
-
-
-
-#endif
 
 
 
@@ -345,7 +75,6 @@ int WarpBubble::serialNo = 0;
 
 
 #ifndef _WIN32
-int Warpable::popupMenu(PopupMenu &list){}
 void Warpable::drawHUD(wardraw_t *wd){}
 #endif
 
@@ -376,6 +105,12 @@ Warpable::Warpable(WarField *aw) : st(aw){
 
 void Warpable::init(){
 	st::init();
+	static bool initialized = false;
+	if(!initialized){
+		sq_init(_SC("models/Warpable.nut"),
+			SqCallbackProcess(sqPopupMenu, _SC("popupMenu")));
+		initialized = true;
+	}
 	warpSpeed = /*1e6 * LIGHTYEAR_PER_KILOMETER */15000. * AU_PER_KILOMETER;
 	warping = 0;
 //	warp_next_warf = NULL;
@@ -387,7 +122,6 @@ void Warpable::init(){
 static int cmd_warp(int argc, char *argv[], void *pv){
 	Game *game = (Game*)pv;
 	Player *ppl = game->player;
-	Entity *pt;
 	if(argc < 2){
 		CmdPrintf("Usage: warp dest [x] [y] [z]");
 		return 1;
@@ -396,12 +130,7 @@ static int cmd_warp(int argc, char *argv[], void *pv){
 	com.destpos = Vec3d(2 < argc ? atof(argv[2]) : 0., 3 < argc ? atof(argv[3]) : 0., 4 < argc ? atof(argv[2]) : 0.);
 
 	// Search path is based on player's CoordSys, though this function would be soon unnecessary anyway.
-	teleport *tp = ppl->findTeleport(argv[1], TELEPORT_WARP);
-	if(tp){
-		com.destcs = tp->cs;
-		com.destpos = tp->pos;
-	}
-	else if(com.destcs = const_cast<CoordSys*>(ppl->cs->findcs(argv[1]))){
+	if(com.destcs = const_cast<CoordSys*>(ppl->cs->findcs(argv[1]))){
 		com.destpos = vec3_000;
 	} 
 	else
@@ -410,61 +139,6 @@ static int cmd_warp(int argc, char *argv[], void *pv){
 	for(Player::SelectSet::iterator pt = ppl->selected.begin(); pt != ppl->selected.end(); pt++){
 		(*pt)->command(&com);
 		CMEntityCommand::s.send(*pt, com);
-#if 0
-		Warpable *p = (*pt)->toWarpable();
-		if(!p)
-			continue;
-		WarField *w = p->w;
-		if(!p->warping){
-			Vec3d delta, pos;
-			const CoordSys *pa = NULL;
-			CoordSys *pcs;
-			double landrad;
-			double dist, cost;
-			extern coordsys *g_galaxysystem;
-			Vec3d dstpos = vec3_000;
-			teleport *tp = Player::findTeleport(argv[1], TELEPORT_WARP);
-			if(tp){
-				pcs = tp->cs;
-				pos = tp->pos;
-				delta = w->cs->tocs(pos, pcs);
-				VECSUBIN(delta, pt->pos);
-				VECCPY(dstpos, pos);
-				pa = pcs;
-			}
-			else if(pa = ppl->cs->findcs(argv[1])){
-				dstpos[0] = argc < 3 ? 0. : atof(argv[2]);
-				dstpos[1] = argc < 4 ? 0. : atof(argv[3]);
-				dstpos[2] = argc < 5 ? 0. : atof(argv[4]);
-				delta = w->cs->tocs(dstpos, pa);
-				VECSUBIN(delta, pt->pos);
-			} 
-			else
-				continue;
-			dist = VECLEN(delta);
-			cost = g_warp_cost_factor * pt->mass / 1e3 * (log10(dist + 1.) + 1.);
-			if(cost < p->capacitor){
-				double f;
-				int i;
-				p->warping = 1;
-				p->task = sship_warp;
-				p->capacitor -= cost;
-	/*			f = VECLEN(delta);
-				f = (f - pa->rad * 1.1) / f;
-				VECNULL(p->warpdst);
-				VECSCALE(p->warpdst, delta, f);
-				VECADDIN(p->warpdst, pt->pos);*/
-				VECCPY(p->warpdst, dstpos);
-				for(i = 0; i < 3; i++)
-					p->warpdst[i] += 2. * (drseq(&p->w->rs) - .5);
-				p->totalWarpDist = dist;
-				p->currentWarpDist = 0.;
-				p->warpcs = NULL;
-				p->warpdstcs = const_cast<CoordSys*>(pa);
-//				p->warp_next_warf = NULL;
-			}
-		}
-#endif
 	}
 	return 0;
 }
@@ -512,9 +186,7 @@ Entity::Props Warpable::props()const{
 
 
 void Warpable::warp_collapse(){
-	int i;
 	Warpable *p = this;
-	Entity *pt2;
 	if(!warpcs)
 		return;
 	double sdist = (pos - w->cs->tocs(Vec3d(0,0,0), this->warpcs->parent)).slen();
@@ -630,11 +302,75 @@ void Warpable::anim(double dt){
 		}
 
 		velo = (*pvelo).len();
-		desiredvelo = .5 * (warpdst - dstcspos).len();
+		desiredvelo = .5 * (p->warpdst - dstcspos).len();
 		desiredvelo = MIN(desiredvelo, p->warpSpeed);
 /*		desiredvelo = desiredvelo < 5. ? desiredvelo * desiredvelo / 5. : desiredvelo;*/
 /*		desiredvelo = MIN(desiredvelo, 1.47099e8);*/
-		double sdist = (warpdst - dstcspos).slen();
+		double sdist = (this->warpdst - dstcspos).slen();
+		if(p->warpdstcs == game->universe && sdist < 1e10 * 1e10){
+			StarEnum se(dstcspos, 0, true);
+			Vec3d pos, bestPos;
+			double bestDist = 1e100;
+			RandomSequence *rs = NULL;
+			StarCache *bestsc = NULL, *sc;
+			while(se.next(pos, &sc)){
+				double dist = (pos - p->warpdst).len();
+				if(dist < bestDist){
+					bestDist = dist;
+					bestPos = pos;
+					bestsc = sc;
+					rs = se.getRseq();
+				}
+			}
+			if(bestsc){
+				CoordSys *cs = bestsc->system;
+				if(!cs){
+					// Materialize a randomly generated star; create a Star object and associate it with the StarCache.
+					// This logic is written in Squirrel scripts.
+					try{
+						HSQUIRRELVM v = game->sqvm;
+						StackReserver sr(v);
+						sq_pushroottable(v);
+						sq_pushstring(v, _SC("materializeStar"), -1);
+						if(SQ_FAILED(sq_get(v, -2)))
+							throw SQFError(_SC("Couldn't get materializeStar"));
+						sq_pushroottable(v); // .. func root
+						sq_pushstring(v, bestsc->name, -1); // .. func root name
+						SQVec3d q = bestPos;
+						q.push(v); // .. func root name pos
+						sq_pushobj(v, this); // .. func root name pos e
+						sq_pushstring(v, _SC("RandomSequencePtr"), -1); // .. func root name pos e "RandomSeqeuncePtr"
+						if(SQ_FAILED(sq_get(v, -5))) // .. func root name pos e RandomSequencePtr
+							throw SQFError(_SC("RandomSequencePtr not defined in root table"));
+						sq_createinstance(v, -1); // .. func root name pos e RandomSequencePtr instance
+						sq_remove(v, -2); // .. func root name pos e instance
+
+						// TODO: It's dangerous to pass a pointer to automatic variable to Squirrel VM, since it can
+						// save the reference to somewhere outside the closure which could be referred to later.
+						// Probably we should pass by value, in which case we need another class defined for VM.
+						sq_setinstanceup(v, -1, rs);
+
+						if(SQ_FAILED(sq_call(v, 5, SQTrue, SQTrue)))
+							throw SQFError(_SC("Couldn't get materializeStar"));
+						CoordSys *cs = CoordSys::sq_refobj(v, -1);
+						if(cs)
+							bestsc->system = cs;
+					}
+					catch(SQFError &e){
+						CmdPrint(e.what());
+					}
+				}
+				else{
+					// Reuse the temporary orbit
+					OrbitCS *orbit = new OrbitCS("orbit", cs);
+					this->warpdst = orbit->tocs(this->warpdst, this->warpdstcs);
+					this->warpdstcs = orbit;
+				}
+				// Recalculate our position in destination CoordSys, because the star materialization can modify
+				// our warpdstcs.
+				dstcspos = p->warpdstcs->tocs(pt->pos, w->cs);
+			}
+		}
 		if(sdist < 1. * 1. || capacitor <= 0. && velo < 1.){
 			if(sdist < warpdstcs->csrad * warpdstcs->csrad)
 				warp_collapse();
@@ -652,16 +388,14 @@ void Warpable::anim(double dt){
 			post_warp();
 		}
 		else if(desiredvelo < velo){
-			Vec3d delta, dst, dstvelo;
-			double dstspd, u, len;
-			delta = p->warpdst - dstcspos;
-/*			VECSUB(delta, warpdst, pt->pos);*/
-			len = delta.len();
+			Vec3d delta = p->warpdst - dstcspos;
+			double len = delta.len();
 #if 1
-			u = desiredvelo / len;
-			dstvelo = delta * u;
+			double u = desiredvelo / len;
+			Vec3d dstvelo = delta * u;
 			*pvelo = dstvelo;
 #else
+			Vec3d dst;
 			u = -exp(-desiredvelo * dt);
 			VECSCALE(dst, delta, u);
 			VECADDIN(dst, warpdst);
@@ -678,11 +412,10 @@ void Warpable::anim(double dt){
 			capacitor = 0.;
 		}
 		else if(.99 < sp){
-			double dstspd, u, len;
 			const double L = LIGHT_SPEED;
 			Vec3d delta = warpdst - pt->pos;
-			len = delta.len();
-			u = (velo + .5) * 1e1 /** 5e-1 * (len - p->sight->rad)*/;
+			double len = delta.len();
+			double u = (velo + .5) * 1e1 /** 5e-1 * (len - p->sight->rad)*/;
 	/*		u = L - L * L / (u + L);*/
 	/*		dstspd = (u + v) / (1 + u * v / LIGHT_SPEED / LIGHT_SPEED);*/
 			delta.normin();
@@ -796,7 +529,6 @@ bool Warpable::command(EntityCommand *com){
 			double cost = g_warp_cost_factor * this->mass / 1e3 * (log10(dist + 1.) + 1.);
 			Warpable *p = this;
 			if(cost < p->capacitor){
-				double f;
 				int i;
 				p->warping = 1;
 				p->task = sship_warp;
@@ -825,7 +557,804 @@ bool Warpable::command(EntityCommand *com){
 	return false;
 }
 
+HSQOBJECT Warpable::sqPopupMenu = sq_nullobj();
+
+HSQOBJECT Warpable::getSqPopupMenu(){
+	return sqPopupMenu;
+}
+
+SQInteger Warpable::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("warping"))){
+		sq_pushbool(v, warping ? SQTrue : SQFalse);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("warpdst"))){
+		SQVec3d q(warpdst);
+		q.push(v);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("warpdstcs"))){
+		CoordSys::sq_pushobj(v, warpdstcs);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("capacitor"))){
+		sq_pushfloat(v, SQFloat(capacitor));
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("capacity"))){
+		sq_pushfloat(v, SQFloat(getManeuve().capacity));
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("warpSpeed"))){
+		sq_pushfloat(v, SQFloat(warpSpeed));
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger Warpable::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("warping"))){
+		// Warping flag should not regularly be changed by scripts!
+		SQBool b;
+		if(SQ_SUCCEEDED(sq_getbool(v, 3, &b)))
+			this->warping = b != SQFalse;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("warpdst"))){
+		SQVec3d q;
+		q.getValue(v, 3);
+		this->warpdst = q.value;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("warpdstcs"))){
+		this->warpdstcs = CoordSys::sq_refobj(v, 3);
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("capacitor"))){
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+			return sq_throwerror(v, _SC("Warpable.capacitor could not convert to float"));
+		this->capacitor = f;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("warpSpeed"))){
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+			return sq_throwerror(v, _SC("Warpable.warpSpeed could not convert to float"));
+		this->warpSpeed = f;
+		return 0;
+	}
+	else
+		return st::sqSet(v, name);
+}
+
 
 void Warpable::post_warp(){
 }
 
+
+
+//=============================================================================
+// StarEnum implementation
+//=============================================================================
+
+#ifdef NDEBUG
+double g_star_num = 1.;
+#else
+double g_star_num = 1.;
+#endif
+
+/// This sector size value is controversial.  It cannot be easily changed, but
+/// either too low value or too high value can cause problems.
+/// If you set it too low, stars won't generate at all (unless we properly
+/// implement Poisson distributed pseudo random number generator).
+/// If you set it too high, you will get too many stars enumerated for display,
+/// causing frame rate drop.
+/// 15 ly is trade-off value and generate 2-3 stars per sector around Sol.
+const double StarEnum::sectorSize = 15 * LIGHTYEAR_PER_KILOMETER;
+
+StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genCache) :
+	plpos(plpos),
+	cen(
+		(int)floor(plpos[0] / sectorSize + .5),
+		(int)floor(plpos[1] / sectorSize + .5),
+		(int)floor(plpos[2] / sectorSize + .5)
+	),
+	numSectors(numSectors),
+	genCache(genCache)
+{
+	gx = cen[0] - numSectors;
+	gy = cen[1] - numSectors;
+	gz = cen[2] - numSectors - 1; // Start from the first sector subtracted by 1.
+	newCell();
+}
+
+StarCacheDB StarEnum::starCacheDB;
+
+struct SylKey{
+	char key[2];
+	SylKey(const char *key = NULL){
+		if(key != NULL){
+			this->key[0] = key[0];
+			this->key[1] = key[1];
+		}
+	}
+	bool operator<(const SylKey &o)const{
+		return this->key[0] != o.key[0] ? this->key[0] < o.key[0] : this->key[1] < o.key[1];
+	}
+	char operator[](int index)const{
+		return key[index];
+	}
+};
+
+bool StarEnum::newCell(){
+	do{
+		// Advance indices to the next sector.
+		if(gz <= cen[2] + numSectors)
+			gz++;
+		else if(gy <= cen[1] + numSectors)
+			gy++, gz = cen[2] - numSectors;
+		else if(gx <= cen[0] + numSectors)
+			gx++, gy = cen[1] - numSectors, gz = cen[2] - numSectors;
+		else
+			return false;
+
+		// Z axis has a length of GALAXY_EXTENT times FIELDZ / FIELD.
+		const double volume = GALAXY_EXTENT * GALAXY_EXTENT * (GALAXY_EXTENT * FIELDZ / FIELD);
+
+		// It is speculated that the Galaxy has 100-400 billion stars, but we will ignore red dwarfs, so
+		// 100 billion is a reasonable estimate.
+		const double totalStars = 100.e9;
+
+		// Stars per cubic kilometers (!).  It should be incredibly small number.
+		const double averageStarDensity = totalStars / volume;
+
+		const double starDensityPerSector = averageStarDensity * sectorSize * sectorSize * sectorSize;
+
+		// Start a new random number sequence for this sector.
+		int sectors[3] = {gx, gy, gz};
+		rs.init(crc32(sectors, sizeof sectors), 0);
+
+		// This value should be Poisson-distributed random value.
+		numstars = int(g_star_num * starDensityPerSector * galaxy_get_star_density_pos(Vec3d(gx, gy, gz) * sectorSize) + rs.nextd());
+	}while(0 == numstars); // Skip sectors containing no stars
+
+	if(genCache){
+		static bool sylsInit = false;
+		struct Syllable{
+			int beginc;
+			int endc;
+			char str[3];
+
+			/// Predicate for bseach
+			static int cmp(const void *a, const void *b){
+				int r = *(int*)a;
+				const Syllable *f = (const Syllable*)b;
+				if(f->beginc <= r && r < f->endc)
+					return 0;
+				else
+					return r - f->beginc;
+			}
+		};
+
+		typedef std::map<SylKey, std::vector<Syllable> > SyllableSet;
+		static SyllableSet sylsDB;
+
+		static std::vector<Syllable> firstDB;
+		static int firstCount = 0;
+		if(!sylsInit){
+			std::ifstream syls("data/syl.txt");
+			int sylcount;
+			syls >> sylcount;
+			while(!syls.eof()){
+				std::string sylstr;
+				Syllable syl;
+				int count;
+				int first;
+				syls >> sylstr >> count >> first;
+				memcpy(syl.str, sylstr.c_str(), sizeof syl.str);
+				SylKey sylkey(sylstr.c_str());
+				auto it = sylsDB.find(sylkey);
+				if(it == sylsDB.end()){
+					syl.beginc = 0;
+					syl.endc = count;
+				}
+				else{
+					syl.beginc = sylsDB[sylkey].back().endc;
+					syl.endc = syl.beginc + count;
+				}
+				sylsDB[sylkey].push_back(syl);
+
+				if(first){
+					Syllable f;
+					f.beginc = firstCount;
+					firstCount += first;
+					f.endc = firstCount;
+					std::copy(sylstr.begin(), sylstr.begin() + 3, f.str);
+					firstDB.push_back(f);
+				}
+			}
+			sylsInit = true;
+		}
+
+		// This value could be evaluated for more optimized value.
+		static const int maxStarCaches = 1000;
+
+		StarCacheKey gkey(gx,gy,gz);
+		StarCacheDB::iterator names = starCacheDB.find(gkey);
+		// History of cache keys. If it reaches maxStarCaches, the oldest ones gets deleted.
+		static std::deque<StarCacheKey> starCacheHistory;
+		if(names == starCacheDB.end()){
+
+			// Delete stale StarCaches when we try to add one.
+			while(maxStarCaches <= starCacheHistory.size()){
+				StarCacheKey staleKey = starCacheHistory.front();
+
+				// Check if this stale sector contains materialized systems
+				bool keepCache = false;
+				for(auto it : starCacheDB[staleKey]){
+					// Skip sectors containing materialized systems
+					if(it.system){
+						keepCache = true;
+						break;
+					}
+				}
+				if(!keepCache)
+					starCacheDB.erase(staleKey);
+
+				// Erase history for sectors containing materialized systems to prevent further inspection
+				starCacheHistory.pop_front();
+			}
+
+			RandomSequence rs = this->rs;
+			StarCacheList &newnames = starCacheDB[gkey];
+			for(int c = 0; c < numstars; c++){
+				gltestp::dstring name;
+				do{
+					std::string word;
+					SylKey next;
+					int length = rs.next() % 10 + 1;
+
+					// Penalize 3 character names by rolling the dice again, because 3 character names
+					// often collide.
+					if(length == 1)
+						length = rs.next() % 10 + 1;
+
+					for(int n = 0; n < length; n++){
+						// If we could not find the next syllable beginning with given 2 character sequence, stop there
+						if(n != 0 && sylsDB.find(next) == sylsDB.end())
+							break;
+						int sylcount = n == 0 ? firstCount : sylsDB[next].back().endc;
+
+						if(sylcount == 0)
+							break;
+
+						int r = rs.next() % sylcount;
+						int key = 0;
+
+						auto &syls = n == 0 ? firstDB : sylsDB[next];
+						const Syllable *v = (const Syllable*)std::bsearch(&r, &syls.front(), syls.size(), sizeof(syls.front()), Syllable::cmp);
+						assert(v);
+						next = &v->str[1];
+						word += v->str[0];
+					}
+					name << char(toupper(word[0])) << word.substr(1).c_str() << next[0] << next[1];
+
+					// Regenerate name if there is a collision of name in the sector.
+					// Note that we cannot avoid collisions among sectors because their order of
+					// creation is unpredictable.
+					bool duplicate = false;
+					for(auto ename : newnames){
+						if(ename.name == name){
+							duplicate = true;
+							break;
+						}
+					}
+					if(duplicate)
+						continue;
+				}while(false);
+
+				newnames.push_back(StarCache(name));
+			}
+			names = starCacheDB.find(gkey);
+
+			// Record added StarCache to the history.
+			starCacheHistory.push_back(gkey);
+		}
+
+		this->cacheList = &names->second;
+
+		// Begin enumeration for next()
+		this->it = names->second.begin();
+		this->itend = names->second.end();
+	}
+	else{
+		// Though if genCache is false, we could see if cache was already created.
+		std::tuple<int,int,int> gkey(gx,gy,gz);
+		StarCacheDB::iterator names = starCacheDB.find(gkey);
+		if(names != starCacheDB.end()){
+			this->cacheList = &names->second;
+			this->it = names->second.begin();
+			this->itend = names->second.end();
+		}
+		else
+			this->cacheList = NULL;
+	}
+	return true;
+}
+
+bool StarEnum::next(Vec3d &pos, StarCache **sc){
+	if(numstars <= 0){
+		if(!newCell())
+			return false; // We have gone through all the cells.
+	}
+	numstars--;
+
+	pos[0] = (drseq(&rs) + gx - 0.5) * sectorSize;
+	pos[1] = (drseq(&rs) + gy - 0.5) * sectorSize;
+	pos[2] = (drseq(&rs) + gz - 0.5) * sectorSize;
+
+	if(sc != NULL){
+		if(cacheList && it != itend){
+			*sc = &*it;
+			++it; // Advance pointer
+		}
+		else
+			*sc = NULL;
+	}
+	return true;
+}
+
+RandomSequence *StarEnum::getRseq(){
+	// Return newly created random sequence instead of the sequence to generate stars in the main loop.
+	int buf[4] = {gx, gy, gz, numstars};
+	rsStar.init(crc32(buf, sizeof buf), 0);
+	return &rsStar;
+}
+
+static int cmd_find(int argc, char *argv[]){
+	if(argc <= 1){
+		for(auto it : StarEnum::starCacheDB){
+			for(auto it2 : it.second){
+				CmdPrintf("(%d,%d,%d) %s", std::get<0>(it.first), std::get<1>(it.first), std::get<2>(it.first), it2.name.c_str());
+			}
+		}
+		CmdPrint("usage: find star_name");
+		return 0;
+	}
+	int count = 0;
+	for(auto it : StarEnum::starCacheDB){
+		for(auto it2 : it.second){
+			if(it2.name == argv[1]){
+				CmdPrintf("(%d,%d,%d) %s", std::get<0>(it.first), std::get<1>(it.first), std::get<2>(it.first), argv[1]);
+				count++;
+			}
+		}
+	}
+	if(!count)
+		CmdPrintf("No such a star found: %s", argv[1]);
+	return 0;
+}
+
+StaticInitializer stin([](){CmdAdd("find", cmd_find);});
+static bool sqStarEnumDef(HSQUIRRELVM){
+	return true;
+}
+
+sqa::Initializer sqin("StarEnum", [](HSQUIRRELVM v){
+	static SQUserPointer tt_StarEnum = SQUserPointer("StarEnum");
+	sq_pushroottable(v);
+	sq_pushstring(v, _SC("StarEnum"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_StarEnum);
+	sq_setclassudsize(v, -1, sizeof(StarEnum));
+	register_closure(v, _SC("constructor"), [](HSQUIRRELVM v){
+		try{
+			void *p;
+			if(SQ_FAILED(sq_getinstanceup(v, 1, &p, tt_StarEnum)))
+				return sq_throwerror(v, _SC("Something is wrong in StarEnum.constructor"));
+			SQVec3d plpos;
+			plpos.getValue(v, 2);
+			SQInteger numSectors;
+			if(SQ_FAILED(sq_getinteger(v, 3, &numSectors)))
+				return sq_throwerror(v, _SC("StarEnum() second argument not convertible to int"));
+			SQBool genCache;
+			if(SQ_FAILED(sq_getbool(v, 4, &genCache)))
+				genCache = SQFalse;
+			new(p) StarEnum(plpos.value, int(numSectors), genCache == SQTrue);
+
+			sq_setreleasehook(v, 1, [](SQUserPointer p, SQInteger){
+				((StarEnum*)p)->~StarEnum();
+				return SQInteger(1);
+			});
+		}
+		catch(SQFError &e){
+			return sq_throwerror(v, e.what());
+		}
+		return SQInteger(0);
+	});
+	register_closure(v, _SC("next"), [](HSQUIRRELVM v){
+		void *p;
+		if(SQ_FAILED(sq_getinstanceup(v, 1, &p, tt_StarEnum)))
+			return sq_throwerror(v, _SC("Something is wrong in StarEnum.next"));
+		StarEnum *se = (StarEnum*)p;
+		SQVec3d pos;
+		StarCache *sc;
+		bool ret = se->next(pos.value, &sc);
+		auto def = [v](const SQChar *name, const SQChar *value){
+			sq_pushstring(v, name, -1);
+			sq_pushstring(v, value, -1);
+			sq_newslot(v, 2, SQFalse);
+		};
+		if(ret && sc){
+			def(_SC("name"), sc->name);
+			sq_pushstring(v, _SC("pos"), -1);
+			pos.push(v);
+			sq_newslot(v, 2, SQFalse);
+			sq_pushstring(v, _SC("system"), -1);
+			CoordSys::sq_pushobj(v, sc->system);
+			sq_newslot(v, 2, SQFalse);
+		}
+		sq_pushbool(v, ret ? SQTrue : SQFalse);
+		return SQInteger(1);
+	});
+	sq_newslot(v, -3, SQFalse);
+	return true;
+});
+
+
+//=============================================================================
+// GalaxyField implementation
+//=============================================================================
+
+static int g_galaxy_field_cache = 1;
+
+static void perlin_noise(GalaxyField &field, GalaxyField &work, long seed){
+	int octave;
+	struct random_sequence rs;
+	init_rseq(&rs, seed);
+	for(octave = 0; (1 << octave) < FIELDZ; octave += 5){
+		int cell = 1 << octave;
+		int xi, yi, zi;
+		int k;
+		for(zi = 0; zi < FIELDZ / cell; zi++) for(xi = 0; xi < FIELD / cell; xi++) for(yi = 0; yi < FIELD / cell; yi++){
+			int base;
+			base = rseq(&rs) % 64 + 191;
+			for(k = 0; k < 4; k++)
+				work[xi][yi][zi][k] = /*rseq(&rs) % 32 +*/ base;
+		}
+		if(octave == 0)
+			memcpy(field, work, FIELD * FIELD * FIELDZ * 4);
+		else for(zi = 0; zi < FIELDZ; zi++) for(xi = 0; xi < FIELD; xi++) for(yi = 0; yi < FIELD; yi++){
+			int xj, yj, zj;
+			int sum[4] = {0};
+			for(k = 0; k < 4; k++){
+				for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++) for(zj = 0; zj <= 1; zj++){
+					sum[k] += int((double)work[xi / cell + xj][yi / cell + yj][zi / cell + zj][k]
+					* (xj ? xi % cell : (cell - xi % cell - 1)) / (double)cell
+					* (yj ? yi % cell : (cell - yi % cell - 1)) / (double)cell
+					* (zj ? zi % cell : (cell - zi % cell - 1)) / (double)cell);
+				}
+				field[xi][yi][zi][k] = MIN(255, field[xi][yi][zi][k] + sum[k] / 2);
+			}
+		}
+	}
+}
+
+static unsigned char galaxy_set_star_density(GalaxyField &field, unsigned char c){
+	Vec3d v0(FIELD / 2., FIELD / 2., FIELDZ / 2.);
+	int v1[3];
+	for(int i = 0; i < 3; i++)
+		v1[i] = int(v0[i]);
+/*	printf("stardensity(%lg,%lg,%lg)[%d,%d,%d]: %lg\n", v0[0], v0[1], v0[2], v1[0], v1[1], v1[2], );*/
+	if(0 <= v1[0] && v1[0] < FIELD-1 && 0 <= v1[1] && v1[1] < FIELD-1 && 0 <= v1[2] && v1[2] < FIELDZ-1){
+		int xj, yj, zj;
+		for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++) for(zj = 0; zj <= 1; zj++){
+			field[v1[0] + xj][v1[1] + yj][v1[2] + zj][3] = (GalaxyFieldCell)(c
+				* (xj ? v0[0] - v1[0] : 1. - (v0[0] - v1[0]))
+				* (yj ? v0[1] - v1[1] : 1. - (v0[1] - v1[1]))
+				* (zj ? v0[2] - v1[2] : 1. - (v0[2] - v1[2])));
+		}
+		return c;
+	}
+	return (0 <= v1[0] && v1[0] < FIELD && 0 <= v1[1] && v1[1] < FIELD && 0 <= v1[2] && v1[2] < FIELDZ ? field[v1[0]][v1[1]][v1[2]][3] = c : 0);
+}
+
+#ifndef _WIN32
+int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y){
+	if(x->tv_usec < y->tv_usec){
+		int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
+		y->tv_usec -= 100000 * nsec;
+		y->tv_sec += nsec;
+	}
+	if(x->tv_usec - y->tv_usec > 1000000){
+		int nsec = (x->tv_usec - y->tv_usec) / 1000000;
+		y->tv_usec += 1000000 * nsec;
+		y->tv_sec -= nsec;
+	}
+
+	result->tv_sec = x->tv_sec - y->tv_sec;
+	result->tv_usec = x->tv_usec - y->tv_usec;
+
+	return x->tv_sec < y->tv_sec;
+}
+int timespec_subtract(struct timespec *result, struct timespec *x, struct timespec *y){
+
+	result->tv_sec = x->tv_sec - y->tv_sec;
+	result->tv_nsec = x->tv_nsec - y->tv_nsec;
+
+	return x->tv_sec < y->tv_sec;
+}
+#endif
+
+static int ftimecmp(const char *file1, const char *file2){
+#ifdef _WIN32
+	WIN32_FILE_ATTRIBUTE_DATA fd, fd2;
+	BOOL b1, b2;
+
+	b1 = GetFileAttributesEx(file1, GetFileExInfoStandard, &fd);
+	b2 = GetFileAttributesEx(file2, GetFileExInfoStandard, &fd2);
+
+	/* absent file is valued oldest */
+	if(!b1 && !b2)
+		return 0;
+	if(!b1)
+		return -1;
+	if(!b2)
+		return 1;
+	return (int)CompareFileTime(&fd.ftLastWriteTime, &fd2.ftLastWriteTime);
+#else
+	struct stat s1, s2;
+	int e1, e2;
+	int r1 = stat(file1, &s1);
+	if(r1)
+		e1 = errno;
+	int r2 = stat(file2, &s2);
+	if(r2)
+		e2 = errno;
+	if(r1 && r2)
+		return 0;
+	if(r1)
+		return -1;
+	if(r2)
+		return 1;
+	struct timespec temptim;
+	return timespec_subtract(&temptim, &s1.st_mtim, &s2.st_mtim);
+#endif
+}
+
+#define DARKNEBULA 8
+
+static gltestp::dstring g_galaxy_file = "data/galaxy.png";
+
+Initializer galaxy_init("galaxy_file", [](HSQUIRRELVM v){
+	StackReserver sr(v);
+	register_closure(v, _SC("setGalaxyFile"), [](HSQUIRRELVM v){
+		const SQChar *str;
+		if(SQ_FAILED(sq_getstring(v, 2, &str)))
+			return sq_throwerror(v, _SC("setGalaxyFile argument not convertible to string"));
+		g_galaxy_file = str;
+		return SQInteger(0);
+	});
+	return true;
+});
+
+const GalaxyField *initGalaxyField(){
+	static GalaxyField field;
+	static bool field_init = false;
+
+	if(!field_init){
+		timemeas_t tm;
+		TimeMeasStart(&tm);
+		field_init = true;
+		if(ftimecmp(g_galaxy_file, "cache/ourgalaxyvol.raw") < 0){
+			FILE *fp = fopen("cache/ourgalaxyvol.raw", "rb");
+			fread(field, sizeof field, 1, fp);
+			fclose(fp);
+		}
+		else{
+		struct random_sequence rs;
+		int xi, yi, zi;
+		int k;
+		int srcx, srcy;
+		double darknebula[DARKNEBULA][DARKNEBULA];
+		GalaxyField *pfield2 = (GalaxyField*)malloc(sizeof field);
+		if(!pfield2)
+			return NULL;
+		GalaxyField &field2 = *pfield2;
+#if 1
+		void (*freeproc)(BITMAPINFO*);
+		BITMAPINFO *bmi = ReadPNG(g_galaxy_file, &freeproc);
+		// We assume 8 bit grayscale image
+		if(bmi->bmiHeader.biBitCount != 8)
+			return NULL;
+		const unsigned char *src = (unsigned char*)&bmi->bmiColors[bmi->bmiHeader.biClrUsed];
+		srcx = bmi->bmiHeader.biWidth;
+		srcy = bmi->bmiHeader.biHeight;
+#elif 1
+		FILE *fp;
+		fp = fopen("ourgalaxy3.raw", "rb");
+		if(!fp)
+			return;
+		srcx = srcy = 512;
+		GLfloat (*src)[4] = (GLfloat(*)[4])malloc(srcx * srcy * sizeof *src);
+		for(xi = 0; xi < srcx; xi++) for(yi = 0; yi < srcy; yi++){
+			unsigned char c;
+			fread(&c, 1, sizeof c, fp);
+			src[xi * srcy + yi][2] = c / 256.f /*pow(c / 256.f, 2.)*/;
+			fread(&c, 1, sizeof c, fp);
+			src[xi * srcy + yi][1] = c / 256.f /*pow(c / 256.f, 2.)*/;
+			fread(&c, 1, sizeof c, fp);
+			src[xi * srcy + yi][0] = c / 256.f /*pow(c / 256.f, 2.)*/;
+			src[xi * srcy + yi][3] = (src[xi * srcy + yi][0] + src[xi * srcy + yi][1] + src[xi * srcy + yi][2]) / 1.;
+/*			c = src[xi * srcy + yi] * 255;
+			fwrite(&c, 1, sizeof c, ofp);*/
+		}
+		fclose(fp);
+#else
+		fp = fopen("ourgalaxy_model.dat", "rb");
+		if(!fp)
+			return;
+		fread(&srcx, 1, sizeof srcx, fp);
+		fread(&srcy, 1, sizeof srcy, fp);
+		src = (GLfloat*)malloc(srcx * srcy * sizeof *src);
+		for(xi = 0; xi < srcx; xi++) for(yi = 0; yi < srcy; yi++){
+			unsigned char c;
+			fread(&src[xi * srcy + yi], 1, sizeof *src, fp);
+/*			c = src[xi * srcy + yi] * 255;
+			fwrite(&c, 1, sizeof c, ofp);*/
+		}
+		fclose(fp);
+#endif
+		CmdPrintf("draw_gs.load: %lg sec", TimeMeasLap(&tm));
+		perlin_noise(field2, field, 3522526);
+		init_rseq(&rs, 35229);
+/*		for(zzi = 0; zzi < 16; zzi++){
+		int zzz = 1;
+		char sbuf[64];
+		sprintf(sbuf, "gal%d.raw", zi);
+		ofp = fopen(sbuf, "wb");
+		for(zi = 16 - zzi; zzi && zi <= 16 + zzi; zi += zzi * 2, zzz -= 2)*/
+		CmdPrintf("draw_gs.noise: %lg sec", TimeMeasLap(&tm));
+		for(xi = 0; xi < DARKNEBULA; xi++) for(yi = 0; yi < DARKNEBULA; yi++){
+			darknebula[xi][yi] = ((drseq(&rs) - .5) + (drseq(&rs) - .5));
+		}
+		CmdPrintf("draw_gs.nebula: %lg sec", TimeMeasLap(&tm));
+		for(zi = 0; zi < FIELDZ; zi++){
+		for(xi = 0; xi < FIELD; xi++) for(yi = 0; yi < FIELD; yi++){
+			int xj, yj;
+			double z0 = 0.;
+			if(xi / (FIELD / DARKNEBULA) < DARKNEBULA-1 && yi / (FIELD / DARKNEBULA) < DARKNEBULA-1) for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++){
+				int cell = FIELD / DARKNEBULA;
+				z0 += (darknebula[xi / cell + xj][yi / cell + yj]
+					* (xj ? xi % cell : (cell - xi % cell - 1)) / (double)cell
+					* (yj ? yi % cell : (cell - yi % cell - 1)) / (double)cell
+				/*+ (drseq(&rs) - .5)*/) * FIELDZ * .10;
+			}
+			double sdz = (zi + z0 - HFIELDZ) * (zi + z0 - HFIELDZ) / (double)(HFIELDZ * HFIELDZ);
+			double sd = ((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD) + sdz);
+
+			// Distance from the center of the galaxy along galactic plane
+			double dxy = sqrt((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD));
+			double dz = sqrt(sdz); // Distance from galactic plane
+			// Elliptical distance
+			double dellipse = sqrt((double)(xi - HFIELD) * (xi - HFIELD) / (HFIELD * HFIELD / 3 / 3) + (double)(yi - HFIELD) * (yi - HFIELD) / (HFIELD * HFIELD / 3 / 3) + sdz);
+
+			// Obtain source pixel in the raw image.
+			auto srcpixel = src[xi * srcx / FIELD + yi * srcy / FIELD * srcx];
+			double srcw = srcpixel / 256.; // Normalized source pixel
+
+			// Computed thickness of the galaxy at the pixel.  Thickness drops near galaxy edge.
+			// If the pixel has low intensity, thickness is reduced to simulate spiral arms.
+			double thickness = sqrt(std::max(0., 1. - dxy)) * srcw;
+
+			if(srcpixel == 0 || 1. < dxy || thickness <= dz){
+				memset(field2[xi][yi][zi], 0, sizeof (GalaxyFieldCell[4]));
+			}
+			else{
+				// There are dark nebulae along the central plane of the galaxy.  We simulate this by darkening
+				// the voxels around dz near 0.  We are dividing dz by thickness here to avoid everything become dark
+				// near the edge of the galaxy.
+				double dzq = dz / thickness;
+
+				for(k = 0; k < 4; k++)
+					field2[xi][yi][zi][k] *= (GalaxyFieldCell)(k == 3 ? std::min(1., (1. - dz / thickness) * 2.) : dzq);
+			}
+
+			// Enhance color near center to render bulge
+			if(dellipse < 1.){
+				field2[xi][yi][zi][0] = MIN(255, (GalaxyFieldCell)(field2[xi][yi][zi][0] + 256 * (1. - dellipse)));
+				field2[xi][yi][zi][1] = MIN(255, (GalaxyFieldCell)(field2[xi][yi][zi][1] + 256 * (1. - dellipse)));
+				field2[xi][yi][zi][2] = MIN(255, (GalaxyFieldCell)(field2[xi][yi][zi][2] + 128 * (1. - dellipse)));
+				field2[xi][yi][zi][3] = MIN(255, (GalaxyFieldCell)(field2[xi][yi][zi][3] + 128 * (1. - dellipse)));
+			}
+/*			fwrite(&field2[xi][yi][zi], 1, 3, ofp);*/
+		}
+/*		fclose(ofp);*/
+		}
+#if 0
+		for(zi = 1; zi < FIELDZ-1; zi++){
+		char sbuf[64];
+		for(n = 0; n < 1; n++){
+			GLubyte (*srcf)[FIELD][FIELDZ][4] = n % 2 == 0 ? field2 : field;
+			GLubyte (*dstf)[FIELD][FIELDZ][4] = n % 2 == 0 ? field : field2;
+			for(xi = 1; xi < FIELD-1; xi++) for(yi = 1; yi < FIELD-1; yi++){
+				int sum[4] = {0}, add[4] = {0};
+				for(xj = -1; xj <= 1; xj++) for(yj = -1; yj <= 1; yj++) for(zj = -1; zj <= 1; zj++) for(k = 0; k < 4; k++){
+					sum[k] += srcf[xi+xj][yi+yj][zi+zj][k];
+					add[k]++;
+				}
+				for(k = 0; k < 4; k++)
+					dstf[xi][yi][zi][k] = sum[k] / add[k]/*(3 * 3 * 3)*/;
+			}
+		}
+/*		sprintf(sbuf, "galf%d.raw", zi);
+		ofp = fopen(sbuf, "wb");
+		for(xi = 0; xi < FIELD; xi++) for(yi = 0; yi < FIELD; yi++){
+			fwrite(&(n % 2 == 0 ? field : field2)[xi][yi][zi], 1, 3, ofp);
+		}
+		fclose(ofp);*/
+		}
+#else
+		memcpy(field, field2, sizeof field);
+#endif
+		galaxy_set_star_density(field, 64);
+		if(g_galaxy_field_cache){
+#ifdef _WIN32
+			if(GetFileAttributes("cache") == -1)
+				CreateDirectory("cache", NULL);
+#else
+			mkdir("cache", 0755);
+#endif
+			FILE *fp = fopen("cache/ourgalaxyvol.raw", "wb");
+			fwrite(field, sizeof field, 1, fp);
+			fclose(fp);
+		}
+		free(field2);
+//		free(src);
+		if(bmi){
+			freeproc(bmi);
+		}
+		}
+		CmdPrintf("draw_gs: %lg sec", TimeMeasLap(&tm));
+	}
+
+	return &field;
+}
+
+double galaxy_get_star_density_pos(const Vec3d &pos, const CoordSys *cs){
+	const GalaxyField *field = initGalaxyField();
+	if(!field)
+		return 0.;
+	Vec3d srcpos = cs ? cs->getGame()->universe->tocs(pos, cs) : pos;
+	const Vec3d v0 = (srcpos - getGalaxyOffset()) * FIELD / GALAXY_EXTENT + Vec3d(FIELD, FIELD, FIELDZ) / 2.;
+	int v1[3];
+	int i;
+	for(i = 0; i < 3; i++)
+		v1[i] = int(v0[i]);
+	/* cubic linear interpolation is fairly slower, but this function is rarely called. */
+	if(0 <= v1[0] && v1[0] < FIELD-1 && 0 <= v1[1] && v1[1] < FIELD-1 && 0 <= v1[2] && v1[2] < FIELDZ-1){
+		int xj, yj, zj;
+		double sum = 0;
+		for(xj = 0; xj <= 1; xj++) for(yj = 0; yj <= 1; yj++) for(zj = 0; zj <= 1; zj++){
+			sum += (*field)[v1[0] + xj][v1[1] + yj][v1[2] + zj][3]
+				* (xj ? v0[0] - v1[0] : 1. - (v0[0] - v1[0]))
+				* (yj ? v0[1] - v1[1] : 1. - (v0[1] - v1[1]))
+				* (zj ? v0[2] - v1[2] : 1. - (v0[2] - v1[2]));
+		}
+		return sum / 256.;
+	}
+	return (0 <= v1[0] && v1[0] < FIELD && 0 <= v1[1] && v1[1] < FIELD && 0 <= v1[2] && v1[2] < FIELDZ ? (*field)[v1[0]][v1[1]][v1[2]][3] / 256. : 0.);
+}
+
+double galaxy_get_star_density(Viewer *vw){
+	CoordSys *csys = vw->cs->getGame()->universe;
+	return galaxy_get_star_density_pos(vw->pos, vw->cs);
+}
+
+Vec3d getGalaxyOffset(){
+	/// The Sol is located in 25000 ly offset from the center of Milky Way Galaxy
+	static const Vec3d solarsystempos(-0, -25000.0 * LIGHTYEAR_PER_KILOMETER, 0);
+	return solarsystempos;
+}

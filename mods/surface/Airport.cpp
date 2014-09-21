@@ -2,6 +2,7 @@
  * \brief Implementation of Airport class.
  */
 #include "Airport.h"
+#include "EntityRegister.h"
 #include "SurfaceCS.h"
 #include "btadapt.h"
 #include "sqadapt.h"

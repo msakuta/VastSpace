@@ -223,6 +223,10 @@ int glwdragpos[2] = {0}; ///< Memory for starting position of dragging.
 GLwindow::GLwindow(Game *game, const char *atitle) : GLelement(game), title(atitle), modal(NULL), next(NULL), onFocusEnter(NULL), onFocusLeave(NULL){
 	// Default is to snap on border
 	align |= AlignAuto;
+
+	sq_resetobject(&sq_onDraw);
+	sq_resetobject(&sq_onMouse);
+	sq_resetobject(&sq_onMouseState);
 }
 
 /// Appends a GLwindow to screen window list.
@@ -455,6 +459,28 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 //		glwprintf("%.*s", (int)(x / fontwidth), title);
 		glwprintf("%s", title.c_str());
 	}
+
+	if(!sq_isnull(sq_onDraw)){
+		HSQUIRRELVM v = game->sqvm;
+		sqa::StackReserver sr(v);
+		sq_pushobject(v, sq_onDraw);
+		sq_pushroottable(v);
+
+		auto def = [v](const SQChar *name, int value){
+			sq_pushstring(v, name, -1);
+			sq_pushinteger(v, value);
+			sq_newslot(v, -3, SQFalse);
+		};
+
+		sq_newtable(v);
+		def(_SC("mousex"), gvp.mousex);
+		def(_SC("mousey"), gvp.mousey);
+		def(_SC("mx"), gvp.mx);
+		def(_SC("my"), gvp.my);
+
+		sq_call(v, 2, SQFalse, SQTrue);
+	}
+
 	if(!(flags & GLW_COLLAPSE) && r_window_scissor){
 		glPopAttrib();
 	}
@@ -520,6 +546,21 @@ int GLwindow::glwMouseCursorState(int x, int y){
 }
 
 int GLwindow::mouseCursorState(int mousex, int mousey)const{
+	if(!sq_isnull(sq_onMouseState)){
+		HSQUIRRELVM v = game->sqvm;
+		StackReserver sr(v);
+		sq_pushobject(v, sq_onMouseState);
+		sq_pushroottable(v);
+		sq_pushinteger(v, mousex);
+		sq_pushinteger(v, mousey);
+		if(SQ_FAILED(sq_call(v, 3, SQTrue, SQTrue)))
+			return 0;
+		SQInteger i;
+		if(SQ_FAILED(sq_getinteger(v, -1, &i)))
+			return 0;
+		return i;
+
+	}
 	return 0;
 }
 
@@ -566,7 +607,50 @@ void GLwindow::draw(GLwindowState &,double){}
  * \return 0 if this window does not process the mouse event, otherwise consume the event.
  * \sa mouseFunc(), mouseDrag(), mouseEnter(), mouseNC() and mouseLeave()
  */
-int GLwindow::mouse(GLwindowState&,int,int,int,int){return 0;}
+int GLwindow::mouse(GLwindowState& ws, int key, int state, int x, int y){
+	if(!sq_isnull(sq_onMouse)){
+		HSQUIRRELVM v = game->sqvm;
+		sqa::StackReserver sr(v);
+		sq_pushobject(v, sq_onMouse);
+		sq_pushroottable(v);
+
+		// Utility closure to define a table member.
+		auto def = [v](const SQChar *name, int value){
+			sq_pushstring(v, name, -1);
+			sq_pushinteger(v, value);
+			sq_newslot(v, -3, SQFalse);
+		};
+
+		// Push a table containing event info
+		sq_newtable(v);
+
+		sq_pushstring(v, _SC("key"), -1);
+		switch(key){
+			case GLUT_LEFT_BUTTON: sq_pushstring(v, _SC("leftButton"), -1); break;
+			case GLUT_MIDDLE_BUTTON: sq_pushstring(v, _SC("middleButton"), -1); break;
+			case GLUT_RIGHT_BUTTON: sq_pushstring(v, _SC("rightButton"), -1); break;
+			case GLUT_WHEEL_UP: sq_pushstring(v, _SC("wheelUp"), -1); break;
+			case GLUT_WHEEL_DOWN: sq_pushstring(v, _SC("wheelDown"), -1); break;
+			case GLUT_XBUTTON1: sq_pushstring(v, _SC("xbutton1"), -1); break;
+			case GLUT_XBUTTON2: sq_pushstring(v, _SC("xbutton2"), -1); break;
+		}
+		sq_newslot(v, -3, SQFalse);
+
+		sq_pushstring(v, _SC("state"), -1);
+		switch(state){
+			case GLUT_DOWN: sq_pushstring(v, _SC("down"), -1); break;
+			case GLUT_UP: sq_pushstring(v, _SC("up"), -1); break;
+			case GLUT_KEEP_DOWN: sq_pushstring(v, _SC("keepDown"), -1); break;
+			case GLUT_KEEP_UP: sq_pushstring(v, _SC("keepUp"), -1); break;
+		}
+		sq_newslot(v, -3, SQFalse);
+
+		def(_SC("x"), x);
+		def(_SC("y"), y);
+		sq_call(v, 2, SQFalse, SQTrue);
+	}
+	return 0;
+}
 
 void GLwindow::mouseEnter(GLwindowState&){} ///< Derived classes can override to define mouse responses.
 void GLwindow::mouseLeave(GLwindowState&){} ///< Derived classes can override to define mouse responses.
@@ -607,7 +691,12 @@ int GLwindow::specialKey(int){return 0;}
 /// \param dt frametime of this frame.
 void GLwindow::anim(double){}
 void GLwindow::postframe(){}
-GLwindow::~GLwindow(){}
+GLwindow::~GLwindow(){
+	HSQUIRRELVM v = game->sqvm;
+	sq_release(v, &sq_onDraw);
+	sq_release(v, &sq_onMouse);
+	sq_release(v, &sq_onMouseState);
+}
 
 GLwindow *GLwindow::lastover = NULL;
 GLwindow *GLwindow::captor = NULL;
@@ -937,6 +1026,8 @@ const SQUserPointer GLwindow::tt_GLwindow = SQUserPointer("GLwindow");
 static Initializer init_GLwindow("GLwindow", GLwindow::sq_define);
 
 bool GLwindow::sq_define(HSQUIRRELVM v){
+	static const SQUserPointer tt_GLWrect = SQUserPointer("GLWrect");
+
 	StackReserver sr(v);
 	sq_pushstring(v, _SC("GLwindow"), -1);
 	if(SQ_SUCCEEDED(sq_get(v, -2)))
@@ -949,8 +1040,200 @@ bool GLwindow::sq_define(HSQUIRRELVM v){
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, tt_GLwindow);
 	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
+
+	/// Squirrel constructor
+	register_closure(v, _SC("constructor"), [](HSQUIRRELVM v){
+		SQInteger argc = sq_gettop(v);
+		Game *game = (Game*)sq_getforeignptr(v);
+		const SQChar *title;
+		if(SQ_FAILED(sq_getstring(v, 2, &title)))
+			title = NULL;
+		GLwindow *p = new GLwindow(game, title);
+
+		sq_assignobj(v, p);
+		glwAppend(p);
+		return SQInteger(0);
+	});
+
+	register_closure(v, _SC("clientRect"), [](HSQUIRRELVM v){
+		GLwindow *w = sq_refobj(v);
+		if(!w)
+			return sq_throwerror(v, _SC("GLwindow is destroyed"));
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("GLWrect"), -1);
+		if(SQ_FAILED(sq_get(v, -2)))
+			return sq_throwerror(v, _SC("GLWrect not found"));
+		if(SQ_FAILED(sq_createinstance(v, -1)))
+			return sq_throwerror(v, _SC("GLWrect intantiation error"));
+		void *p;
+		if(SQ_FAILED(sq_getinstanceup(v, -1, &p, tt_GLWrect)))
+			return sq_throwerror(v, _SC("GLWrect instance is corrupted"));
+		*((GLWrect*)p) = w->clientRect();
+		return SQInteger(1);
+	});
+
 	register_closure(v, _SC("close"), sqf_close);
 	sq_createslot(v, -3);
+
+	sq_pushstring(v, _SC("GLWrect"), -1);
+	sq_newclass(v, SQFalse);
+	sq_settypetag(v, -1, tt_GLWrect);
+	sq_setclassudsize(v, -1, sizeof(GLWrect));
+	static auto refobj = [](HSQUIRRELVM v, SQInteger idx){
+		void *p;
+		if(SQ_FAILED(sq_getinstanceup(v, idx, &p, tt_GLWrect)))
+			throw sq_throwerror(v, _SC("GLWrect set fail"));
+		return (GLWrect*)p;
+	};
+	register_closure(v, _SC("_get"), [](HSQUIRRELVM v){
+		GLWrect *pr = refobj(v, 1);
+		const SQChar *prop;
+		if(SQ_FAILED(sq_getstring(v, 2, &prop)))
+			return sq_throwerror(v, _SC("GLWrect get fail"));
+		auto getter = [v,pr,prop](const SQChar *name, long GLWrect::*memb){
+			if(!scstrcmp(prop, name)){
+				sq_pushinteger(v, pr->*memb);
+				return true;
+			}
+			return false;
+		};
+		if(getter(_SC("x0"), &GLWrect::x0) || getter(_SC("x1"), &GLWrect::x1)
+			|| getter(_SC("y0"), &GLWrect::y0) || getter(_SC("y1"), &GLWrect::y1))
+				return SQInteger(1);
+		if(!scstrcmp(prop, _SC("width"))){
+			sq_pushinteger(v, pr->width());
+			return SQInteger(1);
+		}
+		else if(!scstrcmp(prop, _SC("height"))){
+			sq_pushinteger(v, pr->height());
+			return SQInteger(1);
+		}
+		return SQInteger(0);
+	});
+	register_closure(v, _SC("_set"), [](HSQUIRRELVM v){
+		GLWrect *pr = refobj(v, 1);
+		const SQChar *prop;
+		if(SQ_FAILED(sq_getstring(v, 2, &prop)))
+			return sq_throwerror(v, _SC("GLWrect set fail"));
+		auto setter = [v,pr,prop](const SQChar *name, long GLWrect::*memb){
+			if(!scstrcmp(prop, name)){
+				SQInteger i;
+				if(SQ_FAILED(sq_getinteger(v, 3, &i))){
+					throw sq_throwerror(v, _SC("GLWrect set fail"));
+				}
+				pr->*memb = i;
+				return true;
+			}
+			return false;
+		};
+		try{
+			if(setter(_SC("x0"), &GLWrect::x0) || setter(_SC("x1"), &GLWrect::x1)
+				|| setter(_SC("y0"), &GLWrect::y0) || setter(_SC("y1"), &GLWrect::y1))
+					return SQInteger(1);
+		}
+		catch(SQInteger i){
+			return i;
+		}
+		return SQInteger(0);
+	});
+	register_closure(v, _SC("move"), [](HSQUIRRELVM v){
+		GLWrect *pr = refobj(v, 1);
+		SQInteger i = 2, x, y;
+		auto getter = [v, &i](SQInteger &value){
+			if(SQ_FAILED(sq_getinteger(v, i++, &value)))
+				return false;
+			return true;
+		};
+		if(!getter(x) || !getter(y))
+			return sq_throwerror(v, _SC("GLWrect.move() argument wrong"));
+		pr->move(x, y);
+		sq_push(v, 1); // Return a reference to itself (do not make a copy)
+		return SQInteger(1);
+	});
+	register_closure(v, _SC("moved"), [](HSQUIRRELVM v){
+		GLWrect *pr = refobj(v, 1);
+		SQInteger i = 2, x, y;
+		auto getter = [v, &i](SQInteger &value){
+			if(SQ_FAILED(sq_getinteger(v, i++, &value)))
+				return false;
+			return true;
+		};
+		if(!getter(x) || !getter(y))
+			return sq_throwerror(v, _SC("GLWrect.moved() argument wrong"));
+		sq_pushroottable(v);
+		sq_pushstring(v, _SC("GLWrect"), -1);
+		if(SQ_FAILED(sq_get(v, -2)))
+			return sq_throwerror(v, _SC("GLWrect.moved() could not find GLWrect class"));
+		if(SQ_FAILED(sq_createinstance(v, -1)))
+			return sq_throwerror(v, _SC("GLWrect.moved() failed to instantiate GLWrect"));
+		GLWrect *pr2 = refobj(v, -1);
+		*pr2 = pr->moved(x, y);
+		return SQInteger(1);
+	});
+	sq_createslot(v, -3);
+
+	// Following functions are not member of GLwindow but defined for use in onDraw event handler.
+
+	/// Squirrel adapter for glwpos2d
+	register_closure(v, _SC("glwpos2d"), [](HSQUIRRELVM v){
+		SQFloat x, y;
+		if(SQ_FAILED(sq_getfloat(v, 2, &x)) || SQ_FAILED(sq_getfloat(v, 3, &y)))
+			return sq_throwerror(v, _SC("glwpos2d argument is not convertible to float"));
+		glwpos2d(x, y);
+		return SQInteger(0);
+	});
+
+	/// Squirrel function to draw a string on the GUI.  No adapter for glwprintf because Squirrel can format strings better.
+	register_closure(v, _SC("glwprint"), [](HSQUIRRELVM v){
+		const SQChar *str;
+		if(SQ_FAILED(sq_getstring(v, 2, &str)))
+			return sq_throwerror(v, _SC("glwprint argument is not convertible to string"));
+		sq_pushinteger(v, glwprint(str));
+		return SQInteger(1);
+	});
+
+	register_closure(v, _SC("fontheight"), [](HSQUIRRELVM v){
+		sq_pushinteger(v, fontheight);
+		return SQInteger(1);
+	});
+
+	register_closure(v, _SC("fontwidth"), [](HSQUIRRELVM v){
+		sq_pushinteger(v, fontwidth);
+		return SQInteger(1);
+	});
+
+	register_closure(v, _SC("glwVScrollBarDraw"), [](HSQUIRRELVM v){
+		GLwindow *glw = sq_refobj(v, 2);
+		if(!glw)
+			return SQInteger(0);
+		SQInteger i = 3, x0, y0, w, h, range, iy;
+		auto getter = [v, &i](SQInteger &value){
+			if(SQ_FAILED(sq_getinteger(v, i++, &value)))
+				return false;
+			return true;
+		};
+		if(!getter(x0) || !getter(y0) || !getter(w) || !getter(h) || !getter(range) || !getter(iy))
+			return sq_throwerror(v, _SC("glwVScrollBarDraw argument wrong"));
+		glwVScrollBarDraw(glw, x0, y0, w, h, range, iy);
+		return SQInteger(0);
+	});
+
+	register_closure(v, _SC("glwVScrollBarMouse"), [](HSQUIRRELVM v){
+		GLwindow *glw = sq_refobj(v, 2);
+		if(!glw)
+			return SQInteger(0);
+		SQInteger i = 3, mousex, mousey, x0, y0, w, h, range, iy;
+		auto getter = [v, &i](SQInteger &value){
+			if(SQ_FAILED(sq_getinteger(v, i++, &value)))
+				return false;
+			return true;
+		};
+		if(!getter(mousex) || !getter(mousey) || !getter(x0) || !getter(y0) || !getter(w) || !getter(h) || !getter(range) || !getter(iy))
+			return sq_throwerror(v, _SC("glwVScrollBarMouse argument wrong"));
+		sq_pushinteger(v, glwVScrollBarMouse(glw, mousex, mousey, x0, y0, w, h, range, iy));
+		return SQInteger(1);
+	});
+
 	return true;
 }
 
@@ -989,6 +1272,18 @@ SQInteger GLwindow::sqGet(HSQUIRRELVM v, const SQChar *wcs)const{
 	}
 	else if(!strcmp(wcs, _SC("title"))){
 		sq_pushstring(v, getTitle(), -1);
+		return 1;
+	}
+	else if(!scstrcmp(wcs, _SC("onDraw"))){
+		sq_pushobject(v, sq_onDraw);
+		return 1;
+	}
+	else if(!scstrcmp(wcs, _SC("onMouse"))){
+		sq_pushobject(v, sq_onMouse);
+		return 1;
+	}
+	else if(!scstrcmp(wcs, _SC("onMouseState"))){
+		sq_pushobject(v, sq_onMouseState);
 		return 1;
 	}
 	else
@@ -1041,6 +1336,33 @@ SQInteger GLwindow::sqSet(HSQUIRRELVM v, const SQChar *wcs){
 		setTitle(s);
 		return 0;
 	}
+	else if(!strcmp(wcs, _SC("onDraw"))){
+		HSQOBJECT obj;
+		if(SQ_SUCCEEDED(sq_getstackobj(v, 3, &obj))){
+			sq_release(v, &sq_onDraw);
+			sq_onDraw = obj;
+			sq_addref(v, &sq_onDraw);
+		}
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("onMouse"))){
+		HSQOBJECT obj;
+		if(SQ_SUCCEEDED(sq_getstackobj(v, 3, &obj))){
+			sq_release(v, &sq_onMouse);
+			sq_onMouse = obj;
+			sq_addref(v, &sq_onMouse);
+		}
+		return 0;
+	}
+	else if(!strcmp(wcs, _SC("onMouseState"))){
+		HSQOBJECT obj;
+		if(SQ_SUCCEEDED(sq_getstackobj(v, 3, &obj))){
+			sq_release(v, &sq_onMouseState);
+			sq_onMouseState = obj;
+			sq_addref(v, &sq_onMouseState);
+		}
+		return 0;
+	}
 	else
 		return GLelement::sqSet(v, wcs);
 }
@@ -1051,8 +1373,12 @@ SQInteger GLwindow::sqf_close(HSQUIRRELVM v){
 	return 0;
 }
 
-const SQChar *GLwindow::sqClassName()const{
+const SQChar *GLwindow::s_sqClassName(){
 	return _SC("GLwindow");
+}
+
+const SQChar *GLwindow::sqClassName()const{
+	return s_sqClassName();
 }
 
 
@@ -1143,14 +1469,16 @@ GLwindowSizeable::GLwindowSizeable(Game *game, const char *title) : st(game, tit
 	maxw = maxh = 1000;
 }
 
-int GLwindowSizeable::mouse(GLwindowState &, int, int, int, int){return 0;}
+int GLwindowSizeable::mouse(GLwindowState &ws, int key, int state, int x, int y){
+	return GLwindow::mouse(ws, key, state, x, y);
+}
 
 bool GLwindowSizeable::mouseNC(GLwindowState &, int button, int state, int x, int y){
 	GLWrect r = clientRect();
 
 	// Pinned window should not be able to change size.
 	if(button == GLUT_LEFT_BUTTON && !getPinned()){
-		int edgeflags = GLwindowSizeable::mouseCursorState(x, y);
+		int edgeflags = mouseCursorStateInt(x, y);
 		if(state == GLUT_DOWN){
 			if(edgeflags){
 				sizing = edgeflags;
@@ -1188,7 +1516,7 @@ bool GLwindowSizeable::mouseNC(GLwindowState &, int button, int state, int x, in
 	return 0;
 }
 
-int GLwindowSizeable::mouseCursorState(int x, int y)const{
+int GLwindowSizeable::mouseCursorStateInt(int x, int y)const{
 	if(sizing)
 		return sizing;
 	if(getPinned())
@@ -1200,6 +1528,59 @@ int GLwindowSizeable::mouseCursorState(int x, int y)const{
 	if(r.x0 <= x && x < r.x1)
 		edgeflags |= (r.y1 - GLWSIZEABLE_BORDER <= y && y < r.y1 ? 2 : r.y0 <= y && y < r.y0 + GLWSIZEABLE_BORDER ? 1 : 0) << 2;
 	return edgeflags;
+}
+
+int GLwindowSizeable::mouseCursorState(int x, int y)const{
+	int ret = mouseCursorStateInt(x, y);
+	if(ret)
+		return ret;
+	else
+		return st::mouseCursorState(x, y);
+}
+
+const SQChar *GLwindowSizeable::s_sqClassName(){
+	return _SC("GLwindowSizeable");
+}
+
+const SQChar *GLwindowSizeable::sqClassName()const{
+	return s_sqClassName();
+}
+
+static Initializer init_GLwindowSizeable("GLwindowSizeable", GLwindowSizeable::sq_define);
+
+bool GLwindowSizeable::sq_define(HSQUIRRELVM v){
+	static const SQUserPointer tt_GLwindowSizeable = SQUserPointer("GLwindowSizeable");
+
+	StackReserver sr(v);
+	sq_pushstring(v, s_sqClassName(), -1);
+	if(SQ_SUCCEEDED(sq_get(v, -2)))
+		return false;
+	GLwindow::sq_define(v);
+	sq_pushstring(v, s_sqClassName(), -1);
+	sq_pushstring(v, st::s_sqClassName(), -1);
+	if(SQ_FAILED(sq_get(v, -3)))
+		throw SQFError(_SC("GLwindow is not defined"));
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, tt_GLwindowSizeable);
+	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
+
+	/// Squirrel constructor
+	register_closure(v, _SC("constructor"), [](HSQUIRRELVM v){
+		SQInteger argc = sq_gettop(v);
+		Game *game = (Game*)sq_getforeignptr(v);
+		const SQChar *title;
+		if(SQ_FAILED(sq_getstring(v, 2, &title)))
+			title = NULL;
+		GLwindowSizeable *p = new GLwindowSizeable(game, title);
+
+		sq_assignobj(v, p);
+		glwAppend(p);
+		return SQInteger(0);
+	});
+
+	sq_createslot(v, -3);
+
+	return true;
 }
 
 
@@ -1341,57 +1722,67 @@ HFONT newFont(int size){
 
 static HDC InitGlwHDC(int size){
 	extern HWND hWndApp;
-	static bool init = false;
-	static HFONT hPrevFont = NULL;
-	static HDC g_glwhdc = NULL;
-	HDC &hdc = g_glwhdc;
-	if(!init){
-		init = true;
-		HWND hw = hWndApp;
-		HDC hwdc = GetDC(hw);
-		hdc = CreateCompatibleDC(hwdc);
-		ReleaseDC(hw,hwdc);
-	}
+
+	/// Cache object for DC and font, cleanup on exit
+	static struct DCFont{
+		HDC hdc;
+		HFONT hfont;
+		DCFont(HWND hw) : hfont(NULL){
+			HDC hwdc = GetDC(hw);
+			hdc = CreateCompatibleDC(hwdc);
+			ReleaseDC(hw,hwdc);
+		}
+		~DCFont(){
+			if(hfont)
+				DeleteObject(hfont);
+			DeleteDC(hdc);
+		}
+	} dcfont(hWndApp);
+
 	static int currentfontheight = 0;
 	if(currentfontheight != size){
 		currentfontheight = size;
 		HFONT hNextFont = newFont(size);
-		SelectObject(hdc, hNextFont);
-		if(hPrevFont != NULL)
-			DeleteObject(hPrevFont);
-		hPrevFont = hNextFont;
+		SelectObject(dcfont.hdc, hNextFont);
+		if(dcfont.hfont != NULL)
+			DeleteObject(dcfont.hfont);
+		dcfont.hfont = hNextFont;
 	}
-	return hdc;
+	return dcfont.hdc;
 }
 
-int glwPutTextureStringN(const char *s, int n, int size){
-	static int init = 0;
+static std::map<GlyphCacheKey, GlyphCache> g_glyphmap;
+
+/// Returns the texture unit for font painting (atlas)
+/// and also initializes it if necessary.
+static GLuint initFontTex(){
 	static GLuint fonttex = 0;
-	GLint oldtex;
-	int i;
-	static std::map<GlyphCacheKey, GlyphCache> listmap;
-	static int sx = 0, sy = 0, maxheight = 0;
-	static void *buf;
+	if(fonttex)
+		return fonttex;
+
 	static GLubyte backbuf[GLDTW][GLDTW] = {0};
-	HDC hdc = InitGlwHDC(size);
 
-	glGetIntegerv(GL_TEXTURE_2D, &oldtex);
-	if(!init){
-		init = 1;
-
-		glGenTextures(1, &fonttex);
-		glBindTexture(GL_TEXTURE_2D, fonttex);
-
-		// Initialize with pitch black image
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, GLDTW, GLDTW, 0, GL_ALPHA, GL_UNSIGNED_BYTE, backbuf);
-	}
+	glGenTextures(1, &fonttex);
 
 	glBindTexture(GL_TEXTURE_2D, fonttex);
 
-	size_t wsz = MultiByteToWideChar(CP_UTF8, 0, s, n, NULL, 0);
-	wchar_t *wstr = new wchar_t[wsz];
-	MultiByteToWideChar(CP_UTF8, 0, s, -1, wstr, wsz);
-	for(i = 0; i < wsz;){
+	// Initialize with pitch black image
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, GLDTW, GLDTW, 0, GL_ALPHA, GL_UNSIGNED_BYTE, backbuf);
+
+	return fonttex;
+}
+
+/// Bake glyphs into OpenGL texture.
+/// \param nofonttex true if calling function have not bound the texture unit for font.
+static void bakeGlyphs(const wchar_t *wstr, int wsz, int size, bool nofonttex){
+	static int sx = 0, sy = 0, maxheight = 0;
+	static void *buf;
+	GLint oldtex = 0;
+	bool setfont = false;
+
+	static std::map<GlyphCacheKey, GlyphCache> &listmap = g_glyphmap;
+
+	for(int i = 0; i < wsz;){
 		int nc = 1;
 		wchar_t wch;
 		wch = wstr[i];
@@ -1402,6 +1793,7 @@ int glwPutTextureStringN(const char *s, int n, int size){
 		}*/
 		GlyphCacheKey gck(wch, size);
 		if(listmap.find(gck) == listmap.end()){
+			HDC hdc = InitGlwHDC(size);
 			TEXTMETRIC tm;
 			GetTextMetrics(hdc, &tm);
 			GlyphCache gc;
@@ -1464,6 +1856,13 @@ int glwPutTextureStringN(const char *s, int n, int size){
 					*it = *it * 255 / 64;
 #endif
 
+				// Bind the texture only if necessary and no more than once
+				if(nofonttex && !setfont){
+					glGetIntegerv(GL_TEXTURE_2D, &oldtex);
+					glBindTexture(GL_TEXTURE_2D, initFontTex());
+					setfont = true;
+				}
+
 				// Due to a bug in GeForce GTS250 OpenGL driver, we just cannot pass gm.gmBlackBoxX to 5th argument (width), but rather round it up to multiple of 4 bytes.
 				// Excess pixels in the 4 byte boundary will overwritten, but they're always right side of the subimage, meaning no content have chance to be overwritten.
 				// The bug is that lower end of the subimage is not correctly transferred but garbage pixels, which implies that count of required bytes transferred is incorrectly calculated.
@@ -1508,6 +1907,25 @@ int glwPutTextureStringN(const char *s, int n, int size){
 		i += nc;
 	}
 
+	// Restore the original state only if we have needed to change it
+	if(nofonttex && setfont)
+		glBindTexture(GL_TEXTURE_2D, oldtex);
+}
+
+int glwPutTextureStringN(const char *s, int n, int size){
+	static int init = 0;
+	GLint oldtex;
+	int i;
+
+	glGetIntegerv(GL_TEXTURE_2D, &oldtex);
+	glBindTexture(GL_TEXTURE_2D, initFontTex());
+
+	size_t wsz = MultiByteToWideChar(CP_UTF8, 0, s, n, NULL, 0);
+	wchar_t *wstr = new wchar_t[wsz];
+	MultiByteToWideChar(CP_UTF8, 0, s, -1, wstr, wsz);
+
+	bakeGlyphs(wstr, wsz, size, false);
+
 //	glPushMatrix();
 	glPushAttrib(GL_TEXTURE_BIT);
 	glEnable(GL_TEXTURE_2D);
@@ -1531,7 +1949,7 @@ int glwPutTextureStringN(const char *s, int n, int size){
 			nc++;
 			MultiByteToWideChar(CP_UTF8, 0, &s[i], nc, &wch, 1);
 		}*/
-		GlyphCache gc = listmap[GlyphCacheKey(wch, size)];
+		GlyphCache gc = g_glyphmap[GlyphCacheKey(wch, size)];
 		glTexCoord2d((double)gc.x0 / GLDTW, (double)gc.y0 / GLDTW); glVertex2i(sumx, -(gc.y1 - gc.y0));
 		glTexCoord2d((double)gc.x1 / GLDTW, (double)gc.y0 / GLDTW); glVertex2i(sumx + gc.x1 - gc.x0, -(gc.y1 - gc.y0));
 		glTexCoord2d((double)gc.x1 / GLDTW, (double)gc.y1 / GLDTW); glVertex2i(sumx + gc.x1 - gc.x0, 0);
@@ -1555,14 +1973,24 @@ int glwPutTextureString(const char *s, int size){
 }
 
 int glwGetSizeTextureStringN(const char *s, long n, int isize){
-	HDC hdc = InitGlwHDC(isize);
 	size_t wsz = MultiByteToWideChar(CP_UTF8, 0, s, n, NULL, 0);
 	wchar_t *wstr = new wchar_t[wsz];
 	MultiByteToWideChar(CP_UTF8, 0, s, n, wstr, wsz);
-	SIZE size;
-	GetTextExtentPoint32W(hdc, wstr, wsz, &size);
+
+	bakeGlyphs(wstr, wsz, isize, true);
+
+	int ret = 0;
+	for(int i = 0; i < wsz; i++){
+		wchar_t wch;
+		wch = wstr[i];
+		GlyphCacheKey gck(wch, isize);
+		auto it = g_glyphmap.find(gck);
+		if(it != g_glyphmap.end()){
+			ret += it->second.x1 - it->second.x0;
+		}
+	}
 	delete[] wstr;
-	return size.cx;
+	return ret;
 }
 
 int glwGetSizeTextureString(const char *s, int size){
@@ -1603,6 +2031,13 @@ int glwprintf(const char *f, ...){
 	ret = vsprintf(buf, f, ap);
 #endif
 
+	glwprint(buf);
+
+	va_end(ap);
+	return ret;
+}
+
+int glwprint(const char *buf){
 	if(r_texture_font){
 /*		double raspo[4];
 		glGetDoublev(GL_CURRENT_RASTER_POSITION, raspo);*/
@@ -1614,8 +2049,7 @@ int glwprintf(const char *f, ...){
 	}
 	else
 		gldPutString(buf);
-	va_end(ap);
-	return ret;
+	return strlen(buf);
 }
 
 /// Returns width of the formatted string drawn if it is passed to glwprintf().

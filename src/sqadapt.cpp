@@ -31,6 +31,7 @@ extern "C"{
 #include <sqstdio.h>
 #include <sqstdaux.h>
 #include <sqstdmath.h>
+#include <sqstdstring.h>
 //#include <../sqplus/sqplus.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -155,8 +156,6 @@ const SQUserPointer tt_Vec4f = const_cast<char*>("Vec4f");
 const SQUserPointer tt_Entity = const_cast<char*>("Entity");
 const SQUserPointer tt_GLwindow = const_cast<char*>("GLwindow");
 const SQUserPointer tt_Game = const_cast<char*>("Game");
-
-static void register_const(HSQUIRRELVM v, int var, const SQChar *vname);
 
 static void sqf_print(HSQUIRRELVM v, const SQChar *s, ...) 
 { 
@@ -485,10 +484,21 @@ static SQInteger sqf_RandomSequencePtr_next(HSQUIRRELVM v){
 static SQInteger sqf_RandomSequencePtr_nextd(HSQUIRRELVM v){
 	RandomSequence *p;
 	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
-		return sq_throwerror(v, _SC("RandomSequencePtr.next() cannot obtain pointer"));
+		return sq_throwerror(v, _SC("RandomSequencePtr.nextd() cannot obtain pointer"));
 	if(!p)
 		return sq_throwerror(v, _SC("RandomSequencePtr is null"));
 	sq_pushfloat(v, SQFloat(p->nextd()));
+	return 1;
+}
+
+/// \brief Obtain next random number sequence in double
+static SQInteger sqf_RandomSequencePtr_nextGauss(HSQUIRRELVM v){
+	RandomSequence *p;
+	if(SQ_FAILED(sq_getinstanceup(v, 1, (SQUserPointer*)&p, NULL)))
+		return sq_throwerror(v, _SC("RandomSequencePtr.nextGauss() cannot obtain pointer"));
+	if(!p)
+		return sq_throwerror(v, _SC("RandomSequencePtr is null"));
+	sq_pushfloat(v, SQFloat(p->nextGauss()));
 	return 1;
 }
 
@@ -980,7 +990,7 @@ SQInteger sqf_glVertex(HSQUIRRELVM v){
 
 SQInteger sqf_glVertex2d(HSQUIRRELVM v){
 	try{
-		GLfloat f[2];
+		SQFloat f[2];
 		if(SQ_FAILED(sq_getfloat(v, 2, &f[0])))
 			return SQ_ERROR;
 		if(SQ_FAILED(sq_getfloat(v, 3, &f[1])))
@@ -995,14 +1005,14 @@ SQInteger sqf_glVertex2d(HSQUIRRELVM v){
 
 SQInteger sqf_glScaled(HSQUIRRELVM v){
 	try{
-		GLfloat f[3];
+		SQFloat f[3];
 		if(SQ_FAILED(sq_getfloat(v, 2, &f[0])))
 			return SQ_ERROR;
 		if(SQ_FAILED(sq_getfloat(v, 3, &f[1])))
 			return SQ_ERROR;
 		if(SQ_FAILED(sq_getfloat(v, 4, &f[2])))
 			return SQ_ERROR;
-		glScalef(f[0], f[1], f[2]);
+		glScalef(GLfloat(f[0]), GLfloat(f[1]), GLfloat(f[2]));
 	}
 	catch(SQFError &e){
 		return sq_throwerror(v, e.what());
@@ -1012,7 +1022,7 @@ SQInteger sqf_glScaled(HSQUIRRELVM v){
 
 SQInteger sqf_glTranslated(HSQUIRRELVM v){
 	try{
-		GLfloat f[3];
+		SQFloat f[3];
 		if(SQ_FAILED(sq_getfloat(v, 2, &f[0])))
 			return SQ_ERROR;
 		if(SQ_FAILED(sq_getfloat(v, 3, &f[1])))
@@ -1050,6 +1060,38 @@ static SQInteger sqf_glRasterPos(HSQUIRRELVM v){
 	}
 	return 0;
 }
+
+static SQInteger sqf_glColor4f(HSQUIRRELVM v){
+	SQFloat f[4];
+	for(int i = 0; i < 4; i++){
+		if(SQ_FAILED(sq_getfloat(v, 2 + i, &f[i])))
+			return sq_throwerror(v, _SC("Argument type wrong in glColor4f"));
+	}
+	glColor4dv(Vec4d(f));
+	return SQInteger(0);
+}
+
+static SQInteger sqf_glColor4fv(HSQUIRRELVM v){
+	SQFloat f[4];
+	for(int i = 0; i < 4; i++){
+		sq_pushinteger(v, i);
+		if(SQ_FAILED(sq_get(v, 2)) || SQ_FAILED(sq_getfloat(v, -1, &f[i])))
+			return sq_throwerror(v, _SC("Argument type wrong in glColor4fv"));
+	}
+	glColor4dv(Vec4d(f));
+	return SQInteger(0);
+}
+
+static SQInteger sqf_glScissor(HSQUIRRELVM v){
+	SQFloat f[4];
+	for(int i = 0; i < 4; i++){
+		if(SQ_FAILED(sq_getfloat(v, 2 + i, &f[i])))
+			return sq_throwerror(v, _SC("Argument type wrong in glColor4f"));
+	}
+	glScissor(GLint(f[0]), GLint(f[1]), GLint(f[2]), GLint(f[3]));
+	return SQInteger(0);
+}
+
 
 static SQInteger sqf_gldprint(HSQUIRRELVM v){
 	try{
@@ -1236,27 +1278,76 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	register_global_func(v, sqf_isLinux, _SC("isLinux"));
 	register_global_func(v, sqf_gnewthread, _SC("gnewthread"));
 #ifdef _WIN32
+	register_global_func(v, sqf_adapter1<glEnable>, _SC("glEnable"));
+	register_global_func(v, sqf_adapter1<glDisable>, _SC("glDisable"));
 	register_global_func(v, sqf_adapter1<glBegin>, _SC("glBegin"));
 	register_global_func(v, sqf_glVertex, _SC("glVertex"));
 	register_global_func(v, sqf_glVertex2d, _SC("glVertex2d"));
 	register_global_func(v, sqf_adapter0<glEnd>, _SC("glEnd"));
 	register_global_func(v, sqf_adapter0<glPushMatrix>, _SC("glPushMatrix"));
 	register_global_func(v, sqf_adapter0<glPopMatrix>, _SC("glPopMatrix"));
+	register_global_func(v, sqf_adapter1<glPushAttrib>, _SC("glPushAttrib"));
+	register_global_func(v, sqf_adapter0<glPopAttrib>, _SC("glPopAttrib"));
 	register_global_func(v, sqf_adapter0<glLoadIdentity>, _SC("glLoadIdentity"));
 	register_global_func(v, sqf_glScaled, _SC("glScaled"));
 	register_global_func(v, sqf_glTranslated, _SC("glTranslated"));
 	register_global_func(v, sqf_glTranslate, _SC("glTranslate"));
 	register_global_func(v, sqf_glRasterPos, _SC("glRasterPos"));
+	register_global_func(v, sqf_glColor4f, _SC("glColor4f"));
+	register_global_func(v, sqf_glColor4fv, _SC("glColor4fv"));
+	register_global_func(v, sqf_glScissor, _SC("glScissor"));
 	register_global_func(v, sqf_gldprint, _SC("gldprint"));
-	register_const(v, GL_LINES, _SC("GL_LINES"));
-	register_const(v, GL_LINE_STRIP, _SC("GL_LINE_STRIP"));
-	register_const(v, GL_LINE_LOOP, _SC("GL_LINE_LOOP"));
+
+	// Make Squirrel scripts be able to use the same macro constants as C++ sources.
+#define REGISTER_MACRO(a) register_const(v, _SC(#a), a)
+
+	/* AttribMask */
+	REGISTER_MACRO(GL_CURRENT_BIT);
+	REGISTER_MACRO(GL_POINT_BIT);
+	REGISTER_MACRO(GL_LINE_BIT);
+	REGISTER_MACRO(GL_POLYGON_BIT);
+	REGISTER_MACRO(GL_POLYGON_STIPPLE_BIT);
+	REGISTER_MACRO(GL_PIXEL_MODE_BIT);
+	REGISTER_MACRO(GL_LIGHTING_BIT);
+	REGISTER_MACRO(GL_FOG_BIT);
+	REGISTER_MACRO(GL_DEPTH_BUFFER_BIT);
+	REGISTER_MACRO(GL_ACCUM_BUFFER_BIT);
+	REGISTER_MACRO(GL_STENCIL_BUFFER_BIT);
+	REGISTER_MACRO(GL_VIEWPORT_BIT);
+	REGISTER_MACRO(GL_TRANSFORM_BIT);
+	REGISTER_MACRO(GL_ENABLE_BIT);
+	REGISTER_MACRO(GL_COLOR_BUFFER_BIT);
+	REGISTER_MACRO(GL_HINT_BIT);
+	REGISTER_MACRO(GL_EVAL_BIT);
+	REGISTER_MACRO(GL_LIST_BIT);
+	REGISTER_MACRO(GL_TEXTURE_BIT);
+	REGISTER_MACRO(GL_SCISSOR_BIT);
+	REGISTER_MACRO(GL_ALL_ATTRIB_BITS);
+
+	/* BeginMode */
+	REGISTER_MACRO(GL_POINTS);
+	REGISTER_MACRO(GL_LINES);
+	REGISTER_MACRO(GL_LINE_STRIP);
+	REGISTER_MACRO(GL_LINE_LOOP);
+	REGISTER_MACRO(GL_QUADS);
+	REGISTER_MACRO(GL_QUAD_STRIP);
+	REGISTER_MACRO(GL_TRIANGLES);
+	REGISTER_MACRO(GL_TRIANGLE_STRIP);
+	REGISTER_MACRO(GL_TRIANGLE_FAN);
+	REGISTER_MACRO(GL_POLYGON);
+
+	// glEnable constants are so many that I won't define them all.
+	REGISTER_MACRO(GL_SCISSOR_TEST);
+
+#undef REGISTER_MACRO
+
 #endif
 
     sq_pushroottable(v); //push the root table(were the globals of the script will be stored)
 
 	sqstd_register_iolib(v);
 	sqstd_register_mathlib(v);
+	sqstd_register_stringlib(v);
 
 	// Define class TimeMeas
 	sq_pushstring(v, _SC("TimeMeas"), -1);
@@ -1272,6 +1363,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 	sq_settypetag(v, -1, tt_RandomSequencePtr);
 	register_closure(v, _SC("next"), sqf_RandomSequencePtr_next);
 	register_closure(v, _SC("nextd"), sqf_RandomSequencePtr_nextd);
+	register_closure(v, _SC("nextGauss"), sqf_RandomSequencePtr_nextGauss);
 	sq_createslot(v, -3);
 
 	// Define class Vec3d, native vector representation
@@ -1374,7 +1466,7 @@ void sqa_init(Game *game, HSQUIRRELVM *pv){
 		it->second(v);
 
 	sq_pushstring(v, _SC("stellar_file"), -1);
-	sq_pushstring(v, _SC("space.ssd"), -1);
+	sq_pushstring(v, _SC("data/space.ssd"), -1);
 	sq_createslot(v, 1);
 
 	register_global_func(v, sqf_playSound, _SC("playSound"));
@@ -1497,27 +1589,37 @@ SQRESULT sqa_dofile(HSQUIRRELVM v, const char *filename, SQInteger retval, SQBoo
 
 void register_global_func(HSQUIRRELVM v,SQFUNCTION f,const SQChar *fname)
 {
-    sq_pushroottable(v);
-    sq_pushstring(v,fname,-1);
-    sq_newclosure(v,f,0); //create a new function
-    sq_createslot(v,-3); 
-    sq_pop(v,1); //pops the root table    
+	sq_pushroottable(v);
+	sq_pushstring(v,fname,-1);
+	sq_newclosure(v,f,0); //create a new function
+	sq_createslot(v,-3);
+	sq_pop(v,1); //pops the root table
 }
 
 void register_global_var(HSQUIRRELVM v, int var, const SQChar *vname){
-    sq_pushroottable(v);
-    sq_pushstring(v,vname,-1);
-    sq_pushinteger(v,var);
-    sq_createslot(v,-3); 
-    sq_pop(v,1); //pops the root table    
+	sq_pushroottable(v);
+	sq_pushstring(v,vname,-1);
+	sq_pushinteger(v,var);
+	sq_createslot(v,-3);
+	sq_pop(v,1); //pops the root table
 }
 
-void register_const(HSQUIRRELVM v, int var, const SQChar *vname){
-    sq_pushconsttable(v);
-    sq_pushstring(v,vname,-1);
-    sq_pushinteger(v,var);
-    sq_createslot(v,-3); 
-    sq_pop(v,1); //pops the const table    
+bool register_const(HSQUIRRELVM v, const SQChar *vname, SQInteger var){
+	sq_pushconsttable(v);
+	sq_pushstring(v,vname,-1);
+	sq_pushinteger(v,var);
+	bool ret = SQ_SUCCEEDED(sq_createslot(v,-3));
+	sq_pop(v,1); //pops the const table
+	return ret;
+}
+
+bool register_static(HSQUIRRELVM v, const SQChar *vname, SQInteger var){
+	StackReserver sr(v);
+	sq_pushstring(v,vname,-1);
+	sq_pushinteger(v,var);
+	if(SQ_FAILED(sq_newslot(v, -3, SQTrue)))
+		return false;
+	return true;
 }
 
 bool register_closure(HSQUIRRELVM v, const SQChar *fname, SQFUNCTION f, SQInteger nparams, const SQChar *params){

@@ -49,10 +49,10 @@ class CoordSys{
 	void setrot(Quatd);
 	Vec3d getomg(); // Angular velocity
 	void setomg(Vec3d);
-	string name();
+	string name;
 	string[] extranames;
-	CoordSys child();
-	CoordSys next();
+	CoordSys child;
+	CoordSys next;
 	string getpath();
 	CoordSys findcspath();
 	Entity addent(string classname, Vec3d pos);
@@ -61,6 +61,10 @@ class CoordSys{
 	Vec3d transPosition(Vec3d pos, CoordSys from, bool delta); // Converts position coordinates from given system to this system.
 	Vec3d transVelocity(Vec3d velo, CoordSys from); // Converts velocity vector. Equivalent to transPosition(velo, from, true).
 	Quatd transRotation(CoordSys from); // Converts rotation expressed in quaternion from given system to this system.
+	bool solarSystem;
+	bool extent;
+	bool isolated;
+	float cs_radius; ///< Radius of coordinate system
 }
 
 class Universe extends CoordSys{
@@ -71,7 +75,7 @@ class Universe extends CoordSys{
 ::universe <- Universe();
 
 class Astrobj extends CoordSys{
-	float rad; // readonly
+	float radius; ///< Radius of the celestial body
 }
 
 class TexSphere extends Astrobj{
@@ -79,7 +83,10 @@ class TexSphere extends Astrobj{
 }
 
 class Star extends Astrobj{
-	string spectral;
+	string spectral; // Internally the same variable as spectralIndex
+	int spectralIndex; // Internally the same variable as spectral
+	static string spectralToName(int);
+	static int nameToSpectral(string);
 }
 
 class Entity{
@@ -107,6 +114,17 @@ class Entity{
 class Docker{
 	alive; // readonly
 	void addent(Entity);
+}
+
+/// Entities that can warp with hyperdrive.
+class Warpable extends Entity{
+	// These property names need revisited
+	bool warping;
+	Vec3d warpdst;
+	CoordSys warpdstcs;
+	float capacitor;
+	float capacity;
+	float warpSpeed;
 }
 
 class Player{
@@ -167,6 +185,11 @@ int unloadModule(string path);
 ///   sendClientMessage("DockCommand", Entity e);
 void sendClientMessage(string clientMessageId, ...);
 
+/// Sets the image file for galaxy density distribution. Default is "galaxy.png".
+/// This function takes effect only before actual rendering starts and cannot be reset
+/// while the game is running.
+setGalaxyFile(string filename);
+
 
 // The application will try to call the following functions occasionary.
 // Define them in this file in order to respond such events.
@@ -192,6 +215,7 @@ if("COMMON_NUT" in this)
 COMMON_NUT <- true;
 
 
+setGalaxyFile("data/galaxy.png");
 
 
 /// \brief Helper class that accumulates sequence numbers and calculate statistical values of them.
@@ -224,7 +248,7 @@ cvar <- Cvar();
 
 function printtree(cs){
 	local child;
-	for(child = cs.child(); child != null; child = child.next()){
+	for(child = cs.child; child != null; child = child.next){
 		print(child.getpath());
 		printtree(child);
 	}
@@ -246,8 +270,8 @@ function foreachselectedents(proc){
 }
 
 function foreachsubents(cs, proc){
-	local cs1 = cs.child();
-	for(; cs1 != null; cs1 = cs1.next())
+	local cs1 = cs.child;
+	for(; cs1 != null; cs1 = cs1.next)
 		foreachsubents(cs1, proc);
 
 	// Bottom up, with no reason
@@ -313,6 +337,7 @@ jpn <- {
 	["Toggle Other Players Camera View"]="他プレイヤーカメラの表示",
 	["Build Manager"]="ビルドマネージャ",
 	["Dock Manager"]="ドックマネージャ",
+	["Warp to..."]="ワープ先...",
 }
 
 // Set default language to english
@@ -335,9 +360,9 @@ function bool(a){
 
 register_console_command("coordsys", function(...){
 	if(vargv.len() == 0){
-		print("identity: " + player.cs.name());
+		print("identity: " + player.cs.name);
 		print("path: " + player.cs.getpath());
-		print("formal name: " + player.cs.name());
+		print("formal name: " + player.cs.name);
 		local en = player.cs.extranames;
 		foreach(name in en)
 			print("aka: " + name);
@@ -532,7 +557,7 @@ register_console_command("typecs", function(...){
 		local root = getroottable();
 		local cls = cs.getclass();
 		foreach(name, value in root) if(value == cls)
-			print(cs.name() + ": " + cs.classname + " " + name);
+			print(cs.name + ": " + cs.classname + " " + name);
 	}
 });
 
@@ -547,7 +572,7 @@ register_console_command("matchcs", function(...){
 			local en = cs.extranames;
 			for(local i = 0; i < en.len(); i++) if(en[i].find(pat) != null)
 				names.append([en[i], cs]);
-			for(local cs2 = cs.child(); cs2 != null; cs2 = cs2.next())
+			for(local cs2 = cs.child; cs2 != null; cs2 = cs2.next)
 				patcall(cs2, pat);
 		}
 	};
@@ -584,7 +609,7 @@ register_console_command("locate", function(){
 	local ReCall = class{
 		function recall(cs){
 			print(cs.getpath() + ": " + cs.classname);
-			for(local cs2 = cs.child(); cs2 != null; cs2 = cs2.next())
+			for(local cs2 = cs.child; cs2 != null; cs2 = cs2.next)
 				recall(cs2);
 		}
 	}
@@ -598,6 +623,7 @@ class Bookmark{
 	function cs(){return null;} // Pure virtual would be appropriate
 	pos = Vec3d(0,0,0)
 	rot = Quatd(0,0,0,1)
+	warpable = true;
 	function _tostring(){
 		return path() + " " + pos + " " + rot;
 	}
@@ -733,6 +759,7 @@ clientMessageResponses <- {
 	load_demo3 = @() loadmission("scripts/demo3.nut"),
 	load_demo4 = @() loadmission("scripts/demo4.nut"),
 	load_demo5 = @() loadmission("scripts/demo5.nut"),
+	load_alphacen = @() loadmission("scripts/alphacen.nut"),
 
 	// The following function names are not yet defined here, so we cannot directly assign name.
 	tutor_restart = @() tutor_restart(),

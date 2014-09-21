@@ -88,11 +88,11 @@ typedef struct mutex_s{
 } mutex_t;
 #define mutex_init(pm) ((pm)->init = 0)
 #define mutex_isnull(pm) (!(pm)->init)
-#define create_mutex(pm) (muprintf("miniting %p "__FILE__"(%d)\n", pm, __LINE__), pthread_mutex_init(&(pm)->m, NULL), ((pm)->init = 1))
+#define create_mutex(pm) (muprintf("miniting %p " __FILE__ "(%d)\n", pm, __LINE__), pthread_mutex_init(&(pm)->m, NULL), ((pm)->init = 1))
 #define delete_mutex(pm) (pthread_mutex_destroy(&(pm)->m) && !((pm)->init = 0))
 bool LockMutex(mutex_t *pm, const char *source = NULL, int line = 0);
 #define lock_mutex(pm) LockMutex(pm, __FILE__, __LINE__)
-#define unlock_mutex(pm) (muprintf("munlocking %p "__FILE__"(%d)\n", pm, __LINE__), !pthread_mutex_unlock(&(pm)->m))
+#define unlock_mutex(pm) (muprintf("munlocking %p " __FILE__ "(%d)\n", pm, __LINE__), !pthread_mutex_unlock(&(pm)->m))
 
 /*#define Sleep sleep*/
 typedef struct thread_s{

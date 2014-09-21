@@ -4,6 +4,7 @@
  * Additionally defines GLWinfo, a window displays information about specific astronomical object.
  */
 
+#define NOMINMAX
 #include "astrodraw.h"
 #include "../galaxy_field.h"
 #include "Player.h"
@@ -25,11 +26,6 @@ extern "C"{
 #include <clib/gl/gldraw.h>
 }
 #include <algorithm>
-
-// Windows header file defines "max" as a macro, which collides with std::max.
-#ifdef max
-#undef max
-#endif
 
 #if 0
 static int galaxy_map_slice = HFIELDZ;
@@ -189,11 +185,6 @@ int cmd_togglegalaxymap(int argc, const char *argv[]){
 
 
 
-/*
-entity_t **rstations = NULL;
-int nrstations = 0;
-*/
-
 /// \brief Solar system browser window.
 ///
 /// Displays the whole system in a window and enables the user to browse through.
@@ -201,6 +192,13 @@ int nrstations = 0;
 class GLwindowSolarMap : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
+
+	struct BookmarkCache{
+		Vec3d pos;
+		CoordSys *cs;
+		gltestp::dstring name;
+	};
+
 	GLwindowSolarMap(Game *game, const char *title, Player *pl);
 	static GLwindow *showWindow(Player *pl);
 	const char *classname()const{return "GLwindowSolarMap";}
@@ -219,13 +217,13 @@ public:
 	int morg[2];
 	int hold;
 	const CoordSys *sol; ///< currently showing solar system
-	struct teleport *target;
+	BookmarkCache target;
 	const Astrobj *targeta; ///< astro
 	Entity *targete; ///< entity
 	WarField *targetc; ///< collapsed
 	Entity *targetr; ///< resource station
 	int focusc, sync; ///< Focus on current position
-	struct teleport *focus;
+	BookmarkCache focus;
 	const Astrobj *focusa;
 	Player *ppl;
 protected:
@@ -270,72 +268,79 @@ GLwindowSolarMap::GLwindowSolarMap(Game *game, const char *title, Player *apl) :
 	p->focusc = 0;
 	p->sync = 0;
 	p->sol = NULL;
-	p->target = NULL;
+	p->target.cs = NULL;
 	p->targeta = NULL;
 	p->targetc = NULL;
 	p->targete = NULL;
 	p->targetr = NULL;
-	p->focus = NULL;
+	p->focus.cs = NULL;
 	p->focusa = NULL;
 }
 
+/// \brief Generalized single item renderer on the map.
+///
+/// The item in question can be an Entity, a teleport location, an Astrobj or other thing.
 int GLwindowSolarMap::drawSolarMapItem(struct drawSolarMapItemParams *params){
 	double hitrad = params->hitrad;
-	GLwindowSolarMap *p = this;
 	const CoordSys *sol = params->sol;
-	const Vec3d &apos0 = params->apos0;
 	const char *name = params->name;
-	int *iofs = params->iofs;
+	int &iofs = *params->iofs;
 	Vec3d &pos = *params->pos;
 
-	GLwindow *wnd = p;
-	double md;
-	double h = this->height - 12;
-	double range = sol->csrad * p->range;
+	// Pre-calculate the map prange and other params
+	double range = sol->csrad * this->range;
+	Vec3d apos = this->rot.trans(params->apos0) + params->org * -sol->csrad;
+	double md = (apos[0] - params->spointer[0]) * (apos[0] - params->spointer[0]) + (apos[1] - params->spointer[1]) * (apos[1] - params->spointer[1]);
 	int ret = 0;
 
-	Vec3d apos = p->rot.trans(apos0) + params->org * -sol->csrad;
-	md = (apos[0] - params->spointer[0]) * (apos[0] - params->spointer[0]) + (apos[1] - params->spointer[1]) * (apos[1] - params->spointer[1]);
+	// The color can vary depending on type of the item.
 	glColor4ubv(params->pointcolor);
+
+	// If the item's apparent radius in the map is comparable to a pixel's size,
+	// draw a circle that indicate the radius of the item.
 	if(4 * range / this->width < params->rad){
-		double (*cuts)[2];
-		int i;
-		cuts = CircleCuts(16);
+		double (*cuts)[2] = CircleCuts(16);
 		glBegin(params->solid ? GL_POLYGON : GL_LINE_LOOP);
-		for(i = 0; i < 16; i++){
+		for(int i = 0; i < 16; i++){
 			glVertex3d(apos[0] + params->rad * cuts[i][0], apos[1] + params->rad * cuts[i][1], apos[2]);
 		}
 		glEnd();
 	}
-	{
-		glPointSize(GLfloat(md < hitrad * hitrad ? 5 : 3));
-		glBegin(GL_POINTS);
-		glVertex3dv(apos);
-		glEnd();
-	}
+
+	// Render a dot at the item's position in the solar map.
+	glPointSize(GLfloat(md < hitrad * hitrad ? 5 : 3));
+	glBegin(GL_POINTS);
+	glVertex3dv(apos);
+	glEnd();
+
+	// Process only if the item is near the mouse cursor.
 	if(md < hitrad * hitrad && params->name){
-		double screeny;
-		if(*iofs == 0){
-/*			VECSADD(apos, org, -sol->rad);*/
-			VECSCALE(pos, apos, 1. / range);
-		}
-		screeny = pos[1] + 2. * *iofs / h;
+		// Initialize position at the first item in the vicinity
+		if(iofs == 0)
+			pos = apos / range;
+
+		GLWrect cr = clientRect();
+		double screeny = pos[1] + 2. * iofs / cr.height();
 		glPushMatrix();
 		glLoadIdentity();
-		if((1. - screeny) * h / 2. - 10 < params->mousey && params->mousey < (1. - screeny) * h / 2. + 0){
+		// Screen position of the item
+		const double screenPos = (1. - screeny) * cr.height() / 2.;
+		// Determine if the mouse is over the item.  If so, remember the reference to the item
+		// and paint background of the item to indicate that the item can be selected.
+		if(screenPos - 10 < params->mousey && params->mousey < screenPos){
 			glColor4ub(0,0,255,128);
 			glBegin(GL_QUADS);
 			glVertex3d(pos[0], screeny, 0.);
 			glVertex3d(pos[0] + 2. * (strlen(name) * 8) / this->width, screeny, 0.);
-			glVertex3d(pos[0] + 2. * (strlen(name) * 8) / this->width, screeny + 2. * 10 / height, 0.);
-			glVertex3d(pos[0], screeny + 2. * 10 / h, 0.);
+			glVertex3d(pos[0] + 2. * (strlen(name) * 8) / this->width, screeny + 2. * 10 / cr.height(), 0.);
+			glVertex3d(pos[0], screeny + 2. * 10 / cr.height(), 0.);
 			glEnd();
 			ret = 1;
 		}
+		// Draw the title string of the item
 		glColor4ubv(params->textcolor);
-		glRasterPos3d(pos[0], pos[1] + 2. * *iofs / h, pos[2]);
-/*				glRasterPos3d(pos[0] + vofs[0], pos[1] + vofs[1], pos[2] + vofs[2]);*/
-		*iofs -= 10;
+		glRasterPos3d(pos[0], pos[1] + 2. * iofs / cr.height(), pos[2]);
+		iofs -= 10; // Shift offset
 		gldprintf(name);
 		glPopMatrix();
 	}
@@ -350,47 +355,21 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 	for(cs2 = cs->children; cs2; cs2 = cs2->next)
 		drawMapCSOrbit(vwcs, cs2, params);
 	if(cs->w){
-//		int i, viewstate;
 		int collapse, plent = 0, plene = 0;
 		Entity *pt;
 		Mat4d mat, lmat;
 		double rrange;
-/*		viewstate = warf_viewstate(cs->w);*/
 		mat = vwcs->tocsim(cs);
 		mat4mp(lmat, params->viewmat, mat);
-/*		for(i = 0; i < nrstations; i++) if(rstations[i]->w == cs->w){
-			tocs(params->apos0, vwcs, rstations[i]->pos, cs);
-			params->name = "Resource Station";
-			params->rad = MAX(params->p->range * params->sol->rad * 20. / params->p->st.st.w, ((struct entity_private_static*)rstations[i]->vft)->getHitRadius);
-			params->pointcolor[0] = rstations[i]->race == ppl->race ? 0 : 255;
-			params->pointcolor[1] = rstations[i]->race != ppl->race && 0 <= rstations[i]->race ? 0 : 255;
-			params->pointcolor[2] = 0;
-			params->textcolor[0] = rstations[i]->race == ppl->race ? 0 : 255;
-			params->textcolor[1] = rstations[i]->race != ppl->race && 0 <= rstations[i]->race ? 0 : 255;
-			params->textcolor[2] = 0;
-			if(drawSolarMapItem(params))
-				params->p->targetr = rstations[i];
-		}*/
 		rrange = this->range * params->sol->csrad * 10. / this->width;
 		collapse = cs->csrad < rrange;
 		for(WarField::EntityList::iterator it = cs->w->el.begin(); it != cs->w->el.end(); it++){
 			if(!*it)
 				continue;
 			Entity *pt = *it;
-			if(strcmp(pt->classname(), "rstation") && (pt->race == ppl->race /*|| race_entity_visible(ppl->race, pt)*/)){
-	//			avec3_t warpdst, pos1;
+			if(strcmp(pt->classname(), "rstation") && pt->race == ppl->race){
 				int enter = 1;
 				params->apos0 = vwcs->tocs(pt->pos, cs);
-	/*			if(warpable_dest(pt, warpdst, vwcs)){
-					glBegin(GL_LINES);
-					mat4vp3(pos1, params->viewmat, params->apos0);
-					glColor4ub(31,63,255,255);
-					glVertex3dv(pos1);
-					mat4vp3(pos1, params->viewmat, warpdst);
-					glColor4ub(31,255,255,255);
-					glVertex3dv(pos1);
-					glEnd();
-				}*/
 				if(plent && ppl->race == pt->race && collapse)
 					enter = 0;
 				if(!plent && ppl->race == pt->race)
@@ -415,68 +394,57 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 			}
 		}
 	}
-	if(cs->toOrbitCS() && cs->toOrbitCS()->flags2 & OCS_SHOWORBIT && cs->toOrbitCS()->orbit_home){
-		const OrbitCS *a = cs->toOrbitCS();
-		int j;
-		double (*cuts)[2], rad;
-		const Astrobj *home = a->orbit_home;
-		Vec3d spos, apos, apos0;
-		Mat4d mat, qmat, rmat, lmat;
-		Quatd q;
-		double smia;
-		cuts = CircleCuts(64);
-		spos = vwcs->tocs(home->pos, home->parent);
+	const OrbitCS *orbit = cs->toOrbitCS();
+	if(orbit && orbit->getShowOrbit() && orbit->getOrbitCenter()){
+		const OrbitCS *a = orbit;
+		const CoordSys *home = a->getOrbitCenter();
+
+		// Obtain orbit center position
+		Vec3d spos = vwcs->tocs(home->pos, home->parent);
 		params->apos0 = vwcs->tocs(cs->pos, cs->parent);
-		apos = this->rot.trans(apos0);
-		mat = vwcs->tocsim(home->parent);
-		qmat = a->orbit_axis.tomat4();
-		rad = a->orbit_rad;
-		smia = rad * (a->eccentricity != 0. ? sqrt(1. - a->eccentricity * a->eccentricity) : 1.);
+
+		// Calculate local orbit matrix
+		Mat4d qmat = a->orbit_axis.tomat4();
+		double rad = a->orbit_rad;
+		// Semi-minor axis
+		double smia = rad * (a->eccentricity != 0. ? sqrt(1. - a->eccentricity * a->eccentricity) : 1.);
 		qmat.scalein(rad, smia, rad);
+		// Adjust for elliptical orbit
 		if(a->eccentricity != 0.)
 			qmat.translatein(a->eccentricity, 0, 0);
-		rmat = mat * qmat;
+		Mat4d mat = vwcs->tocsim(home->parent);
+		Mat4d rmat = mat * qmat;
 		rmat.vec3(3) += spos;
-		lmat = params->viewmat * rmat;
-		glColor4ub(255,191,255,255);
+
+		// Cache circle divisions.  Just 2 stage LOD would be enough.
+		// Modern FPUs may not benefit from manual caching of repeated trigonometric values.
+		// We may be better to care about cache hit ratio.
+		const int divides = rad < range * sol->csrad * 100 ? 128 : 512;
+		double (*cuts)[2] = CircleCuts(divides);
+
+		// Obtain a matrix to convert local orbit coordinates to viewing coordinates.
+		Mat4d lmat = params->viewmat * rmat;
+		// Remember the vector for repeated scalar products.
+		const Vec3d projVec = lmat.tvec3(2);
+
+		// Actually draw the (possibly flattened) ring.
 		glBegin(GL_LINE_LOOP);
-		for(j = 0; j < 64; j++){
-			avec3_t v, vr;
-			v[0] = 0 + cuts[j][0];
-			v[1] = 0 + cuts[j][1];
-			v[2] = 0;
-			mat4vp3(vr, lmat, v);
-/*			VECADDIN(vr, spos);*/
-			glVertex3dv(vr);
+		for(int j = 0; j < divides; j++){
+			Vec3d v(cuts[j][0], cuts[j][1], 0);
+
+			// Determine whether the ring segment vector is pointing toward or away from the player.
+			// lmat.transpose().dvp3(v) would yield the same result, but this one's more optimal.
+			if(0 <= projVec.sp(v))
+				glColor4f(1., 0.75, 1., 1.); // Draw the near side of the orbit with brighter color.
+			else
+				glColor4f(0.5, 0.75 * 0.5, 0.5, 1.); // The other side is darker.
+			glVertex3dv(lmat.vp3(v));
 		}
 		glEnd();
-#if 1
+
+		// Draw the orbit name
 		params->name = cs->fullname ? cs->fullname : cs->name;
 		params->rad = cs->csrad;
-/*		drawSolarMapItem(params);*/
-#else
-		md = (apos[0] - pointer[0]) * (apos[0] - pointer[0]) + (apos[1] - pointer[1]) * (apos[1] - pointer[1]);
-		glPointSize(md < hitrad * hitrad ? 5 : 3);
-		glColor4ub(191,255,191,255);
-		glBegin(GL_POINTS);
-		glVertex3dv(apos0);
-		glEnd();
-		if(md < hitrad * hitrad){
-			avec3_t vofs, vofs0 = {0};
-			vofs0[1] = *ofs;
-			quatirot(vofs, rot, vofs0);
-			glColor4ub(255,255,191,255);
-			if(*ofs == 0.)
-				VECCPY(pos, apos0);
-			glRasterPos3d(pos[0] + vofs[0], pos[1] + vofs[1], pos[2] + vofs[2]);
-			*ofs -= hitrad * 1.5;
-			gldprintf(cs->fullname ? cs->fullname : cs->name);
-		}
-/*		glBegin(GL_LINES);
-		glVertex3dv(pointer);
-		glVertex3dv(apos);
-		glEnd();*/
-#endif
 	}
 	if((cs->flags & (CS_EXTENT | CS_ISOLATED)) == (CS_EXTENT | CS_ISOLATED) && 0 < cs->aorder.size()){
 		Vec3d spos, apos;
@@ -493,27 +461,10 @@ void GLwindowSolarMap::drawMapCSOrbit(const CoordSys *vwcs, const CoordSys *cs, 
 			if(!a2)
 				continue;
 			params->apos0 = vwcs->tocs(a2->pos, a2->parent);
-#if 1
 			params->name = a2->name;
 			params->rad = a2->rad;
 			if(drawSolarMapItem(params))
 				targeta = a2;
-#else
-			md = (apos[0] - pointer[0]) * (apos[0] - pointer[0]) + (apos[1] - pointer[1]) * (apos[1] - pointer[1]);
-			glPointSize(md < hitrad * hitrad ? 5 : 3);
-			glColor4ub(191,255,191,255);
-			glBegin(GL_POINTS);
-			glVertex3dv(apos);
-			glEnd();
-			if(md < hitrad * hitrad){
-				glColor4ub(255,255,191,255);
-				if(*ofs == 0.)
-					VECCPY(pos, apos);
-				glRasterPos3d(pos[0], pos[1] + *ofs, pos[2]);
-				*ofs -= hitrad * 1.5;
-				gldprintf(a2->fullname ? a2->fullname : a2->name);
-			}
-#endif
 		}
 	}
 }
@@ -543,16 +494,13 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			break;
 		}
 	}
-/*	sol = findcs(g_galaxysystem, "sol");*/
-	p->target = NULL;
+	p->target.cs = NULL;
 	p->targeta = NULL;
 	p->targete = NULL;
 	p->targetc = NULL;
 	p->targetr = NULL;
 	p->sol = NULL;
 	if(sol){
-/*		extern Astrobj **astrobjs;
-		extern int nastrobjs;*/
 		int i, ip[2], h = this->height - 12, iofs = 0;
 		double range = sol->csrad * p->range;
 		double hitrad = sol->csrad * .05 * p->range * (this->height - 12) / ma;
@@ -577,8 +525,8 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			Vec3d focuspos = sol->tocs(p->focusa->pos, p->focusa->parent);
 			p->org = focuspos * 1. / sol->csrad;
 		}
-		else if(p->focus){
-			Vec3d focuspos = sol->tocs(p->focus->pos, p->focus->cs);
+		else if(p->focus.cs){
+			Vec3d focuspos = sol->tocs(p->focus.pos, p->focus.cs);
 			p->org = focuspos * 1. / sol->csrad;
 		}
 		else if(p->focusc){
@@ -598,19 +546,19 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			glViewport(nvp[0] = this->xpos + 1, nvp[1] = rc.bottom - rc.top - (this->ypos + this->height) + 1, nvp[2] = this->width - 1, nvp[3] = this->height - 12 - 1);
 		}
 
+		// Set up projection matrix for solar map
 		glMatrixMode(GL_PROJECTION);
 		glGetDoublev(GL_PROJECTION_MATRIX, proj);
 		glLoadIdentity();
-	/*	glOrtho(-1., 1., -1., 1., -1., 1.);*/
-		glOrtho(-fx, fx, -fy, fy, -1. / p->range, 1. / p->range);
+		// Set depth of orthogonal projection 100 times the radius of the solar system.
+		// The system may contain objects that exceeds declared radius.
+		glOrtho(-fx, fx, -fy, fy, -100. / p->range, 100. / p->range);
 		glMatrixMode(GL_MODELVIEW);
 
 		glPushMatrix();
 		glLoadIdentity();
-/*		gldMultQuat(p->rot);
-		glTranslated(-p->org[0] / p->range, -p->org[1] / p->range, -p->org[2] / p->range);*/
 		gldScaled(1. / range);
-		if(p->hold/* && p->pointer[0] - 10 <= mousex && mousex < p->pointer[0] + 100 && p->pointer[1] - 10 <= mousey && mousey < p->pointer[1] + 100*/){
+		if(p->hold){
 			ip[0] = int(p->pointer[0]);
 			ip[1] = int(p->pointer[1]);
 		}
@@ -623,7 +571,6 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		params.spointer[1] = (-2 * range * ip[1] / cr.height() + range) * fy;
 		params.spointer[2] = 0.;
 		params.org = p->rot.trans(p->org);
-//		params.spointer += org * sol->csrad;
 		glPushAttrib(GL_POINT_BIT);
 		glDisable(GL_POINT_SMOOTH);
 #if 0
@@ -659,56 +606,58 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		params.textcolor[1] = 255;
 		params.textcolor[2] = 255;
 		params.textcolor[3] = 255;
-		for(Player::teleport_iterator it = 0; it != ppl->endTeleport(); it++){
-/*			double md;
-			avec3_t spos, apos, apos0;*/
-			teleport *tp = ppl->getTeleport(it);
-			params.apos0 = sol->tocs(tp->pos, tp->cs);
-#if 1
-			params.name = tp->name;
-			params.rad = 0.;
-			if(drawSolarMapItem(&params))
-				p->target = tp;
-#else
-			quatrot(apos, p->rot, apos0);
-			md = (apos[0] - pointer[0]) * (apos[0] - pointer[0]) + (apos[1] - pointer[1]) * (apos[1] - pointer[1]);
-			glPointSize(md < hitrad * hitrad ? 5 : 3);
-			glColor4ub(191,255,255,255);
-			glBegin(GL_POINTS);
-			glVertex3dv(apos0);
-			glEnd();
-			if(md < hitrad * hitrad){
-				avec3_t vofs, vofs0 = {0};
-				double screeny;
-				vofs0[1] = ofs;
-				quatirot(vofs, p->rot, vofs0);
-				if(iofs == 0){
-					VECSADD(apos, org, -sol->rad);
-					VECSCALE(pos, apos, 1. / range);
+
+		// Read bookmarks from Squirrel VM
+		try{
+			HSQUIRRELVM v = game->sqvm;
+			StackReserver sr(v);
+			sq_pushroottable(v);
+			sq_pushstring(v, _SC("bookmarks"), -1);
+			if(SQ_FAILED(sq_get(v, -2)))
+				throw SQFError("bookmarks not found");
+			sq_pushnull(v);
+			while(SQ_SUCCEEDED(sq_next(v, -2))){ // .. table idx key value
+				sq_pushstring(v, _SC("pos"), -1); // .. table idx key value "pos"
+				if(SQ_FAILED(sq_get(v, -2))){ // .. table idx key value value.pos
+					sq_pop(v, 2);
+					continue;
 				}
-				screeny = pos[1] + 2. * iofs / h;
-				glPushMatrix();
-				glLoadIdentity();
-				if((1. - screeny) * h / 2. - 10 < mousey && mousey < (1. - screeny) * h / 2. + 0){
-					glColor4ub(0,0,255,128);
-					glBegin(GL_QUADS);
-					glVertex3d(pos[0], screeny, 0.);
-					glVertex3d(pos[0] + 2. * (strlen(tplist[i].name) * 8) / wnd->w, screeny, 0.);
-					glVertex3d(pos[0] + 2. * (strlen(tplist[i].name) * 8) / wnd->w, screeny + 2. * 10 / h, 0.);
-					glVertex3d(pos[0], screeny + 2. * 10 / h, 0.);
-					glEnd();
+				SQVec3d q;
+				q.getValue(v, -1);
+				sq_poptop(v); // .. table idx key value
+				sq_pushstring(v, _SC("cs"), -1); // .. table idx key value "cs"
+				if(SQ_FAILED(sq_get(v, -2))){ // .. table idx key value value.cs
+					sq_pop(v, 2);
+					continue;
 				}
-				glColor4ub(191,255,255,255);
-				glRasterPos3d(pos[0], pos[1] + 2. * iofs / h, pos[2]);
-/*				glRasterPos3d(pos[0] + vofs[0], pos[1] + vofs[1], pos[2] + vofs[2]);*/
-				ofs -= hitrad * 1.5;
-				iofs -= 10;
-				gldprintf(tplist[i].name);
-				glPopMatrix();
+				sq_push(v, -2); // .. table idx key value value.cs value
+				if(SQ_FAILED(sq_call(v, 1, SQTrue, SQTrue))){ // .. table idx key value value.cs cs
+					sq_pop(v, 3);
+					continue;
+				}
+				CoordSys *cs = CoordSys::sq_refobj(v, -1);
+				if(!cs){
+					sq_pop(v, 3);
+					continue;
+				}
+				sq_pop(v, 2); // .. table idx key value
+				const SQChar *name;
+				if(SQ_FAILED(sq_getstring(v, -2, &name))){
+					sq_pop(v, 2);
+					continue;
+				}
+				params.apos0 = sol->tocs(q.value, cs);
+				params.name = name;
+				params.rad = 0.;
+				if(drawSolarMapItem(&params))
+					/*p->target = tp*/;
+				sq_pop(v, 2);
 			}
-#endif
 		}
-/*		printf("sm-tp %lg\n", TimeMeasLap(&tm));*/
+		catch(SQFError &e){
+			CmdPrint(e.what());
+		}
+
 		drawMapCSOrbit(sol, sol, &params);
 		params.pointcolor[0] = 191;
 		params.pointcolor[1] = 191;
@@ -736,7 +685,7 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		}
 		glPushMatrix();
 		glLoadIdentity();
-		glScaled(1. / this->width, 1. / this->width, 1. / this->width);	glBegin(GL_LINES);
+		glScaled(1. / this->width, 1. / this->width, 1. / this->width);
 		glColor4ub(127,255,127,255);
 		glBegin(GL_LINES);
 		glVertex3d(plpos[0] + 8, plpos[1] + 8, 0);
@@ -744,9 +693,9 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		glVertex3d(plpos[0] + 8, plpos[1] - 8, 0);
 		glVertex3d(plpos[0] - 8, plpos[1] + 8, 0);
 		glEnd();
-		if(p->focus || p->focusa){
+		if(p->focus.cs || p->focusa){
 			int ind = 1;
-			Vec3d apos0 = sol->tocs(p->focus ? p->focus->pos : p->focusa->pos, p->focus ? p->focus->cs : p->focusa->parent);
+			Vec3d apos0 = sol->tocs(p->focus.cs ? p->focus.pos : p->focusa->pos, p->focus.cs ? p->focus.cs : p->focusa->parent);
 			apos0 += p->org * -sol->csrad;
 			apos0 *= 1. / range * this->width;
 			Vec3d apos = p->rot.trans(apos0);
@@ -825,7 +774,7 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 			glwpos2d(cr.x0 + 48 + 2, cr.y0 + 12);
 			glwprintf(ind == 0 ? "Reset View" : ind == 1 ? "Defocus" : ind == 2 ? "Current Position" : "Synchronize Rotation");
 		}
-		if(p->focus || p->focusa){
+		if(p->focus.cs || p->focusa){
 			int ind = 1;
 			glColor4ub(31,127,127,127);
 			glBegin(GL_QUADS);
@@ -876,7 +825,6 @@ void GLwindowSolarMap::draw(GLwindowState &ws, double gametime){
 		glVertex2d(cr.x0 + 48, cr.y0 + 12);
 		glVertex2d(cr.x0 + 48, cr.y0);
 		glEnd();
-/*		printf("sm-all %lg\n", TimeMeasLap(&tm));*/
 	}
 }
 
@@ -895,90 +843,24 @@ void GLwindowSolarMap::drawInt(const CoordSys *cs, drawSolarMapItemParams &param
 		if(sol != a->parent && !sol->is_ancestor_of(a->parent))
 			continue;
 		params.apos0 = sol->tocs(a->pos, a->parent);
-		if(home){
-			cuts = CircleCuts(64);
-			spos = sol->tocs(home->pos, home->parent);
-			mat = sol->tocsim(home->parent);
-			qmat = a->orbit_axis.tomat4();
-			rad = a->orbit_rad;
-			smia = rad * (a->eccentricity != 0. ? sqrt(1. - a->eccentricity * a->eccentricity) : 1.);
-			qmat.scalein(rad, smia, rad);
-			if(a->eccentricity != 0.)
-				qmat.translatein(a->eccentricity, 0, 0);
-			rmat = mat * qmat;
-			rmat.vec3(3) += spos;
-			lmat = params.viewmat * rmat;
-			glColor4ub(255,191,255,255);
-			glBegin(GL_LINE_LOOP);
-			for(j = 0; j < 64; j++){
-				Vec3d v, vr;
-				v[0] = 0 + cuts[j][0];
-				v[1] = 0 + cuts[j][1];
-				v[2] = 0;
-				vr = lmat.vp3(v);
-/*					VECADDIN(vr, spos);*/
-				glVertex3dv(vr);
-			}
-			glEnd();
-		}
-#if 1
+
 		params.name = a->fullname ? a->fullname : a->name;
 		params.rad = a->csrad;
 		if(drawSolarMapItem(&params))
 			this->targeta = a->toAstrobj();
-#else
-		quatrot(apos, p->rot, apos0);
-		md = (apos[0] - pointer[0]) * (apos[0] - pointer[0]) + (apos[1] - pointer[1]) * (apos[1] - pointer[1]);
-		glPointSize(md < hitrad * hitrad ? 5 : 3);
-		glColor4ub(191,255,191,255);
-		glBegin(GL_POINTS);
-		glVertex3dv(apos0);
-		glEnd();
-		if(md < hitrad * hitrad){
-			avec3_t vofs, vofs0 = {0};
-			double screeny;
-			vofs0[1] = ofs;
-			quatirot(vofs, p->rot, vofs0);
-			glColor4ub(255,255,191,255);
-			if(iofs == 0){
-				VECSADD(apos, org, -sol->rad);
-				VECSCALE(pos, apos, 1. / range);
-			}
-			screeny = pos[1] + 2. * iofs / h;
-			glPushMatrix();
-			glLoadIdentity();
-			glRasterPos3d(pos[0], pos[1] + 2. * iofs / h, pos[2]);
-/*				glRasterPos3d(pos[0] + vofs[0], pos[1] + vofs[1], pos[2] + vofs[2]);*/
-			ofs -= hitrad * 1.5;
-			iofs -= 10;
-			gldprintf(a->name);
-			glPopMatrix();
-		}
-#endif
-/*		glBegin(GL_LINES);
-		glVertex3dv(pointer);
-		glVertex3dv(apos);
-		glEnd();*/
 	}
 }
-
-#if 0
-HMENU hMapPopupMenu = NULL;
-int entity_popup(entity_t *pt, int);
-#endif
 
 int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 	GLWrect cr = clientRect();
 	if(st::mouse(ws, mbutton, state, mx, my))
 		return 1;
-/*	if(my < 12)
-		return 1;*/
 	if(0 <= my && my <= 12 && 0 <= mx && mx < 48){
 		int ind = mx / 12;
 		if(state == GLUT_DOWN && mbutton == GLUT_LEFT_BUTTON) switch(ind){
 			case 0: org.clear(); rot = quat_u; return 1;
 			case 2: focusc = !focusc; /* fall through */
-			case 1: focus = NULL; focusa = NULL; return 1;
+			case 1: focus.cs = NULL; focusa = NULL; return 1;
 			case 3: sync = !sync; return 1;
 		}
 		return 1;
@@ -992,16 +874,12 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 	// Unit selection over solarmap
 	if(state == GLUT_UP && (mbutton == GLUT_LEFT_BUTTON || mbutton == GLUT_RIGHT_BUTTON) && targete && hold != 2){
 		if(targetc){
-//			ppl->selected = targetc->el;
 			for(WarField::EntityList::iterator it = targetc->el.begin(); it != targetc->el.end(); it++) if(*it){
 				ppl->selected.insert(*it);
-//				pt->selectnext = pt->next;
 			}
 		}
 		else{
 			ppl->selected.insert(targete);
-//			ppl->selected = targete;
-//			targete->selectnext = NULL;
 		}
 		if(mbutton != GLUT_LEFT_BUTTON){
 			entity_popup(ppl->selected, ws, 1);
@@ -1012,12 +890,9 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 
 	// Context menu over astronomic objects
 	if(state == GLUT_UP && mbutton == GLUT_LEFT_BUTTON){
-		if((target || targeta || targetr) && hold != 2){
-//			int cmd_teleport(int argc, char *argv[]), cmd_warp(int argc, char *argv[]);
-//			char *argv[3];
-//			char buf[256];
-			const char *name = target ? target->name : targeta ? targeta->name : targetr->classname();
-			const char *typestring = target ? "Teleport" : "Astro";
+		if((target.cs || targeta || targetr) && hold != 2){
+			const char *name = target.cs ? target.name : targeta ? targeta->name : targetr->classname();
+			const char *typestring = target.cs ? "Teleport" : "Astro";
 			char titles0[5][128], *titles[5];
 			int keys[5];
 			char cmds0[5][128], *cmds[5];
@@ -1025,7 +900,6 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 			GLwindow *glw;
 			extern int s_mousex, s_mousey;
 
-#if 1
 			PopupMenu menu;
 
 			struct PopupMenuItemFocus : public PopupMenuItem{
@@ -1042,8 +916,8 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 
 			struct PopupMenuItemWarp : public PopupMenuItem{
 				GLwindowSolarMap *parent;
-				teleport *target;
-				PopupMenuItemWarp(GLwindowSolarMap *parent, teleport *target) : PopupMenuItem("Warp"), parent(parent), target(target){}
+				BookmarkCache *target;
+				PopupMenuItemWarp(GLwindowSolarMap *parent, BookmarkCache *target) : PopupMenuItem("Warp"), parent(parent), target(target){}
 				virtual void execute(){
 					Player::SelectSet &selected = parent->game->player->selected;
 					WarpCommand com;
@@ -1056,8 +930,8 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 				}
 				virtual PopupMenuItem *clone()const{return new PopupMenuItemWarp(*this);}
 			};
-			if(target)
-				menu.append(new PopupMenuItemWarp(this, target));
+			if(target.cs)
+				menu.append(new PopupMenuItemWarp(this, &target));
 
 			GLwindow *glwInfo(const CoordSys *cs, int type, const char *name);
 			struct PopupMenuItemInfo : public PopupMenuItem{
@@ -1073,39 +947,6 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 				menu.append(new PopupMenuItemInfo(this, targeta));
 
 			glw = glwPopupMenu(game, ws, menu);
-
-#else
-//			sprintf(titles[j] = titles0[i], "Focus");
-			titles[j] = "Focus";
-			keys[j] = 0;
-			sprintf(cmds[j] = cmds0[i], "focus \"%s\"", name);
-			i++; j++;
-			if(target && target->flags & TELEPORT_TP){
-				sprintf(titles[j] = titles0[i], "Teleport");
-				keys[j] = 0;
-				sprintf(cmds[j] = cmds0[i], "teleport \"%s\"", name);
-				i++; j++;
-			}
-
-			if(target && target->flags & TELEPORT_WARP || targetr){
-				sprintf(titles[j] = titles0[i], "Warp");
-				keys[j] = 0;
-				if(targetr)
-					sprintf(cmds[j] = cmds0[i], "warp \"%s\" %lg %lg %lg", targetr->w->cs->name, targetr->pos[0], targetr->pos[1] + 1., targetr->pos[2]);
-				else
-					sprintf(cmds[j] = cmds0[i], "warp \"%s\"", name);
-				i++; j++;
-			}
-
-			sprintf(titles[j] = titles0[i], "Information");
-			keys[j] = 0;
-			sprintf(cmds[j] = cmds0[i], "info %s \"%s\"", typestring, name);
-			i++; j++;
-
-//			glw = glwPopupMenu(ws, j, titles, keys, cmds, 0);
-//			glw->x = s_mousex;
-//			glw->y = s_mousey;
-#endif
 
 			hold = 2;
 			pointer[0] = pointer[1] = 0;
@@ -1135,22 +976,8 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 		morg[0] = mx;
 		morg[1] = my;
 	}
-#if 1
 	else if(mbutton == GLUT_LEFT_BUTTON && (state == GLUT_UP || state == GLUT_KEEP_DOWN)){
-/*		if(r_maprot){
-			amat4_t rot;
-			avec3_t pyr;
-			double angle;
-			double dx, dy;
-			getrot(rot);
-			imat2pyr(rot, pyr);
-			angle = pyr[1];
-			dx = 2. * p->range * -(mx - p->morg[0]) / wnd->w;
-			dy = 2. * p->range * -(my - p->morg[1]) / wnd->w;
-			p->org[0] += dx * cos(angle) + dy * -sin(angle);
-			p->org[1] += dx * sin(angle) + dy * cos(angle);
-		}
-		else*/{
+		{
 			Vec3d dr, dr0;
 			dr0[0] = 2. * range * -(mx - morg[0]) / this->width;
 			dr0[1] = 2. * range * (my - morg[1]) / this->width;
@@ -1161,7 +988,6 @@ int GLwindowSolarMap::mouse(GLwindowState &ws, int mbutton, int state, int mx, i
 		morg[0] = mx;
 		morg[1] = my;
 	}
-#endif
 	else if(mbutton == GLUT_WHEEL_UP)
 		dstrange /= 2.;
 	else if(mbutton == GLUT_WHEEL_DOWN)
@@ -1175,7 +1001,7 @@ int GLwindowSolarMap::key(int key){
 	switch(key){
 		case 'r': VECNULL(p->org); QUATIDENTITY(p->rot); break;
 		case 'c': p->focusc = !p->focusc; /* fall through */
-		case 'f': p->focus = NULL; p->focusa = NULL; break;
+		case 'f': p->focus.cs = NULL; p->focusa = NULL; break;
 		case 's': p->sync = !p->sync; break;
 		case '+': p->dstrange /= 2.; break;
 		case '-': p->dstrange *= 2.; break;
@@ -1214,25 +1040,19 @@ static SQInteger sqf_GLwindowSolarMap_constructor(HSQUIRRELVM v){
 }
 
 
-static bool sq_GLwindowSolarMap_define(HSQUIRRELVM v){
+static sqa::Initializer init_GLwindowSolarMap("GLwindowSolarMap", [](HSQUIRRELVM v){
 	// Define class GLwindowSolarMap
-	GLwindow::sq_define(v);
+	GLwindowSolarMap::st::sq_define(v);
 	sq_pushstring(v, _SC("GLwindowSolarMap"), -1);
-	sq_pushstring(v, _SC("GLwindow"), -1);
+	sq_pushstring(v, GLwindowSolarMap::st::s_sqClassName(), -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, "GLwindowSolarMap");
 	sq_setclassudsize(v, -1, sizeof(WeakPtr<GLelement>));
 	register_closure(v, _SC("constructor"), sqf_GLwindowSolarMap_constructor);
-/*	register_closure(v, _SC("addButton"), sqf_GLWbuttonMatrix_addButton);
-	register_closure(v, _SC("addToggleButton"), sqf_GLWbuttonMatrix_addToggleButton);
-	register_closure(v, _SC("addMoveOrderButton"), sqf_GLWbuttonMatrix_addMoveOrderButton);
-	register_closure(v, _SC("addControlButton"), sqf_GLWbuttonMatrix_addControlButton);*/
 	sq_createslot(v, -3);
 	return true;
-}
-
-static sqa::Initializer init_GLWbuttonMatrix("GLwindowSolarMap", sq_GLwindowSolarMap_define);
+});
 
 
 
@@ -1278,7 +1098,6 @@ class GLWinfo : public GLwindowSizeable{
 public:
 	typedef GLwindowSizeable st;
 	int type;
-	struct teleport *tp;
 	Astrobj *a;
 	GLWinfo(Game *game, const char *title) : st(game, title){}
 	virtual void draw(GLwindowState &ws, double t);
@@ -1339,24 +1158,6 @@ void GLWinfo::draw(GLwindowState &ws, double t){
 			glwprintf("Alias Name: %s", (const char*)p->a->extranames[i]);
 		}
 	}
-	else if(p->type == 3){
-		if(!p->tp)
-			return;
-		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-		glwprintf("Teleport Site");
-		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-		glwprintf("Name: %s", p->tp->name);
-		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-		glwprintf("CoordSys: %s", p->tp->cs->name);
-		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-		glwprintf("Position: %lg,%lg,%lg", p->tp->pos[0], p->tp->pos[1], p->tp->pos[2]);
-		glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-		glwprintf("Flags: ");
-		if(p->tp->flags & TELEPORT_TP)
-			glwprintf("Teleportable ");
-		if(p->tp->flags & TELEPORT_WARP)
-			glwprintf("Warpable ");
-	}
 }
 
 int GLWinfo::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
@@ -1370,20 +1171,9 @@ GLwindow *glwInfo(const CoordSys *cs, int type, const char *name){
 	ret->setExtent(GLWrect(75, 75, 75 + 260, 75 + 2 * 12 + 10 * 12));
 	ret->setClosable(true);
 	ret->setCollapsable(true);
-//	ret->modal = NULL;
-//	glwsizeable_init(&p->st);
 	glwAppend(ret);
 	ret->type = type;
-	ret->tp = NULL;
 	ret->a = NULL;
-/*	if(type == 0 || type == 3){
-		for(int i = 0; i < ntplist; i++) if(!strcmp(tplist[i].name, name)){
-			ret->tp = &tplist[i];
-			if(type == 0)
-				ret->type = 3;
-			break;
-		}
-	}*/
 	if(type == 0 || type == 1){
 		Astrobj *ao = const_cast<CoordSys*>(cs)->findastrobj(name);
 		if(ao){
@@ -1393,7 +1183,7 @@ GLwindow *glwInfo(const CoordSys *cs, int type, const char *name){
 			return ret;
 		}
 	}
-	if(ret->tp == NULL && ret->a == NULL){
+	if(ret->a == NULL){
 		ret->postClose();
 	}
 	return ret;

@@ -64,9 +64,6 @@ public:
 		return (n - (stackCount - 1) * 0.5) * stackInterval;
 	}
 
-	/// \brief Retrieves root path for this extension module.
-	static gltestp::dstring modPath(){return "mods/vastspace/";}
-
 	bool cull(const Viewer &vw)const;
 
 protected:
@@ -102,7 +99,7 @@ class TorusStationEntity : public Entity{
 public:
 	typedef Entity st;
 	friend class TorusStation;
-	static unsigned classid;
+	static EntityRegisterNC<TorusStationEntity> entityRegister;
 	static const double hubRadius; ///< Really should be derived from hub model
 	static const double segmentOffset; ///< Offset of model from TorusStation::RAD
 	static const double segmentBaseHeight; ///< Really should be derived from segment model
@@ -111,8 +108,8 @@ public:
 	TorusStationEntity(Game *game);
 	TorusStationEntity(WarField *w, TorusStation &astro);
 	void init();
+	EntityStatic &getStatic()const override;
 	virtual ~TorusStationEntity();
-	virtual const char *classname()const{return "TorusStationEntity";} ///< Overridden because getStatic() is not defined
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
@@ -128,9 +125,6 @@ public:
 	virtual Props props()const;
 	virtual int popupMenu(PopupMenu &list);
 	virtual bool command(EntityCommand *com);
-
-	/// \brief Retrieves root path for this extension module.
-	static gltestp::dstring modPath(){return "mods/vastspace/";}
 
 	struct HitCylinder{
 		Vec3d org; ///< Origin position of the cylinder.
@@ -167,6 +161,7 @@ public:
 	virtual Vec3d getPortPos(Dockable *)const;
 	virtual Quatd getPortRot(Dockable *)const;
 };
+
 
 
 #endif

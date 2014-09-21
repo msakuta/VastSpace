@@ -3,6 +3,7 @@
  */
 #define NOMINMAX
 #include "Shipyard.h"
+#include "EntityRegister.h"
 #include "judge.h"
 #include "serial_util.h"
 #include "Player.h"
@@ -10,6 +11,7 @@
 #include "sqadapt.h"
 #include "btadapt.h"
 #include "Destroyer.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
@@ -102,6 +104,7 @@ void Shipyard::init(){
 	health = getMaxHealth();
 	doorphase[0] = 0.;
 	doorphase[1] = 0.;
+	respondingCommand = NULL;
 }
 
 Shipyard::~Shipyard(){
@@ -324,6 +327,113 @@ Entity::Props Shipyard::props()const{
 	return ret;
 }
 
+bool Shipyard::command(EntityCommand *com){
+	// Trick to prevent infinite recursive call. Should have more intrinsic fix.
+	if(respondingCommand)
+		return false;
+
+	if(GetFaceInfoCommand *gfic = InterpretCommand<GetFaceInfoCommand>(com)){
+		// Retrieving face information from hit part index require model to be loaded.
+		Model *model = getModel();
+
+		return modelHitPart(this, model, *gfic);
+	}
+	else{
+		respondingCommand = com;
+		bool ret = st::command(com);
+		respondingCommand = NULL;
+		return ret;
+	}
+}
+
+bool Shipyard::modelHitPart(const Entity *e, Model *model, GetFaceInfoCommand &gfic){
+	if(!model)
+		return false;
+	int hitMesh = gfic.hitpart / 0x10000;
+	int hitPoly = gfic.hitpart % 0x10000 - 1;
+	if(model->n <= hitMesh || model->sufs[hitMesh]->np <= hitPoly)
+		return false;
+
+	// Obtain source position in local coordinates
+	Mat4d mat;
+	e->transform(mat);
+	Mat4d imat = mat.scalein(-1. / modelScale, 1. / modelScale, -1. / modelScale).transpose();
+	Vec3d lsrc = imat.dvp3(gfic.pos - e->pos);
+
+	// Hit part number is index of polygon buffer in the model.
+	Mesh *mesh = model->sufs[hitMesh];
+	Mesh::Primitive *pr = mesh->p[hitPoly];
+
+	// Convert indices for jHitPolygon
+	unsigned short indices[4];
+	int n = 0;
+	if(pr->t == Mesh::ET_Polygon){
+		Mesh::Polygon &p = pr->p;
+		assert(p.n <= 4);
+		n = p.n;
+		for(int j = 0; j < p.n; j++)
+			indices[j] = p.v[j].pos; // It turned out that reversing face direction is not necessary.
+	}
+	else if(pr->t == Mesh::ET_UVPolygon){
+		Mesh::UVPolygon &p = pr->uv;
+		assert(p.n <= 4);
+		n = p.n;
+		for(int j = 0; j < p.n; j++)
+			indices[j] = p.v[j].pos; // It turned out that reversing face direction is not necessary.
+	}
+
+	// Local normal vector
+	Vec3d lnrm;
+	int iret = 0;
+	// Calculate real normal vector by face vertices
+	{
+		Vec3d v0 = mesh->v[indices[0]];
+//		lnrm = v02.vp(v01).norm();
+		Vec3d lrpos = lsrc - v0; // Local Relative Position
+//		lrpos += -lnrm * lnrm.sp(lrpos) + v0; // Project onto plane
+		for(int m = 0; m < n - 2; m++){
+			bool out = false;
+			Vec3d v01 = *(const Vec3d*)&mesh->v[indices[m + 1]] - v0;
+			Vec3d v02 = *(const Vec3d*)&mesh->v[indices[m + 2]] - v0;
+			lnrm = v01.vp(v02).norm();
+			Mat3d mat3 = Mat3d(v01, v02, lnrm);
+			Mat3d imat3 = mat3.inverse();
+			Vec3d v0p = lsrc - v0;
+			double u = imat3.tvec3(0).sp(v0p);
+			double v = imat3.tvec3(1).sp(v0p);
+
+			// Checking if the point is inside the normalized triangle
+			if(u < 0 || v < 0 || 1 < u + v)
+				out = true;
+			if(!out){
+				iret = 1;
+				break;
+			}
+		}
+	}
+
+	// We could have simpler algorithm to determine if the source position projected onto the face
+	// is inside the polygon shape than jHitPolygon(), but for now it's easier to reuse it.
+//	int iret = jHitPolygon(mesh->v, indices, n, lsrc, -lnrm, 0, 1e8, NULL, NULL, NULL);
+
+	// Return hit state to the caller
+	gfic.retPosHit = iret != 0;
+
+	// Return normal vector in world coordinates
+	lnrm[0] *= -1.;
+	lnrm[2] *= -1.;
+	gfic.retNormal = e->rot.trans(lnrm);
+
+	// Return projected point in world coordinates
+	Vec3d lpos = mesh->v[pr->t == Mesh::ET_Polygon ? pr->p.v[0].pos : pr->uv.v[0].pos];
+	lpos *= modelScale;
+	lpos[0] *= -1.;
+	lpos[2] *= -1.;
+	gfic.retPos = gfic.pos + gfic.retNormal.sp(e->pos + e->rot.trans(lpos) - gfic.pos) * gfic.retNormal;
+
+	return true;
+}
+
 int Shipyard::armsCount()const{
 	return nhardpoints;
 }
@@ -469,6 +579,79 @@ Vec3d ShipyardDocker::getPortPos(Dockable *e)const{
 Quatd ShipyardDocker::getPortRot(Dockable *)const{
 	return quat_u;
 }
+
+Model *Shipyard::getModel(){
+	static Model *model = LoadMQOModel("models/shipyard.mqo");
+	return model;
+}
+
+#define PROFILE_HITPOLY 0
+
+int Shipyard::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){
+	return modelTraceHit(this, src, dir, rad, dt, ret, retp, retn, getModel());
+}
+
+int Shipyard::modelTraceHit(const Entity *e, const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn, const Model *model){
+	if(!model)
+		return 0;
+#if PROFILE_HITPOLY
+	timemeas_t tm;
+	TimeMeasStart(&tm);
+#endif
+	Mat4d mat;
+	e->transform(mat);
+	Mat4d imat = mat.scalein(-1. / modelScale, 1. / modelScale, -1. / modelScale).transpose();
+	mat.scalein(-modelScale, modelScale, -modelScale);
+	Vec3d lsrc = imat.dvp3(src - e->pos);
+	Vec3d ldir = imat.dvp3(dir);
+	int bestiret = 0;
+	double bestdret = dt;
+	Vec3d bestlretn;
+
+	for(int meshi = 0; meshi < model->n; meshi++){
+		Mesh *mesh = model->sufs[meshi];
+		for(int i = 0; i < mesh->np; i++){
+			unsigned short indices[4];
+			Mesh::Primitive *pr = mesh->p[i];
+			int n = 0;
+			if(pr->t == Mesh::ET_Polygon){
+				Mesh::Polygon &p = pr->p;
+				assert(p.n <= 4);
+				n = p.n;
+				for(int j = 0; j < p.n; j++)
+					indices[p.n - j - 1] = p.v[j].pos; // Reverse face direction
+			}
+			else if(pr->t == Mesh::ET_UVPolygon){
+				Mesh::UVPolygon &p = pr->uv;
+				assert(p.n <= 4);
+				n = p.n;
+				for(int j = 0; j < p.n; j++)
+					indices[p.n - j - 1] = p.v[j].pos; // Reverse face direction
+			}
+			else assert(false);
+			double dret;
+			Vec3d lretn;
+			int iret = jHitPolygon(mesh->v, indices, n, lsrc, ldir, 0, dt, &dret, NULL, (double (*)[3])&lretn[0]);
+			if(iret && dret < bestdret){
+				bestiret = meshi * 0x10000 + i + 1;
+				bestdret = dret;
+				bestlretn = lretn;
+			}
+		}
+	}
+	if(bestiret){
+		if(ret != NULL)
+			*ret = bestdret;
+		if(retp != NULL)
+			*retp = src + dir * bestdret;
+		if(retn != NULL)
+			*retn = mat.dvp3(bestlretn);
+	}
+#if PROFILE_HITPOLY
+	fprintf(stderr, "tracehit for %d: %lg\n", model->sufs[0]->np, TimeMeasLap(&tm));
+#endif
+	return bestiret;
+}
 #endif
 
 #ifndef _WIN32
@@ -483,3 +666,4 @@ void Shipyard::deathEffects(){}
 
 IMPLEMENT_COMMAND(SetBuildPhaseCommand, "SetBuildPhase");
 
+IMPLEMENT_COMMAND(GetFaceInfoCommand, "GetFaceInfo");

@@ -7,10 +7,8 @@
 #include "astro.h"
 #include <stdio.h>
 #include <squirrel.h>
+#include <exception>
 
-#define TELEPORT_TP     1
-#define TELEPORT_WARP   2
-#define TELEPORT_PORTAL 4 /* should really have different data structure. */
 
 
 Astrobj *new_astrobj(const char *name, CoordSys *cs);
@@ -28,6 +26,7 @@ void blackhole_draw(const struct astrobj *, const struct viewer*, int relative);
 
 class StellarStructureScanner;
 
+
 /// Context object in the process of interpreting a stellar file.
 struct StellarContext{
 	const char *fname;
@@ -35,10 +34,14 @@ struct StellarContext{
 	FILE *fp;
 	cpplib::dstring buf;
 	long line;
-	struct varlist *vl;
+	HSQOBJECT vars; ///< Squirrel table to hold locally-defined variables
 	HSQUIRRELVM v;
 	StellarStructureScanner *scanner;
 };
 
+/// \brief Base type for any errors that could happen in stellar file interpretation.
+struct StellarError : std::exception{
+	StellarError(const char *s) : std::exception(s){}
+};
 
 #endif

@@ -16,9 +16,11 @@
 #include "Universe.h"
 #include "judge.h"
 #include "CoordSys-find.h"
+#include "CoordSys-property.h"
+#include "CoordSys-sq.h"
 #include "Game.h"
+#include "sqserial.h"
 extern "C"{
-#include "calc/calc.h"
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
 }
@@ -27,6 +29,7 @@ extern "C"{
 #include <ctype.h>
 #include <sstream>
 #include <fstream>
+#include <algorithm>
 
 
 /// \brief Barycenter of multi-body problems.
@@ -41,14 +44,31 @@ public:
 	Barycenter(Game *game) : st(game){}
 	Barycenter(const char *path, CoordSys *root) : st(path, root){}
 	static const ClassRegister<Barycenter> classRegister;
+	static bool sq_define(HSQUIRRELVM);
 	ClassId classname()const{return classRegister.id;}
 	void updateInt(double dt);
 	Barycenter *toBarycenter(){return this;}
 };
 
-const ClassRegister<Barycenter> Barycenter::classRegister("Barycenter");
+const ClassRegister<Barycenter> Barycenter::classRegister("Barycenter", sq_define);
 
 
+bool Barycenter::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	if(SQ_SUCCEEDED(sq_get(v, 1))){
+		sq_poptop(v);
+		return false;
+	}
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
+	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
+	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<Barycenter>);
+	sq_createslot(v, -3);
+	return true;
+}
 
 OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root), orbit_center(NULL), orbitType(NoOrbit){
 	OrbitCS *ret = this;
@@ -65,7 +85,38 @@ OrbitCS::OrbitCS(const char *path, CoordSys *root) : st(path, root), orbit_cente
 		eis->addToDrawList(this);
 }
 
-const ClassRegister<OrbitCS> OrbitCS::classRegister("Orbit");
+const ClassRegister<OrbitCS> OrbitCS::classRegister("Orbit", sq_define);
+
+bool OrbitCS::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	if(SQ_SUCCEEDED(sq_get(v, 1))){
+		sq_poptop(v);
+		return false;
+	}
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
+	sq_get(v, 1);
+	sq_newclass(v, SQTrue);
+	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
+	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
+	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<OrbitCS>);
+	register_closure(v, _SC("orbits"), [](HSQUIRRELVM v){
+		OrbitCS *star = static_cast<OrbitCS*>(sq_refobj(v));
+		SQFloat radius, eccentricity, phase;
+		SQQuatd axis;
+		if(SQ_FAILED(sq_getfloat(v, 3, &radius)))
+			radius = 0;
+		if(SQ_FAILED(sq_getfloat(v, 4, &eccentricity)))
+			eccentricity = 0;
+		axis.getValue(v, 5);
+		if(SQ_FAILED(sq_getfloat(v, 6, &phase)))
+			phase = 0;
+		star->orbits(dynamic_cast<OrbitCS*>(sq_refobj(v, 2)), radius, eccentricity, axis.value, phase);
+		return SQInteger(0);
+	});
+	sq_createslot(v, -3);
+	return true;
+}
 
 void OrbitCS::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -102,15 +153,19 @@ void OrbitCS::clientUpdate(double dt){
 void OrbitCS::updateInt(double dt){
 	Universe *u = game->universe;
 	double scale = u ? u->astro_timescale : 1./*timescale ? 5000. * pow(10., timescale-1) : 1.*/;
-	if(orbit_home && orbitType != NoOrbit){
+	OrbitCS *center = orbit_home ? (OrbitCS*)orbit_home : orbit_center ? orbit_center->toOrbitCS() : NULL;
+	if(center && orbitType != NoOrbit){
 		int timescale = 0;
 		double dist;
 		double omega;
 		Vec3d orbpos, oldpos;
 		Vec3d orbit_omg, omgdt;
-		orbpos = parent->tocs(orbit_home->pos, orbit_home->parent);
+		orbpos = parent->tocs(center->pos, center->parent);
 		dist = orbit_rad;
-		omega = scale / (dist * sqrt(dist / UGC / orbit_home->mass));
+		double systemMass = center->getSystemMass(this->toAstrobj());
+		if(systemMass == 0)
+			return;
+		omega = scale / (dist * sqrt(dist / UGC / systemMass));
 		orbit_omg = orbit_axis.norm();
 		oldpos = pos;
 		if(eccentricity == 0.){
@@ -158,42 +213,35 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 	const char *s = argv[0], *ps = argv[1];
 	if(0);
 	else if(!strcmp(s, "orbits")){
-		if(argv[1]){
-			CoordSys *cs = parent->findcspath(ps);
-			if(cs){
-				orbit_home = cs->toAstrobj();
-				OrbitCS *o = cs->toOrbitCS();
-				if(o){
-					o->orbiters.push_back(this);
-					if(o->toBarycenter())
-						orbit_center = o;
-					else
-						orbitType = Satellite;
-				}
-			}
+		if(ps){
+			OrbitCS *orbit = dynamic_cast<OrbitCS*>(parent->findcspath(ps));
+			if(orbit)
+				orbits(orbit);
+			else
+				CmdPrint(gltestp::dstring() << sc.fname << "(" << sc.line << "): OrbitCS::readFile: Warning: could not find parent orbit: " << ps);
 		}
 		return true;
 	}
 	else if(!strcmp(s, "orbit_radius") || !strcmp(s, "semimajor_axis")){
 //		if(s = strtok(ps, " \t\r\n"))
-			orbit_rad = calc3(&ps, sc.vl, NULL);
+			orbit_rad = sqcalc(sc, ps, s);
 		return true;
 	}
 	else if(!strcmp(s, "eccentricity")){
 		if(1 < argc){
 			double d;
-			d = calc3(&argv[1], sc.vl, NULL);
+			d = sqcalc(sc, argv[1], s);
 			eccentricity = d;
 		}
 		return true;
 	}
 	else if(!strcmp(s, "orbit_axis")){
 		if(1 < argc)
-			orbit_axis[0] = calc3(&argv[1], sc.vl, NULL);
+			orbit_axis[0] = sqcalc(sc, argv[1], s);
 		if(2 < argc)
-			orbit_axis[1] = calc3(&argv[2], sc.vl, NULL);
+			orbit_axis[1] = sqcalc(sc, argv[2], s);
 		if(3 < argc){
-			orbit_axis[2] = calc3(&argv[3], sc.vl, NULL);
+			orbit_axis[2] = sqcalc(sc, argv[3], s);
 			orbit_axis[3] = sqrt(1. - VECSLEN(orbit_axis));
 		}
 		return true;
@@ -201,7 +249,7 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if(!strcmp(s, "orbit_inclination") || !strcmp(s, "inclination")){
 		if(1 < argc){
 			enable |= 1;
-			inclination = calc3(&argv[1], sc.vl, NULL) / deg_per_rad;
+			inclination = sqcalc(sc, argv[1], s) / deg_per_rad;
 		}
 /*		if(1 < argc){
 			double d;
@@ -218,14 +266,14 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 	else if(!strcmp(s, "ascending_node")){
 		if(1 < argc){
 			enable |= 2;
-			loan = calc3(&argv[1], sc.vl, NULL) / deg_per_rad;
+			loan = sqcalc(sc, argv[1], s) / deg_per_rad;
 		}
 		return true;
 	}
 	else if(!strcmp(s, "argument_of_periapsis")){
 		if(1 < argc){
 			enable |= 4;
-			aop = calc3(&argv[1], sc.vl, NULL) / deg_per_rad;
+			aop = sqcalc(sc, argv[1], s) / deg_per_rad;
 		}
 		return true;
 	}
@@ -261,6 +309,93 @@ bool OrbitCS::readFileEnd(StellarContext &sc){
 	return true;
 }
 
+const CoordSys::PropertyMap &OrbitCS::propertyMap()const{
+	static PropertyMap pmap = st::propertyMap();
+	static bool init = false;
+	if(!init){
+		init = true;
+		pmap[_SC("showOrbit")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const OrbitCS *a = static_cast<const OrbitCS*>(cs);
+			sq_pushbool(v, a->getShowOrbit() ? SQTrue : SQFalse);
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			OrbitCS *a = static_cast<OrbitCS*>(cs);
+			SQBool b;
+			if(SQ_FAILED(sq_getbool(v, 3, &b)))
+				return sq_throwerror(v, _SC("OrbitCS.showOrbit received non-boolean value"));
+			a->setShowOrbit(!!b);
+			return SQInteger(0);
+		});
+
+		// orbitCenter property is read-only because manipulating it carelessly can corrupt
+		// entire structure.  Orbit calculation requires involving celestial bodies recognize each other.
+		// So use orbits() method to specify orbital relations.
+		pmap[_SC("orbitCenter")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			sq_pushobj(v, const_cast<CoordSys*>(static_cast<const OrbitCS*>(cs)->getOrbitCenter()));
+			return SQInteger(1);
+		}, NULL);
+
+		// orbiters property is read-only because of the same reason as orbitCenter.
+		pmap[_SC("orbiters")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const OrbitCS *orbit = static_cast<const OrbitCS*>(cs);
+			sq_newarray(v, orbit->orbiters.size());
+			int i = 0;
+			for(auto it : orbit->orbiters){
+				sq_pushinteger(v, i);
+				sq_pushobj(v, orbit->orbiters[i]);
+				if(SQ_FAILED(sq_set(v, -3)))
+					return sq_throwerror(v, _SC("Error on constructing orbiters array"));
+				i++;
+			}
+			return SQInteger(1);
+		}, NULL);
+
+		pmap[_SC("orbitRadius")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const OrbitCS *a = static_cast<const OrbitCS*>(cs);
+			sq_pushfloat(v, SQFloat(a->orbit_rad));
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			OrbitCS *a = static_cast<OrbitCS*>(cs);
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+				return sq_throwerror(v, _SC("OrbitCS.orbitRadius received non-float value"));
+			a->orbit_rad = double(f);
+			return SQInteger(0);
+		});
+
+		// Read-only property to return orbital period of this OrbitCS.
+		pmap[_SC("orbitPeriod")] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			do{
+				const OrbitCS *a = static_cast<const OrbitCS*>(cs);
+				const CoordSys *c = a->getOrbitCenter();
+				while(!c && a){
+					if(!a->parent)
+						break;
+					a = a->parent->toOrbitCS();
+					if(!a)
+						break;
+					c = a->getOrbitCenter();
+				}
+				if(!c)
+					break;
+				const OrbitCS *oc = c->toOrbitCS();
+				if(!oc)
+					break;
+				// Oddly enough, orbital period is dependent to semi major axis but not eccentricity.
+				// http://en.wikipedia.org/wiki/Orbital_period
+				sq_pushfloat(v, SQFloat(sqrt(4 * M_PI * M_PI / DEF_UGC / (oc->getSystemMass() + a->getSystemMass())
+					* a->orbit_rad * a->orbit_rad * a->orbit_rad)));
+				return SQInteger(1);
+			}while(0);
+			sq_pushfloat(v, 0);
+			return SQInteger(1);
+		}, NULL);
+	}
+	return pmap;
+}
+
 OrbitCS *OrbitCS::toOrbitCS(){
 	return this;
 }
@@ -269,6 +404,39 @@ Barycenter *OrbitCS::toBarycenter(){
 	return NULL;
 }
 
+double OrbitCS::getSystemMass(const Astrobj *ignore)const{
+	double ret = 0.;
+	if(this != ignore){
+		const Astrobj *a = toAstrobj();
+		if(a)
+			ret += a->mass;
+	}
+	for(auto it : orbiters)
+		ret += it->getSystemMass(ignore);
+	return ret;
+}
+
+void OrbitCS::orbits(OrbitCS *o, double radius, double eccentricity, const Quatd &axis, double phase){
+	if(!o)
+		return;
+	Astrobj *a = o->toAstrobj();
+	if(a)
+		orbit_home = a;
+	o->orbiters.push_back(this);
+	if(o->toBarycenter()){
+		orbitType = TwoBody;
+		orbit_center = o;
+	}
+	else
+		orbitType = Satellite;
+	if(radius != 0.){
+		orbit_rad = radius;
+		this->eccentricity = eccentricity;
+		orbit_axis = axis;
+		orbit_phase = phase;
+		updateInt(0); // Recalculate position with orbital elements
+	}
+}
 
 
 
@@ -277,9 +445,32 @@ Barycenter *OrbitCS::toBarycenter(){
 
 
 void Barycenter::updateInt(double dt){
-	// We cannot solve other than two-body problem.
-	if(orbiters.size() == 2 && orbiters[0]->toAstrobj() && orbiters[1]->toAstrobj()){
-		Astrobj *a0 = orbiters[0]->toAstrobj(), *a1 = orbiters[1]->toAstrobj();
+	if(orbiters.size() < 2){
+		st::updateInt(dt);
+		return;
+	}
+
+	// Pick the first 2 Astrobjs in orbiters since orbiters can contain non-Astrobj CoordSys which
+	// has no mass and do not affect orbit calculation.
+	Astrobj *a0 = NULL, *a1 = NULL;
+	for(int i = 0; i < orbiters.size(); i++){
+		if(!a0){
+			if(orbiters[i]->toAstrobj())
+				a0 = orbiters[i]->toAstrobj();
+		}
+		else if(!a1){
+			if(orbiters[i]->toAstrobj())
+				a1 = orbiters[i]->toAstrobj();
+		}
+		else if(orbiters[i]->toAstrobj()){
+			// We cannot solve other than two-body problem.
+			CmdPrint(gltestp::dstring() << _SC("Warning: I cannot solve three-body problem in ") << getpath());
+			st::updateInt(dt);
+			return;
+		}
+	}
+
+	if(a0 && a1){
 		double rmass = a0->mass * a1->mass / (a0->mass + a1->mass);
 		double scale = game->universe ? game->universe->astro_timescale : 1.;
 		int timescale = 0;
@@ -292,11 +483,17 @@ void Barycenter::updateInt(double dt){
 			Vec3d orbit_omg = a->orbit_axis.norm();
 			Vec3d oldpos = a->pos;
 			if(a->eccentricity == 0.){
-				a->orbit_phase += omega * dt;
-				Quatd rot(0., 0., sin(a->orbit_phase / 2.), cos(a->orbit_phase / 2.));
-				Quatd q = orbit_axis * rot;
-				a->pos = q.trans(vec3_010);
-				a->pos *= orbit_rad;
+				// Two-body problem must synchronize orbit phase bettween involving bodies
+				if(i)
+					a->orbit_phase = a0->orbit_phase;
+				else
+					a->orbit_phase += omega * dt;
+
+				Vec3d pos0(cos(a->orbit_phase), sin(a->orbit_phase), 0.);
+				Quatd q = a->orbit_axis;
+				a->pos = q.trans(pos0);
+				// TODO: Radius should be deduced by mass ratio
+				a->pos *= a->orbit_rad;
 			}
 			else{
 				Vec3d pos0(cos(a->orbit_phase), sin(a->orbit_phase), 0.);
@@ -370,18 +567,18 @@ bool Astrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	if(0);
 	else if(!strcmp(s, "radius")){
 		if(argv[1]){
-			rad = calc3(&argv[1], sc.vl, NULL);
+			rad = sqcalc(sc, argv[1], s);
 		}
 		return true;
 	}
 	else if(!strcmp(s, "diameter")){
 		if(argv[1])
-			rad = .5 * calc3(&argv[1], sc.vl, NULL);
+			rad = .5 * sqcalc(sc, argv[1], s);
 		return true;
 	}
 	else if(!strcmp(s, "mass")){
 		if(argv[1]){
-			mass = calc3(&argv[1], sc.vl, NULL);
+			mass = sqcalc(sc, argv[1], s);
 			if(flags & AO_BLACKHOLE)
 				rad = 2 * UGC * mass / LIGHT_SPEED / LIGHT_SPEED;
 		}
@@ -418,24 +615,21 @@ bool Astrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 			flags |= AO_PLANET;
 	}
 	else if(!strcmp(s, "color")){
-/*		if(s = strtok(ps, " \t\r\n"))*/{
-			COLOR32 c;
-			c = strtoul(s, NULL, 16);
-			basecolor = Vec4f(COLOR32B(c)/256.f,COLOR32G(c)/256.f,COLOR32R(c)/256.f,1.);
-		}
+		COLOR32 c = strtoul(ps, NULL, 16);
+		basecolor = Vec4f(COLOR32B(c)/256.f,COLOR32G(c)/256.f,COLOR32R(c)/256.f,1.);
 	}
 	else if(!strcmp(s, "basecolor")){
 		if(3 < argc){
 			basecolor = Vec4f(
-				float(calc3(&argv[1], sc.vl, NULL)),
-				float(calc3(&argv[2], sc.vl, NULL)),
-				float(calc3(&argv[3], sc.vl, NULL)),
+				float(sqcalc(sc, argv[1], s)),
+				float(sqcalc(sc, argv[2], s)),
+				float(sqcalc(sc, argv[3], s)),
 				1.f);
 		}
 		return true;
 	}
 	else if(!strcmp(s, "absolute_magnitude") || !strcmp(s, "absmag")){
-		absmag = float(calc3(&ps, sc.vl, NULL));
+		absmag = float(sqcalc(sc, ps, s));
 	}
 	else
 		return st::readFile(sc, argc, argv);
@@ -493,6 +687,8 @@ static int tocs_children_invokes = 0;
 
 double checkEclipse(const Astrobj *a, const CoordSys *retcs, const Vec3d &src, const Vec3d &lightSource, const Vec3d &ray, const Astrobj **rethit){
 	const CoordSys *eis = const_cast<CoordSys*>(retcs)->findeisystem();
+	if(!eis)
+		return 1.;
 	for(CoordSys::AOList::const_iterator it = eis->aorder.begin(); it != eis->aorder.end(); ++it){
 		const Astrobj *ahit = (*it)->toAstrobj();
 		if(ahit && ahit != a){
@@ -536,11 +732,14 @@ double checkEclipse(const Astrobj *a, const CoordSys *retcs, const Vec3d &src, c
 			if(rayOffset < 0.)
 				penumbra = 1.;
 			else{
-				double penumbraRadius = a->rad * rayOffset / (lightSource - ahitpos).len();
-				double penumbraInner = ahit->rad - penumbraRadius;
-				double penumbraOuter = ahit->rad + penumbraRadius;
-				double penumbraRange = penumbraOuter - penumbraInner;
-				penumbra = hitdist <= penumbraOuter ? penumbraRange == 0. ? 0. : (hitdist - penumbraInner) / penumbraRange : 1.;
+				Vec3d delta = lightSource - ahitpos;
+				if(delta.slen() != 0){
+					double penumbraRadius = a->rad * rayOffset / delta.len();
+					double penumbraInner = ahit->rad - penumbraRadius;
+					double penumbraOuter = ahit->rad + penumbraRadius;
+					double penumbraRange = penumbraOuter - penumbraInner;
+					penumbra = hitdist <= penumbraOuter ? penumbraRange == 0. ? 0. : (hitdist - penumbraInner) / penumbraRange : 1.;
+				}
 			}
 
 			if(rethit)
@@ -554,25 +753,55 @@ double checkEclipse(const Astrobj *a, const CoordSys *retcs, const Vec3d &src, c
 }
 
 bool FindBrightestAstrobj::invoke(const CoordSys *cs2){
-	double rawval, val;
 	const Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
-	if(a && a->absmag < 30){
-		Vec3d lightSource = retcs->tocs(vec3_000, a);
-		Vec3d ray = src - lightSource;
-		double sd = ray.slen();
-		rawval = 0. < sd ? pow(2.512, -1.*a->absmag) / sd : 0.;
-		// Check for eclipses only if you could be the brightest celestial object.
-		if(checkEclipse && threshold < rawval && brightness < rawval)
-			val = rawval * ::checkEclipse(a, retcs, src, lightSource, ray, &eclipseCaster);
-		else
-			val = rawval;
+	if(!a || a == ignorecs ||  30 <= a->absmag)
+		return true;
+
+	// I don't understand why, but this function seems to be occasionally called twice for the same
+	// argument in a single find().
+	for(int i = 0; i < results.size(); i++){
+		if(results[i].cs == a)
+			return true;
 	}
+
+	Vec3d lightSource = retcs->tocs(vec3_000, a);
+	Vec3d ray = src - lightSource;
+	double sd = ray.slen();
+	if(sd == 0.)
+		return true;
+
+	// Obtain brightness in ratio to Sun looked from earth
+	double rawval = pow(2.512, -(a->absmag + 26.7)) * 3.e14 * 3.e14 / sd;
+
+	// Omit further investigation if the raw brightness is below the threshold.
+	if(rawval < threshold)
+		return true;
+
+	// Check for eclipses only if you could be the brightest celestial object.
+	double val;
+	if(checkEclipse && eclipseThreshold < rawval && brightness < rawval)
+		val = rawval * ::checkEclipse(a, retcs, src, lightSource, ray, &eclipseCaster);
 	else
-		rawval = val = 0.;
-	if(brightness < val){
-		brightness = val;
+		val = rawval;
+	if(val == 0.)
+		return true;
+
+	if(results.size() < resultCount || results.back().brightness < val){
 		nonShadowBrightness = rawval;
-		result = a;
+		ResultSet res;
+		res.cs = a;
+		res.brightness = val;
+		res.pos = lightSource;
+		std::vector<ResultSet>::iterator it = std::upper_bound(results.begin(), results.end(), val, [](const double &v, const ResultSet &it){
+			return it.brightness < v;
+		});
+		results.insert(it, res);
+
+		// Update most bright brightness
+		brightness = results.front().brightness;
+
+		if(resultCount < results.size())
+			results.pop_back();
 	}
 	return true;
 }
@@ -588,33 +817,77 @@ bool FindBrightestAstrobj::invoke(const CoordSys *cs2){
 Astrobj *CoordSys::findBrightest(const Vec3d &po){
 	FindBrightestAstrobj fba(this, pos);
 	find(fba);
-	return const_cast<Astrobj*>(fba.result);
-}
-
-SQInteger Astrobj::sqf_get(HSQUIRRELVM v){
-	Astrobj *p = static_cast<Astrobj*>(sq_refobj(v));
-	if(!p)
-		return SQ_ERROR;
-	const SQChar *wcs;
-	sq_getstring(v, -1, &wcs);
-	if(!strcmp(wcs, _SC("rad"))){
-		sq_pushfloat(v, SQFloat(p->rad));
-		return 1;
-	}
+	if(fba.results.size())
+		return const_cast<Astrobj*>(fba.results[0].cs);
 	else
-		return st::sqf_get(v);
+		return NULL;
 }
 
 bool Astrobj::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	if(SQ_SUCCEEDED(sq_get(v, 1))){
+		sq_poptop(v);
+		return false;
+	}
 	sq_pushstring(v, classRegister.s_sqclassname, -1);
 	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
-	register_closure(v, _SC("_get"), sqf_get);
+	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<Astrobj>);
 	sq_createslot(v, -3);
 	return true;
+}
+
+const CoordSys::PropertyMap &Astrobj::propertyMap()const{
+	static PropertyMap pmap = st::propertyMap();
+	static bool init = false;
+	if(!init){
+		init = true;
+		pmap["radius"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const Astrobj *a = static_cast<const Astrobj*>(cs);
+			sq_pushfloat(v, a->rad);
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			Astrobj *a = static_cast<Astrobj*>(cs);
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+				return sq_throwerror(v, _SC("Astrobj.radius could not convert to float"));
+			a->rad = f;
+			return SQInteger(0);
+		});
+		pmap["mass"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			// Not dynamic_cast because it should be the correct type.
+			const Astrobj *a = static_cast<const Astrobj*>(cs);
+			sq_pushfloat(v, a->mass);
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			// Not dynamic_cast because it should be the correct type.
+			Astrobj *a = static_cast<Astrobj*>(cs);
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+				return sq_throwerror(v, _SC("Astrobj.rad set fail"));
+			a->mass = f;
+			return SQInteger(0);
+		});
+		pmap["absmag"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const Astrobj *a = static_cast<const Astrobj*>(cs);
+			sq_pushfloat(v, a->absmag);
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			Astrobj *a = static_cast<Astrobj*>(cs);
+			SQFloat f;
+			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+				return sq_throwerror(v, _SC("Astrobj.absmag set fail"));
+			a->absmag = float(f);
+			return SQInteger(0);
+		});
+	}
+	return pmap;
 }
 
 
@@ -634,28 +907,37 @@ void Star::unserialize(UnserializeContext &sc){
 
 const ClassRegister<Star> Star::classRegister("Star", sq_define);
 
-SQInteger Star::sqf_get(HSQUIRRELVM v){
-	const SQChar *wcs;
-	sq_getstring(v, -1, &wcs);
-	Star *p = static_cast<Star*>(sq_refobj(v));
-	if(!p)
-		return SQ_ERROR;
-	if(!strcmp(wcs, _SC("spectral"))){
-		sq_pushstring(v, cpplib::dstring() << spectralToName(p->spect) << p->subspect, -1);
-		return 1;
-	}
-	else
-		return st::sqf_get(v);
-}
-
 bool Star::sq_define(HSQUIRRELVM v){
+	sq_pushstring(v, classRegister.s_sqclassname, -1);
+	if(SQ_SUCCEEDED(sq_get(v, 1))){
+		sq_poptop(v);
+		return false;
+	}
 	sq_pushstring(v, classRegister.s_sqclassname, -1);
 	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
-	register_closure(v, _SC("_get"), sqf_get);
+	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<Star>);
+
+	// Expose conversion functions between spectral type index and name.
+	// Note that the functions are static; you don't need a Star instance to call them.
+	register_closure(v, _SC("nameToSpectral"), [](HSQUIRRELVM v){
+		const SQChar *str;
+		if(SQ_FAILED(sq_getstring(v, 2, &str)))
+			return sq_throwerror(v, _SC("nameToSpectral parameter is not string"));
+		sq_pushinteger(v, nameToSpectral(str));
+		return SQInteger(1);
+	});
+	register_closure(v, _SC("spectralToName"), [](HSQUIRRELVM v){
+		SQInteger i;
+		if(SQ_FAILED(sq_getinteger(v, 2, &i)))
+			return sq_throwerror(v, _SC("spectralToName parameter is not int"));
+		sq_pushstring(v, spectralToName(SpectralType(i)), -1);
+		return SQInteger(1);
+	});
+	register_static(v, _SC("maxSpectralTypes"), Num_SpectralType);
 	sq_createslot(v, -3);
 	return true;
 }
@@ -675,6 +957,43 @@ bool Star::readFile(StellarContext &sc, int argc, const char *argv[]){
 
 bool Star::readFileEnd(StellarContext &sc){
 	return st::readFileEnd(sc);
+}
+
+const CoordSys::PropertyMap &Star::propertyMap()const{
+	static PropertyMap pmap = st::propertyMap();
+	static bool init = false;
+	if(!init){
+		init = true;
+		pmap["spect"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const Star *a = static_cast<const Star*>(cs);
+			sq_pushstring(v, spectralToName(a->spect), -1);
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			Star *a = static_cast<Star*>(cs);
+			const SQChar *str;
+			if(SQ_FAILED(sq_getstring(v, 3, &str)))
+				return sq_throwerror(v, _SC("Star.spect set fail"));
+			a->spect = nameToSpectral(str);
+			return SQInteger(0);
+		});
+
+		// We want some way to specify the spectral type by an integral value for use by scripts.
+		pmap["spectIndex"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
+			const Star *a = static_cast<const Star*>(cs);
+			sq_pushinteger(v, SQInteger(a->spect));
+			return SQInteger(1);
+		},
+		[](HSQUIRRELVM v, CoordSys *cs){
+			Star *a = static_cast<Star*>(cs);
+			SQInteger i;
+			if(SQ_FAILED(sq_getinteger(v, 3, &i)))
+				return sq_throwerror(v, _SC("Star.spectIndex set fail"));
+			a->spect = SpectralType(i);
+			return SQInteger(0);
+		});
+	}
+	return pmap;
 }
 
 double Star::appmag(const Vec3d &pos, const CoordSys &cs)const{

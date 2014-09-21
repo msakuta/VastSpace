@@ -1,0 +1,690 @@
+#--------------------------------------
+#            Stellar File
+#
+# Coordinate System/Astronomic Object
+# Settings file
+#--------------------------------------
+
+define MINUTE_SECONDS 60
+define HOUR_SECONDS 60*60
+define DAY_SECONDS 24*60*60
+define RAD_PER_DEG 2*PI/360
+define AU 149597870.691
+define LY 9.4605284e12
+define Rsun 6.960e5
+define Msun 1.9884e30
+
+name "the universe"
+
+#coordsys starsystem3{
+#	pos (rand()-0.5)*.1e17 (rand()-0.5)*1e17 (rand()-0.5)*1e17
+#	bookmark star3orbit 100000 100000 0
+#}
+
+#new "/sol/earth/l 3"{
+#	fullname Lagrange3
+#	warpable
+#}
+
+#"/sol/earth/l1"{
+#	fullname "Earth/Lagrange 1"
+#}
+
+#/sol/earth/l2{
+#	bookmark Iserlohn 70 0 0
+#}
+
+#new astro{
+#	name secondmoon
+#	coordsys earth
+#	pos 5e4
+#	radius 200
+#	mass 45e5
+#	gravity 1
+#	spherehit 1
+#	planet
+#	orbits earth
+#	orbit_radius 5e4
+#	orbit_axis 0 .2 .8
+#}
+
+#astro Blackhole "The Galactic Blackhole"{
+#	radius 700000.
+#	mass 317.904*5.977e24
+#	pos 0 0 2e6
+#}
+
+
+sol{
+	define RA RAD_PER_DEG*(12+49/60)
+	define dec RAD_PER_DEG*(27.4)
+	define tilt 23.2621*RAD_PER_DEG
+	cs_radius 3e10
+	pos 0 0 -1e7
+#	updirection cos(RA)*cos(dec) cos(RA)*sin(dec) sin(dec)
+	solarsystem
+#	eisystem
+
+#	include space_debug.ssd
+	include sol.ssd
+
+	bookmark sol
+
+#	rotation (Quatd.rotation(PI/2.,Vec3d(1,0,0))*Quatd.rotation(PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))).cnj()/*(Quatd.rotation(dec,Vec3d(1,0,0))*Quatd.rotation(RA,Vec3d(0,1,0))).cnj()*/
+#	rotation "universe.findcspath(\"/sol/earth/Earth\").getrot().cnj()"
+}
+
+coordsys ns{
+fullname "Near Space"
+#eisystem
+
+coordsys "Sirius"{
+	extraname "α Canis Majoris"
+	extraname "α CMa"
+	extraname "HIP 32349"
+#	galactic_coord 227.2 -8.9 8.58*LY
+	equatorial_coord 101.287 -16.716 8.6*LY
+	bookmark Sirius
+	coordsys Barycenter barycenter{
+		pos 0 0 0
+	}
+	astro Star A{
+		fullname "Sirius A"
+		orbits barycenter
+		radius 1.711*Rsun
+		mass 2.02*Msun
+		showorbit
+		semimajor_axis 0.98/2.02*7.56/3600*RAD_PER_DEG*8.6*LY
+		eccentricity 0.592
+		inclination 136.5
+		argument_of_periapsis 147.3
+		ascending_node 44.6
+		spectral A1V
+	}
+	astro Star B{
+		fullname "Sirius B"
+		orbits barycenter
+		radius 0.0084*Rsun
+		mass 0.98*Msun
+		showorbit
+		semimajor_axis 7.56/3600*RAD_PER_DEG*8.6*LY
+		eccentricity 0.592
+		inclination 136.5
+		argument_of_periapsis 147.3
+		ascending_node 44.6+180
+		spectral A2
+	}
+}
+
+astro Star Canopus{
+	extraname "Alpha Carinae"
+	extraname "α Carinae"
+	extraname "HIP 30438"
+	radius 65*Rsun
+	mass 8.5*Msun
+#	galactic_coord 261.2 -25.3 310*LY
+	equatorial_coord 95.988 52.696 310*LY
+	spectral F0Ib
+	absmag -5.53
+}
+
+coordsys "Alpha Centauri"{
+	extraname "α Cen"
+	extraname "Rigil Kentaurus"
+	extraname "Toliman"
+	extraname "Bungla"
+	extraname "Gliese 559"
+	solarsystem
+#	galactic_coord 315.8 -0.7 4.22*LY
+	equatorial_coord 219.899 -60.835401 4.22*LY
+	bookmark "Alpha Centauri"
+	coordsys Barycenter barycenter{
+		pos 0 0 0
+	}
+	astro Star A{
+		fullname "Rigil Kentaurus A"
+		extraname "Alpha Centauri A"
+		extraname "HIP 71683"
+		orbits barycenter
+		showorbit
+		semimajor_axis 10.9*AU
+		eccentricity 0.519
+		inclination 0.1*79.23
+		argument_of_periapsis 150.2075
+		ascending_node 80.6198
+		radius 1.227*Rsun
+		mass 1.1*Msun
+		pos 0 0 0
+		spectral G2V
+	}
+	coordsys Orbit "orbit"{
+		orbits "Rigil Kentaurus A"
+		showorbit
+		semimajor_axis AU
+		eccentricity 0
+		inclination 0
+		argument_of_periapsis 0
+		ascending_node 0
+		bookmark "Rigil Kentaurus A" 0 0 0 "Quatd.rotation(PI,Vec3d(1,0,0))"
+	}
+	astro Star B{
+		fullname "Rigil Kentaurus B"
+		extraname "Alpha Centauri B"
+		extraname "HIP 71681"
+		orbits barycenter
+		showorbit
+		semimajor_axis 10.9*AU
+		eccentricity 0.519
+		inclination 0.1*79.23
+		argument_of_periapsis 150.2075
+		ascending_node 80.6198+180
+		radius .865*Rsun
+		mass .907*Msun
+		pos 11*AU 0 0
+		spectral K1V
+	}
+	astro Star C{
+		fullname "Proxima Centauri"
+		extraname "Alpha Centauri C"
+		extraname "HIP 70890"
+		radius .145*Rsun
+		mass .123*Msun
+		pos .2*LY 0 0
+		spectral M5.5Ve
+	}
+	coordsys Orbit hypo{
+		fullname "Hypothetical Planet System"
+		cs_radius 1000000
+		orbits "B"
+		orbit_radius 57909100
+		inclination 7.0051
+		argument_of_periapsis 77.5806
+		ascending_node 48.4257
+		eccentricity 0.205630
+		showorbit
+		astro TextureSphere "Hypothetical Planet"{
+			radius 2439.7
+			mass 3.3022e23
+			color afafaf
+			planet
+			spherehit
+			texture mer0muu2.jpg
+		}
+		coordsys Orbit hypoo{
+			orbits "Hypothetical Planet"
+			orbit_radius 10000
+			fullname "Hypo orbit"
+			bookmark "Hypo orbit"
+		}
+	}
+
+}
+
+astro Star "Arcturus"{
+	extraname "Alpha Bootis"
+	extraname "α Boo"
+	extraname "HIP 69673"
+	radius 1.227*Rsun
+	mass Msun
+#	galactic_coord 15.2 69.0 37*LY
+	equatorial_coord 213.915 19.182 36.7*LY
+	spectral K2III
+	absmag -0.38
+}
+
+astro Star "Vega"{
+	extraname "Wega"
+	extraname "α Lyrae"
+	extraname "HIP 91262"
+	radius 1.227*Rsun
+	mass Msun
+#	galactic_coord 67.5 19.2 25*LY
+	equatorial_coord 279.235 38.784 25.27*LY
+	spectral A0V
+	absmag 0.58
+}
+
+astro Star "Capella"{
+	extraname "Alpha Aurigae"
+	extraname "α Aur"
+	extraname "HIP 24608"
+	radius 12.2*Rsun
+	mass 2.69*Msun
+#	galactic_coord 162.6 4.6 42*LY
+	equatorial_coord 79.182 45.998 42.2*LY
+	spectral B8Ia
+	absmag 0.35
+}
+
+astro Star "Rigel"{
+	extraname "Beta Orionis"
+	extraname "β Ori"
+	extraname "HIP 24436"
+	radius 78*Rsun
+	mass 17*Msun
+#	galactic_coord 209.3 -25.1 770*LY
+	equatorial_coord 78.635 -8.202 800*LY
+	spectral B8Ia
+	absmag 0.18
+	bookmark "Rigel" 0 0 AU
+	binds "../Saiph"
+}
+
+# Really a binary
+astro Star "Procyon"{
+	extraname "Alpha Canis Minoris"
+	extraname "α CMi"
+	extraname "HIP 37279"
+	radius 2.05*Rsun
+	mass 1.42*Msun
+#	galactic_coord 213.7 13.0 11*LY
+	equatorial_coord 114.825 5.225 11.4*LY
+	spectral F5IV-V
+	absmag 2.65
+}
+
+astro Star "Achernar"{
+	extraname "Alpha Eridani"
+	extraname "α Eri"
+	extraname "HIP 7588"
+	radius 10*Rsun
+	mass 7*Msun
+	oblateness .5
+#	galactic_coord 290.7 -58.8 144*LY
+	equatorial_coord 24.429 -57.237 144*LY
+	spectral B3V
+	bookmark "Achernar" 0 0 20*Rsun
+	absmag -2.77
+}
+
+astro Star "Betelgeuse"{
+	extraname "Alpha Ori"
+	extraname "α Ori"
+	extraname "HIP 27989"
+	radius 1180*Rsun
+	mass 19*Msun
+#	galactic_coord 199.8 -9.0 430*LY
+	equatorial_coord 88.793 7.407 640*LY
+	spectral M2Ib
+	absmag -6.05
+	bookmark "Betelgeuse" 0 0 4000*Rsun
+	binds "../Bellatrix"
+}
+
+astro Star "Hadar"{
+	extraname "Beta Centauri"
+	extraname "β Cen"
+	extraname "HIP 68702"
+	radius 8*Rsun
+	mass 10.7*Msun
+#	galactic_coord 311.8 1.2 530*LY
+	equatorial_coord 210.956 -60.373 348.8*LY
+	spectral B1III
+	absmag -4.57
+}
+
+astro Star "Altair"{
+	extraname "Alpha Aquilae"
+	extraname "α Aql"
+	extraname "HIP 97649"
+	radius 1.8*Rsun
+	mass 1.79Msun
+#	galactic_coord 47.8 -9.0 17*LY
+	equatorial_coord 297.696 8.868 16.77*LY
+	spectral A7V
+	absmag 2.21
+}
+
+# Really a binary
+astro Star "Acrux"{
+	extraname "Alpha Crucis"
+	extraname "α Cru"
+	extraname "HIP 60718"
+	radius 50*Rsun
+	mass 14*Msun
+#	galactic_coord 300.2 -0.4 320*LY
+	equatorial_coord 186.650 -63.099 320*LY
+	spectral B0.5IV
+	absmag -4.14
+}
+
+astro Star "Aldebaran"{
+	extraname "Alpha Tauri"
+	extraname "α Tau"
+	extraname "HIP 21421"
+	radius 44.2*Rsun
+	mass 1.7*Msun
+#	galactic_coord 181.0 -20.2 65*LY
+	equatorial_coord 68.980 16.509 65*LY
+	spectral K5III
+	absmag -0.63
+}
+
+astro Star "Antares"{
+	extraname "Alpha Scorpii"
+	extraname "α Sco"
+	extraname "HIP 80763"
+	radius 800*Rsun
+	mass 15.5*Msun
+#	galactic_coord 351.9 15.1 600*LY
+	equatorial_coord 247.350 -26.432 600*LY
+	spectral M1Ib
+	absmag -5.28
+}
+
+coordsys "Spica"{
+	extraname "Alpha Virginis"
+	extraname "α Virginis"
+	extraname "HIP 65474"
+	solarsystem
+#	galactic_coord 316.1 50.8 260*LY
+	equatorial_coord 201.298 -11.161 260*LY
+	bookmark "Spica"
+	coordsys Barycenter barycenter{
+		pos 0 0 0
+	}
+	astro Star "A"{
+		orbits barycenter
+		fullname "Alpha Virginis A"
+		radius 7.8*Rsun
+		mass 11*Msun
+		spectral B1III
+		absmag -3.55
+		showorbit
+		semimajor_axis 1*AU
+		eccentricity 0.067
+		inclination 79.23
+		argument_of_periapsis 140
+		ascending_node 45
+	}
+	astro Star "B"{
+		orbits barycenter
+		fullname "Alpha Virginis B"
+		radius 4.0*Rsun
+		mass 7*Msun
+		spectral B1III
+		absmag -1.5
+		showorbit
+		semimajor_axis 1*AU
+		eccentricity 0.067
+		inclination 79.23
+		argument_of_periapsis 140
+		ascending_node 45+180
+	}
+}
+
+astro Star "Pollux"{
+	extraname "Beta Geminorum"
+	extraname "β Gem"
+	extraname "HIP 37826"
+	radius 8.0*Rsun
+	mass 1.86*Msun
+#	galactic_coord 92.2 23.3 34*LY
+	equatorial_coord 116.331 28.026 33.7*LY
+	spectral K0III
+	absmag 1.09
+}
+
+astro Star "Fomalhaut"{
+	extraname "Alpha Piscis Austrini"
+	extraname "α PsA"
+	extraname "HIP 113368"
+	radius 1.832*Rsun
+	mass 2.1*Msun
+#	galactic_coord 20.6 -65.0 25*LY
+	equatorial_coord 344.413 -29.622 25*LY
+	spectral A3V
+	absmag 1.73
+}
+
+astro Star "Deneb"{
+	extraname "Alpha Cygni"
+	extraname "α Cyg"
+	extraname "HIP 102098"
+	radius 1.227*Rsun
+	mass Msun
+#	galactic_coord 84.3 2.1 3000*LY
+	equatorial_coord 310.358 45.280 1400*LY
+	spectral A2Ia
+	absmag -7.0
+}
+
+astro Star "Mimosa"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 302.5 3.2 350*LY
+	spectral B0.5III
+}
+
+astro Star "Regulus"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 226.3 48.9 78*LY
+	spectral B7V
+}
+
+astro Star "Adhara"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 239.9 -11.3 430*LY
+	spectral B2II
+}
+
+astro Star "Castor"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 187.5 22.6 52*LY
+	spectral A1V+A2V
+}
+
+astro Star "Shaula"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 351.8 2.3 700*LY
+	spectral B2IV
+}
+
+astro Star "Gacrux"{
+	radius 1.227*Rsun
+	mass Msun
+	galactic_coord 300.2 5.7 88*LY
+	spectral M3.5III
+}
+
+
+astro Star "Polaris"{
+	extraname "Alpha Ursae Minoris"
+	extraname "α UMi"
+	extraname "HIP 11767"
+	radius 30*Rsun
+	mass 7.54*Msun
+	equatorial_coord 37.953 89.264 430*LY
+	spectral F7
+	absmag -3.63
+}
+
+astro Star "Saiph"{
+	radius 1.227*Rsun
+	mass Msun
+	equatorial_coord 86.939 -9.670 700*LY
+	spectral B0.5
+	binds "../Alnitak"
+}
+
+astro Star "Bellatrix"{
+	radius 1.227*Rsun
+	mass Msun
+	equatorial_coord 81.283 6.350 240*LY
+	spectral B2
+	binds "../Mintaka"
+}
+
+astro Star "Alnitak"{
+	radius 1.227*Rsun
+	mass Msun
+	equatorial_coord 85.190 -1.943 240*LY
+	spectral O9
+	binds "../Betelgeuse"
+}
+
+astro Star "Alnilam"{
+	radius 1.227*Rsun
+	mass Msun
+	equatorial_coord 84.053 -1.202 1300*LY
+	spectral B0
+	binds "../Alnitak"
+}
+
+astro Star "Mintaka"{
+	radius 1.227*Rsun
+	mass Msun
+	equatorial_coord 83.002 -0.598 900*LY
+	spectral O9V
+	binds "../Alnilam"
+	binds "../Rigel"
+}
+
+astro Star "Schedar"{
+	extraname "Alpha Cassiopeiae"
+	extraname "α Cas"
+	extraname "HIP 3179"
+	radius 42*Rsun
+	mass 4*Msun
+	equatorial_coord 10.127 56.537 229*LY
+	spectral K0
+	absmag -1.99
+	binds "../Tsih"
+}
+
+astro Star "Caph"{
+	extraname "Beta Cassiopeiae"
+	extraname "β Cas"
+	extraname "HIP 746"
+	radius 4*Rsun
+	mass 2*Msun
+	equatorial_coord 2.295 59.150 54.5*LY
+	spectral F2
+	absmag 1.16
+	binds "../Schedar"
+}
+
+astro Star "Tsih"{
+	extraname "Gamma Cassiopeiae"
+	extraname "γ Cas"
+	extraname "HIP 4427"
+	radius 14*Rsun
+	mass 15*Msun
+	equatorial_coord 14.177 60.716 610*LY
+	spectral B0.5
+	absmag -4.22
+	binds "../Ruchbah"
+}
+
+astro Star "Ruchbah"{
+	extraname "Delta Cassiopeiae"
+	extraname "δ Cas"
+	extraname "HIP 6686"
+	radius 4*Rsun
+	mass 2.5*Msun
+	equatorial_coord 21.454 60.235 99*LY
+	spectral A5
+	absmag -0.24
+	binds "../Segin"
+}
+
+astro Star "Segin"{
+	extraname "Epsilon Cassiopeiae"
+	extraname "ε Cas"
+	extraname "HIP 8886"
+	radius 7*Rsun
+	mass 6*Msun
+	equatorial_coord 28.599 63.670 440*LY
+	spectral B3
+	absmag -2.31
+}
+
+# Really a binary
+astro Star "Dubhe"{
+	extraname "Alpha Ursae Majoris"
+	extraname "α UMa"
+	extraname "HIP 54061"
+	radius 30*Rsun
+	mass 4*Msun
+	equatorial_coord 165.932 61.751 124*LY
+	spectral K3
+	absmag -1.09
+	binds "../Merak"
+}
+
+astro Star "Merak"{
+	extraname "Beta Ursae Majoris"
+	extraname "β UMa"
+	extraname "HIP 53910"
+	radius 2*Rsun
+	mass 3*Msun
+	equatorial_coord 165.460 56.383 124*LY
+	spectral A1
+	absmag 0.41
+	binds "../Phecda"
+}
+
+astro Star "Phecda"{
+	extraname "Gamma Ursae Majoris"
+	extraname "γ UMa"
+	extraname "HIP 58001"
+	radius 3*Rsun
+	mass 2.7*Msun
+	equatorial_coord 178.458 53.695 84*LY
+	spectral A0
+	absmag 0.36
+	binds "../Megrez"
+}
+
+astro Star "Megrez"{
+	extraname "Delta Ursae Majoris"
+	extraname "δ UMa"
+	extraname "HIP 59774"
+	radius Rsun
+	mass Msun
+	equatorial_coord 183.857 57.033 81.4*LY
+	spectral A3V
+	absmag 0.36
+	binds "../Alioth"
+}
+
+astro Star "Alioth"{
+	extraname "Epsilon Ursae Majoris"
+	extraname "ε UMa"
+	extraname "HIP 62956"
+	radius 3.7*Rsun
+	mass 3*Msun
+	equatorial_coord 193.507 55.960 81*LY
+	spectral A3V
+	absmag -0.22
+	binds "../Mizar"
+}
+
+astro Star "Mizar"{
+	extraname "Zeta Ursae Majoris"
+	extraname "ζ UMa"
+	extraname "HIP 65378"
+	radius Rsun
+	mass Msun
+	equatorial_coord 200.981 54.925 78*LY
+	spectral A2V
+	absmag 0.33
+	binds "../Alkaid"
+}
+
+astro Star "Alkaid"{
+	extraname "Eta Ursae Majoris"
+	extraname "η UMa"
+	extraname "HIP 67301"
+	radius 1.8*Rsun
+	mass 6*Msun
+	equatorial_coord 206.885 49.313 32.39*LY
+	spectral B3V
+	absmag -0.60
+}
+
+}

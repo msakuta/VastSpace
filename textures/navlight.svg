@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="32"
+   height="32"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.47 r22583"
+   sodipodi:docname="navlight.svg"
+   inkscape:export-filename="navlight.png"
+   inkscape:export-xdpi="360"
+   inkscape:export-ydpi="360">
+  <defs
+     id="defs4">
+    <linearGradient
+       id="linearGradient3650">
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="0"
+         id="stop3652" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:0;"
+         offset="1"
+         id="stop3654" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient3600">
+      <stop
+         style="stop-color:#ffffff;stop-opacity:0.49803922;"
+         offset="0"
+         id="stop3602" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:0;"
+         offset="1"
+         id="stop3604" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3600"
+       id="linearGradient3606"
+       x1="16"
+       y1="14"
+       x2="12"
+       y2="12"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3650"
+       id="linearGradient3656"
+       x1="16"
+       y1="14.990847"
+       x2="15"
+       y2="14.890625"
+       gradientUnits="userSpaceOnUse" />
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3600"
+       id="radialGradient3678"
+       cx="16"
+       cy="16"
+       fx="16"
+       fy="16"
+       r="12"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="11.313709"
+     inkscape:cx="8.0010396"
+     inkscape:cy="16.531631"
+     inkscape:document-units="px"
+     inkscape:current-layer="g3660"
+     showgrid="true"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:window-width="1048"
+     inkscape:window-height="763"
+     inkscape:window-x="100"
+     inkscape:window-y="33"
+     inkscape:window-maximized="0">
+    <sodipodi:guide
+       orientation="0,1"
+       position="16,16"
+       id="guide2816" />
+    <sodipodi:guide
+       orientation="1,0"
+       position="16,16"
+       id="guide2818" />
+    <inkscape:grid
+       type="xygrid"
+       id="grid2820"
+       empspacing="4"
+       visible="true"
+       enabled="true"
+       snapvisiblegridlinesonly="true"
+       spacingx="4px"
+       spacingy="4px" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="レイヤー 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-1020.3622)">
+    <path
+       sodipodi:type="arc"
+       style="color:#000000;fill:url(#radialGradient3678);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="path3670"
+       sodipodi:cx="16"
+       sodipodi:cy="16"
+       sodipodi:rx="12"
+       sodipodi:ry="12"
+       d="M 28,16 A 12,12 0 1 1 4,16 12,12 0 1 1 28,16 z"
+       transform="matrix(1.3333333,0,0,1.3333347,-5.3333332,1015.0288)" />
+    <g
+       id="g3638">
+      <path
+         transform="translate(0,1020.3622)"
+         id="path2826"
+         d="m 16,4 -4,8 4,4 0,-12 z"
+         style="fill:url(#linearGradient3606);stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1" />
+      <use
+         height="32"
+         width="32"
+         transform="matrix(-1,0,0,1,32,0)"
+         id="use3636"
+         xlink:href="#path2826"
+         y="0"
+         x="0" />
+    </g>
+    <use
+       x="0"
+       y="0"
+       xlink:href="#g3638"
+       id="use3642"
+       transform="matrix(0,1,-1,0,1052.3622,1020.3622)"
+       width="32"
+       height="32" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#g3638"
+       id="use3644"
+       transform="matrix(-1,0,0,-1,32,2072.7244)"
+       width="32"
+       height="32" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#g3638"
+       id="use3646"
+       transform="matrix(0,-1,1,0,-1020.3622,1052.3622)"
+       width="32"
+       height="32" />
+    <g
+       id="g3660">
+      <path
+         transform="translate(0,1020.3622)"
+         id="path3648"
+         d="M 16,16 15,15 16,4 16,16 z"
+         style="fill:url(#linearGradient3656);stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1" />
+      <use
+         height="32"
+         width="32"
+         transform="matrix(-1,0,0,1,32,0)"
+         id="use3658"
+         xlink:href="#path3648"
+         y="0"
+         x="0" />
+    </g>
+    <use
+       x="0"
+       y="0"
+       xlink:href="#g3660"
+       id="use3664"
+       transform="matrix(0,1,-1,0,1052.3622,1020.3622)"
+       width="32"
+       height="32" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#g3660"
+       id="use3666"
+       transform="matrix(-1,0,0,-1,32,2072.7244)"
+       width="32"
+       height="32" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#g3660"
+       id="use3668"
+       transform="matrix(0,-1,1,0,-1020.3622,1052.3622)"
+       width="32"
+       height="32" />
+  </g>
+</svg>

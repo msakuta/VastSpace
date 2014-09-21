@@ -40,4 +40,5 @@
 #define IDC_VISIBILITY                          1032
 #define IDC_SAVEMOTION2                         1033
 #define IDC_AMPLITUDE                           1034
+#define IDC_WIREFRAME                           1036
 #define IDR_MAINFRAME                           40000

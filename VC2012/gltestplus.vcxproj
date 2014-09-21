@@ -107,11 +107,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;SQUSEDOUBLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4251;4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration);..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;libogg_static.lib;libvorbis_static.lib;libvorbisfile_static.lib;BulletDynamics_vs2010_debug.lib;BulletCollision_vs2010_debug.lib;LinearMath_vs2010_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;libogg_static.lib;libvorbis_static.lib;libvorbisfile_static.lib;SciLexer.lib;BulletDynamics_vs2010_debug.lib;BulletCollision_vs2010_debug.lib;LinearMath_vs2010_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
@@ -122,11 +123,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;SQUSEDOUBLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4251;4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration);..\bullet\lib;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;libogg_static.lib;libvorbis_static.lib;libvorbisfile_static.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;libogg_static.lib;libvorbis_static.lib;libvorbisfile_static.lib;SciLexer.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
@@ -137,13 +139,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);NDEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;SQUSEDOUBLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);NDEBUG</PreprocessorDefinitions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <DisableSpecificWarnings>4251;4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration);..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;libogg_static.lib;libvorbis_static.lib;libvorbisfile_static.lib;BulletDynamics_vs2010.lib;BulletCollision_vs2010.lib;LinearMath_vs2010.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;libogg_static.lib;libvorbis_static.lib;libvorbisfile_static.lib;SciLexer.lib;BulletDynamics_vs2010.lib;BulletCollision_vs2010.lib;LinearMath_vs2010.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
@@ -154,13 +157,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);NDEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINSOCKAPI_;_CONSOLE;SQUSEDOUBLE;BT_USE_DOUBLE_PRECISION;CLIB_SUFDRAW_EXPORT=__declspec(dllexport);NDEBUG</PreprocessorDefinitions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <DisableSpecificWarnings>4251;4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\clib\VC2012\$(Platform)\$(Configuration);..\cpplib\VC2012\$(Platform)\$(Configuration);..\lpng\projects\visualc11\$(Platform)\LIB $(Configuration);..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\squirrel3\VC2012\$(Platform)\$(Configuration);..\jpeg\VC2012\$(Platform)\$(Configuration);$(SolutionDir)$(Platform)\$(Configuration);..\bullet\lib;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;libogg_static.lib;libvorbis_static.lib;libvorbisfile_static.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;winmm.lib;Vfw32.lib;clib.lib;cpplib.lib;ws2_32.lib;jpeg.lib;zlib.lib;libpng.lib;squirrel.lib;sqstdlib.lib;libogg_static.lib;libvorbis_static.lib;libvorbisfile_static.lib;SciLexer.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>gltestplus.def</ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
@@ -184,10 +188,6 @@
     <ClCompile Include="..\src\bitmap.c" />
     <ClCompile Include="..\src\Builder.cpp" />
     <ClCompile Include="..\src\Bullet.cpp" />
-    <ClCompile Include="..\src\calc\calc.c" />
-    <ClCompile Include="..\src\calc\calc0.c" />
-    <ClCompile Include="..\src\calc\calc3.c" />
-    <ClCompile Include="..\src\calc\mathvars.c" />
     <ClCompile Include="..\src\Client.cpp" />
     <ClCompile Include="..\src\cmd.cpp" />
     <ClCompile Include="..\src\cmddraw.cpp" />
@@ -214,6 +214,7 @@
     <ClCompile Include="..\src\draw\MTurret-draw.cpp" />
     <ClCompile Include="..\src\draw\Player-draw.cpp" />
     <ClCompile Include="..\src\draw\ring-draw.cpp" />
+    <ClCompile Include="..\src\draw\RStation-draw.cpp" />
     <ClCompile Include="..\src\draw\Scarry-Draw.cpp" />
     <ClCompile Include="..\src\draw\Sceptor-Draw.cpp" />
     <ClCompile Include="..\src\draw\Shipyard-Draw.cpp" />
@@ -248,6 +249,7 @@
     <ClCompile Include="..\src\mqodraw.cpp" />
     <ClCompile Include="..\src\Observable.cpp" />
     <ClCompile Include="..\src\Player.cpp" />
+    <ClCompile Include="..\src\png.cpp" />
     <ClCompile Include="..\src\Respawn.cpp" />
     <ClCompile Include="..\src\RStation.cpp" />
     <ClCompile Include="..\src\Scarry.cpp" />
@@ -302,6 +304,7 @@
     <ClInclude Include="..\include\draw\ShadowMap.h" />
     <ClInclude Include="..\include\draw\WarDraw.h" />
     <ClInclude Include="..\include\dstring.h" />
+    <ClInclude Include="..\include\Entity-property.h\Header.h" />
     <ClInclude Include="..\include\Entity.h" />
     <ClInclude Include="..\include\EntityCommand.h" />
     <ClInclude Include="..\include\ExplosiveBullet.h" />
@@ -331,6 +334,7 @@
     <ClInclude Include="..\include\mqo.h" />
     <ClInclude Include="..\include\msg\GetCoverPointsMessage.h" />
     <ClInclude Include="..\include\msg\Message.h" />
+    <ClInclude Include="..\include\MTurret.h" />
     <ClInclude Include="..\include\Observable.h" />
     <ClInclude Include="..\include\Player.h" />
     <ClInclude Include="..\include\serial.h" />
@@ -342,6 +346,7 @@
     <ClInclude Include="..\include\SqInitProcess-ex.h" />
     <ClInclude Include="..\include\SqInitProcess.h" />
     <ClInclude Include="..\include\Mesh.h" />
+    <ClInclude Include="..\include\StarEnum.h" />
     <ClInclude Include="..\include\StaticInitializer.h" />
     <ClInclude Include="..\include\stellar_file.h" />
     <ClInclude Include="..\include\tefpol3d.h" />
@@ -362,6 +367,7 @@
     <ClInclude Include="..\src\Battleship.h" />
     <ClInclude Include="..\src\Beamer.h" />
     <ClInclude Include="..\src\cmd_int.h" />
+    <ClInclude Include="..\src\CoordSys-sq.h" />
     <ClInclude Include="..\src\Defender.h" />
     <ClInclude Include="..\src\Destroyer.h" />
     <ClInclude Include="..\src\galaxy_field.h" />

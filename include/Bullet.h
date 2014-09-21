@@ -4,6 +4,7 @@
 #ifndef BULLET_H
 #define BULLET_H
 #include "Entity.h"
+#include "EntityRegister.h"
 
 struct otjEnumHitSphereParam;
 struct contact_info;
@@ -30,8 +31,8 @@ public:
 	Bullet(Game *game) : st(game), active(true){}
 	Bullet(WarField *w);
 	Bullet(Entity *owner, float life, double damage);
-	virtual const char *idname()const;
-	virtual const char *classname()const;
+	static EntityRegister<Bullet> entityRegister;
+	EntityStatic &getStatic()const override;
 	static const unsigned classid;
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);

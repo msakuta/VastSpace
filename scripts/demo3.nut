@@ -1,8 +1,10 @@
 // Sceptor vs Destroyer
-//initUI();
+local a = universe.findcspath("/earth/lo");
+if(a)
+	player.cs = a;
 
 deltaFormation("Sceptor", 0, Quatd(0,1,0,0), Vec3d(0, 0., -1.025), 0.025, 10, player.cs, null);
-deltaFormation("Destroyer", 1, Quatd(0,0,0,1), Vec3d(0, 0., 1.), 0.500, 1, player.cs, null);
+deltaFormation("DestroyerMissile", 1, Quatd(0,0,0,1), Vec3d(0, 0., 1.), 0.500, 1, player.cs, null);
 
 cmd("pause 0");
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook

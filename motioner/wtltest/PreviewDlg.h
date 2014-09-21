@@ -16,8 +16,9 @@ public:
 	Quatd viewrot;
 	int boneview;
 	int g_width, g_height, g_max;
+	bool wireframe;
 
-	CPreviewDlg(CMainDlg &a) : hgl(NULL), main(a), dist(1000.), viewrot(quat_u), boneview(0)
+	CPreviewDlg(CMainDlg &a) : hgl(NULL), main(a), dist(1000.), viewrot(quat_u), boneview(0), wireframe(false)
 	{}
 
 	BEGIN_MSG_MAP(CAboutDlg)

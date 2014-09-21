@@ -3,6 +3,7 @@
 #include "astro.h"
 #include "Viewer.h"
 #include <clib/colseq/color.h>
+#include <cpplib/RandomSequence.h>
 #include <cpplib/quat.h>
 #ifdef _WIN32
 #define exit something_meanless
@@ -41,5 +42,6 @@ extern double g_star_glow_thresh;
 extern int g_invert_hyperspace;*/
 
 EXPORT void drawstarback(const Viewer *vw, const CoordSys *csys, const Astrobj *pe, const Astrobj *sun);
+
 
 #endif

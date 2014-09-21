@@ -3,6 +3,7 @@
  */
 
 #include "F15.h"
+#include "EntityRegister.h"
 #include "Bullet.h"
 #include "Missile.h"
 #include "tefpol3d.h"

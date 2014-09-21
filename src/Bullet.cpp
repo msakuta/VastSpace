@@ -3,6 +3,7 @@
  */
 #include "Bullet.h"
 #include "ExplosiveBullet.h"
+#include "EntityRegister.h"
 #include "Player.h"
 #include "judge.h"
 #ifndef DEDICATED
@@ -27,15 +28,10 @@ Bullet::Bullet(Entity *aowner, float alife, double adamage) : st(aowner->w), own
 #endif
 }
 
-const char *Bullet::idname()const{
-	return "bullet";
-}
+Entity::EntityRegister<Bullet> Bullet::entityRegister("Bullet");
 
-const char *Bullet::classname()const{
-	return "Bullet";
-}
+Entity::EntityStatic &Bullet::getStatic()const{return entityRegister;}
 
-const unsigned Bullet::classid = registerClass("Bullet", Conster<Bullet>);
 
 void Bullet::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -337,28 +333,24 @@ void Bullet::postframe(){
 
 
 SQInteger Bullet::sqGet(HSQUIRRELVM v, const SQChar *name)const{
-	if(!scstrcmp(name, _SC("life"))){
-		if(!this){
-			sq_pushnull(v);
-			return 1;
-		}
+	if(!this){
+		sq_pushnull(v);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("life"))){
 		sq_pushfloat(v, life);
 		return 1;
 	}
 	else if(!scstrcmp(name, _SC("damage"))){
-		if(!this){
-			sq_pushnull(v);
-			return 1;
-		}
 		sq_pushfloat(v, damage);
 		return 1;
 	}
 	else if(!scstrcmp(name, _SC("owner"))){
-		if(!this){
-			sq_pushnull(v);
-			return 1;
-		}
 		Entity::sq_pushobj(v, owner);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("mass"))){
+		sq_pushfloat(v, mass);
 		return 1;
 	}
 	else
@@ -387,13 +379,20 @@ SQInteger Bullet::sqSet(HSQUIRRELVM v, const SQChar *name){
 			race = owner->race;
 		return 0;
 	}
+	else if(!scstrcmp(name, _SC("mass"))){
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
+			return SQ_ERROR;
+		mass = retf;
+		return 0;
+	}
 	else
 		return st::sqSet(v, name);
 }
 
 #ifdef DEDICATED
 void Bullet::drawtra(wardraw_t *wd){}
-void Bullet::bulletkill(int hitground, const struct contact_info *ci){}
+void Bullet::bulletDeathEffect(int hitground, const struct contact_info *ci){}
 #endif
 
 bool Bullet::isTargettable()const{
@@ -449,7 +448,7 @@ bool ExplosiveBullet::bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam 
 	// In that case, pt can be invalid pointer after the next if block.
 	// We must reserve a weak pointer before there to respond such a event to prevent
 	// access violations.
-	WeakPtr<Entity> wpt = pt;
+	WeakPtr<Entity> wpt(pt);
 
 	// Do splash damage
 	if(0 < splashRadius){

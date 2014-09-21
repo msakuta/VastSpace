@@ -21,6 +21,18 @@ Earth City Lights
 http://visibleearth.nasa.gov/view.php?id=55167
 
 
+The Moon's Surface textures
+---------------------------
+
+Moon surface texture (Edited by author)
+http://wms.lroc.asu.edu/lroc/view_rdr_product/WAC_GLOBAL_E000N1800_004P
+
+Moon digital elevation map
+http://wms.lroc.asu.edu/lroc/view_rdr_product/WAC_GLD100_E000N1800_004P
+
+Lunar Reconnaissance Orbiter Camera Narrow Angle Camera (LROC NAC): NASA / GSFC / ASU
+Lunar Reconnaissance Orbiter Camera Wide Angle Camera (LROC WAC): NASA / GSFC / ASU
+
 
 
 The C++ header file stdint.h for Microsoft Visual C++
@@ -60,3 +72,23 @@ The Saturn Texture
 The Saturn texture is made by Bjorn Jonsson and obtained from:
 http://www.mmedia.is/~bjj/planetary_maps.html
 
+
+
+M16 Assault Rifle's Gunshot Sound (Public Domain)
+-------------------------------------------------
+
+m16-1.ogg, m16-2.ogg, m16-3.ogg are retrieved from
+
+http://www.freesound.org/people/qubodup/sounds/187677/
+
+and edited to fit our project's use.
+
+
+Sniper Rifle's Gunshot Sound (Public Domain)
+-------------------------------------------------
+
+sniper-1.ogg, sniper-2.ogg are retrieved from
+
+http://www.freesound.org/people/qubodup/sounds/182790/
+
+and edited to fit our project's use.

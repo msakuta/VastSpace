@@ -682,11 +682,15 @@ const char *Entity::idname()const{
 }
 
 const char *Entity::classname()const{
-	return "Entity";
+	return const_cast<EntityStatic&>(getStatic()).sq_classname();
 }
 
 const char *Entity::dispname()const{
 	return classname();
+}
+
+Entity::EntityStatic &Entity::getStatic()const{
+	return entityRegister;
 }
 
 #if 0 // reference
@@ -1380,40 +1384,14 @@ WarpCommand::WarpCommand(HSQUIRRELVM v, Entity &e){
 	if(argc < 3)
 		throw SQFArgumentError();
 	const SQChar *destname;
-	if(SQ_SUCCEEDED(sq_getstring(v, 3, &destname))){
-		WarField *w = e.w;
-		CoordSys *pa = NULL;
-		CoordSys *pcs;
-		double landrad;
-		double dist, cost;
-//		extern coordsys *g_galaxysystem;
-		Player *player = game->player;
-		teleport *tp = player ? player->findTeleport(destname, TELEPORT_WARP) : NULL;
-		if(tp){
-			destpos = tp->pos;
-			destcs = tp->cs;
-		}
-		else if(pa = w->cs->findcspath(destname)){
-			destpos = vec3_000;
-			destcs = pa;
-		} 
-		else
-			throw SQFError();
-	}
-	else if(destcs = CoordSys::sq_refobj(v, 3)){
+	if(destcs = CoordSys::sq_refobj(v, 3)){
 		destpos = vec3_000;
 	}
 	else
 		throw SQFArgumentError();
-	SQUserPointer typetag;
-	if(OT_INSTANCE != sq_gettype(v, 4) || (sq_gettypetag(v, 4, &typetag), typetag != tt_Vec3d))
-		throw SQFError(_SC("Incompatible argument type"));
-	sq_pushstring(v, _SC("a"), -1);
-	if(SQ_FAILED(sq_get(v, 4)))
-		throw SQFError(_SC("Corrupt Vec3d data"));
-	Vec3d *pvec3;
-	sq_getuserdata(v, -1, (SQUserPointer*)&pvec3, NULL);
-	destpos = *pvec3;
+	SQVec3d q;
+	q.getValue(v, 4);
+	destpos = q.value;
 }
 
 

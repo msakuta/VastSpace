@@ -23,6 +23,7 @@ public:
 	typedef cpplib::Vec3<T> Vec3;
 	typedef cpplib::Quat<T> Quat;
 	Mat3(){}
+	Mat3(T a00, T a10, T a20, T a01, T a11, T a21, T a02, T a12, T a22);
 	Mat3(Vec3 x, Vec3 y, Vec3 z);
 	tt transpose()const;
 	tt &scalein(T sx, T sy, T sz);
@@ -39,6 +40,11 @@ public:
 	/// Retrieve i-th vertical vector in the matrix.
 	Vec3 &vec3(int i);
 	const Vec3 &vec3(int i)const{return const_cast<tt*>(this)->vec3(i);}
+
+	/// Retrieve i-th row vector in the matrix, without the last element.
+	/// Note that this 'transposed' version of the vector accessor is slightly slower
+	/// than vec3(), and it doesn't allow modification of the matrix via returned reference.
+	Vec3 tvec3(int i)const;
 
 	tt rotx(T p)const;
 	tt roty(T y)const;
@@ -84,6 +90,13 @@ extern const Mat3i &mat3i_u();
 // Implementation
 //-----------------------------------------------------------------------------
 
+/// Constructor with individual components
+template<typename T> inline Mat3<T>::Mat3(T a00, T a01, T a02, T a10, T a11, T a12, T a20, T a21, T a22){
+	a[0] = a00; a[1] = a10; a[2] = a20;
+	a[3] = a01; a[4] = a11; a[5] = a21;
+	a[6] = a02; a[7] = a12; a[8] = a22;
+}
+
 /// Constructor making matrix with 3 vertical vectors.
 template<typename T> inline Mat3<T>::Mat3(Vec3 x, Vec3 y, Vec3 z){
 	*reinterpret_cast<Vec3*>(&a[0]) = x;
@@ -111,6 +124,13 @@ template<typename T> inline Mat3<T> &Mat3<T>::scalein(T sx, T sy, T sz){
 template<typename T> inline Vec3<T> &Mat3<T>::vec3(int i){
 	if(0 <= i && i < 3)
 		return *reinterpret_cast<Vec3*>(&a[i*3]);
+	else
+		throw mathcommon::RangeCheck();
+}
+
+template<typename T> inline Vec3<T> Mat3<T>::tvec3(int i)const{
+	if(0 <= i && i < 3)
+		return Vec3(a[i], a[i+3], a[i+6]);
 	else
 		throw mathcommon::RangeCheck();
 }
@@ -175,15 +195,12 @@ template<typename T> Mat3<T> Mat3<T>::rotz(T y)const{
 
 template<typename T> inline Mat3<T> Mat3<T>::inverse()const{
 	T idet = 1. /
-		( elem(0, 0) * elem(1, 1) * elem(2, 2)
-		+ elem(0, 1) * elem(1, 2) * elem(2, 0)
-		+ elem(0, 2) * elem(1, 0) * elem(2, 1)
-		- elem(0, 0) * elem(1, 2) * elem(2, 1)
-		- elem(0, 1) * elem(1, 0) * elem(2, 2)
-		- elem(0, 2) * elem(1, 1) * elem(2, 0) );
+		( elem(0, 0) * (elem(1, 1) * elem(2, 2) - elem(1, 2) * elem(2, 1))
+		+ elem(0, 1) * (elem(1, 2) * elem(2, 0) - elem(1, 0) * elem(2, 2))
+		+ elem(0, 2) * (elem(1, 0) * elem(2, 1) - elem(1, 1) * elem(2, 0)) );
 	tt ret;
 	for(int i = 0; i < 3; i++) for(int j = 0; j < 3; j++)
-		ret.elem(i, j) = elem((i+1) % 3, (j+1) % 3) * elem((i+2) % 3, (j+2) % 3) - elem((i+1) % 3, (j+2) % 3) * elem((i+2) % 3, (j+1) % 3);
+		ret.elem(j, i) = elem((i+1) % 3, (j+1) % 3) * elem((i+2) % 3, (j+2) % 3) - elem((i+1) % 3, (j+2) % 3) * elem((i+2) % 3, (j+1) % 3);
 	return ret.scalein(idet, idet, idet);
 }
 

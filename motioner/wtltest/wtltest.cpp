@@ -234,7 +234,11 @@ void CPreviewDlg::display_func(){
 	glPopMatrix();
 
 	if(main.dnm){
-		glPushAttrib(GL_CURRENT_BIT | GL_LIGHTING_BIT);
+		glPushAttrib(GL_CURRENT_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT);
+		if(wireframe)
+			glPolygonMode(GL_FRONT, GL_LINE);
+		else
+			glPolygonMode(GL_FRONT, GL_FILL);
 		glEnable(GL_LIGHTING);
 		glEnable(GL_LIGHT0);
 
@@ -277,7 +281,11 @@ void CPreviewDlg::display_func(){
 		}*/
 	}
 	else if(main.model){
-		glPushAttrib(GL_CURRENT_BIT | GL_LIGHTING_BIT);
+		glPushAttrib(GL_CURRENT_BIT | GL_LIGHTING_BIT | GL_POLYGON_BIT);
+		if(wireframe)
+			glPolygonMode(GL_FRONT, GL_LINE);
+		else
+			glPolygonMode(GL_FRONT, GL_FILL);
 		glEnable(GL_LIGHTING);
 		glEnable(GL_LIGHT0);
 

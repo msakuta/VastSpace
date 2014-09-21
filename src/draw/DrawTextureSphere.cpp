@@ -1186,7 +1186,16 @@ bool DrawTextureCubeEx::draw(){
 #if PROFILE_CUBEEX
 								GLWchart::addSampleToCharts("dtstime2", TimeMeasLap(&tms));
 #endif
+								drawn = true;
 							}
+						}
+
+						// The last resort is to draw least detailed mesh in place of the patch.
+						// It looks terrible, but better than a hole.
+						if(!drawn){
+							enableBuffer(bufs);
+							glDrawElements(GL_QUADS, bufs.getPatchCount(i, ix * lodPatchSize + iy),
+								GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(i, ix * lodPatchSize + iy)]);
 						}
 					}
 				}

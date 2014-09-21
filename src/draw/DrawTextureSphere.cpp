@@ -1056,6 +1056,10 @@ DrawTextureCubeEx::BufferSets DrawTextureCubeEx::bufsets;
 
 #define PROFILE_CUBEEX 1
 
+#if PROFILE_CUBEEX
+static int lodPatchWaits = 0;
+#endif
+
 bool DrawTextureCubeEx::draw(){
 	if(drawSimple())
 		return true;
@@ -1146,6 +1150,7 @@ bool DrawTextureCubeEx::draw(){
 #if PROFILE_CUBEEX
 		timemeas_t tm;
 		TimeMeasStart(&tm);
+		int lodCounts[3] = {0};
 #endif
 
 		for(int i = 0; i < 6; i++){
@@ -1170,6 +1175,7 @@ bool DrawTextureCubeEx::draw(){
 								glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
 #if PROFILE_CUBEEX
 								GLWchart::addSampleToCharts("dtstime1", TimeMeasLap(&tms));
+								lodCounts[1]++;
 #endif
 								drawn = true;
 							}
@@ -1185,6 +1191,7 @@ bool DrawTextureCubeEx::draw(){
 								glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
 #if PROFILE_CUBEEX
 								GLWchart::addSampleToCharts("dtstime2", TimeMeasLap(&tms));
+								lodCounts[2]++;
 #endif
 								drawn = true;
 							}
@@ -1204,11 +1211,18 @@ bool DrawTextureCubeEx::draw(){
 				enableBuffer(bufs);
 				glDrawElements(GL_QUADS, bufs.getCount(i),
 					GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(i)]);
+#if PROFILE_CUBEEX
+				lodCounts[0]++;
+#endif
 			}
 		}
 
 #if PROFILE_CUBEEX
 		GLWchart::addSampleToCharts("dtstime", TimeMeasLap(&tm));
+		GLWchart::addSampleToCharts("lodCount0", lodCounts[0]);
+		GLWchart::addSampleToCharts("lodCount1", lodCounts[1]);
+		GLWchart::addSampleToCharts("lodCount2", lodCounts[2]);
+		GLWchart::addSampleToCharts("lodPatchWaits", lodPatchWaits);
 #endif
 
 		glDisableClientState(GL_VERTEX_ARRAY);
@@ -1489,6 +1503,9 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 
 					bd.ready = true;
 				});
+#if PROFILE_CUBEEX
+				lodPatchWaits++;
+#endif
 				break;
 			}
 		}
@@ -1512,6 +1529,10 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 
 		// This flag is only written and read by the main thread, so need not be atomic.
 		bufs.ready = true;
+
+#if PROFILE_CUBEEX
+		lodPatchWaits--;
+#endif
 
 		return bs.subbufs[lod].find(key);
 	}

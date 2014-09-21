@@ -268,6 +268,10 @@ register_console_command("chart", function(...){
 	chart.addSeries("sampled", 2, "dtstime", [1,0,1]);
 	chart.addSeries("sampled", 2, "dtstime1", [0.5,0,1]);
 	chart.addSeries("sampled", 2, "dtstime2", [1,0.5,1]);
+	chart.addSeries("sampled", 3, "lodCount0", [0.5,0.5,1]);
+	chart.addSeries("sampled", 3, "lodCount1", [1,0.5,0.5]);
+	chart.addSeries("sampled", 3, "lodCount2", [0.5,1,0.5]);
+	chart.addSeries("sampled", 3, "lodPatchWaits", [0.5,1,1]);
 
 	// Following charts are only available in debug build.
 /*	if(debugBuild()){

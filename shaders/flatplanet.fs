@@ -17,7 +17,7 @@ void main (void)
 		diffuse += max(vec3(0,0,0), dot(flight, fnormal) * gl_LightSource[i].diffuse.xyz);
 	}
 	vec4 texColor = textureCube(texture, vec3(gl_TexCoord[0]));
-	texColor.xyz *= diffuse;
+	texColor.xyz *= diffuse + 0.1;
 	texColor.xyz += gl_FrontLightProduct[0].ambient.xyz;
 	texColor[3] = 1.;
 	gl_FragColor = toneMapping(texColor);

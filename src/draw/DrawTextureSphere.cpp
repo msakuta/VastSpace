@@ -1145,7 +1145,7 @@ bool DrawTextureCubeEx::draw(){
 #endif
 
 		for(int i = 0; i < 6; i++){
-			int currentLOD = (apos + qrot.trans(cubedirs[i].trans(Vec3d(0,0,m_rad))) - vw->pos).len() / m_rad < 2. ? 1 : 0;
+			int currentLOD = (apos + qrot.trans(cubedirs[i].trans(Vec3d(0,0,m_rad))) - vw->pos).len() / m_rad < 1.4 ? 1 : 0;
 
 			if(0 < currentLOD){
 				int patchSize = getPatchSize(0);

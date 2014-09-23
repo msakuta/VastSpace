@@ -1194,6 +1194,8 @@ bool DrawTextureCubeEx::draw(){
 
 	glPopAttrib();
 
+	glClear(GL_DEPTH_BUFFER_BIT);
+
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);

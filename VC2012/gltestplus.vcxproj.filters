@@ -78,9 +78,6 @@
     <ClCompile Include="..\src\teline3d.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\TexSphere.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\Universe.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
@@ -347,6 +344,9 @@
     </ClCompile>
     <ClCompile Include="..\src\noises\sdnoise1234.cpp">
       <Filter>Sources\noises</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\RoundAstrobj.cpp">
+      <Filter>Sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -672,11 +672,11 @@
     <ClInclude Include="..\src\noises\simplexnoise1234.h">
       <Filter>Headers\noises</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\TexSphere.h">
-      <Filter>Exported Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\draw\ring-draw.h">
       <Filter>Exported Headers\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\RoundAstrobj.h">
+      <Filter>Exported Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -202,7 +202,7 @@ coordsys "Alpha Centauri"{
 		ascending_node 48.4257
 		eccentricity 0.205630
 		showorbit
-		astro TextureSphere "Hypothetical Planet"{
+		astro RoundAstrobj "Hypothetical Planet"{
 			radius 2439.7
 			mass 3.3022e23
 			color afafaf

@@ -38,7 +38,7 @@ coordsys Orbit earth{
 	cs_radius 100000
 	showorbit
 
-	astro TextureSphere "Earth"{
+	astro RoundAstrobj "Earth"{
 		define tilt 23.2621*RAD_PER_DEG
 		radius 6375
 		mass 5.972e24
@@ -104,7 +104,7 @@ coordsys Orbit earth{
 		ascending_node ascending_node
 		showorbit
 
-		astro TextureSphere Moon{
+		astro RoundAstrobj Moon{
 			radius 1738
 			mass 0.0123*5.977e24
 			omega "(Quatd.rotation(ascending_node * RAD_PER_DEG,Vec3d(0,0,1))*Quatd.rotation(tilt,Vec3d(1,0,0))).trans(Vec3d(0,0,1)) * PI*2/(27*DAY_SECONDS+7*HOUR_SECONDS+43.7*MINUTE_SECONDS)"   #rotation speed
@@ -240,7 +240,7 @@ include Ceres.ssd
 	argument_of_periapsis 131.6758
 	ascending_node 76.7520
 	showorbit
-	astro TextureSphere Venus{
+	astro RoundAstrobj Venus{
 		diameter 12103.6
 		mass 3.3022e23
 		color afafaf
@@ -285,7 +285,7 @@ coordsys Orbit saturn{
 #	define axis_angle 40.73*RAD_PER_DEG
 #	define axis_angle 0
 
-	astro TextureSphere "Saturn"{
+	astro RoundAstrobj "Saturn"{
 		ringmin 74000/60268
 		ringmax 2.4
 		ringthick 1.
@@ -402,7 +402,7 @@ coordsys "Alpha Centauri"{
 		ascending_node 138
 		eccentricity 0.123
 		showorbit
-		astro TextureSphere b{
+		astro RoundAstrobj b{
 			fullname "Rigil Kentaurus B b"
 			radius 1.01*6375
 			mass 5.972e24*1.13
@@ -432,7 +432,7 @@ coordsys "Alpha Centauri"{
 		ascending_node 48.4257
 		eccentricity 0.205630
 		showorbit
-		astro TextureSphere a{
+		astro RoundAstrobj a{
 			fullname "Rigil Kentaurus B a"
 			radius 2439.7
 			mass 3.3022e23

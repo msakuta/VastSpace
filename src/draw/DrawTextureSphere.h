@@ -3,7 +3,7 @@
  */
 #ifndef DRAWTEXTURESPHERE_H
 #define DRAWTEXTURESPHERE_H
-#include "TexSphere.h"
+#include "RoundAstrobj.h"
 #include "CoordSys-find.h"
 #include "judge.h"
 
@@ -26,7 +26,7 @@ protected:
 	GLuint *ptexlist;
 	Mat4d m_texmat;
 	const char *m_texname;
-	const std::vector<TexSphere::Texture> *m_textures;
+	const std::vector<RoundAstrobj::Texture> *m_textures;
 	double m_rad;
 	int m_flags;
 	GLuint m_shader;
@@ -54,14 +54,14 @@ public:
 		, m_ringmin(0.), m_ringmax(0.)
 		, m_cloudRotation(quat_u)
 		, m_noisePos(0,0,0){}
-	tt &astro(TexSphere *a){this->a = a; return *this;}
+	tt &astro(RoundAstrobj *a){this->a = a; return *this;}
 	tt &viewer(const Viewer *vw){this->vw = vw; return *this;}
 	tt &mat_diffuse(const Vec4f &a){this->m_mat_diffuse = a; return *this;}
 	tt &mat_ambient(const Vec4f &a){this->m_mat_ambient = a; return *this;}
 	tt &texlist(GLuint *a){ptexlist = a; return *this;}
 	tt &texmat(const Mat4d &a){m_texmat = a; return *this;}
 	tt &texname(const char *a){m_texname = a; return *this;}
-	tt &textures(const std::vector<TexSphere::Texture> &atextures){m_textures = &atextures; return *this;}
+	tt &textures(const std::vector<RoundAstrobj::Texture> &atextures){m_textures = &atextures; return *this;}
 	tt &rad(double a){m_rad = a; return *this;}
 	tt &flags(int a){m_flags = a; return *this;}
 	tt &shader(GLuint a){m_shader = a; return *this;}
@@ -110,7 +110,7 @@ public:
 	typedef DrawTextureSphere st;
 	typedef DrawTextureSpheroid tt;
 	double m_oblateness;
-	tt(TexSphere *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos)
+	tt(RoundAstrobj *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos)
 		, m_oblateness(0.){}
 	tt &oblateness(double a){m_oblateness = a; return *this;}
 	virtual bool draw();
@@ -122,7 +122,7 @@ public:
 	typedef DrawTextureSphere st;
 	typedef DrawTextureCubeEx tt;
 
-	tt(TexSphere *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos){}
+	tt(RoundAstrobj *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos){}
 	bool draw()override;
 	tt &noiseHeight(double v){m_noiseHeight = v; return *this;}
 	tt &noisePersistence(double v){m_noisePersistence = v; return *this;}

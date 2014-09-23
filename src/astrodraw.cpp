@@ -1,5 +1,5 @@
 /** \file
- * \brief Implementation of drawing methods of astronomical objects like Star and TexSphere.
+ * \brief Implementation of drawing methods of astronomical objects like Star and RoundAstrobj.
  */
 #define NOMINMAX
 #include "astrodraw.h"
@@ -14,7 +14,7 @@
 #include "galaxy_field.h"
 #include "astro_star.h"
 #include "stellar_file.h"
-#include "TexSphere.h"
+#include "RoundAstrobj.h"
 #include "cmd.h"
 #include "glsl.h"
 #include "glstack.h"
@@ -176,7 +176,7 @@ static int g_cloud = 1;
 static void g_tscuts_init(){CvarAdd("g_tscuts", &g_tscuts, cvar_int); CvarAdd("g_cloud", &g_cloud, cvar_int);}
 static StaticInitializer s_tscuts(g_tscuts_init);
 
-void TexSphere::draw(const Viewer *vw){
+void RoundAstrobj::draw(const Viewer *vw){
 
 	// The noise position vector "approaches" the camera to simulate time fluctuating noise
 	// without apparent spatial drift.
@@ -387,7 +387,7 @@ void TexSphere::draw(const Viewer *vw){
 inline double atmo_sp2brightness(double sp);
 
 
-double TexSphere::getAmbientBrightness(const Viewer &vw)const{
+double RoundAstrobj::getAmbientBrightness(const Viewer &vw)const{
 	// If there is no atmosphere, it's no use examining ambient brightness
 	// induced by air scattering. Also it prevents zero division.
 	// TODO: no need to think about diffuse scattering?

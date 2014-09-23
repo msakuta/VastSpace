@@ -9,7 +9,7 @@
 #include "EntityCommand.h"
 #include "Docker.h"
 #include "astro.h"
-#include "TexSphere.h"
+#include "RoundAstrobj.h"
 #include "Game.h"
 #include "serial_util.h"
 #include "glw/glwindow.h"

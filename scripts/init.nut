@@ -179,7 +179,7 @@ function materializeStar(name,pos,e,rs){
 		local orbitPlane = plane * Quatd.rotation(0.5 * PI * rs.nextd(), Vec3d(rs.nextd(),rs.nextd(),rs.nextd()).norm());
 		o.orbits(a, rs.nextd() * 1.0e8, rs.nextd(), orbitPlane);
 		o.showOrbit = true;
-		local p = TextureSphere(name, o);
+		local p = RoundAstrobj(name, o);
 		print("Planet gen: " + name + ": " + p);
 		p.texture = "textures/gasgiant.jpg";
 		p.mass = 5.6846e26 * exp(rs.nextGauss());

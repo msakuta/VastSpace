@@ -227,7 +227,7 @@ void Game::lightOn(Viewer &vw){
 			val = 0.;
 		else{
 			// This conversion formula is very temporary and qualitative. This should be shared among 
-			// TexSphere's drawing methods and WarSpace's ones.
+			// RoundAstrobj's drawing methods and WarSpace's ones.
 			val = GLfloat(sqrt(fba.brightness));
 			if(val < 0.)
 				val = 0.;

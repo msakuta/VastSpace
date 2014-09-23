@@ -6,7 +6,7 @@ coordsys Orbit ceres{
 	cs_radius 10000
 	showorbit
 
-	astro TextureSphere Ceres{
+	astro RoundAstrobj Ceres{
 		define CeresR 959.2
 		radius CeresR
 		mass 9.445e20

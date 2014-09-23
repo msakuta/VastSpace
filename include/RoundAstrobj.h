@@ -1,7 +1,7 @@
 /** \file
- * \brief TexSphere class definition. */
-#ifndef TEXSPHERE_H
-#define TEXSPHERE_H
+ * \brief RoundAstrobj class definition. */
+#ifndef ROUNDASTROBJ_H
+#define ROUNDASTROBJ_H
 
 #include "stellar_file.h"
 #ifndef DEDICATED
@@ -10,8 +10,20 @@
 #include <squirrel.h>
 
 
-/// Astrobj drawn as a textured sphere
-class EXPORT TexSphere : public Astrobj{
+/// \brief Astrobj with solid (roughly) round shape
+///
+/// Planets, natural satellites, asteroids, comets and stars all fall in
+/// this category.  (Technically, stars have their own class Star.)
+///
+/// This class represents almost all solid celestial objects in space,
+/// although it's not necessarily solid, since stars, gaseous planets and
+/// oceanic planets have fluid surface.  The shape can be not round,
+/// since asteroids and small satellites have significant ridges and valleys.
+///
+/// This class had been named TexSphere because it had been drawn as a textured
+/// sphere.  The old name came to disagree with nature since it's not
+/// necessarily a sphere nor textured.
+class EXPORT RoundAstrobj : public Astrobj{
 public:
 	typedef Astrobj st;
 	typedef gltestp::dstring String;
@@ -80,11 +92,11 @@ public:
 #endif
 			cloudSync(false), flags(false){}
 	};
-	typedef TexSphere tt;
-	TexSphere(Game *game);
-	TexSphere(const char *name, CoordSys *cs);
-	virtual ~TexSphere();
-	static const ClassRegister<TexSphere> classRegister;
+	typedef RoundAstrobj tt;
+	RoundAstrobj(Game *game);
+	RoundAstrobj(const char *name, CoordSys *cs);
+	virtual ~RoundAstrobj();
+	static const ClassRegister<RoundAstrobj> classRegister;
 	virtual const Static &getStatic()const{return classRegister;}
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
@@ -109,16 +121,16 @@ private:
 	const PropertyMap &propertyMap()const;
 	friend class DrawTextureSphere;
 	friend class DrawTextureSpheroid;
-	template<StringList TexSphere::*memb> static SQInteger slgetter(HSQUIRRELVM v, const CoordSys *);
-	template<StringList TexSphere::*memb> static SQInteger slsetter(HSQUIRRELVM v, CoordSys *);
+	template<StringList RoundAstrobj::*memb> static SQInteger slgetter(HSQUIRRELVM v, const CoordSys *);
+	template<StringList RoundAstrobj::*memb> static SQInteger slsetter(HSQUIRRELVM v, CoordSys *);
 	friend class DrawTextureCubeEx;
 };
 
 
 /// Identical to Astrobj but ClassId
-class EXPORT Satellite : public TexSphere{
+class EXPORT Satellite : public RoundAstrobj{
 public:
-	typedef TexSphere st;
+	typedef RoundAstrobj st;
 	static const ClassRegister<Satellite> classRegister;
 	Satellite(Game *game) : st(game){}
 	Satellite(const char *name, CoordSys *cs) : st(name, cs){}

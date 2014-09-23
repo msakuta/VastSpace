@@ -1,10 +1,10 @@
 /** \file
- * \brief Implementation of TexSphere class.
+ * \brief Implementation of RoundAstrobj class.
  *
- * Actually, majority of TexSphere is implemented in astrodraw.cpp.
+ * Actually, majority of RoundAstrobj is implemented in astrodraw.cpp.
  */
 #define _CRT_SECURE_NO_WARNINGS
-#include "TexSphere.h"
+#include "RoundAstrobj.h"
 #include "serial_util.h"
 #include "sqadapt.h"
 #include "cmd.h"
@@ -16,7 +16,7 @@
 
 #include <stdlib.h>
 
-TexSphere::TexSphere(Game *game) :
+RoundAstrobj::RoundAstrobj(Game *game) :
 	st(game),
 #ifndef DEDICATED
 	texlist(0),
@@ -31,7 +31,7 @@ TexSphere::TexSphere(Game *game) :
 {
 }
 
-TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
+RoundAstrobj::RoundAstrobj(const char *name, CoordSys *cs) : st(name, cs),
 	oblateness(0.),
 	ring(0),
 	albedo(1),
@@ -54,9 +54,9 @@ TexSphere::TexSphere(const char *name, CoordSys *cs) : st(name, cs),
 	atmodensity = 0.;
 }
 
-const ClassRegister<TexSphere> TexSphere::classRegister("TextureSphere", sq_define);
+const ClassRegister<RoundAstrobj> RoundAstrobj::classRegister("RoundAstrobj", sq_define);
 
-TexSphere::~TexSphere(){
+RoundAstrobj::~RoundAstrobj(){
 	// Should I delete here?
 /*	if(texlist)
 		glDeleteLists(texlist, 1);*/
@@ -81,7 +81,7 @@ template<typename T> UnserializeStream &operator>>(UnserializeStream &i, std::ve
 	return i;
 }
 
-SerializeStream &operator<<(SerializeStream &o, const TexSphere::Texture &a){
+SerializeStream &operator<<(SerializeStream &o, const RoundAstrobj::Texture &a){
 	o << a.uniformname;
 	o << a.filename;
 	o << a.cloudSync;
@@ -89,7 +89,7 @@ SerializeStream &operator<<(SerializeStream &o, const TexSphere::Texture &a){
 	return o;
 }
 
-UnserializeStream &operator>>(UnserializeStream &i, TexSphere::Texture &a){
+UnserializeStream &operator>>(UnserializeStream &i, RoundAstrobj::Texture &a){
 	i >> a.uniformname;
 	i >> a.filename;
 	i >> a.cloudSync;
@@ -100,15 +100,15 @@ UnserializeStream &operator>>(UnserializeStream &i, TexSphere::Texture &a){
 	return i;
 }
 
-inline bool operator==(const TexSphere::Texture &a, const TexSphere::Texture &b){
+inline bool operator==(const RoundAstrobj::Texture &a, const RoundAstrobj::Texture &b){
 	return a.uniformname == b.uniformname && b.filename == b.filename && a.cloudSync == b.cloudSync && a.flags == b.flags;
 }
 
-inline bool operator!=(const TexSphere::Texture &a, const TexSphere::Texture &b){
+inline bool operator!=(const RoundAstrobj::Texture &a, const RoundAstrobj::Texture &b){
 	return !operator==(a,b);
 }
 
-void TexSphere::serialize(SerializeContext &sc){
+void RoundAstrobj::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << texname;
 	sc.o << oblateness;
@@ -137,7 +137,7 @@ void TexSphere::serialize(SerializeContext &sc){
 	sc.o << terrainNoisePersistence;
 }
 
-void TexSphere::unserialize(UnserializeContext &sc){
+void RoundAstrobj::unserialize(UnserializeContext &sc){
 	std::vector<Texture> textures; // Temporary vector to merge to this->textures in postprocessing
 
 	st::unserialize(sc);
@@ -174,7 +174,7 @@ void TexSphere::unserialize(UnserializeContext &sc){
 		this->textures[i] = textures[i];
 }
 
-bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
+bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	using namespace stellar_util;
 	const char *s = argv[0], *ps = argv[1];
 	if(0);
@@ -299,7 +299,7 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 		return true;
 	}
 	else if((!strcmp(s, "ringmin") || !strcmp(s, "ringmax") || !strcmp(s, "ringthick"))){
-		TexSphere *const p = this;
+		RoundAstrobj *const p = this;
 		p->ring = 1;
 		*(!strcmp(s, "ringmin") ? &p->ringmin : !strcmp(s, "ringmax") ? &p->ringmax : &p->ringthick) = sqcalc(sc, ps, s);
 		return true;
@@ -324,12 +324,12 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 		return st::readFile(sc, argc, argv);
 }
 
-void TexSphere::anim(double dt){
+void RoundAstrobj::anim(double dt){
 	st::anim(dt);
 	updateAbsMag(dt);
 }
 
-double TexSphere::getTerrainHeight(const Vec3d &basepos)const{
+double RoundAstrobj::getTerrainHeight(const Vec3d &basepos)const{
 	return getTerrainHeightInt(basepos, terrainNoiseOctaves, terrainNoisePersistence, terrainNoiseHeight / rad);
 }
 
@@ -348,11 +348,11 @@ static double sfnoise3(const Vec3d &basepos, int octaves, double persistence){
 	return ret / fsum;
 }
 
-double TexSphere::getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight){
+double RoundAstrobj::getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight){
 	return (sfnoise3(basepos, octaves, persistence) * aheight + 1.);
 }
 
-void TexSphere::updateAbsMag(double dt){
+void RoundAstrobj::updateAbsMag(double dt){
 	FindBrightestAstrobj finder(this, vec3_000);
 	finder.threshold = 1e-6;
 	find(finder);
@@ -374,28 +374,28 @@ void TexSphere::updateAbsMag(double dt){
 	}
 }
 
-double TexSphere::atmoScatter(const Viewer &vw)const{
+double RoundAstrobj::atmoScatter(const Viewer &vw)const{
 	if(!(flags & AO_ATMOSPHERE))
 		return st::atmoScatter(vw);
-	double dist = const_cast<TexSphere*>(this)->calcDist(vw);
+	double dist = const_cast<RoundAstrobj*>(this)->calcDist(vw);
 	double thick = atmodensity;
 	double d = exp(-(dist - rad) / thick);
 	return d;
 }
 
-bool TexSphere::sunAtmosphere(const Viewer &vw)const{
-	return const_cast<TexSphere*>(this)->calcDist(vw) - rad < atmodensity * 10.;
+bool RoundAstrobj::sunAtmosphere(const Viewer &vw)const{
+	return const_cast<RoundAstrobj*>(this)->calcDist(vw) - rad < atmodensity * 10.;
 }
 
-void TexSphere::updateInt(double dt){
+void RoundAstrobj::updateInt(double dt){
 	st::updateInt(dt);
 	cloudPhase += 1e-4 * dt * game->universe->astro_timescale;
 }
 
 /// StringList getter template function for propertyMap.
-template<TexSphere::StringList TexSphere::*memb>
-SQInteger TexSphere::slgetter(HSQUIRRELVM v, const CoordSys *cs){
-	const TexSphere *a = static_cast<const TexSphere*>(cs);
+template<RoundAstrobj::StringList RoundAstrobj::*memb>
+SQInteger RoundAstrobj::slgetter(HSQUIRRELVM v, const CoordSys *cs){
+	const RoundAstrobj *a = static_cast<const RoundAstrobj*>(cs);
 	sq_newarray(v, (a->*memb).size());
 	for(int i = 0; i < (a->*memb).size(); i++){
 		sq_pushinteger(v, i);
@@ -406,9 +406,9 @@ SQInteger TexSphere::slgetter(HSQUIRRELVM v, const CoordSys *cs){
 }
 
 /// StringList setter template function for propertyMap.
-template<TexSphere::StringList TexSphere::*memb>
-SQInteger TexSphere::slsetter(HSQUIRRELVM v, CoordSys *cs){
-	TexSphere *a = static_cast<TexSphere*>(cs);
+template<RoundAstrobj::StringList RoundAstrobj::*memb>
+SQInteger RoundAstrobj::slsetter(HSQUIRRELVM v, CoordSys *cs){
+	RoundAstrobj *a = static_cast<RoundAstrobj*>(cs);
 	if(sq_gettype(v, 3) == OT_STRING){
 		const SQChar *str;
 		if(SQ_FAILED(sq_getstring(v, 3, &str)))
@@ -431,68 +431,68 @@ SQInteger TexSphere::slsetter(HSQUIRRELVM v, CoordSys *cs){
 }
 
 
-const CoordSys::PropertyMap &TexSphere::propertyMap()const{
+const CoordSys::PropertyMap &RoundAstrobj::propertyMap()const{
 	static PropertyMap pmap = st::propertyMap();
 	static bool init = false;
 	if(!init){
 		init = true;
 		pmap["oblateness"] = PropertyEntry(
 			[](HSQUIRRELVM v, const CoordSys *cs){
-				const TexSphere *a = static_cast<const TexSphere*>(cs);
+				const RoundAstrobj *a = static_cast<const RoundAstrobj*>(cs);
 				sq_pushfloat(v, SQFloat(a->oblateness));
 				return SQInteger(1);
 			},
 			[](HSQUIRRELVM v, CoordSys *cs){
-				TexSphere *a = static_cast<TexSphere*>(cs);
+				RoundAstrobj *a = static_cast<RoundAstrobj*>(cs);
 				SQFloat f;
 				if(SQ_FAILED(sq_getfloat(v, 3, &f)))
-					return sq_throwerror(v, _SC("TexSphere.oblateness could not convert to float"));
+					return sq_throwerror(v, _SC("RoundAstrobj.oblateness could not convert to float"));
 				a->oblateness = f;
 				return SQInteger(0);
 			}
 		);
 		pmap["texture"] = PropertyEntry(
 			[](HSQUIRRELVM v, const CoordSys *cs){
-				const TexSphere *a = static_cast<const TexSphere*>(cs);
+				const RoundAstrobj *a = static_cast<const RoundAstrobj*>(cs);
 				sq_pushstring(v, a->texname, -1);
 				return SQInteger(1);
 			},
 			[](HSQUIRRELVM v, CoordSys *cs){
-				TexSphere *a = static_cast<TexSphere*>(cs);
+				RoundAstrobj *a = static_cast<RoundAstrobj*>(cs);
 				const SQChar *str;
 				if(SQ_FAILED(sq_getstring(v, 3, &str)))
-					return sq_throwerror(v, _SC("TexSphere.texture could not convert to string"));
+					return sq_throwerror(v, _SC("RoundAstrobj.texture could not convert to string"));
 				a->texname = str;
 				return SQInteger(0);
 			}
 		);
 		pmap["vertexshader"] = PropertyEntry(
-			slgetter<&TexSphere::vertexShaderName>, slsetter<&TexSphere::vertexShaderName>);
+			slgetter<&RoundAstrobj::vertexShaderName>, slsetter<&RoundAstrobj::vertexShaderName>);
 		pmap["fragmentshader"] = PropertyEntry(
-			slgetter<&TexSphere::fragmentShaderName>, slsetter<&TexSphere::fragmentShaderName>);
+			slgetter<&RoundAstrobj::fragmentShaderName>, slsetter<&RoundAstrobj::fragmentShaderName>);
 		pmap["cloudvertexshader"] = PropertyEntry(
-			slgetter<&TexSphere::cloudVertexShaderName>, slsetter<&TexSphere::cloudVertexShaderName>);
+			slgetter<&RoundAstrobj::cloudVertexShaderName>, slsetter<&RoundAstrobj::cloudVertexShaderName>);
 		pmap["cloudfragmentshader"] = PropertyEntry(
-			slgetter<&TexSphere::cloudFragmentShaderName>, slsetter<&TexSphere::cloudFragmentShaderName>);
+			slgetter<&RoundAstrobj::cloudFragmentShaderName>, slsetter<&RoundAstrobj::cloudFragmentShaderName>);
 	}
 	return pmap;
 }
 
-bool TexSphere::sq_define(HSQUIRRELVM v){
+bool RoundAstrobj::sq_define(HSQUIRRELVM v){
 	sq_pushstring(v, classRegister.s_sqclassname, -1);
 	sq_pushstring(v, st::classRegister.s_sqclassname, -1);
 	sq_get(v, 1);
 	sq_newclass(v, SQTrue);
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
-	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<TexSphere>);
+	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<RoundAstrobj>);
 	sq_createslot(v, -3);
 	return true;
 }
 
 #ifdef DEDICATED
-void TexSphere::draw(const Viewer *){}
-double TexSphere::getAmbientBrightness(const Viewer &)const{return 0.;}
+void RoundAstrobj::draw(const Viewer *){}
+double RoundAstrobj::getAmbientBrightness(const Viewer &)const{return 0.;}
 #endif
 
 

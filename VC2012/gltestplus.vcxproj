@@ -253,6 +253,7 @@
     <ClCompile Include="..\src\Player.cpp" />
     <ClCompile Include="..\src\png.cpp" />
     <ClCompile Include="..\src\Respawn.cpp" />
+    <ClCompile Include="..\src\RoundAstrobj.cpp" />
     <ClCompile Include="..\src\RStation.cpp" />
     <ClCompile Include="..\src\Scarry.cpp" />
     <ClCompile Include="..\src\Sceptor.cpp" />
@@ -267,7 +268,6 @@
     <ClCompile Include="..\src\stellar_file.cpp" />
     <ClCompile Include="..\src\tefpol3d.cpp" />
     <ClCompile Include="..\src\teline3d.cpp" />
-    <ClCompile Include="..\src\TexSphere.cpp" />
     <ClCompile Include="..\src\Universe.cpp" />
     <ClCompile Include="..\src\war.cpp" />
     <ClCompile Include="..\src\Warpable.cpp" />
@@ -340,6 +340,7 @@
     <ClInclude Include="..\include\MTurret.h" />
     <ClInclude Include="..\include\Observable.h" />
     <ClInclude Include="..\include\Player.h" />
+    <ClInclude Include="..\include\RoundAstrobj.h" />
     <ClInclude Include="..\include\serial.h" />
     <ClInclude Include="..\include\serial_util.h" />
     <ClInclude Include="..\include\Server.h" />
@@ -355,7 +356,6 @@
     <ClInclude Include="..\include\tefpol3d.h" />
     <ClInclude Include="..\include\tent3d.h" />
     <ClInclude Include="..\include\tent3d_forward.h" />
-    <ClInclude Include="..\include\TexSphere.h" />
     <ClInclude Include="..\include\Universe.h" />
     <ClInclude Include="..\include\VariantRegister.h" />
     <ClInclude Include="..\include\Viewer.h" />

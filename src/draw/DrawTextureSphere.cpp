@@ -1070,15 +1070,19 @@ bool DrawTextureCubeEx::draw(){
 
 	static const int divides = 64;
 
+	Quatd qrot = vw->cs->tocsq(a);
+
 	glPushMatrix();
-	gldTranslate3dv(this->apos - vw->pos);
-	glScaled(m_rad, m_rad, m_rad);
 
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_LIGHTING_BIT);
 
 	useShader();
 
 	setupLight();
+
+	gldTranslate3dv(this->apos - vw->pos);
+	glScaled(m_rad, m_rad, m_rad);
+	gldMultQuat(qrot);
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -1160,7 +1164,7 @@ bool DrawTextureCubeEx::draw(){
 #endif
 
 		for(int i = 0; i < 6; i++){
-			int currentLOD = (apos + cubedirs[i].trans(Vec3d(0,0,m_rad)) - vw->pos).len() / m_rad < 2. ? 1 : 0;
+			int currentLOD = (apos + qrot.trans(cubedirs[i].trans(Vec3d(0,0,m_rad))) - vw->pos).len() / m_rad < 2. ? 1 : 0;
 
 			if(0 < currentLOD){
 				for(int ix = 0; ix < lodPatchSize; ix++){

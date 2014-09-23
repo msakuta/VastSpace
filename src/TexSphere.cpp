@@ -12,6 +12,7 @@
 #include "CoordSys-property.h"
 #include "CoordSys-sq.h"
 #include "CoordSys-find.h"
+#include "noises/simplexnoise1234.h"
 
 #include <stdlib.h>
 
@@ -326,6 +327,29 @@ bool TexSphere::readFile(StellarContext &sc, int argc, const char *argv[]){
 void TexSphere::anim(double dt){
 	st::anim(dt);
 	updateAbsMag(dt);
+}
+
+double TexSphere::getTerrainHeight(const Vec3d &basepos)const{
+	return getTerrainHeightInt(basepos, terrainNoiseOctaves, terrainNoisePersistence, terrainNoiseHeight / rad);
+}
+
+/// Simplex Fractal Noise in 3D
+static double sfnoise3(const Vec3d &basepos, int octaves, double persistence){
+	assert(0 < octaves);
+	double ret = 0.;
+	double f = 1.;
+	double fsum = 0.;
+	for(int i = 0; i < octaves; i++){
+		double s = (1 << i);
+		f *= persistence;
+		ret += f * snoise3(basepos[0] * s, basepos[1] * s, basepos[2] * s);
+		fsum += f;
+	}
+	return ret / fsum;
+}
+
+double TexSphere::getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight){
+	return (sfnoise3(basepos, octaves, persistence) * aheight + 1.);
 }
 
 void TexSphere::updateAbsMag(double dt){

@@ -100,8 +100,10 @@ public:
 	TextureIterator endTextures()const{return textures.end();} ///< End of iteration.
 	Quatd cloudRotation()const{return rot.rotate(cloudPhase, 0, 1, 0);}
 	static bool sq_define(HSQUIRRELVM v);
+	double getTerrainHeight(const Vec3d &basepos)const;
 protected:
 	virtual void updateAbsMag(double dt); ///< Update absolute magnitude of this celestial body by other light sources
+	static double getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight);
 private:
 	std::vector<Texture> textures;
 	const PropertyMap &propertyMap()const;
@@ -109,6 +111,7 @@ private:
 	friend class DrawTextureSpheroid;
 	template<StringList TexSphere::*memb> static SQInteger slgetter(HSQUIRRELVM v, const CoordSys *);
 	template<StringList TexSphere::*memb> static SQInteger slsetter(HSQUIRRELVM v, CoordSys *);
+	friend class DrawTextureCubeEx;
 };
 
 

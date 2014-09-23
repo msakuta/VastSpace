@@ -10,7 +10,6 @@
 #include "bitmap.h"
 #include "draw/HDR.h"
 #include "glw/GLWchart.h"
-#include "../noises/simplexnoise1234.h"
 #undef exit
 extern "C"{
 #include <clib/timemeas.h>
@@ -1367,23 +1366,8 @@ struct DrawTextureCubeEx::TempVertex{
 	}
 };
 
-/// Simplex Fractal Noise in 3D
-static double sfnoise3(const Vec3d &basepos, int octaves, double persistence){
-	assert(0 < octaves);
-	double ret = 0.;
-	double f = 1.;
-	double fsum = 0.;
-	for(int i = 0; i < octaves; i++){
-		double s = (1 << i);
-		f *= persistence;
-		ret += f * snoise3(basepos[0] * s, basepos[1] * s, basepos[2] * s);
-		fsum += f;
-	}
-	return ret / fsum;
-}
-
 double DrawTextureCubeEx::height(const Vec3d &basepos, int octaves, double persistence, double aheight){
-	return (sfnoise3(basepos, octaves, persistence) * aheight + 1.);
+	return TexSphere::getTerrainHeightInt(basepos, octaves, persistence, aheight);
 }
 
 void DrawTextureCubeEx::point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height){

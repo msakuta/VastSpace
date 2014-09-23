@@ -5,7 +5,7 @@
 
 #define RING_CUTS 64
 
-class AstroRing{
+class EXPORT AstroRing{
 	GLuint ringTex, ringBackTex, ringShadowTex;
 	GLint tex1dLoc, texLoc, ambientLoc, ringminLoc, ringmaxLoc, ringnormLoc, exposureLoc, tonemapLoc;
 	bool shader_compile;

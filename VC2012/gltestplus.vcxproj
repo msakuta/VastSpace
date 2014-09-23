@@ -302,6 +302,7 @@
     <ClInclude Include="..\include\draw\material.h" />
     <ClInclude Include="..\include\draw\mqoadapt.h" />
     <ClInclude Include="..\include\draw\OpenGLState.h" />
+    <ClInclude Include="..\include\draw\ring-draw.h" />
     <ClInclude Include="..\include\draw\ShaderBind.h" />
     <ClInclude Include="..\include\draw\ShadowMap.h" />
     <ClInclude Include="..\include\draw\WarDraw.h" />
@@ -354,6 +355,7 @@
     <ClInclude Include="..\include\tefpol3d.h" />
     <ClInclude Include="..\include\tent3d.h" />
     <ClInclude Include="..\include\tent3d_forward.h" />
+    <ClInclude Include="..\include\TexSphere.h" />
     <ClInclude Include="..\include\Universe.h" />
     <ClInclude Include="..\include\VariantRegister.h" />
     <ClInclude Include="..\include\Viewer.h" />
@@ -382,7 +384,6 @@
     <ClInclude Include="..\src\Sceptor.h" />
     <ClInclude Include="..\src\sqserial.h" />
     <ClInclude Include="..\src\tent3d_p.h" />
-    <ClInclude Include="..\src\TexSphere.h" />
     <ClInclude Include="..\src\Worker.h" />
   </ItemGroup>
   <ItemGroup>

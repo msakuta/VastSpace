@@ -3,7 +3,7 @@
  */
 #ifndef DRAWTEXTURESPHERE_H
 #define DRAWTEXTURESPHERE_H
-#include "../TexSphere.h"
+#include "TexSphere.h"
 #include "CoordSys-find.h"
 #include "judge.h"
 

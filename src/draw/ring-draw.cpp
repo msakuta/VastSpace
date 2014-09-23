@@ -1,4 +1,4 @@
-#include "ring-draw.h"
+#include "draw/ring-draw.h"
 #include "judge.h"
 #include "astrodef.h"
 #include "Universe.h"

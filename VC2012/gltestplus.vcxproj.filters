@@ -647,9 +647,6 @@
     <ClInclude Include="..\src\tent3d_p.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\TexSphere.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\Worker.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -674,6 +671,12 @@
     </ClInclude>
     <ClInclude Include="..\src\noises\simplexnoise1234.h">
       <Filter>Headers\noises</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\TexSphere.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\draw\ring-draw.h">
+      <Filter>Exported Headers\draw</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

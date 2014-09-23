@@ -11,7 +11,7 @@
 
 
 /// Astrobj drawn as a textured sphere
-class TexSphere : public Astrobj{
+class EXPORT TexSphere : public Astrobj{
 public:
 	typedef Astrobj st;
 	typedef gltestp::dstring String;
@@ -113,7 +113,7 @@ private:
 
 
 /// Identical to Astrobj but ClassId
-class Satellite : public TexSphere{
+class EXPORT Satellite : public TexSphere{
 public:
 	typedef TexSphere st;
 	static const ClassRegister<Satellite> classRegister;

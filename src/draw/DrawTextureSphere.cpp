@@ -1058,10 +1058,19 @@ static bool initBuffers(){return -1;}
 
 DrawTextureCubeEx::BufferSets DrawTextureCubeEx::bufsets;
 
+int DrawTextureCubeEx::getPatchSize(int lod){
+	return lodPatchSize << (2 * lod);
+}
+
+int DrawTextureCubeEx::getDivision(int lod){
+	return 16 << (2 * (lod + 1));
+}
+
 #define PROFILE_CUBEEX 1
 
 #if PROFILE_CUBEEX
 static int lodPatchWaits = 0;
+static int lodCounts[DrawTextureCubeEx::lods] = {0};
 #endif
 
 bool DrawTextureCubeEx::draw(){
@@ -1070,7 +1079,7 @@ bool DrawTextureCubeEx::draw(){
 
 	static const int divides = 64;
 
-	Quatd qrot = vw->cs->tocsq(a);
+	qrot = vw->cs->tocsq(a);
 
 	glPushMatrix();
 
@@ -1129,90 +1138,31 @@ bool DrawTextureCubeEx::draw(){
 		glEnableClientState(GL_NORMAL_ARRAY);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-		static auto enableBuffer = [](SubBufferSet &bufs){
-			/* Vertex array */
-			glBindBuffer(GL_ARRAY_BUFFER, bufs.pos);
-			glVertexPointer(3, GL_DOUBLE, 0, (0));
-
-			/* Normal array */
-			glBindBuffer(GL_ARRAY_BUFFER, bufs.nrm);
-			glNormalPointer(GL_DOUBLE, 0, (0));
-
-			/* Texture coordinates array */
-			// Repeat the same coordinates for the second texture.
-			// This behavior probably should be able to be customized.
-			if(glClientActiveTextureARB){
-				glClientActiveTextureARB(GL_TEXTURE0_ARB);
-				glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
-				glTexCoordPointer(3, GL_DOUBLE, 0, (0));
-
-				glClientActiveTextureARB(GL_TEXTURE1_ARB);
-				glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-				glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
-				glTexCoordPointer(3, GL_DOUBLE, 0, (0));
-				glClientActiveTextureARB(GL_TEXTURE0_ARB); // Restore the default
-			}
-
-			// Index array
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs.ind);
-		};
-
 #if PROFILE_CUBEEX
 		timemeas_t tm;
 		TimeMeasStart(&tm);
-		int lodCounts[3] = {0};
+		for(auto &a : lodCounts)
+			a = 0;
 #endif
 
 		for(int i = 0; i < 6; i++){
 			int currentLOD = (apos + qrot.trans(cubedirs[i].trans(Vec3d(0,0,m_rad))) - vw->pos).len() / m_rad < 2. ? 1 : 0;
 
 			if(0 < currentLOD){
-				for(int ix = 0; ix < lodPatchSize; ix++){
-					for(int iy = 0; iy < lodPatchSize; iy++){
-						double x = 2. * ix / lodPatchSize - 1.;
-						double y = 2. * iy / lodPatchSize - 1.;
-						Vec3d rpos = Vec3d(x,y,1).norm() * m_rad;
-						bool patchDetail = (apos + cubedirs[i].trans(rpos) - vw->pos).len() / (m_rad / lodPatchSize) < 2.;
-						bool drawn = false;
-						if(!patchDetail){
-							auto it2 = compileVertexBuffersSubBuf(it->second, 0, i, ix, iy);
-							if(it2 != bufs.subbufs[0].end()){
-#if PROFILE_CUBEEX
-								timemeas_t tms;
-								TimeMeasStart(&tms);
-#endif
-								enableBuffer(it2->second);
-								glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
-#if PROFILE_CUBEEX
-								GLWchart::addSampleToCharts("dtstime1", TimeMeasLap(&tms));
-								lodCounts[1]++;
-#endif
-								drawn = true;
+				int patchSize = getPatchSize(0);
+				for(int ix = 0; ix < patchSize; ix++){
+					for(int iy = 0; iy < patchSize; iy++){
+						if(!drawPatch(bufs, i, 0, ix, iy)){
+							// The last resort is to draw least detailed mesh in place of the patch.
+							// It looks terrible, but better than a hole.
+							int bx = ix;
+							int by = iy;
+							if(bx < lodPatchSize && by < lodPatchSize){
+								int idx = ix * lodPatchSize + iy;
+								enableBuffer(bufs);
+								glDrawElements(GL_QUADS, bufs.getPatchCount(i, idx),
+									GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(i, idx)]);
 							}
-						}
-						if(!drawn){
-							auto it2 = compileVertexBuffersSubBuf(it->second, 1, i, ix, iy);
-							if(it2 != bufs.subbufs[1].end()){
-#if PROFILE_CUBEEX	
-								timemeas_t tms;
-								TimeMeasStart(&tms);
-#endif
-								enableBuffer(it2->second);
-								glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
-#if PROFILE_CUBEEX
-								GLWchart::addSampleToCharts("dtstime2", TimeMeasLap(&tms));
-								lodCounts[2]++;
-#endif
-								drawn = true;
-							}
-						}
-
-						// The last resort is to draw least detailed mesh in place of the patch.
-						// It looks terrible, but better than a hole.
-						if(!drawn){
-							enableBuffer(bufs);
-							glDrawElements(GL_QUADS, bufs.getPatchCount(i, ix * lodPatchSize + iy),
-								GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(i, ix * lodPatchSize + iy)]);
 						}
 					}
 				}
@@ -1251,6 +1201,103 @@ bool DrawTextureCubeEx::draw(){
 
 	glPopMatrix();
 	return true;
+}
+
+void DrawTextureCubeEx::enableBuffer(SubBufferSetBase &bufs){
+	/* Vertex array */
+	glBindBuffer(GL_ARRAY_BUFFER, bufs.pos);
+	glVertexPointer(3, GL_DOUBLE, 0, (0));
+
+	/* Normal array */
+	glBindBuffer(GL_ARRAY_BUFFER, bufs.nrm);
+	glNormalPointer(GL_DOUBLE, 0, (0));
+
+	/* Texture coordinates array */
+	// Repeat the same coordinates for the second texture.
+	// This behavior probably should be able to be customized.
+	if(glClientActiveTextureARB){
+		glClientActiveTextureARB(GL_TEXTURE0_ARB);
+		glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
+		glTexCoordPointer(3, GL_DOUBLE, 0, (0));
+
+		glClientActiveTextureARB(GL_TEXTURE1_ARB);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glBindBuffer(GL_ARRAY_BUFFER, bufs.tex);
+		glTexCoordPointer(3, GL_DOUBLE, 0, (0));
+		glClientActiveTextureARB(GL_TEXTURE0_ARB); // Restore the default
+	}
+
+	// Index array
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs.ind);
+}
+
+bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int px, int py){
+	const int patchSize = getPatchSize(lod);
+	const int nextPatchSize = getPatchSize(lod+1);
+	const int patchRatio = nextPatchSize / patchSize;
+	const int ixBegin = px * patchRatio;
+	const int ixEnd = (px + 1) * patchRatio;
+	const int iyBegin = py * patchRatio;
+	const int iyEnd = (py + 1) * patchRatio;
+
+	auto it2 = compileVertexBuffersSubBuf(bufs, lod, direction, px, py);
+
+	if(it2 != bufs.subbufs[lod].end()){
+
+		// Function to determine whether the patch is near enough from the viewpoint to render
+		// in a higher LOD.
+		auto patchDetail = [&](int ix, int iy){
+			double x = 2. * ix / nextPatchSize - 1.;
+			double y = 2. * iy / nextPatchSize - 1.;
+			Vec3d rpos = Vec3d(x,y,1).norm() * m_rad;
+			return (apos + qrot.trans(cubedirs[direction].trans(rpos)) - vw->pos).len() / (m_rad / nextPatchSize) < 4.;
+		};
+
+		bool drawn = false;
+		// If there are no higher LOD available, don't bother trying rendering them.
+		if(lod+1 < lods){
+			// First, try rendering detailed patches.
+			for(int ix = ixBegin; ix < ixEnd; ix++){
+				for(int iy = iyBegin; iy < iyEnd; iy++){
+					if(patchDetail(ix, iy)){
+						drawn = drawn | drawPatch(bufs, direction, lod + 1, ix, iy);
+					}
+				}
+			}
+
+			// If detailed patches are drawn partially, fill gaps between patches in higher level of details
+			if(drawn){
+				enableBuffer(it2->second);
+				for(int ix = ixBegin; ix < ixEnd; ix++){
+					for(int iy = iyBegin; iy < iyEnd; iy++){
+						int basex = ix - ixBegin;
+						int basey = iy - iyBegin;
+						if(!patchDetail(ix, iy) && basex < maxPatchRatio && basey < maxPatchRatio){
+							glDrawElements(GL_QUADS, it2->second.subPatchCount[basex][basey],
+								GL_UNSIGNED_INT, &((GLuint*)nullptr)[it2->second.subPatchIdx[basex][basey]]);
+						}
+					}
+				}
+			}
+		}
+
+		// If no higher level of detail patches are drawn, render the coarse patch at once
+		if(!drawn){
+#if PROFILE_CUBEEX
+			timemeas_t tms;
+			TimeMeasStart(&tms);
+#endif
+			enableBuffer(it2->second);
+			glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
+#if PROFILE_CUBEEX
+			GLWchart::addSampleToCharts(gltestp::dstring("dtstime") << lod, TimeMeasLap(&tms));
+			lodCounts[1]++;
+#endif
+			drawn = true;
+		}
+	}
+
+	return it2 != bufs.subbufs[lod].end();
 }
 
 typedef std::vector<Vec3d> VecList;
@@ -1468,7 +1515,10 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 				bufs.t = &it;
 				it.startJob([=, &bufs](){
 
-					const int divides = 16 << (2 * (lod + 1));
+					const int lodPatchSize = getPatchSize(lod);
+					const int nextPatchSize = getPatchSize(lod+1);
+					const int patchRatio = nextPatchSize / lodPatchSize;
+					const int divides = getDivision(lod);
 
 					BufferData &bd = *bufs.pbd;
 
@@ -1490,39 +1540,47 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 						return point0(divides, rot, bd, ix, iy, height75);
 					};
 
-					const int ixBegin = px * divides / lodPatchSize;
-					const int ixEnd = (px + 1) * divides / lodPatchSize;
-					const int iyBegin = py * divides / lodPatchSize;
-					const int iyEnd = (py + 1) * divides / lodPatchSize;
+					for(int npx = 0; npx < patchRatio; npx++){
+						for(int npy = 0; npy < patchRatio; npy++){
+							bufs.subPatchIdx[npx][npy] = bd.indices.size();
 
-					for(int ix = ixBegin; ix < ixEnd; ix++){
-						for(int iy = iyBegin; iy < iyEnd; iy++){
-							point(ix, iy);
-							point(ix + 1, iy);
-							point(ix + 1, iy + 1);
-							point(ix, iy + 1);
-						}
-					}
+							const int ixBegin = px * divides / lodPatchSize + npx * divides / nextPatchSize;
+							const int ixEnd = px * divides / lodPatchSize + (npx + 1) * divides / nextPatchSize;
+							const int iyBegin = py * divides / lodPatchSize + npy * divides / nextPatchSize;
+							const int iyEnd = py * divides / lodPatchSize + (npy + 1) * divides / nextPatchSize;
 
-					// Skirt along X axis to hide gaps
-					const int iyArray[2] = {iyBegin, iyEnd};
-					for(int iy = 0; iy < 2; iy++){
-						for(int ix = ixBegin; ix < ixEnd; ix++){
-							point(ix + !iy, iyArray[iy]);
-							point(ix + iy, iyArray[iy]);
-							pointb(ix + iy, iyArray[iy]);
-							pointb(ix + !iy, iyArray[iy]);
-						}
-					}
+							for(int ix = ixBegin; ix < ixEnd; ix++){
+								for(int iy = iyBegin; iy < iyEnd; iy++){
+									point(ix, iy);
+									point(ix + 1, iy);
+									point(ix + 1, iy + 1);
+									point(ix, iy + 1);
+								}
+							}
 
-					// Skirt along Y axis to hide gaps
-					const int ixArray[2] = {ixBegin, ixEnd};
-					for(int ix = 0; ix < 2; ix++){
-						for(int iy = iyBegin; iy < iyEnd; iy++){
-							point(ixArray[ix], iy + ix);
-							point(ixArray[ix], iy + !ix);
-							pointb(ixArray[ix], iy + !ix);
-							pointb(ixArray[ix], iy + ix);
+							// Skirt along X axis to hide gaps
+							const int iyArray[2] = {iyBegin, iyEnd};
+							for(int iy = 0; iy < 2; iy++){
+								for(int ix = ixBegin; ix < ixEnd; ix++){
+									point(ix + !iy, iyArray[iy]);
+									point(ix + iy, iyArray[iy]);
+									pointb(ix + iy, iyArray[iy]);
+									pointb(ix + !iy, iyArray[iy]);
+								}
+							}
+
+							// Skirt along Y axis to hide gaps
+							const int ixArray[2] = {ixBegin, ixEnd};
+							for(int ix = 0; ix < 2; ix++){
+								for(int iy = iyBegin; iy < iyEnd; iy++){
+									point(ixArray[ix], iy + ix);
+									point(ixArray[ix], iy + !ix);
+									pointb(ixArray[ix], iy + !ix);
+									pointb(ixArray[ix], iy + ix);
+								}
+							}
+
+							bufs.subPatchCount[npx][npy] = bd.indices.size() - bufs.subPatchIdx[npx][npy];
 						}
 					}
 
@@ -1566,7 +1624,7 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 }
 
 
-void DrawTextureCubeEx::setVertexBuffers(const BufferData &bd, SubBufferSet &bufs){
+void DrawTextureCubeEx::setVertexBuffers(const BufferData &bd, SubBufferSetBase &bufs){
 	if(bd.indices.size() == 0){
 		bufs.pos = 0;
 		bufs.nrm = 0;

@@ -128,9 +128,18 @@ public:
 	tt &noisePersistence(double v){m_noisePersistence = v; return *this;}
 	tt &noiseOctaves(int v){m_noiseOctaves = v; return *this;}
 
-	static const int lods = 2;
+	static const int lods = 3;
 	static const int lodPatchSize = 4;
 	static const int lodPatchSize2 = lodPatchSize * lodPatchSize;
+	static const int maxPatchRatio = 4;
+
+	static int getPatchSize(int lod = 0);
+	static int getPatchSize2(int lod = 0){
+		int v = getPatchSize(lod);
+		return v * v;
+	}
+
+	static int getDivision(int lod = 0);
 
 protected:
 	struct BufferData;
@@ -142,17 +151,24 @@ protected:
 	struct TempVertex;
 	typedef std::map<DrawTextureCubeEx::TempVertex, GLuint> VertexIndMap;
 
-	struct SubBufferSet{
-		WorkerThread *t;
-		BufferData *pbd;
+	struct SubBufferSetBase{
 		GLuint pos; ///< Position vector buffer.
 		GLuint nrm; ///< Normal vector buffer.
 		GLuint tex; ///< Texture coordinates buffer.
 		GLuint ind; ///< Index buffer into all three buffers above.
 		unsigned count; ///< Count of vertices ind member contains.
+	};
+
+	struct SubBufferSet : SubBufferSetBase{
+		WorkerThread *t;
+		BufferData *pbd;
 		bool ready; ///< This need not be std::atomic<bool>.
 
 		SubBufferSet() : t(NULL), ready(false){}
+
+		/// Data member to calculate base and count (should be protected?)
+		GLuint subPatchIdx[maxPatchRatio][maxPatchRatio];
+		GLuint subPatchCount[maxPatchRatio][maxPatchRatio];
 	};
 
 	/// Tuple indicating indices of direction, x and y
@@ -161,7 +177,7 @@ protected:
 	typedef std::map<SubKey, SubBufferSet> SubBufs;
 
 	/// \brief A set of vertex buffer object indices.
-	struct BufferSet : SubBufferSet{
+	struct BufferSet : SubBufferSetBase{
 
 		/// Get base index of given LOD and direction ID
 		unsigned getBase(int direction, int patch = 0){
@@ -197,7 +213,7 @@ protected:
 	typedef std::function<double(const Vec3d &basepos)> HeightGetter;
 
 	bool drawPatch(BufferSet &bufs, int direction, int lod, int px, int py);
-	void enableBuffer(SubBufferSet &);
+	void enableBuffer(SubBufferSetBase &);
 
 	static double height(const Vec3d &basepos, int octaves, double persistence, double aheight);
 	static void point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height);
@@ -206,11 +222,13 @@ protected:
 
 	SubBufs::iterator compileVertexBuffersSubBuf(BufferSet &bs, int lod, int direction, int ix, int iy);
 
-	static void setVertexBuffers(const BufferData &bd, SubBufferSet &bs);
+	static void setVertexBuffers(const BufferData &bd, SubBufferSetBase &bs);
 
 	double m_noiseHeight;
 	double m_noisePersistence;
 	int m_noiseOctaves;
+
+	Quatd qrot;
 };
 
 #endif

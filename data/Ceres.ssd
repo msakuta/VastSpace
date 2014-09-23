@@ -17,7 +17,7 @@ coordsys Orbit ceres{
 		terrainNoiseEnable true
 		terrainNoiseHeight 35.
 		terrainNoisePersistence 0.75
-		terrainNoiseOctaves 7
+		terrainNoiseOctaves 8
 		vertexshader "shaders/flatplanet.vs"
 		fragmentshader "shaders/flatplanet.fs"
 	}

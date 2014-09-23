@@ -1287,7 +1287,7 @@ struct DrawTextureCubeEx::TempVertex{
 	Vec3d nrm;
 	Vec3d tex;
 
-	TempVertex(const DrawTextureCubeEx &mesh, const Vec3d &pos, const Vec3d &nrm, const Vec3d &tex) : pos(pos), nrm(nrm), tex(tex){}
+	TempVertex(const Vec3d &pos, const Vec3d &nrm, const Vec3d &tex) : pos(pos), nrm(nrm), tex(tex){}
 
 	bool operator<(const TempVertex &o)const{
 		if(pos < o.pos)
@@ -1305,8 +1305,8 @@ struct DrawTextureCubeEx::TempVertex{
 	}
 
 	// Template function to insert a vertex for either a Polygon or an UVPolygon.
-	static void insert(DrawTextureCubeEx::BufferData &bd, const Vec3d &pos, const Vec3d &nrm, const Vec3d &tex, const DrawTextureCubeEx &mesh){
-		TempVertex tv(mesh, pos, nrm, tex);
+	static void insert(DrawTextureCubeEx::BufferData &bd, const Vec3d &pos, const Vec3d &nrm, const Vec3d &tex){
+		TempVertex tv(pos, nrm, tex);
 		VertexIndMap::iterator it = bd.mapVertices.find(tv);
 		if(it != bd.mapVertices.end())
 			bd.indices.push_back(it->second);
@@ -1339,7 +1339,7 @@ double DrawTextureCubeEx::height(const Vec3d &basepos, int octaves, double persi
 	return (sfnoise3(basepos, octaves, persistence) * aheight + 1.);
 }
 
-void DrawTextureCubeEx::point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height)const{
+void DrawTextureCubeEx::point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height){
 	float gx, gy;
 	auto vec = [&](int ix, int iy){
 		double x = 2. * ix / divides - 1;
@@ -1351,7 +1351,7 @@ void DrawTextureCubeEx::point0(int divides, const Quatd &rot, BufferData &bd, in
 	Vec3d dv01 = vec(ix, iy + 1) - v0;
 	Vec3d dv10 = vec(ix + 1, iy) - v0;
 	Vec3d nrm = dv10.vp(dv01).norm();
-	TempVertex::insert(bd, v0, nrm, v0, *this);
+	TempVertex::insert(bd, v0, nrm, v0);
 }
 
 /// Compile vertex buffer objects for the least detailed LOD.

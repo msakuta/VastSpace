@@ -196,8 +196,11 @@ protected:
 
 	typedef std::function<double(const Vec3d &basepos)> HeightGetter;
 
+	bool drawPatch(BufferSet &bufs, int direction, int lod, int px, int py);
+	void enableBuffer(SubBufferSet &);
+
 	static double height(const Vec3d &basepos, int octaves, double persistence, double aheight);
-	void point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height)const;
+	static void point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height);
 
 	void compileVertexBuffers()const;
 

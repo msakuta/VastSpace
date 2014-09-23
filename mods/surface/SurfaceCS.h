@@ -8,6 +8,7 @@
 #include "TIN.h"
 #include "EntityCommand.h"
 #include "msg/GetCoverPointsMessage.h"
+#include "RoundAstrobj.h"
 extern "C"{
 #include <clib/gl/gldraw.h>
 }
@@ -46,6 +47,7 @@ protected:
 	TIN *tin;
 	int tinResample;
 	bool initialized;
+	RoundAstrobj *cbody;
 
 	void init();
 	friend class SurfaceWar;

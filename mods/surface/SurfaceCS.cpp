@@ -94,7 +94,8 @@ SurfaceCS::SurfaceCS(Game *game) : st(game),
 	bbody(NULL),
 	tin(NULL),
 	tinResample(16),
-	initialized(false)
+	initialized(false),
+	cbody(NULL)
 {
 //	init();
 }
@@ -108,7 +109,8 @@ SurfaceCS::SurfaceCS(const char *path, CoordSys *root) : st(path, root),
 	bbody(NULL),
 	tin(NULL),
 	tinResample(16),
-	initialized(false)
+	initialized(false),
+	cbody(NULL)
 {
 //	init();
 }
@@ -248,6 +250,11 @@ double SurfaceCS::getHeight(double x, double z, Vec3d *normal)const{
 		}
 		return ret * 1e-3 / 4.;
 	}
+	else if(cbody){
+		Vec3d basepos = cbody->tocs(Vec3d(x, 0, z), this);
+		Vec3d basenorm = basepos.norm();
+		return cbody->getTerrainHeight(basenorm) * cbody->rad - basepos.len();
+	}
 	else
 		return 0.;
 }
@@ -282,6 +289,15 @@ bool SurfaceCS::traceHit(const Vec3d &start, const Vec3d &dir, double rad, doubl
 
 void SurfaceCS::anim(double dt){
 	st::anim(dt);
+	if(cbody == NULL){
+		for(auto c = parent; c; c = c->next){
+			auto t = dynamic_cast<RoundAstrobj*>(c);
+			if(t){
+				cbody = t;
+				break;
+			}
+		}
+	}
 }
 
 /// Reset the flag to instruct the drawmap function to recalculate the pyramid buffer.

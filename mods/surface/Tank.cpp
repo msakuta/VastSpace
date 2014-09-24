@@ -407,7 +407,7 @@ void LandVehicle::anim(double dt){
 	Vec3d normal(0,1,0);
 
 	bool floorTouch = false;
-	btVector3 worldNormal;
+	btVector3 worldNormal(0,1,0);
 	if(WarSpace *ws = *w){
 		const btVector3 offset(0, getLandOffset(), 0);
 		const btvc btPos = bbody->getWorldTransform().getOrigin() - offset;
@@ -420,23 +420,43 @@ void LandVehicle::anim(double dt){
 		// dynamic_cast should be preferred.
 		if(&w->cs->getStatic() == &SurfaceCS::classRegister){
 			SurfaceCS *s = static_cast<SurfaceCS*>(w->cs);
-			double height = s->getHeight(btPos[0], btPos[2], &normal);
-			worldNormal = btvc(normal);
-			if(btPos[1] - offset[1] < height){
-				Vec3d dest(btPos[0], height + offset[1], btPos[2]);
-				Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
-				setPosition(&dest, NULL, &newVelo);
-				btVector3 btOmega = bbody->getAngularVelocity() - worldNormal.cross(bbody->getWorldTransform().getBasis().getColumn(1)) * 5. * dt;
-				bbody->setAngularVelocity(btOmega * exp(-3. * dt));
-				floorTouch = true;
+			RoundAstrobj *cbody = s->getCelBody();
+			if(cbody){
+				Vec3d basepos = cbody->tocs(btPos, s);
+				Vec3d basenorm = basepos.norm();
+				double terrain = cbody->getTerrainHeight(basenorm) * cbody->rad;
+				if(basepos.slen() < terrain * terrain){
+					basepos = basenorm * terrain;
+					Vec3d lpos = s->tocs(basepos, cbody);
+					worldNormal = btvc(s->tocs(basenorm, cbody, true));
+					Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
+					setPosition(&lpos, NULL, &newVelo);
+					floorTouch = true;
+				}
+			}
+			else{
+				double height = s->getHeight(btPos[0], btPos[2], &normal);
+				worldNormal = btvc(normal);
+				if(btPos[1] - offset[1] < height){
+					Vec3d dest(btPos[0], height + offset[1], btPos[2]);
+					Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
+					setPosition(&dest, NULL, &newVelo);
+					floorTouch = true;
+				}
 			}
 		}
+	}
+
+	if(floorTouch){
+		btVector3 btOmega = bbody->getAngularVelocity() - worldNormal.cross(bbody->getWorldTransform().getBasis().getColumn(1)) * 5. * dt;
+		bbody->setAngularVelocity(btOmega * exp(-3. * dt));
 	}
 
 	if(!w || controller){
 	}
 	else if(0 < getHealth()){
 		aiControl(dt, normal);
+		inputs.press |= PL_W;
 	}
 
 #if 0

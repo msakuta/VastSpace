@@ -8,8 +8,8 @@ mass <- 50.e3;
 
 maxhealth <- 800.;
 
-topSpeed <- 70. / 3.6 * m;
-backSpeed <- 35. / 3.6 * m;
+topSpeed <- 700. / 3.6 * m;
+backSpeed <- 350. / 3.6 * m;
 
 mainGunCooldown <- 3.;
 mainGunMuzzleSpeed <- 1.7;

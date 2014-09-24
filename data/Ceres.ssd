@@ -16,16 +16,17 @@ coordsys Orbit ceres{
 		texture textures/Ceres.png
 
 		terrainNoiseEnable true
-		terrainNoiseHeight 35.
+		terrainNoiseLODs 5
+		terrainNoiseHeight 15.
 		terrainNoisePersistence 0.75
-		terrainNoiseOctaves 8
+		terrainNoiseOctaves 10
 		vertexshader "shaders/flatplanet.vs"
 		fragmentshader "shaders/flatplanet.fs"
 
 		coordsys Surface ceress{
 			define theta 0.53*PI
 			define phi 0.*PI
-			define rad CeresR+5
+			define rad CeresR-1
 			pos rad*sin(phi) rad*cos(theta)*cos(phi) rad*sin(theta)*cos(phi)
 #			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
 			rotation Quatd.rotation(theta,Vec3d(1,0,0))*Quatd.rotation(phi,Vec3d(0,0,1))

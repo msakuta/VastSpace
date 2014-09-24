@@ -368,7 +368,7 @@ SurfaceWar::SurfaceWar(SurfaceCS *cs) : st(cs), entity(new SurfaceEntity(this)){
 	// The heightfield should have been already initialized at this time.
 	if(cs->bbody)
 		bdw->addRigidBody(cs->bbody);
-
+#if 0
 	// Create a ground (y=0) plane to prevent objects from falling forever.
 	groundPlane = new btStaticPlaneShape(btVector3(0,1,0),50);
 
@@ -387,6 +387,7 @@ SurfaceWar::SurfaceWar(SurfaceCS *cs) : st(cs), entity(new SurfaceEntity(this)){
 
 	// Don't forget to add the body to the dynamics world
 	bdw->addRigidBody(groundBody);
+#endif
 }
 
 Vec3d SurfaceWar::accel(const Vec3d &pos, const Vec3d &velo)const{

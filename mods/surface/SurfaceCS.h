@@ -36,6 +36,8 @@ public:
 	double getHeight(double x, double z, Vec3d *normal = NULL)const;
 	bool traceHit(const Vec3d &start, const Vec3d &dir, double rad, double dt,
 		double *ret = NULL, Vec3d *retp = NULL, Vec3d *retnormal = NULL)const;
+
+	RoundAstrobj *getCelBody(){return cbody;}
 protected:
 	WarMap *wm;
 	DrawMapCache *dmc;

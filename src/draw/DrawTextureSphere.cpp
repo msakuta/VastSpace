@@ -1078,7 +1078,7 @@ bool DrawTextureCubeEx::draw(){
 
 	static const int divides = 64;
 
-	qrot = vw->cs->tocsq(a);
+	qrot = a->tocsq(vw->cs);
 
 	glPushMatrix();
 

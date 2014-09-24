@@ -364,6 +364,7 @@ void RoundAstrobj::draw(const Viewer *vw){
 			};
 			bool ret = terrainNoiseEnable ?
 				proc(DrawTextureCubeEx(this, vw, sunpos)
+				.noiseLODs(terrainNoiseLODs)
 				.noiseHeight(terrainNoiseHeight)
 				.noisePersistence(terrainNoisePersistence)
 				.noiseOctaves(terrainNoiseOctaves))

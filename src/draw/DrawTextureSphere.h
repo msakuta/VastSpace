@@ -122,13 +122,15 @@ public:
 	typedef DrawTextureSphere st;
 	typedef DrawTextureCubeEx tt;
 
-	tt(RoundAstrobj *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos){}
+	tt(RoundAstrobj *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos),
+		m_lods(3), m_noiseHeight(1.), m_noisePersistence(0.65), m_noiseOctaves(6){}
 	bool draw()override;
+	tt &noiseLODs(int v){m_lods = MIN(maxLods, v); return *this;}
 	tt &noiseHeight(double v){m_noiseHeight = v; return *this;}
 	tt &noisePersistence(double v){m_noisePersistence = v; return *this;}
 	tt &noiseOctaves(int v){m_noiseOctaves = v; return *this;}
 
-	static const int lods = 3;
+	static const int maxLods = 5;
 	static const int lodPatchSize = 4;
 	static const int lodPatchSize2 = lodPatchSize * lodPatchSize;
 	static const int maxPatchRatio = 4;
@@ -203,7 +205,7 @@ protected:
 		/// Data member to calculate base and count (should be protected?)
 		GLuint baseIdx[numof(cubedirs)][lodPatchSize2];
 
-		SubBufs subbufs[lods];
+		std::vector<SubBufs> subbufs;
 	};
 
 	typedef std::map<Astrobj*, BufferSet> BufferSets;
@@ -224,6 +226,7 @@ protected:
 
 	static void setVertexBuffers(const BufferData &bd, SubBufferSetBase &bs);
 
+	int m_lods;
 	double m_noiseHeight;
 	double m_noisePersistence;
 	int m_noiseOctaves;

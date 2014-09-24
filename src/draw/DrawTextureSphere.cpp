@@ -1069,7 +1069,7 @@ int DrawTextureCubeEx::getDivision(int lod){
 
 #if PROFILE_CUBEEX
 static int lodPatchWaits = 0;
-static int lodCounts[DrawTextureCubeEx::lods] = {0};
+static int lodCounts[DrawTextureCubeEx::maxLods] = {0};
 #endif
 
 bool DrawTextureCubeEx::draw(){
@@ -1233,6 +1233,8 @@ void DrawTextureCubeEx::enableBuffer(SubBufferSetBase &bufs){
 }
 
 bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int px, int py){
+	if(bufs.subbufs.size() <= lod)
+		return false;
 	const int patchSize = getPatchSize(lod);
 	const int nextPatchSize = getPatchSize(lod+1);
 	const int patchRatio = nextPatchSize / patchSize;
@@ -1256,7 +1258,7 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 
 		bool drawn = false;
 		// If there are no higher LOD available, don't bother trying rendering them.
-		if(lod+1 < lods){
+		if(lod+1 < m_lods){
 			// First, try rendering detailed patches.
 			for(int ix = ixBegin; ix < ixEnd; ix++){
 				for(int iy = iyBegin; iy < iyEnd; iy++){
@@ -1393,6 +1395,8 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 	BufferData bd;
 
 	BufferSet &bufs = bufsets[a];
+
+	bufs.subbufs.resize(m_lods);
 
 	// This function is synchronized, so using this object's members is valid.
 	HeightGetter lheight = [this](const Vec3d &v){

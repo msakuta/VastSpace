@@ -1480,7 +1480,6 @@ DrawTextureCubeEx::WorkerThreads DrawTextureCubeEx::threads;
 
 /// Compile vertex buffer objects for a given LOD and location.
 DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubBuf(BufferSet &bs, int lod, int direction, int px, int py){
-	static const double skirtHeight = 0.9;
 
 	SubKey key = SubKey(direction, px, py);
 
@@ -1518,7 +1517,10 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 					HeightGetter lheight = [=](const Vec3d &v){
 						return height(v, octaves, persistence, aheight);
 					};
-					HeightGetter height75 = [](...){return skirtHeight;};
+					HeightGetter bheight = [=](const Vec3d &v){
+						return height(v, octaves, persistence, aheight)
+							- aheight * pow(persistence, 2 * lod); // Finer mesh doesn't require tall skirts
+					};
 
 					const Quatd &rot = cubedirs[direction];
 
@@ -1527,7 +1529,7 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 					};
 
 					auto pointb = [&](int ix, int iy){
-						return point0(divides, rot, bd, ix, iy, height75);
+						return point0(divides, rot, bd, ix, iy, bheight);
 					};
 
 					for(int npx = 0; npx < patchRatio; npx++){

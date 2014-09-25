@@ -428,7 +428,16 @@ void LandVehicle::anim(double dt){
 				if(basepos.slen() < terrain * terrain){
 					basepos = basenorm * terrain;
 					Vec3d lpos = s->tocs(basepos, cbody);
-					worldNormal = btvc(s->tocs(basenorm, cbody, true));
+					const double delta = 1e-7; /// Delta for the differenciation to derive gradient
+					Vec3d xh = basenorm.vp(Vec3d(1,0,0));
+					double terrainx = cbody->getTerrainHeight(basenorm + xh * delta) * cbody->rad;
+					Vec3d yh = basenorm.vp(xh);
+					double terrainy = cbody->getTerrainHeight(basenorm + yh * delta) * cbody->rad;
+					Vec3d grad = xh * (terrain - terrainx) / delta / cbody->rad
+						+ yh * (terrain - terrainy) / delta / cbody->rad + basenorm;
+					grad.normin();
+					Vec3d norm = (grad - basenorm * basenorm.sp(grad) + basenorm).norm();
+					worldNormal = btvc(s->tocs(norm, cbody, true));
 					Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
 					setPosition(&lpos, NULL, &newVelo);
 					floorTouch = true;

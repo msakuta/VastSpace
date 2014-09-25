@@ -34,7 +34,7 @@ birds.append(f15);
 //birds.append(a10_2);
 
 local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
-//player.chase = tank;
+player.chase = tank;
 
 //f15.enemy = tank;
 //a10.enemy = tank;

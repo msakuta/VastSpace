@@ -11,6 +11,7 @@
 #include "SqInitProcess-ex.h"
 #include "audio/playSound.h"
 #include "audio/wavemixer.h"
+#include "astrodef.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -441,6 +442,10 @@ void LandVehicle::anim(double dt){
 					Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
 					setPosition(&lpos, NULL, &newVelo);
 					floorTouch = true;
+				}
+				if(bbody){
+					Vec3d cbpos = s->tocs(vec3_000, cbody);
+					bbody->applyCentralForce(btvc(-cbpos.norm() * (DEF_UGC / bbody->getInvMass() * cbody->mass / basepos.slen())));
 				}
 			}
 			else{

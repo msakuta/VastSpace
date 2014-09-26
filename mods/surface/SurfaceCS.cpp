@@ -294,6 +294,12 @@ void SurfaceCS::anim(double dt){
 			auto t = dynamic_cast<RoundAstrobj*>(c);
 			if(t){
 				cbody = t;
+
+				// Disable gravity if we have a WarField
+				SurfaceWar *sw = dynamic_cast<SurfaceWar*>(w);
+				if(sw)
+					sw->bdw->setGravity(btVector3(0, 0, 0));
+
 				break;
 			}
 		}
@@ -363,7 +369,9 @@ SurfaceWar::SurfaceWar(SurfaceCS *cs) : st(cs), entity(new SurfaceEntity(this)){
 	addent(entity);
 
 	// Just an experiment. Really should be pulled out from planet's mass and radius.
-	bdw->setGravity(btVector3(0, -.0098,  0));
+	// Only apply straight down gravity when there is no proper astronomical body around.
+	if(!cs->cbody)
+		bdw->setGravity(btVector3(0, -.0098,  0));
 
 	// The heightfield should have been already initialized at this time.
 	if(cs->bbody)

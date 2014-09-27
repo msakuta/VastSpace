@@ -383,6 +383,15 @@ void Aerial::anim(double dt){
 	Vec3d accel = w->accel(pos, velo);
 	velo += accel * dt;
 
+	// Manually apply gravity force only if w->cbody is present.
+	if(&w->cs->getStatic() == &SurfaceCS::classRegister){
+		SurfaceCS *scs = static_cast<SurfaceCS*>(w->cs);
+		if(RoundAstrobj *a = scs->getCelBody()){
+			if(bbody)
+				bbody->applyCentralForce(btvc(accel / bbody->getInvMass()));
+		}
+	}
+
 	double air = w->atmosphericPressure(pos);
 
 	Mat4d mat;

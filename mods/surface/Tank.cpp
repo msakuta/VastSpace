@@ -444,8 +444,7 @@ void LandVehicle::anim(double dt){
 					floorTouch = true;
 				}
 				if(bbody){
-					Vec3d cbpos = s->tocs(vec3_000, cbody);
-					bbody->applyCentralForce(btvc(-cbpos.norm() * (DEF_UGC / bbody->getInvMass() * cbody->mass / basepos.slen())));
+					bbody->applyCentralForce(btvc(w->accel(pos, velo) / bbody->getInvMass()));
 				}
 			}
 			else{

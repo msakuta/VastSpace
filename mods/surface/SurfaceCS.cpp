@@ -13,6 +13,7 @@
 #include "Game.h"
 #include "cmd.h"
 #include "stellar_file.h"
+#include "astrodef.h"
 extern "C"{
 #include <clib/timemeas.h>
 #include <clib/gl/gldraw.h>
@@ -399,12 +400,30 @@ SurfaceWar::SurfaceWar(SurfaceCS *cs) : st(cs), entity(new SurfaceEntity(this)){
 }
 
 Vec3d SurfaceWar::accel(const Vec3d &pos, const Vec3d &velo)const{
-	return Vec3d(0, -0.0098, 0);
+	RoundAstrobj *cbody;
+	if(&cs->getStatic() == &SurfaceCS::classRegister && (cbody = static_cast<SurfaceCS*>(cs)->cbody)){
+		Vec3d cbpos = cs->tocs(vec3_000, cbody) - pos;
+		if(0 < cbpos.slen())
+			return cbpos.norm() * (DEF_UGC * cbody->mass / cbpos.slen());
+		else
+			return vec3_000;
+	}
+	else
+		return Vec3d(0, -0.0098, 0);
 }
 
 double SurfaceWar::atmosphericPressure(const Vec3d &pos)const{
-	const double scaleHeight = 8.5;
-	return exp(-pos[1] / scaleHeight);
+	double scaleHeight = 8.5;
+	double height = pos[1];
+	RoundAstrobj *cbody = static_cast<SurfaceCS*>(cs)->getCelBody();
+	if(cbody){
+		scaleHeight = cbody->getAtmosphericScaleHeight();
+		Vec3d basepos = cbody->tocs(pos, cs);
+		height = basepos.len() - cbody->rad;
+	}
+	if(scaleHeight <= 0.)
+		return 0.;
+	return exp(-height / scaleHeight);
 }
 
 bool SurfaceWar::sendMessage(Message &m){

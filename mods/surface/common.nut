@@ -16,3 +16,4 @@ print("\"" + dllpath + "\"l refc is " + refc);
 
 clientMessageResponses["load_surface_demo"] <- @() loadmission("mods/surface/scripts/demo.nut");
 clientMessageResponses["load_surface_ceres"] <- @() loadmission("mods/surface/scripts/ceres.nut");
+clientMessageResponses["load_surface_mars"] <- @() loadmission("mods/surface/scripts/mars.nut");

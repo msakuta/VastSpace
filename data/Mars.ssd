@@ -1,0 +1,109 @@
+coordsys Orbit marss{
+	eisystem
+	fullname "Mars"
+	cs_radius 1e5
+	orbits Sol
+	semimajor_axis 227936640
+	eccentricity 0.09341233
+	inclination 1.85
+	argument_of_periapsis 336.2075
+	ascending_node 49.6198
+	showorbit
+
+	astro RoundAstrobj Mars
+	{
+		define MarsDia 6794.4
+		diameter MarsDia
+		mass 6.4191e23
+		oblateness .00
+		omega 0 0 1 2/24.6229/3600*PI   #rotation speed
+		texture textures/mars_1k_color.jpg
+		updirection 0 1 0
+		planet
+		spherehit
+		atmosphere_height 5.5
+		atmosphere_color 1 .3 .1
+		atmosphere_dawn .1 .51 1 
+
+		terrainNoiseEnable true
+		terrainNoiseLODs 5
+		terrainNoiseHeight 15.
+		terrainNoisePersistence 0.75
+		terrainNoiseOctaves 12
+		vertexshader "shaders/flatplanet.vs"
+		fragmentshader "shaders/flatplanet.fs"
+
+		coordsys Surface marss{
+			define theta 0.*PI
+			define phi -0.15*PI
+			define rad MarsDia/2.+5.
+			pos rad*sin(phi) rad*cos(theta)*cos(phi) rad*sin(theta)*cos(phi)
+#			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
+			rotation Quatd.rotation(theta,Vec3d(1,0,0))*Quatd.rotation(-phi,Vec3d(0,0,1))
+			teleport "Mars Surface" 0 0 0
+#			tin_file triangles.all
+#			tin_resample 4
+		}
+	}
+
+	new coordsys Orbit marsloworbit{
+		fullname "Mars Low Orbit"
+		cs_radius 100
+		bookmark mlo
+		updirection 1 0 0
+		orbits Mars
+		semimajor_axis 6900/2.
+		showorbit
+	}
+
+	new coordsys Orbit marsorbit{
+		fullname "Mars Orbit"
+		cs_radius 100
+		bookmark mo
+		updirection 0 1 0
+		orbits Mars
+		semimajor_axis 1e4
+
+#		new astro Asteroid BigWatcher{
+#			pos 0 12 -20
+#			radius 10
+#			cs_radius 11
+#		}
+
+	}
+
+	astro RoundAstrobj Phobos{
+		radius 22.2/2.
+		mass 1.26e16
+		planet
+		spherehit
+		orbits Mars
+		semimajor_axis 9378
+		inclination 27
+		ascending_node 12
+		color 777f7f
+		showorbit
+	}
+
+	new coordsys Orbit phobosorbit{
+		fullname "Phobos Orbit"
+		cs_radius 100
+		orbits Phobos
+		semimajor_axis 1e2
+		addent RStation 0 0 0
+		bookmark "Phobos Orbit 1" 0 0 10
+		bookmark "Phobos Orbit 1,2" 0 0 -10 "Quatd.rotation(PI, Vec3d(0,1,0))"
+	}
+
+	astro RoundAstrobj Deimos{
+		radius 12.6/2.
+		mass 1.8e16
+		planet
+		spherehit
+		orbits Mars
+		orbit_radius 23459
+		orbit_axis 0 0 1
+		color 777f7f
+		showorbit
+	}
+}

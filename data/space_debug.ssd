@@ -229,6 +229,8 @@ coordsys Orbit earth{
 	}
 }
 
+include Mars.ssd
+
 include Ceres.ssd
 
 /*coordsys Orbit venus{

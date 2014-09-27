@@ -1494,7 +1494,15 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 		bufs.pbd = new BufferData;
 
 		if(threads.empty()){
-			threads.resize(8);
+			int threadCount = 4;
+#if _WIN32
+			// Get logical CPU count in the system
+			SYSTEM_INFO si;
+			GetSystemInfo(&si);
+			// Subtract one for the main thread
+			threadCount = std::max(1ul, si.dwNumberOfProcessors - 1);
+#endif
+			threads.resize(threadCount);
 		}
 
 		for(auto &it : threads){

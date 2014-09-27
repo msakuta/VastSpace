@@ -249,6 +249,7 @@
     <ClCompile Include="..\src\mqodraw.cpp" />
     <ClCompile Include="..\src\noises\sdnoise1234.cpp" />
     <ClCompile Include="..\src\noises\simplexnoise1234.cpp" />
+    <ClCompile Include="..\src\noises\simplexnoise1234d.cpp" />
     <ClCompile Include="..\src\Observable.cpp" />
     <ClCompile Include="..\src\Player.cpp" />
     <ClCompile Include="..\src\png.cpp" />
@@ -376,6 +377,7 @@
     <ClInclude Include="..\src\Destroyer.h" />
     <ClInclude Include="..\src\galaxy_field.h" />
     <ClInclude Include="..\src\keybind.h" />
+    <ClInclude Include="..\src\noises\noise_int.h" />
     <ClInclude Include="..\src\noises\sdnoise1234.h" />
     <ClInclude Include="..\src\noises\simplexnoise1234.h" />
     <ClInclude Include="..\src\Respawn.h" />

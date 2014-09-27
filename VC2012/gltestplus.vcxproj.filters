@@ -348,6 +348,9 @@
     <ClCompile Include="..\src\RoundAstrobj.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\noises\simplexnoise1234d.cpp">
+      <Filter>Sources\noises</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\effects.h">
@@ -677,6 +680,9 @@
     </ClInclude>
     <ClInclude Include="..\include\RoundAstrobj.h">
       <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\noises\noise_int.h">
+      <Filter>Sources\noises</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

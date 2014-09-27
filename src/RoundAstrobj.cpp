@@ -12,7 +12,7 @@
 #include "CoordSys-property.h"
 #include "CoordSys-sq.h"
 #include "CoordSys-find.h"
-#include "noises/simplexnoise1234.h"
+#include "noises/simplexnoise1234d.h"
 
 #include <stdlib.h>
 
@@ -347,7 +347,7 @@ static double sfnoise3(const Vec3d &basepos, int octaves, double persistence){
 	for(int i = 0; i < octaves; i++){
 		double s = (1 << i);
 		f *= persistence;
-		ret += f * snoise3(basepos[0] * s, basepos[1] * s, basepos[2] * s);
+		ret += f * snoise3d(basepos[0] * s, basepos[1] * s, basepos[2] * s);
 		fsum += f;
 	}
 	return ret / fsum;

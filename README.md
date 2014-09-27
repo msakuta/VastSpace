@@ -34,6 +34,7 @@ Screenshots
 
 ![Screenshot](images/gltestss0276.jpg)
 
+Additional screenshots can be seen [here](http://msakuta.github.io/VastSpace/screenshots.html)
 
 Supported platforms
 -------------------

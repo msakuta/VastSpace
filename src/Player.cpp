@@ -277,7 +277,7 @@ void TacticalMover::rotateLook(double dx, double dy){
 	Vec3d view = rot.itrans(vec3_001);
 	double phi = -atan2(view[0], view[2]);
 	double theta = atan2(view[1], sqrt(view[2] * view[2] + view[0] * view[0]));
-	Quatd rot1 = Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2));
+	Quatd rot1 = Quatd::rotation(theta, 1, 0, 0).rotate(phi, 0, 1, 0);
 	Quatd rot2 = rot * rot1.cnj();
 	Vec3d right = rot2.itrans(vec3_100);
 
@@ -285,7 +285,7 @@ void TacticalMover::rotateLook(double dx, double dy){
 	phi += dx * speed;
 	theta = rangein(theta + dy * speed, -M_PI / 2. * one_minus_epsilon, M_PI / 2. * one_minus_epsilon);
 	double roll = -atan2(right[1], right[0]);
-	this->rot = Quatd(0, 0, sin(roll/2), cos(roll/2)) * Quatd(sin(theta/2), 0, 0, cos(theta/2)) * Quatd(0, sin(phi/2), 0, cos(phi/2)) * ort.cnj();
+	this->rot = Quatd::rotation(roll, 0, 0, 1).rotate(theta, 1, 0, 0).rotate(phi, 0, 1, 0) * ort.cnj();
 
 	// Notify the server that this client wants the angle changed.
 	CMRot::send(this->rot);

@@ -49,7 +49,7 @@ void main (void)
 	vec4 texColor = !textureEnable ? vec4(1,1,1,1) : texture2D(texture, vec2(gl_TexCoord[0]));
 
 	// Apply the second texture
-	if(.5 < gl_TextureEnvColor[0].y)
+	if(texture2Enable)
 		texColor *= texture2D(texture2, vec2(gl_TexCoord[1]));
 
 	texColor.xyz *= gl_FrontMaterial.emission.xyz + (vec3(1,1,1) - gl_FrontMaterial.emission.xyz)

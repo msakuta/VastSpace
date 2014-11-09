@@ -606,8 +606,18 @@ void DrawTextureSphere::useShader(){
 			const RoundAstrobj::Texture &tex = *it;
 //			if(tex.shaderLoc == -2)
 				tex.shaderLoc = glGetUniformLocation(shader, tex.uniformname);
+
+			bool loaded = false;
+			// If it's a height map, load even if it's not used by the shader, because terrain geometry
+			// uses it too.
+			if(tex.flags & RoundAstrobj::DTS_HEIGHTMAP){
+				if(!tex.list)
+					tex.list = ProjectSphereCubeImage(tex.filename, RoundAstrobj::DTS_NODETAIL | tex.flags);
+				loaded = true;
+			}
+
 			if(0 <= tex.shaderLoc){
-				if(1&&!tex.list){
+				if(!loaded && !tex.list){
 					tex.list = ProjectSphereCubeImage(tex.filename, RoundAstrobj::DTS_NODETAIL | tex.flags);
 				}
 				glActiveTextureARB(GL_TEXTURE0_ARB + i);
@@ -1383,7 +1393,7 @@ void DrawTextureCubeEx::point0(int divides, const Quatd &rot, BufferData &bd, in
 		double x = 2. * ix / divides - 1;
 		double y = 2. * iy / divides - 1;
 		Vec3d basepos = rot.trans(Vec3d(x, y, 1).norm());
-		return basepos * height(basepos);
+		return basepos * height(basepos, ix, iy);
 	};
 	Vec3d v0 = vec(ix, iy);
 	Vec3d dv01 = vec(ix, iy + 1) - v0;
@@ -1402,7 +1412,7 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 	bufs.subbufs.resize(m_lods);
 
 	// This function is synchronized, so using this object's members is valid.
-	HeightGetter lheight = [this](const Vec3d &v){
+	HeightGetter lheight = [this](const Vec3d &v, int, int){
 		return height(v, m_noiseOctaves, m_noisePersistence, m_noiseHeight / m_rad);
 	};
 
@@ -1507,8 +1517,55 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 
 		for(auto &it : threads){
 			if(it.free){
+				RoundAstrobj *ra = dynamic_cast<RoundAstrobj*>(a);
 				// Temporary variables for capturing by the lambda.
 				double aheight = m_noiseHeight / m_rad;
+
+				// Temporary buffer to pass heights at corners.
+				// We cannot pass an array in a capture list, so we make it a temporary struct
+				// (similar to a technique used for arguments).
+				struct{
+					double a[2][2];
+				} aheights;
+
+				// If we have a height map texture, use it to determine heights at the corners.
+				// Heights of vertices in the patch are interpolated and modulated by simplex noise
+				// in worker threads.
+				if(ra && ra->heightmap[direction]){
+					BITMAPINFO *bi = ra->heightmap[direction];
+
+					// iix and iiy are iterators for corner points
+					for(int iix = 0; iix < 2; iix++){
+						int indx = (px + iix) % getPatchSize(lod);
+						double dx = (double)indx * bi->bmiHeader.biWidth / getPatchSize(lod);
+						int ix = int(dx);
+						double fx = dx - ix;
+						for(int iiy = 0; iiy < 2; iiy++){
+							int indy = (py + iiy) % getPatchSize(lod);
+							double dy = (double)indy * bi->bmiHeader.biHeight / getPatchSize(lod);
+							int iy = int(dy);
+							double fy = dy - iy;
+
+							double accum = 0.;
+							// jx and jy are iterators for interpolation on the texture
+							for(int jx = 0; jx < 2; jx++){
+								int jjx = std::min(long(ix + jx), bi->bmiHeader.biWidth-1);
+								for(int jy = 0; jy < 2; jy++){
+									int jjy = std::max(std::min(bi->bmiHeader.biHeight - long(iy + jy) - 1, bi->bmiHeader.biHeight-1), 0l);
+									uint8_t ui = ((RGBQUAD*)(((uint8_t*)&bi->bmiColors[bi->bmiHeader.biClrUsed])
+										+ bi->bmiHeader.biBitCount * (jjx + jjy * bi->bmiHeader.biWidth) / 8))->rgbRed;
+									accum += aheight * (jx ? fx : 1. - fx) * (jy ? fy : 1. - fy) * (ui - 42) / 256.;
+								}
+							}
+							aheights.a[iix][iiy] = std::max(0., accum);
+						}
+					}
+//					aheight *= (double)std::max(0., accum - 42) / 256.;
+				}
+				else{
+					for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++)
+						aheights.a[i][j] = 1.;
+				}
 				double persistence = m_noisePersistence;
 				int octaves = m_noiseOctaves;
 
@@ -1522,26 +1579,7 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 
 					BufferData &bd = *bufs.pbd;
 
-					// This function is asynchoronous, so using this object to
-					// refer to parameters is invalid.  Capturing parameters by
-					// values is the valid method.
-					HeightGetter lheight = [=](const Vec3d &v){
-						return height(v, octaves, persistence, aheight);
-					};
-					HeightGetter bheight = [=](const Vec3d &v){
-						return height(v, octaves, persistence, aheight)
-							- aheight * pow(persistence, 2 * lod); // Finer mesh doesn't require tall skirts
-					};
-
 					const Quatd &rot = cubedirs[direction];
-
-					auto point = [&](int ix, int iy){
-						return point0(divides, rot, bd, ix, iy, lheight);
-					};
-
-					auto pointb = [&](int ix, int iy){
-						return point0(divides, rot, bd, ix, iy, bheight);
-					};
 
 					for(int npx = 0; npx < patchRatio; npx++){
 						for(int npy = 0; npy < patchRatio; npy++){
@@ -1551,6 +1589,31 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 							const int ixEnd = px * divides / lodPatchSize + (npx + 1) * divides / nextPatchSize;
 							const int iyBegin = py * divides / lodPatchSize + npy * divides / nextPatchSize;
 							const int iyEnd = py * divides / lodPatchSize + (npy + 1) * divides / nextPatchSize;
+
+							// This function is asynchoronous, so using this object to
+							// refer to parameters is invalid.  Capturing parameters by
+							// values is the valid method.
+							HeightGetter lheight = [=](const Vec3d &v, int ix, int iy){
+								double fx = double(ix - ixBegin) / (ixEnd - ixBegin);
+								double fy = double(iy - iyBegin) / (iyEnd - iyBegin);
+								double accum = 0.;
+								for(int jx = 0; jx < 2; jx++)
+									for(int jy = 0; jy < 2; jy++)
+										accum += aheights.a[jx][jy] * (jx ? fx : 1. - fx) * (jy ? fy : 1. - fy);
+								return height(v, octaves, persistence, accum);
+							};
+							HeightGetter bheight = [=](const Vec3d &v, int ix, int iy){
+								return lheight(v, ix, iy)
+									- aheight * pow(persistence, 2 * lod); // Finer mesh doesn't require tall skirts
+							};
+
+							auto point = [&](int ix, int iy){
+								return point0(divides, rot, bd, ix, iy, lheight);
+							};
+
+							auto pointb = [&](int ix, int iy){
+								return point0(divides, rot, bd, ix, iy, bheight);
+							};
 
 							for(int ix = ixBegin; ix < ixEnd; ix++){
 								for(int iy = iyBegin; iy < iyEnd; iy++){
@@ -1674,19 +1737,23 @@ static void Init_PROJC(){
 }
 static StaticInitializer init_PROJC(Init_PROJC);
 
-static cpplib::dstring pathProjection(const char *name, int nn){
+static gltestp::dstring pathProjection(const char *name, int nn, bool height = false){
 	const char *p = strrchr(name, '.');
-	cpplib::dstring dstr;
+	gltestp::dstring dstr;
 	dstr << "cache/";
 	if(p)
 		dstr.strncat(name, p - name);
 	else
 		dstr.strcat(name);
+	if(height)
+		dstr << "_height";
 	dstr << "_proj" << nn << ".bmp";
 	return dstr;
 }
 
-GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *cacheload[6], unsigned flags){
+GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *cacheload[6], unsigned flags,
+	BITMAPINFO *heightmap[6])
+{
 	static int texinit = 0;
 	GLuint tex, texname;
 //	int srcheight = !raw ? 0 : raw->bmiHeader.biHeight < 0 ? -raw->bmiHeader.biHeight : raw->bmiHeader.biHeight;
@@ -1695,28 +1762,45 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 	glBindTexture(GL_TEXTURE_CUBE_MAP, texname);
 	/*if(!texinit)*/
 	{
-		int outsize, linebytes, linebytesp;
+		int outsize;
 		long rawh = !raw ? 0 : ABS(raw->bmiHeader.biHeight);
 		long raww = !raw ? 0 : raw->bmiHeader.biWidth;
 		BITMAPINFO *proj = NULL;
 		RGBQUAD zero = {0,0,0,255};
 		texinit = 1;
 		int bits = flags & RoundAstrobj::DTS_ALPHA ? 8 : PROJBITS;
+		int linebytes = !raw ? 0 : (raw->bmiHeader.biWidth * raw->bmiHeader.biBitCount + 31) / 32 * 4;
+		int linebytesp = !raw ? 0 : (PROJC * bits + 31) / 32 * 4;
 
-		if(!cacheload){
-			proj = (BITMAPINFO*)malloc(outsize = sizeof(BITMAPINFOHEADER) + (flags & RoundAstrobj::DTS_ALPHA ? 256 * sizeof(RGBQUAD) : 0) + (PROJC * PROJC * bits + 31) / 32 * 4);
-			memcpy(proj, raw, sizeof(BITMAPINFOHEADER));
+		auto allocProj = [&](int &outsize){
+			BITMAPINFO *proj = (BITMAPINFO*)malloc(outsize = sizeof(BITMAPINFOHEADER) + (flags & RoundAstrobj::DTS_ALPHA ? 256 * sizeof(RGBQUAD) : 0) + (PROJC * PROJC * bits + 31) / 32 * 4);
+			if(raw)
+				memcpy(proj, raw, sizeof(BITMAPINFOHEADER));
+			else{
+				proj->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+				proj->bmiHeader.biPlanes = 1;
+				proj->bmiHeader.biBitCount = 8;
+				proj->bmiHeader.biCompression = BI_RGB;
+				proj->bmiHeader.biXPelsPerMeter = 0;
+				proj->bmiHeader.biYPelsPerMeter = 0;
+				proj->bmiHeader.biClrImportant = 0;
+			}
 			proj->bmiHeader.biWidth = proj->bmiHeader.biHeight = PROJC;
 			proj->bmiHeader.biBitCount = bits;
 			proj->bmiHeader.biClrUsed = flags & RoundAstrobj::DTS_ALPHA ? 256 : 0;
 			proj->bmiHeader.biSizeImage = proj->bmiHeader.biWidth * proj->bmiHeader.biHeight * proj->bmiHeader.biBitCount / 8;
-			linebytes = (raw->bmiHeader.biWidth * raw->bmiHeader.biBitCount + 31) / 32 * 4;
-			linebytesp = (PROJC * bits + 31) / 32 * 4;
 			for(unsigned i = 0; i < proj->bmiHeader.biClrUsed; i++)
 				proj->bmiColors[i].rgbBlue = proj->bmiColors[i].rgbGreen = proj->bmiColors[i].rgbRed = proj->bmiColors[i].rgbReserved = i;
-		}
+			return proj;
+		};
+
+		if(!cacheload && (!(flags & RoundAstrobj::DTS_HEIGHTMAP) || !heightmap))
+			proj = allocProj(outsize);
 
 		for(int nn = 0; nn < 6; nn++){
+			if(flags & RoundAstrobj::DTS_HEIGHTMAP && heightmap){
+				proj = heightmap[nn] = allocProj(outsize);
+			}
 			if(!cacheload) for(int i = 0; i < PROJC; i++) for(int j = 0; j < PROJC; j++){
 				RGBQUAD *dst;
 				dst = (RGBQUAD*)&((unsigned char*)&proj->bmiColors[proj->bmiHeader.biClrUsed])[(i) * linebytesp + (j) * bits / 8];
@@ -1760,28 +1844,38 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 					dst->rgbReserved = 255;
 				}
 				else if(raw->bmiHeader.biBitCount == 8){
+					// Local function to obtain pixel intensity in equirectangular projection in 8 bit texture
+					auto sampler8 = [&](const Vec3d &epos){
+						int j1, i1;
+						double fj1, fi1;
+						castEquirectRay(epos, j1, i1, fj1, fi1);
+						double accum = 0.;
+						for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++){
+							const unsigned char *src = ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed]);
+							accum += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * src[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww];
+						}
+						return accum;
+					};
+
 					if(flags & RoundAstrobj::DTS_ALPHA){
 						double accum = 0.;
 						for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++)
 							accum += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww];
 						*dst8 = (GLubyte)(accum);
 					}
+					else if(flags & RoundAstrobj::DTS_HEIGHTMAP){
+						// Obtain heights at adjacent pixels in this cube face.
+						double height = sampler8(cubedirs[nn].cnj().trans(Vec3d(j / (PROJC / 2.) - 1., i / (PROJC / 2.) - 1., -1)));
+
+						// Store the normal vector in BGR order
+						dst->rgbRed = (GLubyte)rangein(height, 0, 255);
+						dst->rgbGreen = (GLubyte)rangein(height, 0, 255);
+						dst->rgbBlue = (GLubyte)rangein(height, 0, 255);
+						dst->rgbReserved = 255;
+					}
 					else if(flags & RoundAstrobj::DTS_NORMALMAP){
 						const unsigned char *src = ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed]);
 						double heights[3] = {0.};
-
-						// Local function to obtain pixel intensity in equirectangular projection in 8 bit texture
-						auto sampler8 = [&](const Vec3d &epos){
-							int j1, i1;
-							double fj1, fi1;
-							castEquirectRay(epos, j1, i1, fj1, fi1);
-							double accum = 0.;
-							for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++){
-								const unsigned char *src = ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed]);
-								accum += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * src[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww];
-							}
-							return accum;
-						};
 
 						// Obtain heights at adjacent pixels in this cube face.
 						for(int k = 0; k < 3; k++)
@@ -1846,7 +1940,7 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 //				std::ostringstream bstr;
 				const char *p;
 	//			FILE *fp;
-				cpplib::dstring dstr = pathProjection(name, nn);
+				gltestp::dstring dstr = pathProjection(name, nn);
 //				bstr << "cache/" << (p ? std::string(name).substr(0, p - name) : name) << "_proj" << nn << ".bmp";
 
 				// Create directories to make path available
@@ -1901,6 +1995,8 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 				glTexImage2D(cubetarget[nn], 0, flags & RoundAstrobj::DTS_ALPHA ? GL_ALPHA : cacheload[nn]->bmiHeader.biBitCount / 8, cacheload[nn]->bmiHeader.biWidth, cacheload[nn]->bmiHeader.biHeight, 0,
 					cacheload[nn]->bmiHeader.biBitCount == 32 ? GL_RGBA : cacheload[nn]->bmiHeader.biBitCount == 24 ? GL_RGB : cacheload[nn]->bmiHeader.biBitCount == 8 ? flags & RoundAstrobj::DTS_ALPHA ? GL_ALPHA : GL_LUMINANCE : (assert(0), 0),
 					GL_UNSIGNED_BYTE, &cacheload[nn]->bmiColors[cacheload[nn]->bmiHeader.biClrUsed]);
+				if(proj)
+					memcpy(proj, cacheload[nn], outsize + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * proj->bmiHeader.biClrUsed);
 			}
 		}
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -1984,7 +2080,8 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 		fclose(fp);
 #endif
 
-		free(proj);
+		if(!(flags & RoundAstrobj::DTS_HEIGHTMAP) || !heightmap)
+			free(proj);
 /*		free(raw);*/
 	}
 	return tex;
@@ -1993,7 +2090,13 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 #if 1
 
 
-GLuint DrawTextureSphere::ProjectSphereCubeImage(const char *fname, int flags){
+GLuint DrawTextureSphere::ProjectSphereCubeImage(const char *fname, int flags)const{
+	BITMAPINFO **heightmap;
+	RoundAstrobj *ra = dynamic_cast<RoundAstrobj*>(a);
+	if(ra)
+		heightmap = ra->heightmap;
+	else
+		heightmap = NULL;
 		GLuint texlist = 0;
 		const char *p;
 		p = strrchr(fname, '.');
@@ -2010,7 +2113,7 @@ GLuint DrawTextureSphere::ProjectSphereCubeImage(const char *fname, int flags){
 			int i;
 			bool ok = true;
 			for(i = 0; i < 6; i++){
-				cpplib::dstring outfilename = pathProjection(fname, i);
+				gltestp::dstring outfilename = pathProjection(fname, i);
 
 				if(!GetFileAttributesEx(outfilename, GetFileExInfoStandard, &fd))
 					goto heterogeneous;
@@ -2032,7 +2135,7 @@ heterogeneous:
 				}
 			}
 			if(ok){
-				texlist = ProjectSphereCube(fname, NULL, bmis, flags);
+				texlist = ProjectSphereCube(fname, NULL, bmis, flags, heightmap);
 				for(int i = 0; i < 6; i++)
 					LocalFree(bmis[i]);
 			}
@@ -2045,7 +2148,7 @@ heterogeneous:
 					if(!bmi)
 						return 0;
 				}
-				texlist = ProjectSphereCube(fname, bmi, NULL, flags);
+				texlist = ProjectSphereCube(fname, bmi, NULL, flags, heightmap);
 				freeproc(bmi);
 			}
 		}

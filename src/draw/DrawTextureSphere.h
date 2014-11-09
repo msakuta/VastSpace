@@ -86,12 +86,15 @@ public:
 	/// \param raw The source texture mapped in Mercator projection.
 	/// \param cacheload The buffer for returned textures. The buffer must have at least 6 elements.
 	/// \param flags DrawTextureSphere flags.
-	static GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *cacheload[6], unsigned flags);
+	/// \param heightmap Returning buffer for heightmaps
+	static GLuint ProjectSphereCube(const char *name, const BITMAPINFO *raw, BITMAPINFO *cacheload[6], unsigned flags,
+		BITMAPINFO *heightmap[6]);
 
 	/// \brief Reads an Mercator projection texture in a JPEG file and pass it to ProjectSphereCube().
 	/// \param fname The file name of JPEG file.
 	/// \param flags DrawTextureSphere flags.
-	static GLuint ProjectSphereCubeImage(const char *fname, int flags);
+	/// \param heightmap Returning buffer for heightmaps
+	GLuint ProjectSphereCubeImage(const char *fname, int flags)const;
 
 protected:
 	/// \brief Sets up lights from lightingStars
@@ -212,7 +215,7 @@ protected:
 
 	static BufferSets bufsets;
 
-	typedef std::function<double(const Vec3d &basepos)> HeightGetter;
+	typedef std::function<double(const Vec3d &basepos, int ix, int iy)> HeightGetter;
 
 	bool drawPatch(BufferSet &bufs, int direction, int lod, int px, int py);
 	void enableBuffer(SubBufferSetBase &);

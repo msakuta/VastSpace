@@ -19,11 +19,18 @@ coordsys Orbit earth{
 		basecolor .5 .65 1.
 		albedo 0.367
 
-		extexture "bumptexture" textures/earth_bump.jpg 0 normal
+		extexture "heighttexture" textures/earth_bump.jpg 0 height
 		extexture "cloudtexture" textures/cloud.jpg 0 alpha
 		extexture "lightstexture" textures/earth_lights.png
-		fragmentshader shaders/earth.fs
-		vertexshader shaders/earth.vs
+		terrainNoiseEnable true
+		terrainNoiseLODs 5
+		terrainNoiseHeight 150.
+		terrainNoisePersistence 0.75
+		terrainNoiseOctaves 12
+		vertexshader "shaders/flatplanet.vs"
+		fragmentshader "shaders/flatplanet.fs"
+#		fragmentshader shaders/earth.fs
+#		vertexshader shaders/earth.vs
 #		fragmentshader shaders/ringsphereshadow.fs
 #		vertexshader shaders/ringsphereshadow.vs
 #		ringmin 74000/60268
@@ -44,11 +51,11 @@ coordsys Orbit earth{
 
 		coordsys Surface earths{
 			define theta .13*PI
-			define phi 1.0*PI
+			define phi 1.05*PI
 			define rad 6375+0.2
 			pos rad*sin(phi) rad*cos(theta)*cos(phi) rad*sin(theta)*cos(phi)
 #			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
-			rotation Quatd.rotation(theta,Vec3d(1,0,0))*Quatd.rotation(phi,Vec3d(0,0,1))
+			rotation Quatd.rotation(theta,Vec3d(1,0,0))*Quatd.rotation(-phi,Vec3d(0,0,1))
 			teleport "Earth Surface" 0 0 0
 #			tin_file triangles.all
 #			tin_resample 4

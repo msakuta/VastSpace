@@ -29,6 +29,10 @@ RoundAstrobj::RoundAstrobj(Game *game) :
 	cloudPhase(0.),
 	noisePos(0,0,0)
 {
+#ifndef DEDICATED
+	for(int i = 0; i < 6; i++)
+		heightmap[i] = NULL;
+#endif
 }
 
 RoundAstrobj::RoundAstrobj(const char *name, CoordSys *cs) : st(name, cs),
@@ -53,6 +57,10 @@ RoundAstrobj::RoundAstrobj(const char *name, CoordSys *cs) : st(name, cs),
 	texlist = cloudtexlist = 0;
 	ringmin = ringmax = ringthick = 0;
 	atmodensity = 0.;
+#ifndef DEDICATED
+	for(int i = 0; i < 6; i++)
+		heightmap[i] = NULL;
+#endif
 }
 
 const ClassRegister<RoundAstrobj> RoundAstrobj::classRegister("RoundAstrobj", sq_define);
@@ -209,6 +217,8 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 			for(int i = 4; i < argc; i++){
 				if(!strcmp(argv[i], "alpha"))
 					tex.flags |= DTS_ALPHA;
+				else if(!strcmp(argv[i], "height"))
+					tex.flags |= DTS_HEIGHTMAP;
 				else if(!strcmp(argv[i], "normal"))
 					tex.flags |= DTS_NORMALMAP;
 				else
@@ -354,7 +364,7 @@ static double sfnoise3(const Vec3d &basepos, int octaves, double persistence){
 }
 
 double RoundAstrobj::getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight){
-	return (sfnoise3(basepos, octaves, persistence) * aheight + 1.);
+	return ((sfnoise3(basepos, octaves, persistence) + 0.1) * aheight + 1.);
 }
 
 void RoundAstrobj::updateAbsMag(double dt){

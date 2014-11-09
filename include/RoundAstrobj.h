@@ -73,9 +73,10 @@ public:
 		DTS_ADD = 1<<0,
 		DTS_NODETAIL = 1<<1,
 		DTS_ALPHA = 1<<2,
-		DTS_NORMALMAP = 1<<3,
-		DTS_NOGLOBE = 1<<4,
-		DTS_LIGHTING = 1<<5
+		DTS_HEIGHTMAP = 1<<3,
+		DTS_NORMALMAP = 1<<4,
+		DTS_NOGLOBE = 1<<5,
+		DTS_LIGHTING = 1<<6
 	};
 
 	struct Texture{
@@ -119,6 +120,9 @@ protected:
 	static double getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight);
 private:
 	std::vector<Texture> textures;
+#ifndef DEDICATED
+	BITMAPINFO *heightmap[6];
+#endif
 	const PropertyMap &propertyMap()const;
 	friend class DrawTextureSphere;
 	friend class DrawTextureSpheroid;

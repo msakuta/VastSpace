@@ -40,6 +40,9 @@
     <Filter Include="Headers\noises">
       <UniqueIdentifier>{a9b6684b-b6b9-4d4a-931c-6575bf61d19b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Headers\draw">
+      <UniqueIdentifier>{b622dfd4-2647-4d56-af00-c823f4a364c5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Sceptor.cpp">
@@ -683,6 +686,9 @@
     </ClInclude>
     <ClInclude Include="..\src\noises\noise_int.h">
       <Filter>Sources\noises</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\draw\DrawTextureSphere.h">
+      <Filter>Headers\draw</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

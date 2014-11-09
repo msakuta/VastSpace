@@ -375,6 +375,7 @@
     <ClInclude Include="..\src\CoordSys-sq.h" />
     <ClInclude Include="..\src\Defender.h" />
     <ClInclude Include="..\src\Destroyer.h" />
+    <ClInclude Include="..\src\draw\DrawTextureSphere.h" />
     <ClInclude Include="..\src\galaxy_field.h" />
     <ClInclude Include="..\src\keybind.h" />
     <ClInclude Include="..\src\noises\noise_int.h" />

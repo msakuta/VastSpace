@@ -1568,6 +1568,7 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 				}
 				double persistence = m_noisePersistence;
 				int octaves = m_noiseOctaves;
+				double baseLevel = (1 << m_noiseBaseLevel);
 
 				bufs.t = &it;
 				it.startJob([=, &bufs](){
@@ -1600,7 +1601,7 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 								for(int jx = 0; jx < 2; jx++)
 									for(int jy = 0; jy < 2; jy++)
 										accum += aheights.a[jx][jy] * (jx ? fx : 1. - fx) * (jy ? fy : 1. - fy);
-								return height(v, octaves, persistence, accum);
+								return height(v * baseLevel, octaves, persistence, accum);
 							};
 							HeightGetter bheight = [=](const Vec3d &v, int ix, int iy){
 								return lheight(v, ix, iy)

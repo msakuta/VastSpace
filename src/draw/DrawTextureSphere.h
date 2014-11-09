@@ -132,6 +132,7 @@ public:
 	tt &noiseHeight(double v){m_noiseHeight = v; return *this;}
 	tt &noisePersistence(double v){m_noisePersistence = v; return *this;}
 	tt &noiseOctaves(int v){m_noiseOctaves = v; return *this;}
+	tt &noiseBaseLevel(int v){m_noiseBaseLevel = v; return *this;}
 
 	static const int maxLods = 5;
 	static const int lodPatchSize = 4;
@@ -233,6 +234,7 @@ protected:
 	double m_noiseHeight;
 	double m_noisePersistence;
 	int m_noiseOctaves;
+	int m_noiseBaseLevel;
 
 	Quatd qrot;
 };

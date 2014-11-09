@@ -4,6 +4,7 @@
  * Actually, majority of RoundAstrobj is implemented in astrodraw.cpp.
  */
 #define _CRT_SECURE_NO_WARNINGS
+#define NOMINMAX
 #include "RoundAstrobj.h"
 #include "serial_util.h"
 #include "sqadapt.h"
@@ -15,6 +16,8 @@
 #include "noises/simplexnoise1234d.h"
 
 #include <stdlib.h>
+
+#include <algorithm>
 
 RoundAstrobj::RoundAstrobj(Game *game) :
 	st(game),
@@ -52,6 +55,7 @@ RoundAstrobj::RoundAstrobj(const char *name, CoordSys *cs) : st(name, cs),
 	terrainNoisePersistence(0.65),
 	terrainNoiseLODs(3),
 	terrainNoiseOctaves(7),
+	terrainNoiseBaseLevel(0),
 	terrainNoiseEnable(false)
 {
 	texlist = cloudtexlist = 0;
@@ -143,6 +147,7 @@ void RoundAstrobj::serialize(SerializeContext &sc){
 	sc.o << terrainNoiseEnable;
 	sc.o << terrainNoiseHeight;
 	sc.o << terrainNoiseOctaves;
+	sc.o << terrainNoiseBaseLevel;
 	sc.o << terrainNoisePersistence;
 }
 
@@ -174,6 +179,7 @@ void RoundAstrobj::unserialize(UnserializeContext &sc){
 	sc.i >> terrainNoiseEnable;
 	sc.i >> terrainNoiseHeight;
 	sc.i >> terrainNoiseOctaves;
+	sc.i >> terrainNoiseBaseLevel;
 	sc.i >> terrainNoisePersistence;
 
 	// Postprocessing
@@ -335,6 +341,10 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 		terrainNoiseOctaves = sqcalci(sc, ps, s);
 		return true;
 	}
+	else if(!scstrcmp(s, "terrainNoiseBaseLevel")){
+		terrainNoiseBaseLevel = sqcalci(sc, ps, s);
+		return true;
+	}
 	else
 		return st::readFile(sc, argc, argv);
 }
@@ -344,8 +354,56 @@ void RoundAstrobj::anim(double dt){
 	updateAbsMag(dt);
 }
 
+#define SQRT2P2 (1.4142135623730950488016887242097/2.)
+static const Quatd cubedirs[] = {
+	Quatd(SQRT2P2,0,SQRT2P2,0), /* {0,-SQRT2P2,0,SQRT2P2} */
+	Quatd(SQRT2P2,0,0,SQRT2P2),
+	Quatd(0,0,1,0), /* {0,0,0,1} */
+	Quatd(-SQRT2P2,0,SQRT2P2,0), /*{0,SQRT2P2,0,SQRT2P2},*/
+	Quatd(-SQRT2P2,0,0,SQRT2P2), /* ??? {0,-SQRT2P2,SQRT2P2,0},*/
+	Quatd(-1,0,0,0), /* {0,1,0,0}, */
+};
+
 double RoundAstrobj::getTerrainHeight(const Vec3d &basepos)const{
-	return getTerrainHeightInt(basepos, terrainNoiseOctaves, terrainNoisePersistence, terrainNoiseHeight / rad);
+	double maxf = 0.;
+	int direction = 0;
+	for(int d = 0; d < 6; d++){
+		double sp = cubedirs[d].trans(Vec3d(0, 0, 1)).sp(basepos);
+		if(maxf < sp){
+			direction = d;
+			maxf = sp;
+		}
+	}
+
+	double height = terrainNoiseHeight;
+	if(heightmap[direction]){
+		BITMAPINFO *bi = heightmap[direction];
+
+		Vec3d refvec = Vec3d(0,0,1);
+		Vec3d p = cubedirs[direction].itrans(basepos);
+		double sc = 1. / refvec.sp(p);
+		p *= sc;
+
+		double dx = (p[0] + 1.) * bi->bmiHeader.biWidth * 0.5;
+		long ix = long(dx);
+		double fx = dx - ix;
+		double dy = (p[1] + 1.) * bi->bmiHeader.biHeight * 0.5;
+		long iy = long(dy);
+		double fy = dy - iy;
+
+		double accum = 0.;
+		for(int jx = 0; jx < 2; jx++){
+			long jjx = std::max(std::min(ix + jx, bi->bmiHeader.biWidth-1), 0l);
+			for(int jy = 0; jy < 2; jy++){
+				long jjy = std::max(std::min(bi->bmiHeader.biHeight - long(iy + jy) - 1, bi->bmiHeader.biHeight-1), 0l);
+				uint8_t ui = ((RGBQUAD*)(((uint8_t*)&bi->bmiColors[bi->bmiHeader.biClrUsed]) + bi->bmiHeader.biBitCount * (jjx + jjy * bi->bmiHeader.biWidth) / 8))->rgbRed;
+				accum += this->terrainNoiseHeight * (jx ? fx : 1. - fx) * (jy ? fy : 1. - fy) * (ui - 42) / 256.;
+			}
+		}
+		height = accum;
+	}
+
+	return getTerrainHeightInt(basepos * (1 << terrainNoiseBaseLevel), terrainNoiseOctaves, terrainNoisePersistence, height / rad);
 }
 
 /// Simplex Fractal Noise in 3D

@@ -64,6 +64,7 @@ protected:
 	double terrainNoisePersistence;
 	int terrainNoiseLODs;
 	int terrainNoiseOctaves;
+	int terrainNoiseBaseLevel;
 	bool terrainNoiseEnable;
 
 	void updateInt(double dt);

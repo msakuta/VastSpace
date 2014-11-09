@@ -23,10 +23,11 @@ coordsys Orbit earth{
 		extexture "cloudtexture" textures/cloud.jpg 0 alpha
 		extexture "lightstexture" textures/earth_lights.png
 		terrainNoiseEnable true
-		terrainNoiseLODs 5
-		terrainNoiseHeight 150.
+		terrainNoiseLODs 6
+		terrainNoiseHeight 8.
 		terrainNoisePersistence 0.75
-		terrainNoiseOctaves 12
+		terrainNoiseOctaves 8
+		terrainNoiseBaseLevel 5
 		vertexshader "shaders/flatplanet.vs"
 		fragmentshader "shaders/flatplanet.fs"
 #		fragmentshader shaders/earth.fs
@@ -50,8 +51,8 @@ coordsys Orbit earth{
 		atmosphere_dawn 1 .2 .1
 
 		coordsys Surface earths{
-			define theta .13*PI
-			define phi 1.05*PI
+			define theta .19*PI
+			define phi 1.0*PI
 			define rad 6375+0.2
 			pos rad*sin(phi) rad*cos(theta)*cos(phi) rad*sin(theta)*cos(phi)
 #			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)

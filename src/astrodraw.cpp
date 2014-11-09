@@ -367,7 +367,8 @@ void RoundAstrobj::draw(const Viewer *vw){
 				.noiseLODs(terrainNoiseLODs)
 				.noiseHeight(terrainNoiseHeight)
 				.noisePersistence(terrainNoisePersistence)
-				.noiseOctaves(terrainNoiseOctaves))
+				.noiseOctaves(terrainNoiseOctaves)
+				.noiseBaseLevel(terrainNoiseBaseLevel))
 				: proc(DrawTextureSphere(this, vw, sunpos));
 			if(!ret && *texname){
 				texname = "";

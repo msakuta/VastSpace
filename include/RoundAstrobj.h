@@ -62,6 +62,7 @@ protected:
 
 	double terrainNoiseHeight;
 	double terrainNoisePersistence;
+	double terrainNoiseLODRange;
 	int terrainNoiseLODs;
 	int terrainNoiseOctaves;
 	int terrainNoiseBaseLevel;

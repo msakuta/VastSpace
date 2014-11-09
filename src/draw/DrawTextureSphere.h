@@ -128,6 +128,7 @@ public:
 	tt(RoundAstrobj *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos),
 		m_lods(3), m_noiseHeight(1.), m_noisePersistence(0.65), m_noiseOctaves(6){}
 	bool draw()override;
+	tt &noiseLODRange(double v){m_noiseLODRange = v; return *this;}
 	tt &noiseLODs(int v){m_lods = MIN(maxLods, v); return *this;}
 	tt &noiseHeight(double v){m_noiseHeight = v; return *this;}
 	tt &noisePersistence(double v){m_noisePersistence = v; return *this;}
@@ -233,6 +234,7 @@ protected:
 	int m_lods;
 	double m_noiseHeight;
 	double m_noisePersistence;
+	double m_noiseLODRange;
 	int m_noiseOctaves;
 	int m_noiseBaseLevel;
 

@@ -355,6 +355,20 @@ int Game::StellarFileLoad(const char *fname){
 	return StellarFileLoadInt(fname, universe, nullptr);
 }
 
+double stellar_util::sqcalcd(StellarContext &sc, const char *str, const SQChar *context){
+	StackReserver st(sc.v);
+	gltestp::dstring dst = gltestp::dstring("return(") << str << ")";
+	if(SQ_FAILED(sq_compilebuffer(sc.v, dst, dst.len(), context, SQTrue)))
+		throw StellarError(gltestp::dstring() << "sqcalc compile error: " << context);
+	sq_pushobject(sc.v, sc.vars);
+	if(SQ_FAILED(sq_call(sc.v, 1, SQTrue, SQTrue)))
+		throw StellarError(gltestp::dstring() << "sqcalc call error: " << context);
+	SQFloat f;
+	if(SQ_FAILED(sq_getfloat(sc.v, -1, &f)))
+		throw StellarError(gltestp::dstring() << "sqcalc returned value not convertible to int: " << context);
+	return f;
+}
+
 bool stellar_util::sqcalcb(StellarContext &sc, const char *str, const SQChar *context){
 	StackReserver st(sc.v);
 	gltestp::dstring dst = gltestp::dstring("return(") << str << ")";

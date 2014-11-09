@@ -53,6 +53,7 @@ RoundAstrobj::RoundAstrobj(const char *name, CoordSys *cs) : st(name, cs),
 	noisePos(0,0,0),
 	terrainNoiseHeight(1.),
 	terrainNoisePersistence(0.65),
+	terrainNoiseLODRange(3.),
 	terrainNoiseLODs(3),
 	terrainNoiseOctaves(7),
 	terrainNoiseBaseLevel(0),
@@ -323,6 +324,10 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	}
 	else if(!scstrcmp(s, "terrainNoiseEnable")){
 		terrainNoiseEnable = sqcalcb(sc, ps, s);
+		return true;
+	}
+	else if(!scstrcmp(s, "terrainNoiseLODRange")){
+		terrainNoiseLODRange = sqcalcd(sc, ps, s);
 		return true;
 	}
 	else if(!scstrcmp(s, "terrainNoiseLODs")){

@@ -1263,10 +1263,10 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 		// Function to determine whether the patch is near enough from the viewpoint to render
 		// in a higher LOD.
 		auto patchDetail = [&](int ix, int iy){
-			double x = 2. * ix / nextPatchSize - 1.;
-			double y = 2. * iy / nextPatchSize - 1.;
+			double x = 2. * (ix + 0.5) / nextPatchSize - 1.;
+			double y = 2. * (iy + 0.5) / nextPatchSize - 1.;
 			Vec3d rpos = Vec3d(x,y,1).norm() * m_rad;
-			return (apos + qrot.trans(cubedirs[direction].trans(rpos)) - vw->pos).len() / (m_rad / nextPatchSize) < 4.;
+			return (apos + qrot.trans(cubedirs[direction].trans(rpos)) - vw->pos).len() / (m_rad / nextPatchSize) < m_noiseLODRange;
 		};
 
 		bool drawn = false;

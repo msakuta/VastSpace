@@ -14,6 +14,7 @@
 #include "sqadapt.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
+#include "draw/material.h"
 #include "glstack.h"
 #include "noises/simplexnoise1234d.h"
 #include "SignModulo.h"
@@ -531,8 +532,11 @@ void VoxelEntity::draw(WarDraw *wd){
 
 		if(wd->shadowMap){
 			const ShaderBind *sb = wd->shadowMap->getShader();
-			if(sb)
-				sb->enableTextures(false, false);
+			if(sb){
+				sb->enableTextures(true, false);
+				static GLuint texlist = CallCacheBitmap("rock.jpg", "textures/rock.jpg", NULL, NULL);
+				glCallList(texlist);
+			}
 		}
 
 		const double maxViewCells = maxViewDistance / getCellWidth();

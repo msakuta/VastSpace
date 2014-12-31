@@ -145,8 +145,8 @@ public:
 //	virtual Props props()const;
 //	struct ManeuverParams;
 //	virtual const ManeuverParams &getManeuve()const;
-	virtual bool isTargettable()const override{return false;}
-//	virtual bool isSelectable()const;
+	bool isTargettable()const override{return true;}
+	bool isSelectable()const override{return true;}
 //	virtual bool command(EntityCommand *com);
 //	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
 

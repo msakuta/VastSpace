@@ -10,6 +10,8 @@
 #include "Viewer.h"
 #include "CoordSys.h"
 #include "Game.h"
+#include "EntityCommand.h"
+#include "sqadapt.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
 #include "glstack.h"
@@ -139,6 +141,25 @@ inline bool operator<(const Vec3i &a, const Vec3i &b){
 		return false;
 }
 
+/// \brief An EntityCommand for making changes to cells in VoxelEntity
+///
+/// It can place or remove a voxel by parameters.
+struct EXPORT ModifyVoxelCommand : public SerializableCommand{
+	COMMAND_BASIC_MEMBERS(ModifyVoxelCommand, EntityCommand);
+	ModifyVoxelCommand(){}
+	ModifyVoxelCommand(HSQUIRRELVM v, Entity &e);
+
+	// Vector parameters of a ray for placing or removing a voxel.
+	Vec3d src;
+	Vec3d dir;
+
+	bool put; ///< Whether to put a voxel (false means removing)
+	Cell::Type ct; ///< Cell type to place
+
+	virtual void serialize(SerializeContext &);
+	virtual void unserialize(UnserializeContext &);
+};
+
 class EXPORT VoxelEntity : public Entity{
 public:
 	typedef Entity st;
@@ -162,8 +183,8 @@ public:
 //	virtual const ManeuverParams &getManeuve()const;
 	bool isTargettable()const override{return true;}
 	bool isSelectable()const override{return true;}
-//	virtual bool command(EntityCommand *com);
-//	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn);
+	bool command(EntityCommand *com)override;
+	int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn)override{return 0;}
 
 //	virtual short getDefaultCollisionMask()const;
 
@@ -176,6 +197,34 @@ public:
 	double getCellWidth()const{return 0.0025;} ///< Length of an edge of a cell, in kilometers
 	double getBaseHeight()const{return 0.05;}
 	double getNoiseHeight()const{return 0.005;}
+
+	const Cell &cell(int ix, int iy, int iz){
+		Vec3i ci = Vec3i(SignDiv(ix, CELLSIZE), SignDiv(iy, CELLSIZE), SignDiv(iz, CELLSIZE));
+		VolumeMap::iterator it = volume.find(ci);
+		if(it != volume.end()){
+			return it->second(SignModulo(ix, CELLSIZE), SignModulo(iy, CELLSIZE), SignModulo(iz, CELLSIZE));
+		}
+		else
+			return CellVolume::v0;
+	}
+	const Cell &cell(const Vec3i &pos){
+		return cell(pos[0], pos[1], pos[2]);
+	}
+
+	bool setCell(int ix, int iy, int iz, const Cell &newCell){
+		Vec3i ci = Vec3i(SignDiv(ix, CELLSIZE), SignDiv(iy, CELLSIZE), SignDiv(iz, CELLSIZE));
+		VolumeMap::iterator it = volume.find(ci);
+		if(it != volume.end())
+			return it->second.setCell(SignModulo(ix, CELLSIZE), SignModulo(iy, CELLSIZE), SignModulo(iz, CELLSIZE), newCell);
+		return false;
+	}
+
+	bool isSolid(int ix, int iy, int iz){
+		return isSolid(Vec3i(ix, iy, iz));
+	}
+
+	bool isSolid(const Vec3i &v);
+	bool isSolid(const Vec3d &rv);
 
 private:
 	VolumeMap volume;
@@ -606,6 +655,83 @@ void VoxelEntity::draw(WarDraw *wd){
 		}
 }
 
+
+bool VoxelEntity::command(EntityCommand *com){
+	if(ModifyVoxelCommand *mvc = InterpretCommand<ModifyVoxelCommand>(com)){
+		static const double boundHeight = 0.001;
+		Vec3d src = mvc->src - this->pos;
+		Vec3d dir = rot.itrans(mvc->dir);
+		if(mvc->put){
+			for (int i = 1; i < 8; i++){
+				Vec3i ci = real2ind(src + dir * i * getCellWidth() / 2);
+
+				if(isSolid(ci[0], ci[1], ci[2]))
+					continue;
+
+				// If this placing makes the Player to be stuck in a brick, do not allow it.
+				bool buried = false;
+				for(int ix = 0; ix < 2 && !buried; ix++){
+					for(int iy = 0; iy < 2 && !buried; iy++){
+						for(int iz = 0; iz < 2 && !buried; iz++){
+							// Position to check collision with the walls
+							Vec3d hitcheck(
+								src[0] + (ix * 2 - 1) * boundHeight,
+								src[1] + (iy * 2 - 1) * boundHeight,
+								src[2] + (iz * 2 - 1) * boundHeight);
+
+							if(ci == real2ind(hitcheck))
+								buried = true;
+						}
+					}
+				}
+				if(buried)
+					continue;
+
+				static const Vec3i directions[] = {
+					Vec3i(1,0,0),
+					Vec3i(-1,0,0),
+					Vec3i(0,1,0),
+					Vec3i(0,-1,0),
+					Vec3i(0,0,1),
+					Vec3i(0,0,-1),
+				};
+
+				bool supported = false;
+				for(int j = 0; j < numof(directions); j++){
+					if (isSolid(ci + directions[j])){
+						supported = true;
+						break;
+					}
+				}
+				if(!supported)
+					continue;
+
+				if(setCell(ci[0], ci[1], ci[2], mvc->ct))
+				{
+//					player->addBricks(curtype, -1);
+					break;
+				}
+			}
+		}
+		else{
+			// Dig the cell forward
+			for(int i = 1; i < 8; i++){
+				Vec3i ci = real2ind(src + dir * i * getCellWidth() / 2);
+				Cell c = cell(ci[0], ci[1], ci[2]);
+				if (c.isSolid() && setCell(ci[0], ci[1], ci[2], Cell::Air))
+				{
+//					player->addBricks(c.getType(), 1);
+					break;
+				}
+			}
+		}
+
+		return false;
+	}
+	else
+		return st::command(com);
+}
+
 /// <summary>
 /// Convert from real world coords to massvolume index vector
 /// </summary>
@@ -625,4 +751,63 @@ Vec3i VoxelEntity::real2ind(const Vec3d &pos)const{
 Vec3d VoxelEntity::ind2real(const Vec3i &ipos)const{
 	Vec3i tpos = (ipos) * getCellWidth();
 	return tpos.cast<double>();
+}
+
+/// <summary>Solidity check for given index coordinates</summary>
+bool VoxelEntity::isSolid(const Vec3i &v){
+	Vec3i ci(SignDiv(v[0], CELLSIZE), SignDiv(v[1], CELLSIZE), SignDiv(v[2], CELLSIZE));
+	if(volume.find(ci) != volume.end()){
+		CellVolume &cv = volume[ci];
+		return cv.isSolid(Vec3i(SignModulo(v[0], CELLSIZE), SignModulo(v[1], CELLSIZE), SignModulo(v[2], CELLSIZE)));
+	}
+	else
+		return false;
+}
+
+/// <summary>Solidity check for given world coordinates</summary>
+bool VoxelEntity::isSolid(const Vec3d &rv){
+	Vec3i v = real2ind(rv);
+	Vec3i ci(SignDiv(v[0], CELLSIZE), SignDiv(v[1], CELLSIZE), SignDiv(v[2], CELLSIZE));
+	if(volume.find(ci) != volume.end()){
+		CellVolume &cv = volume[ci];
+		const Cell &c = cv(SignModulo(v[0], CELLSIZE), SignModulo(v[1], CELLSIZE), SignModulo(v[2], CELLSIZE));
+		return c.getType() & Cell::HalfBit ? rv[1] - floor(rv[1]) < .5 : c.isSolid();
+	}
+	else
+		return false;
+}
+
+IMPLEMENT_COMMAND(ModifyVoxelCommand, "ModifyVoxel")
+
+void ModifyVoxelCommand::serialize(SerializeContext &sc){
+	sc.o << src;
+	sc.o << dir;
+	sc.o << put;
+	sc.o << int(ct);
+}
+
+void ModifyVoxelCommand::unserialize(UnserializeContext &sc){
+	sc.i >> src;
+	sc.i >> dir;
+	sc.i >> put;
+	sc.i >> (int&)ct;
+}
+
+ModifyVoxelCommand::ModifyVoxelCommand(HSQUIRRELVM v, Entity &){
+	int argc = sq_gettop(v);
+	if(argc < 2)
+		throw SQFArgumentError();
+	SQVec3d qvsrc;
+	qvsrc.getValue(v, 3);
+	src = qvsrc.value;
+	SQVec3d qvdir;
+	qvdir.getValue(v, 4);
+	dir = qvdir.value;
+
+	SQBool sqb;
+	if(SQ_FAILED(sq_getbool(v, 5, &sqb)))
+		throw SQFError(_SC("4th argument must be bool"));
+	put = sqb;
+
+	ct = Cell::Rock;
 }

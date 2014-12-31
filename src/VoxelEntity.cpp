@@ -11,7 +11,8 @@
 #include "Game.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
-#include "perlinNoise3d.h"
+#include "noises/simplexnoise1234d.h"
+#include "SignModulo.h"
 
 #include <cpplib/vec2.h>
 
@@ -286,79 +287,27 @@ int CellVolume::cellForeignExists = 0;
 /// </summary>
 /// <param name="ci">The position of new CellVolume</param>
 void CellVolume::initialize(const Vec3i &ci){
-	float field[CELLSIZE][CELLSIZE];
-
-	PerlinNoise::PerlinNoiseParams3D pnp(12321, 0.5);
-	pnp.octaves = 8;
-	pnp.xofs = ci[0] * CELLSIZE;
-	pnp.yofs = ci[2] * CELLSIZE;
-	pnp.zofs = ci[1] * CELLSIZE;
-	PerlinNoise::perlin_noise<CELLSIZE>(pnp, PerlinNoise::FieldAssign<CELLSIZE>(field));
-
-	pnp.octaves = 7;
-	pnp.yofs = ci[1] * CELLSIZE;
-	pnp.zofs = ci[2] * CELLSIZE;
-	float cellFactorTable[4][CELLSIZE][CELLSIZE][CELLSIZE];
-	const unsigned long seeds[4] = {54123, 112398, 93532, 3417453};
-	for(int i = 0; i < 4; i++){
-		pnp.seed = seeds[i];
-		PerlinNoise::perlin_noise_3D<CELLSIZE>(pnp, PerlinNoise::FieldAssign3D<CELLSIZE>(cellFactorTable[i]));
-	}
-
-#if 0
-	int values[CELLSIZE][CELLSIZE][CELLSIZE] = {0};
-	for(int iz = 0; iz < CELLSIZE; iz++){
-		int fz = iz + ci[2] * CELLSIZE + 115;
-		if(fz < 0)
-			continue;
-		if(230 <= fz)
-			break;
-		char cbuf[256];
-		sprintf(cbuf, "s2\\Co-2-%d.txt", iz);
-		FILE *fp = fopen(cbuf, "r");
-		for(int fy = 0; fy < 2048; fy++){
-			int iy = fy - ci[1] * CELLSIZE - 385;
-			for(int fx = 0; fx < 224; fx++){
-				int ix = fx - ci[0] * CELLSIZE - 112;
-				int val;
-				fscanf(fp, "%d\t", &val);
-				if(0 <= iy && iy < CELLSIZE && 0 <= ix && ix < CELLSIZE)
-					values[iz][iy][ix] = val;
-			}
-		}
-		fclose(fp);
-	}
-#endif
 
 	_solidcount = 0;
-	for(int ix = 0; ix < CELLSIZE; ix++) for(int iz = 0; iz < CELLSIZE; iz++){
-		// Compute the height first. The height is distance from the surface just below the cell of interest,
-		// can be negative when it's below surface.
-		int baseHeight = ci[1] * CELLSIZE - ((int)floor(field[ix][iz] * CELLSIZE * 4) - 16);
+	for(int ix = 0; ix < CELLSIZE; ix++){
+		for(int iz = 0; iz < CELLSIZE; iz++){
+			for(int iy = 0; iy < CELLSIZE; iy++){
 
-		for(int iy = 0; iy < CELLSIZE; iy++){
-			int height = iy + baseHeight;
+				// Obtain spatial position of a given cell.
+				Vec3d pos = (Vec3d(ix, iy, iz) + ci.cast<double>() * CELLSIZE) * world->getCellWidth();
+				double height = pos.len();
+				Vec3d basepos = height ? pos / height : pos;
+				double s = 1.;
+				double noiseVal = snoise3d(basepos[0] * s, basepos[1] * s, basepos[2] * s);
 
-			if(0 < height)
-				v[ix][iy][iz] = Cell(ci[1] * CELLSIZE + iy < 0 ? Cell::Water : Cell::Air);
-			else{
-				float grassness = 0 < height || height < -10 ? 0 : cellFactorTable[0][ix][iy][iz] / (1 << -height);
-				float dirtness = cellFactorTable[1][ix][iy][iz];
-				float gravelness = cellFactorTable[2][ix][iy][iz];
-				float rockness = cellFactorTable[3][ix][iy][iz] * (height < 0 ? 1.25 - 0.5 / (1. - height / 16.) : 0.75);
-
-				Cell::Type ct;
-				if (dirtness < grassness && gravelness < grassness && rockness < grassness)
-					ct = Cell::Grass;
-				else if (gravelness < dirtness && rockness < dirtness)
-					ct = Cell::Dirt;
-				else if(rockness < gravelness)
-					ct = Cell::Gravel;
-				else
-					ct = Cell::Rock;
-				world->bricks[ct]++;
-				v[ix][iy][iz] = Cell(ct);
-				_solidcount++;
+				if(noiseVal * 0.2 + 1. < height * 0.5)
+					v[ix][iy][iz] = Cell(Cell::Air);
+				else{
+					Cell::Type ct = Cell::Rock;
+					world->bricks[ct]++;
+					v[ix][iy][iz] = Cell(ct);
+					_solidcount++;
+				}
 			}
 		}
 	}
@@ -430,7 +379,7 @@ struct VERTEX{
 	Vec2d tex;
 };
 
-static const int maxViewDistance = CELLSIZE;
+static const int maxViewDistance = CELLSIZE * 2;
 
 void VoxelEntity::anim(double dt){
 }
@@ -440,10 +389,10 @@ void VoxelEntity::draw(WarDraw *wd){
 	const Vec3i inf = VoxelEntity::real2ind(wd->vw->pos - this->pos);
 	std::vector<CellVolume*> changed;
 	int radius = maxViewDistance / CELLSIZE;
-	for (int ix = -radius; ix <= radius; ix++) for (int iy = 0; iy < 2; iy++) for (int iz = -radius; iz <= radius; iz++){
+	for (int ix = -radius; ix <= radius; ix++) for (int iy = -radius; iy <= radius; iy++) for (int iz = -radius; iz <= radius; iz++){
 		Vec3i ci(
 			SignDiv((inf[0] + ix * CELLSIZE), CELLSIZE),
-			SignDiv((inf[1] + (2 * iy - 1) * CELLSIZE / 2), CELLSIZE),
+			SignDiv((inf[1] + iy * CELLSIZE), CELLSIZE),
 			SignDiv((inf[2] + iz * CELLSIZE), CELLSIZE));
 		if(volume.find(ci) == volume.end()){
 			volume[ci] = CellVolume(this, ci);
@@ -604,7 +553,8 @@ void VoxelEntity::draw(WarDraw *wd){
 
 						glPushMatrix();
 						glScaled(getCellWidth(), getCellWidth(), getCellWidth());
-						glTranslated(ix + it->first[0] * CELLSIZE, iy + it->first[1] + CELLSIZE, iz + it->first[2] * CELLSIZE);
+						Vec3d ofs(ix + it->first[0] * CELLSIZE, iy + it->first[1] * CELLSIZE, iz + it->first[2] * CELLSIZE);
+						glTranslated(ofs[0], ofs[1], ofs[2]);
 
 						glBegin(GL_TRIANGLES);
 						if(!x0 && !x1 && !y0 && !y1){

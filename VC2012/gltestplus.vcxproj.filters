@@ -354,6 +354,9 @@
     <ClCompile Include="..\src\noises\simplexnoise1234d.cpp">
       <Filter>Sources\noises</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\VoxelEntity.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\effects.h">

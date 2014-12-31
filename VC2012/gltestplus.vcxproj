@@ -270,6 +270,7 @@
     <ClCompile Include="..\src\tefpol3d.cpp" />
     <ClCompile Include="..\src\teline3d.cpp" />
     <ClCompile Include="..\src\Universe.cpp" />
+    <ClCompile Include="..\src\VoxelEntity.cpp" />
     <ClCompile Include="..\src\war.cpp" />
     <ClCompile Include="..\src\Warpable.cpp" />
     <ClCompile Include="..\src\Worker.cpp" />

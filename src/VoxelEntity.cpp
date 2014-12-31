@@ -2,7 +2,18 @@
 /// \brief Definition and implementation of VoxelEntity class.
 #include "Entity.h"
 #include "EntityRegister.h"
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+#include "draw/WarDraw.h"
+#include "Viewer.h"
+#include "CoordSys.h"
+#include "Game.h"
+#include "draw/ShadowMap.h"
+#include "draw/ShaderBind.h"
 #include "perlinNoise3d.h"
+
+#include <cpplib/vec2.h>
 
 const int CELLSIZE = 16;
 
@@ -137,7 +148,8 @@ public:
 //	virtual void serialize(SerializeContext &sc);
 //	virtual void unserialize(UnserializeContext &sc);
 //	virtual void addRigidBody(WarSpace*);
-//	virtual void anim(double dt);
+	void anim(double dt)override;
+	void draw(WarDraw *)override;
 //	virtual void drawtra(wardraw_t *);
 //	virtual void drawHUD(wardraw_t *);
 //	virtual void control(const input_t *, double);
@@ -155,6 +167,10 @@ public:
 	double getHitRadius()const override{return 0.5;}
 
 	typedef std::map<Vec3i, CellVolume, bool(*)(const Vec3i &, const Vec3i &)> VolumeMap;
+
+	Vec3i real2ind(const Vec3d &pos)const;
+	Vec3d ind2real(const Vec3i &ipos)const;
+	double getCellWidth()const{return 0.2;} ///< Length of an edge of a cell, in kilometers
 
 private:
 	VolumeMap volume;
@@ -405,5 +421,237 @@ void CellVolume::updateCache()
 }
 
 
-VoxelEntity::VoxelEntity(WarField *w) : st(w){
+VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<){
+}
+
+struct VERTEX{
+	Vec3d pos;
+	Vec3d norm;
+	Vec2d tex;
+};
+
+static const int maxViewDistance = CELLSIZE;
+
+void VoxelEntity::anim(double dt){
+}
+
+void VoxelEntity::draw(WarDraw *wd){
+
+	const Vec3i inf = VoxelEntity::real2ind(wd->vw->pos - this->pos);
+	std::vector<CellVolume*> changed;
+	int radius = maxViewDistance / CELLSIZE;
+	for (int ix = -radius; ix <= radius; ix++) for (int iy = 0; iy < 2; iy++) for (int iz = -radius; iz <= radius; iz++){
+		Vec3i ci(
+			SignDiv((inf[0] + ix * CELLSIZE), CELLSIZE),
+			SignDiv((inf[1] + (2 * iy - 1) * CELLSIZE / 2), CELLSIZE),
+			SignDiv((inf[2] + iz * CELLSIZE), CELLSIZE));
+		if(volume.find(ci) == volume.end()){
+			volume[ci] = CellVolume(this, ci);
+			CellVolume &cv = volume[ci];
+			cv.initialize(ci);
+			changed.push_back(&volume[ci]);
+		}
+	}
+
+	for(std::vector<CellVolume*>::iterator it = changed.begin(); it != changed.end(); it++)
+		(*it)->updateCache();
+
+	// Create vertex buffer
+	static const VERTEX vertices[] =
+	{
+		{Vec3d(0, 0, 0), Vec3d(0, -1, 0), Vec2d(0, 0)},
+		{Vec3d(0, 0, 1), Vec3d(0, -1, 0), Vec2d(0, 1)},
+		{Vec3d(1, 0, 1), Vec3d(0, -1, 0), Vec2d(1, 1)},
+		{Vec3d(1, 0, 0), Vec3d(0, -1, 0), Vec2d(1, 0)},
+
+		{Vec3d(0, 1, 0), Vec3d(0, 1, 0), Vec2d(0, 0)},
+		{Vec3d(1, 1, 0), Vec3d(0, 1, 0), Vec2d(1, 0)},
+		{Vec3d(1, 1, 1), Vec3d(0, 1, 0), Vec2d(1, 1)},
+		{Vec3d(0, 1, 1), Vec3d(0, 1, 0), Vec2d(0, 1)},
+
+		{Vec3d(0, 0, 0), Vec3d(0, 0, -1), Vec2d(0, 0)},
+		{Vec3d(1, 0, 0), Vec3d(0, 0, -1), Vec2d(1, 0)},
+		{Vec3d(1, 1, 0), Vec3d(0, 0, -1), Vec2d(1, 1)},
+		{Vec3d(0, 1, 0), Vec3d(0, 0, -1), Vec2d(0, 1)},
+
+		{Vec3d(0, 0, 1), Vec3d(0, 0, 1), Vec2d(0, 0)},
+		{Vec3d(0, 1, 1), Vec3d(0, 0, 1), Vec2d(0, 1)},
+		{Vec3d(1, 1, 1), Vec3d(0, 0, 1), Vec2d(1, 1)},
+		{Vec3d(1, 0, 1), Vec3d(0, 0, 1), Vec2d(1, 0)},
+
+		{Vec3d(0, 0, 0), Vec3d(-1, 0, 0), Vec2d(0, 0)},
+		{Vec3d(0, 1, 0), Vec3d(-1, 0, 0), Vec2d(1, 0)},
+		{Vec3d(0, 1, 1), Vec3d(-1, 0, 0), Vec2d(1, 1)},
+		{Vec3d(0, 0, 1), Vec3d(-1, 0, 0), Vec2d(0, 1)},
+
+		{Vec3d(1, 0, 0), Vec3d(1, 0, 0), Vec2d(0, 0)},
+		{Vec3d(1, 0, 1), Vec3d(1, 0, 0), Vec2d(0, 1)},
+		{Vec3d(1, 1, 1), Vec3d(1, 0, 0), Vec2d(1, 1)},
+		{Vec3d(1, 1, 0), Vec3d(1, 0, 0), Vec2d(1, 0)},
+	};
+
+	static const unsigned indices[] =
+	{
+		2,1,0,
+		0,3,2,
+
+		6,5,4,
+		4,7,6,
+
+		10,9,8,
+		8,11,10,
+
+		14,13,12,
+		12,15,14,
+
+		18,17,16,
+		16,19,18,
+
+		22,21,20,
+		20,23,22
+	};
+
+	{
+		if(wd->shadowMap){
+			const ShaderBind *sb = wd->shadowMap->getShader();
+			if(sb)
+				sb->enableTextures(false, false);
+		}
+
+		for(VoxelEntity::VolumeMap::iterator it = this->volume.begin(); it != this->volume.end(); it++){
+			const Vec3i &key = it->first;
+			CellVolume &cv = it->second;
+
+			// If all content is air, skip drawing
+			if(cv.getSolidCount() == 0)
+				continue;
+
+			// Examine if intersects or included in viewing frustum
+//			if(!FrustumCheck(xmvc(VoxelEntity::ind2real(key * CELLSIZE).cast<float>()), xmvc(World::ind2real((key + Vec3i(1,1,1)) * CELLSIZE).cast<float>()), frustum))
+//				continue;
+
+			// Cull too far CellVolumes
+			if ((key[0] + 1) * CELLSIZE + maxViewDistance < inf[0])
+				continue;
+			if (inf[0] < key[0] * CELLSIZE - maxViewDistance)
+				continue;
+			if ((key[1] + 1) * CELLSIZE + maxViewDistance < inf[1])
+				continue;
+			if (inf[1] < key[1] * CELLSIZE - maxViewDistance)
+				continue;
+			if ((key[2] + 1) * CELLSIZE + maxViewDistance < inf[2])
+				continue;
+			if (inf[2] < key[2] * CELLSIZE - maxViewDistance)
+				continue;
+
+			for(int ix = 0; ix < CELLSIZE; ix++){
+				for(int iz = 0; iz < CELLSIZE; iz++){
+					// This detail culling is not much effective.
+					//if (bf.Contains(new BoundingBox(ind2real(keyindex + new Vec3i(ix, kv.Value.scanLines[ix, iz, 0], iz)), ind2real(keyindex + new Vec3i(ix + 1, kv.Value.scanLines[ix, iz, 1] + 1, iz + 1)))) != ContainmentType.Disjoint)
+					const int (&scanLines)[CELLSIZE][CELLSIZE][2] = cv.getScanLines();
+					for (int iy = scanLines[ix][iz][0]; iy < scanLines[ix][iz][1]; iy++){
+
+						// Cull too far Cells
+						if (cv(ix, iy, iz).getType() == Cell::Air)
+							continue;
+						if (maxViewDistance < abs(ix + it->first[0] * CELLSIZE - inf[0]))
+							continue;
+						if (maxViewDistance < abs(iy + it->first[1] * CELLSIZE - inf[1]))
+							continue;
+						if (maxViewDistance < abs(iz + it->first[2] * CELLSIZE - inf[2]))
+							continue;
+
+						// If the Cell is buried under ground, it's no use examining each face of the Cell.
+						if(6 <= cv(ix, iy, iz).getAdjacents())
+							continue;
+
+						bool x0 = !cv(ix - 1, iy, iz).isTranslucent();
+						bool x1 = !cv(ix + 1, iy, iz).isTranslucent();
+						bool y0 = !cv(ix, iy - 1, iz).isTranslucent();
+						bool y1 = !cv(ix, iy + 1, iz).isTranslucent();
+						bool z0 = !cv(ix, iy, iz - 1).isTranslucent();
+						bool z1 = !cv(ix, iy, iz + 1).isTranslucent();
+						const Cell &cell = cv(ix, iy, iz);
+//						pdev->SetTexture(0, g_pTextures[cell.getType() & ~Cell::HalfBit]);
+//						pdev->PSSetShaderResources( 0, 1, &g_pTextures[cell.getType() & ~Cell::HalfBit]->TexSv );
+/*						XMMATRIX matWorld = XMMatrixTranslation(
+							it->first[0] * CELLSIZE + (ix - CELLSIZE / 2),
+							it->first[1] * CELLSIZE + (iy - CELLSIZE / 2),
+							it->first[2] * CELLSIZE + (iz - CELLSIZE / 2));*/
+
+						if(cell.getType() == Cell::Water)
+							continue;
+
+/*						if(cell.getType() & Cell::HalfBit){
+							XMMATRIX matscale = XMMatrixScaling(1, 0.5, 1.);
+							XMMATRIX matresult = XMMatrixMultiply(matscale, matWorld);
+
+							cbwt.mWorld = XMMatrixTranspose(matresult);
+							pdev->UpdateSubresource(pConstantBufferWorldTransform, 0, nullptr, &cbwt, 0, 0);
+						}
+						else{
+							cbwt.mWorld = XMMatrixTranspose(matWorld);
+							pdev->UpdateSubresource(pConstantBufferWorldTransform, 0, nullptr, &cbwt, 0, 0);
+						}*/
+
+						auto drawIndexed = [](int cnt, int base){
+							for(int i = base; i < base + cnt; i++){
+								glNormal3dv(vertices[indices[i]].norm);
+								glTexCoord2dv(vertices[indices[i]].tex);
+								glVertex3dv(vertices[indices[i]].pos);
+							}
+						};
+
+						glPushMatrix();
+						glScaled(getCellWidth(), getCellWidth(), getCellWidth());
+						glTranslated(ix + it->first[0] * CELLSIZE, iy + it->first[1] + CELLSIZE, iz + it->first[2] * CELLSIZE);
+
+						glBegin(GL_TRIANGLES);
+						if(!x0 && !x1 && !y0 && !y1){
+//							pdev->DrawIndexed(36, 0, 0);
+							drawIndexed(36, 0);
+						}
+						else{
+							if(!x0)
+								drawIndexed(2 * 3, 8 * 3);
+							if(!x1)
+								drawIndexed(2 * 3, 10 * 3);
+							if(!y0)
+								drawIndexed(2 * 3, 0);
+							if(!y1)
+								drawIndexed(2 * 3, 2 * 3);
+							if(!z0)
+								drawIndexed(2 * 3, 4 * 3);
+							if(!z1)
+								drawIndexed(2 * 3, 6 * 3);
+						}
+						glEnd();
+
+						glPopMatrix();
+					}
+				}
+			}
+		}
+		}
+}
+
+/// <summary>
+/// Convert from real world coords to massvolume index vector
+/// </summary>
+/// <param name="pos">world vector</param>
+/// <returns>indices</returns>
+Vec3i VoxelEntity::real2ind(const Vec3d &pos)const{
+	Vec3d tpos = pos / getCellWidth();
+	Vec3i vi((int)floor(tpos[0]), (int)floor(tpos[1]), (int)floor(tpos[2]));
+	return vi + Vec3i(CELLSIZE, CELLSIZE, CELLSIZE) / 2;
+}
+
+/// <summary>
+/// Convert from massvolume index to real world coords
+/// </summary>
+/// <param name="ipos">indices</param>
+/// <returns>world vector</returns>
+Vec3d VoxelEntity::ind2real(const Vec3i &ipos)const{
+	Vec3i tpos = (ipos - Vec3i(CELLSIZE, CELLSIZE, CELLSIZE) / 2) * getCellWidth();
+	return tpos.cast<double>();
 }

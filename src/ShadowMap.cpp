@@ -121,7 +121,7 @@ void ShaderBind::use()const{
 
 void ShaderBind::enableTextures(bool texture1, bool texture2)const{
 	// Reuse if deactivated
-	if(*g_currentShaderBind != this)
+	if(g_currentShaderBind && *g_currentShaderBind != this)
 		use();
 	glUniform1i(textureEnableLoc, texture1);
 	glUniform1i(texture2EnableLoc, texture2);

@@ -1,5 +1,6 @@
 /// \file
 /// \brief Definition and implementation of VoxelEntity class.
+#define NOMINMAX
 #include "Entity.h"
 #include "EntityRegister.h"
 #ifdef _WIN32
@@ -11,6 +12,7 @@
 #include "Game.h"
 #include "draw/ShadowMap.h"
 #include "draw/ShaderBind.h"
+#include "glstack.h"
 #include "noises/simplexnoise1234d.h"
 #include "SignModulo.h"
 
@@ -165,13 +167,15 @@ public:
 
 //	virtual short getDefaultCollisionMask()const;
 
-	double getHitRadius()const override{return 0.5;}
+	double getHitRadius()const override{return getBaseHeight() + getNoiseHeight() * 2.;}
 
 	typedef std::map<Vec3i, CellVolume, bool(*)(const Vec3i &, const Vec3i &)> VolumeMap;
 
 	Vec3i real2ind(const Vec3d &pos)const;
 	Vec3d ind2real(const Vec3i &ipos)const;
-	double getCellWidth()const{return 0.2;} ///< Length of an edge of a cell, in kilometers
+	double getCellWidth()const{return 0.0025;} ///< Length of an edge of a cell, in kilometers
+	double getBaseHeight()const{return 0.05;}
+	double getNoiseHeight()const{return 0.005;}
 
 private:
 	VolumeMap volume;
@@ -288,6 +292,11 @@ int CellVolume::cellForeignExists = 0;
 /// <param name="ci">The position of new CellVolume</param>
 void CellVolume::initialize(const Vec3i &ci){
 
+	double noiseHeight = world->getNoiseHeight();
+	double baseHeight = world->getBaseHeight();
+	double maxHeight = baseHeight + noiseHeight * 2.; // Theoretical limit height
+	int maxCellCount = int(maxHeight / world->getCellWidth());
+
 	_solidcount = 0;
 	for(int ix = 0; ix < CELLSIZE; ix++){
 		for(int iz = 0; iz < CELLSIZE; iz++){
@@ -300,7 +309,7 @@ void CellVolume::initialize(const Vec3i &ci){
 				double s = 1.;
 				double noiseVal = snoise3d(basepos[0] * s, basepos[1] * s, basepos[2] * s);
 
-				if(noiseVal * 0.2 + 1. < height * 0.5)
+				if(noiseVal * noiseHeight + baseHeight < height)
 					v[ix][iy][iz] = Cell(Cell::Air);
 				else{
 					Cell::Type ct = Cell::Rock;
@@ -379,7 +388,7 @@ struct VERTEX{
 	Vec2d tex;
 };
 
-static const int maxViewDistance = CELLSIZE * 2;
+static const int maxViewDistance = 10.;
 
 void VoxelEntity::anim(double dt){
 }
@@ -388,17 +397,22 @@ void VoxelEntity::draw(WarDraw *wd){
 
 	const Vec3i inf = VoxelEntity::real2ind(wd->vw->pos - this->pos);
 	std::vector<CellVolume*> changed;
-	int radius = maxViewDistance / CELLSIZE;
-	for (int ix = -radius; ix <= radius; ix++) for (int iy = -radius; iy <= radius; iy++) for (int iz = -radius; iz <= radius; iz++){
-		Vec3i ci(
-			SignDiv((inf[0] + ix * CELLSIZE), CELLSIZE),
-			SignDiv((inf[1] + iy * CELLSIZE), CELLSIZE),
-			SignDiv((inf[2] + iz * CELLSIZE), CELLSIZE));
-		if(volume.find(ci) == volume.end()){
-			volume[ci] = CellVolume(this, ci);
-			CellVolume &cv = volume[ci];
-			cv.initialize(ci);
-			changed.push_back(&volume[ci]);
+	double noiseHeight = getNoiseHeight();
+	double baseHeight = getBaseHeight();
+	double maxHeight = baseHeight + noiseHeight * 2.; // Theoretical limit height
+	int maxCellCount = int(maxHeight / getCellWidth() / CELLSIZE) + 1;
+	int radius = maxViewDistance / getCellWidth() / CELLSIZE;
+	for (int ix = -maxCellCount; ix <= maxCellCount; ix++){
+		for (int iy = -maxCellCount; iy <= maxCellCount; iy++){
+			for (int iz = -maxCellCount; iz <= maxCellCount; iz++){
+				Vec3i ci(ix, iy, iz);
+				if(volume.find(ci) == volume.end()){
+					volume[ci] = CellVolume(this, ci);
+					CellVolume &cv = volume[ci];
+					cv.initialize(ci);
+					changed.push_back(&volume[ci]);
+				}
+			}
 		}
 	}
 
@@ -461,11 +475,18 @@ void VoxelEntity::draw(WarDraw *wd){
 	};
 
 	{
+		GLmatrix glm;
+		Mat4d mat;
+		transform(mat);
+		glMultMatrixd(mat);
+
 		if(wd->shadowMap){
 			const ShaderBind *sb = wd->shadowMap->getShader();
 			if(sb)
 				sb->enableTextures(false, false);
 		}
+
+		const double maxViewCells = maxViewDistance / getCellWidth();
 
 		for(VoxelEntity::VolumeMap::iterator it = this->volume.begin(); it != this->volume.end(); it++){
 			const Vec3i &key = it->first;
@@ -480,17 +501,17 @@ void VoxelEntity::draw(WarDraw *wd){
 //				continue;
 
 			// Cull too far CellVolumes
-			if ((key[0] + 1) * CELLSIZE + maxViewDistance < inf[0])
+			if ((key[0] + 1) * CELLSIZE + maxViewCells < inf[0])
 				continue;
-			if (inf[0] < key[0] * CELLSIZE - maxViewDistance)
+			if (inf[0] < key[0] * CELLSIZE - maxViewCells)
 				continue;
-			if ((key[1] + 1) * CELLSIZE + maxViewDistance < inf[1])
+			if ((key[1] + 1) * CELLSIZE + maxViewCells < inf[1])
 				continue;
-			if (inf[1] < key[1] * CELLSIZE - maxViewDistance)
+			if (inf[1] < key[1] * CELLSIZE - maxViewCells)
 				continue;
-			if ((key[2] + 1) * CELLSIZE + maxViewDistance < inf[2])
+			if ((key[2] + 1) * CELLSIZE + maxViewCells < inf[2])
 				continue;
-			if (inf[2] < key[2] * CELLSIZE - maxViewDistance)
+			if (inf[2] < key[2] * CELLSIZE - maxViewCells)
 				continue;
 
 			for(int ix = 0; ix < CELLSIZE; ix++){
@@ -503,11 +524,11 @@ void VoxelEntity::draw(WarDraw *wd){
 						// Cull too far Cells
 						if (cv(ix, iy, iz).getType() == Cell::Air)
 							continue;
-						if (maxViewDistance < abs(ix + it->first[0] * CELLSIZE - inf[0]))
+						if (maxViewCells < abs(ix + it->first[0] * CELLSIZE - inf[0]))
 							continue;
-						if (maxViewDistance < abs(iy + it->first[1] * CELLSIZE - inf[1]))
+						if (maxViewCells < abs(iy + it->first[1] * CELLSIZE - inf[1]))
 							continue;
-						if (maxViewDistance < abs(iz + it->first[2] * CELLSIZE - inf[2]))
+						if (maxViewCells < abs(iz + it->first[2] * CELLSIZE - inf[2]))
 							continue;
 
 						// If the Cell is buried under ground, it's no use examining each face of the Cell.
@@ -593,7 +614,7 @@ void VoxelEntity::draw(WarDraw *wd){
 Vec3i VoxelEntity::real2ind(const Vec3d &pos)const{
 	Vec3d tpos = pos / getCellWidth();
 	Vec3i vi((int)floor(tpos[0]), (int)floor(tpos[1]), (int)floor(tpos[2]));
-	return vi + Vec3i(CELLSIZE, CELLSIZE, CELLSIZE) / 2;
+	return vi;
 }
 
 /// <summary>
@@ -602,6 +623,6 @@ Vec3i VoxelEntity::real2ind(const Vec3d &pos)const{
 /// <param name="ipos">indices</param>
 /// <returns>world vector</returns>
 Vec3d VoxelEntity::ind2real(const Vec3i &ipos)const{
-	Vec3i tpos = (ipos - Vec3i(CELLSIZE, CELLSIZE, CELLSIZE) / 2) * getCellWidth();
+	Vec3i tpos = (ipos) * getCellWidth();
 	return tpos.cast<double>();
 }

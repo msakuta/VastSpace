@@ -10,4 +10,8 @@ if(earthlo){
 
 universe.paused = false;
 
-local voxel = player.cs.addent("VoxelEntity", Vec3d(0, 0, -0.5));
+local e = player.cs.addent("Soldier", Vec3d(-0.05, 0, 0));
+player.chase = e;
+player.select([e]);
+
+local voxel = player.cs.addent("VoxelEntity", Vec3d(0.05, 0, 0));

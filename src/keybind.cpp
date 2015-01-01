@@ -60,6 +60,12 @@ static int name2key(const char *name){
 		return KEYBIND_MOUSE_BASE + GLUT_KEY_PAGE_UP;
 	else if(!strcmp(name, "pagedown"))
 		return KEYBIND_MOUSE_BASE + GLUT_KEY_PAGE_DOWN;
+	else if(!strcmp(name, "home"))
+		return KEYBIND_MOUSE_BASE + GLUT_KEY_HOME;
+	else if(!strcmp(name, "end"))
+		return KEYBIND_MOUSE_BASE + GLUT_KEY_END;
+	else if(!strcmp(name, "insert"))
+		return KEYBIND_MOUSE_BASE + GLUT_KEY_INSERT;
 	else if(!strcmp(name, "lclick"))
 		return KEYBIND_MOUSE_BASE + GLUT_LEFT_BUTTON;
 	else if(!strcmp(name, "rclick"))
@@ -132,6 +138,9 @@ static const char *key2name(int key){
 		case '\003': return "alt";
 		case KEYBIND_MOUSE_BASE + GLUT_KEY_PAGE_UP: return "pageup";
 		case KEYBIND_MOUSE_BASE + GLUT_KEY_PAGE_DOWN: return "pagedown";
+		case KEYBIND_MOUSE_BASE + GLUT_KEY_HOME: return "home";
+		case KEYBIND_MOUSE_BASE + GLUT_KEY_END: return "end";
+		case KEYBIND_MOUSE_BASE + GLUT_KEY_INSERT: return "insert";
 		case KEYBIND_MOUSE_BASE + GLUT_LEFT_BUTTON: return "lclick";
 		case KEYBIND_MOUSE_BASE + GLUT_RIGHT_BUTTON: return "rclick";
 		case KEYBIND_MOUSE_BASE + GLUT_WHEEL_UP: return "wheelup";
@@ -279,6 +288,9 @@ void BindExecSpecial(int key){
 		int i;
 		case GLUT_KEY_PAGE_UP:
 		case GLUT_KEY_PAGE_DOWN:
+		case GLUT_KEY_HOME:
+		case GLUT_KEY_END:
+		case GLUT_KEY_INSERT:
 			for(i = 0; i < nbinds; i++) if(binds[i].key == key + KEYBIND_MOUSE_BASE){
 				CmdExec(binds[i].cmd);
 				return;

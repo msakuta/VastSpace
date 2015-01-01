@@ -39,6 +39,7 @@ public:
 		Iron, ///< Iron ore cell
 		Armor,
 		ArmorSlope,
+		ArmorCorner,
 		NumTypes
 	};
 
@@ -49,7 +50,7 @@ public:
 	int getAdjacents()const{return adjacents;}
 	char getRotation()const{return rotation;}
 	bool isSolid()const{return type != Air;}
-	bool isTranslucent()const{return type == Air || type == ArmorSlope;}
+	bool isTranslucent()const{return type == Air || type == ArmorSlope || type == ArmorCorner;}
 	void serialize(std::ostream &o);
 	void unserialize(std::istream &i);
 
@@ -248,7 +249,7 @@ Entity::EntityRegister<VoxelEntity> VoxelEntity::entityRegister("VoxelEntity");
 bool Cell::connection(const Vec3i &direction)const{
 	if(type == Air)
 		return false; // Air cannot connect to anything
-	if(type != ArmorSlope)
+	if(type != ArmorSlope && type != ArmorCorner)
 		return true;
 	Quatd rot = Quatd::rotation(2. * M_PI / 4. * (rotation & 3), 1, 0, 0)
 		.rotate(2. * M_PI / 4. * ((rotation >> 2) & 3), 0, 1, 0)
@@ -257,7 +258,10 @@ bool Cell::connection(const Vec3i &direction)const{
 	// examinie if a connection to the direction can be kept.
 	Vec3d dirAfterRot = rot.itrans(direction.cast<double>());
 	// Use 0.5 threshold to prevent floating point errors from affecting result
-	return !(0.5 < dirAfterRot[0] || 0.5 < dirAfterRot[1]);
+	if(type == ArmorSlope)
+		return !(0.5 < dirAfterRot[0] || 0.5 < dirAfterRot[1]);
+	else // if(type == ArmorCorner)
+		return !(0.5 < dirAfterRot[0] || 0.5 < dirAfterRot[1] || 0.5 < dirAfterRot[2]);
 }
 
 
@@ -612,6 +616,7 @@ void VoxelEntity::drawtra(WarDraw *wd){
 /// \param posInVolume The position vector in the CellVolume object
 void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv, const Vec3i &posInVolume)const{
 	static const Vec3d slopeNormal = Vec3d(1,1,0).norm();
+	static const Vec3d cornerNormal = Vec3d(1,1,1).norm();
 
 	// Create vertex buffer
 	static const VERTEX vertices[] =
@@ -650,6 +655,10 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		{Vec3d(0, 1, 0), slopeNormal, Vec2d(0, 1)},
 		{Vec3d(0, 1, 1), slopeNormal, Vec2d(1, 1)},
 		{Vec3d(1, 0, 1), slopeNormal, Vec2d(1, 0)},
+
+		{Vec3d(1, 0, 0), cornerNormal, Vec2d(0, 0)},
+		{Vec3d(0, 1, 0), cornerNormal, Vec2d(0, 1)},
+		{Vec3d(0, 0, 1), cornerNormal, Vec2d(1, 1)},
 	};
 
 	static const unsigned indices[] =
@@ -688,6 +697,16 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		26,27,24
 	};
 
+	static const unsigned cornerIndices[] = {
+		0,3,1,
+
+		16,19,17,
+
+		8,11,9,
+
+		28,29,30,
+	};
+
 	static GLuint texlist_rock = CallCacheBitmap("rock.jpg", "textures/rock.jpg", NULL, NULL);
 	static GLuint texlist_iron = CallCacheBitmap("iron.jpg", "textures/iron.jpg", NULL, NULL);
 	static GLuint texlist_armor = CallCacheBitmap("armor.png", "textures/armor.png", NULL, NULL);
@@ -698,7 +717,8 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		case Cell::Rock: glCallList(texlist_rock); break;
 		case Cell::Iron: glCallList(texlist_iron); break;
 		case Cell::Armor:
-		case Cell::ArmorSlope: glCallList(texlist_armor); break;
+		case Cell::ArmorSlope:
+		case Cell::ArmorCorner: glCallList(texlist_armor); break;
 		}
 	}
 
@@ -755,6 +775,9 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 	glBegin(GL_TRIANGLES);
 	if(cell.getType() == Cell::ArmorSlope){
 		drawIndexedSlope(numof(slopeIndices), 0);
+	}
+	else if(cell.getType() == Cell::ArmorCorner){
+		drawIndexedGeneral(numof(cornerIndices), 0, cornerIndices);
 	}
 	else if(!x0 && !x1 && !y0 && !y1){
 		drawIndexed(36, 0);

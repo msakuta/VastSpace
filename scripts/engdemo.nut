@@ -22,6 +22,7 @@ cmd("bind 1 selvoxel 1");
 cmd("bind 2 selvoxel 2");
 cmd("bind 3 selvoxel 3");
 cmd("bind 4 selvoxel 4");
+cmd("bind 5 selvoxel 5");
 cmd("bind pageup rotvoxel 0 1");
 cmd("bind pagedown rotvoxel 0 -1");
 cmd("bind home rotvoxel 1 1");
@@ -52,6 +53,7 @@ register_console_command("selvoxel", function(typestr){
 		case 2: print("Iron ore is selected"); break;
 		case 3: print("Armor is selected"); break;
 		case 4: print("ArmorSlope is selected"); break;
+		case 5: print("ArmorCorner is selected"); break;
 		default: print("Unknown voxel type is given to selvoxel");
 	}
 });

@@ -32,19 +32,17 @@ cmd("bind delete rotvoxel 2 -1");
 local voxelType = 1;
 local voxelRot = [0,0,0];
 
-local function modifyVoxel(put){
-	print("putvoxel invoked");
+local function modifyVoxel(mode){
 	local src = player.getpos();
 	local dir = player.getrot().cnj().trans(Vec3d(0, 0, -1));
 	local rottype = voxelRot[0] | (voxelRot[1] << 2) | (voxelRot[2] << 4);
 	foreachents(player.cs, function(e){
-		print("performing ModifyVoxel on " + e + " where rotation is " + rottype);
-		e.command("ModifyVoxel", src, dir, put, voxelType, rottype);
+		e.command("ModifyVoxel", src, dir, mode, voxelType, rottype);
 	});
 }
 
-register_console_command("putvoxel", @() modifyVoxel(true));
-register_console_command("digvoxel", @() modifyVoxel(false));
+register_console_command("putvoxel", @() modifyVoxel("Put"));
+register_console_command("digvoxel", @() modifyVoxel("Remove"));
 
 register_console_command("selvoxel", function(typestr){
 	local type = typestr.tointeger();
@@ -63,4 +61,8 @@ register_console_command("rotvoxel", function(axisstr, deltastr){
 	local delta = deltastr.tointeger();
 	voxelRot[axis] = (voxelRot[axis] + delta + 4) % 4;
 	print("Rotation is " + voxelRot[axis]);
+});
+
+frameProcs.append(function (dt){
+	modifyVoxel("Preview");
 });

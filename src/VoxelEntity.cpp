@@ -155,7 +155,8 @@ struct EXPORT ModifyVoxelCommand : public SerializableCommand{
 	Vec3d src;
 	Vec3d dir;
 
-	bool put; ///< Whether to put a voxel (false means removing)
+	enum Mode{Remove, Put, Preview};
+	Mode mode; ///< Whether to put a voxel (false means removing)
 	Cell::Type ct; ///< Cell type to place
 	char rotation;
 
@@ -177,7 +178,7 @@ public:
 //	virtual void addRigidBody(WarSpace*);
 	void anim(double dt)override;
 	void draw(WarDraw *)override;
-//	virtual void drawtra(wardraw_t *);
+	void drawtra(WarDraw *)override;
 //	virtual void drawHUD(wardraw_t *);
 //	virtual void control(const input_t *, double);
 //	unsigned analog_mask();
@@ -229,9 +230,13 @@ public:
 	bool isSolid(const Vec3i &v);
 	bool isSolid(const Vec3d &rv);
 
+protected:
+	void drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv = NULL, const Vec3i &posInVolume = Vec3i(0,0,0))const;
 private:
 	VolumeMap volume;
 	int bricks[Cell::NumTypes];
+	Vec3i previewCellPos;
+	Cell previewCell;
 	friend class CellVolume;
 };
 
@@ -490,6 +495,122 @@ void VoxelEntity::draw(WarDraw *wd){
 	for(std::vector<CellVolume*>::iterator it = changed.begin(); it != changed.end(); it++)
 		(*it)->updateCache();
 
+	{
+		GLmatrix glm;
+		GLattrib gla(GL_TEXTURE_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT);
+		Mat4d mat;
+		transform(mat);
+		glMultMatrixd(mat);
+
+		// Set some ambient illumination for showing features in the shadow.
+		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vec4<float>(.25,.25,.25,1.));
+		// Reset specular and shininess parameters to prevent strange shading in GeForce boards with shaders.
+		glMaterialfv(GL_FRONT, GL_SPECULAR, Vec4f(0,0,0,1));
+		glMaterialfv(GL_FRONT, GL_SHININESS, Vec3f(50,0,0));
+
+		const ShaderBind *sb = NULL;
+		if(wd->shadowMap){
+			sb = wd->shadowMap->getShader();
+			if(sb){
+				sb->enableTextures(true, false);
+			}
+		}
+
+		Cell::Type celltype = Cell::Air;
+
+		const double maxViewCells = maxViewDistance / getCellWidth();
+
+		for(VoxelEntity::VolumeMap::iterator it = this->volume.begin(); it != this->volume.end(); it++){
+			const Vec3i &key = it->first;
+			CellVolume &cv = it->second;
+
+			// If all content is air, skip drawing
+			if(cv.getSolidCount() == 0)
+				continue;
+
+			// Examine if intersects or included in viewing frustum
+//			if(!FrustumCheck(xmvc(VoxelEntity::ind2real(key * CELLSIZE).cast<float>()), xmvc(World::ind2real((key + Vec3i(1,1,1)) * CELLSIZE).cast<float>()), frustum))
+//				continue;
+
+			// Cull too far CellVolumes
+			if ((key[0] + 1) * CELLSIZE + maxViewCells < inf[0])
+				continue;
+			if (inf[0] < key[0] * CELLSIZE - maxViewCells)
+				continue;
+			if ((key[1] + 1) * CELLSIZE + maxViewCells < inf[1])
+				continue;
+			if (inf[1] < key[1] * CELLSIZE - maxViewCells)
+				continue;
+			if ((key[2] + 1) * CELLSIZE + maxViewCells < inf[2])
+				continue;
+			if (inf[2] < key[2] * CELLSIZE - maxViewCells)
+				continue;
+
+			for(int ix = 0; ix < CELLSIZE; ix++){
+				for(int iz = 0; iz < CELLSIZE; iz++){
+					// This detail culling is not much effective.
+					//if (bf.Contains(new BoundingBox(ind2real(keyindex + new Vec3i(ix, kv.Value.scanLines[ix, iz, 0], iz)), ind2real(keyindex + new Vec3i(ix + 1, kv.Value.scanLines[ix, iz, 1] + 1, iz + 1)))) != ContainmentType.Disjoint)
+					const int (&scanLines)[CELLSIZE][CELLSIZE][2] = cv.getScanLines();
+					for (int iy = scanLines[ix][iz][0]; iy < scanLines[ix][iz][1]; iy++){
+
+						// Cull too far Cells
+						if (cv(ix, iy, iz).getType() == Cell::Air)
+							continue;
+						if (maxViewCells < abs(ix + it->first[0] * CELLSIZE - inf[0]))
+							continue;
+						if (maxViewCells < abs(iy + it->first[1] * CELLSIZE - inf[1]))
+							continue;
+						if (maxViewCells < abs(iz + it->first[2] * CELLSIZE - inf[2]))
+							continue;
+
+						// If the Cell is buried under ground, it's no use examining each face of the Cell.
+						if(6 <= cv(ix, iy, iz).getAdjacents())
+							continue;
+
+						const Cell &cell = cv(ix, iy, iz);
+						Vec3i posInVolume(ix, iy, iz);
+
+						drawCell(cell, posInVolume + it->first * CELLSIZE, celltype, &cv, posInVolume);
+					}
+				}
+			}
+		}
+	}
+}
+
+void VoxelEntity::drawtra(WarDraw *wd){
+	if(previewCell.getType() != Cell::Air){
+		GLmatrix glm;
+		GLattrib gla(GL_TEXTURE_BIT | GL_CURRENT_BIT);
+		Mat4d mat;
+		transform(mat);
+		glMultMatrixd(mat);
+
+		glColor4f(1,1,1,0.5f);
+
+		glEnable(GL_CULL_FACE);
+
+		const ShaderBind *sb = NULL;
+		if(wd->shadowMap){
+			sb = wd->shadowMap->getShader();
+			if(sb){
+				sb->enableTextures(true, false);
+			}
+		}
+
+		Cell::Type celltype = Cell::Air;
+
+		drawCell(previewCell, previewCellPos, celltype);
+	}
+}
+
+/// \brief An internal function to draw a single cell in VoxelEntity
+/// \param cell A cell to draw
+/// \param pos Position vector (integral) in voxel space
+/// \param celltype A rendering state variable to minimize number of texture switching
+/// \param cv A CellVolume object for adjacent cell checking
+/// \param posInVolume The position vector in the CellVolume object
+void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv, const Vec3i &posInVolume)const{
 	static const Vec3d slopeNormal = Vec3d(1,1,0).norm();
 
 	// Create vertex buffer
@@ -567,172 +688,108 @@ void VoxelEntity::draw(WarDraw *wd){
 		26,27,24
 	};
 
-	{
-		GLmatrix glm;
-		GLattrib gla(GL_TEXTURE_BIT | GL_CURRENT_BIT);
-		Mat4d mat;
-		transform(mat);
-		glMultMatrixd(mat);
+	static GLuint texlist_rock = CallCacheBitmap("rock.jpg", "textures/rock.jpg", NULL, NULL);
+	static GLuint texlist_iron = CallCacheBitmap("iron.jpg", "textures/iron.jpg", NULL, NULL);
+	static GLuint texlist_armor = CallCacheBitmap("armor.png", "textures/armor.png", NULL, NULL);
 
-		// Set some ambient illumination for showing features in the shadow.
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vec4<float>(.25,.25,.25,1.));
-		// Reset specular and shininess parameters to prevent strange shading in GeForce boards with shaders.
-		glMaterialfv(GL_FRONT, GL_SPECULAR, Vec4f(0,0,0,1));
-		glMaterialfv(GL_FRONT, GL_SHININESS, Vec3f(50,0,0));
-
-		static GLuint texlist_rock = CallCacheBitmap("rock.jpg", "textures/rock.jpg", NULL, NULL);
-		static GLuint texlist_iron = CallCacheBitmap("iron.jpg", "textures/iron.jpg", NULL, NULL);
-		static GLuint texlist_armor = CallCacheBitmap("armor.png", "textures/armor.png", NULL, NULL);
-
-		const ShaderBind *sb = NULL;
-		if(wd->shadowMap){
-			sb = wd->shadowMap->getShader();
-			if(sb){
-				sb->enableTextures(true, false);
-				glCallList(texlist_rock);
-			}
+	if(celltype != cell.getType()){
+		celltype = cell.getType();
+		switch(celltype){
+		case Cell::Rock: glCallList(texlist_rock); break;
+		case Cell::Iron: glCallList(texlist_iron); break;
+		case Cell::Armor:
+		case Cell::ArmorSlope: glCallList(texlist_armor); break;
 		}
+	}
 
-		Cell::Type celltype = Cell::Rock;
-
-		const double maxViewCells = maxViewDistance / getCellWidth();
-
-		for(VoxelEntity::VolumeMap::iterator it = this->volume.begin(); it != this->volume.end(); it++){
-			const Vec3i &key = it->first;
-			CellVolume &cv = it->second;
-
-			// If all content is air, skip drawing
-			if(cv.getSolidCount() == 0)
-				continue;
-
-			// Examine if intersects or included in viewing frustum
-//			if(!FrustumCheck(xmvc(VoxelEntity::ind2real(key * CELLSIZE).cast<float>()), xmvc(World::ind2real((key + Vec3i(1,1,1)) * CELLSIZE).cast<float>()), frustum))
-//				continue;
-
-			// Cull too far CellVolumes
-			if ((key[0] + 1) * CELLSIZE + maxViewCells < inf[0])
-				continue;
-			if (inf[0] < key[0] * CELLSIZE - maxViewCells)
-				continue;
-			if ((key[1] + 1) * CELLSIZE + maxViewCells < inf[1])
-				continue;
-			if (inf[1] < key[1] * CELLSIZE - maxViewCells)
-				continue;
-			if ((key[2] + 1) * CELLSIZE + maxViewCells < inf[2])
-				continue;
-			if (inf[2] < key[2] * CELLSIZE - maxViewCells)
-				continue;
-
-			for(int ix = 0; ix < CELLSIZE; ix++){
-				for(int iz = 0; iz < CELLSIZE; iz++){
-					// This detail culling is not much effective.
-					//if (bf.Contains(new BoundingBox(ind2real(keyindex + new Vec3i(ix, kv.Value.scanLines[ix, iz, 0], iz)), ind2real(keyindex + new Vec3i(ix + 1, kv.Value.scanLines[ix, iz, 1] + 1, iz + 1)))) != ContainmentType.Disjoint)
-					const int (&scanLines)[CELLSIZE][CELLSIZE][2] = cv.getScanLines();
-					for (int iy = scanLines[ix][iz][0]; iy < scanLines[ix][iz][1]; iy++){
-
-						// Cull too far Cells
-						if (cv(ix, iy, iz).getType() == Cell::Air)
-							continue;
-						if (maxViewCells < abs(ix + it->first[0] * CELLSIZE - inf[0]))
-							continue;
-						if (maxViewCells < abs(iy + it->first[1] * CELLSIZE - inf[1]))
-							continue;
-						if (maxViewCells < abs(iz + it->first[2] * CELLSIZE - inf[2]))
-							continue;
-
-						// If the Cell is buried under ground, it's no use examining each face of the Cell.
-						if(6 <= cv(ix, iy, iz).getAdjacents())
-							continue;
-
-						bool x0 = !cv(ix - 1, iy, iz).isTranslucent();
-						bool x1 = !cv(ix + 1, iy, iz).isTranslucent();
-						bool y0 = !cv(ix, iy - 1, iz).isTranslucent();
-						bool y1 = !cv(ix, iy + 1, iz).isTranslucent();
-						bool z0 = !cv(ix, iy, iz - 1).isTranslucent();
-						bool z1 = !cv(ix, iy, iz + 1).isTranslucent();
-						const Cell &cell = cv(ix, iy, iz);
-
-						if(celltype != cell.getType()){
-							celltype = cell.getType();
-							switch(celltype){
-							case Cell::Rock: glCallList(texlist_rock); break;
-							case Cell::Iron: glCallList(texlist_iron); break;
-							case Cell::Armor:
-							case Cell::ArmorSlope: glCallList(texlist_armor); break;
-							}
-						}
-
-						static auto drawIndexedGeneral = [](int cnt, int base, const unsigned indices[]){
-							for(int i = base; i < base + cnt; i++){
-								glNormal3dv(vertices[indices[i]].norm);
-								glTexCoord2dv(vertices[indices[i]].tex);
-								glVertex3dv(vertices[indices[i]].pos);
-							}
-						};
-
-						static auto drawIndexed = [](int cnt, int base){
-							drawIndexedGeneral(cnt, base, indices);
-						};
-
-						static auto drawIndexedSlope = [](int cnt, int base){
-							drawIndexedGeneral(cnt, base, slopeIndices);
-						};
-
-						glPushMatrix();
-						glScaled(getCellWidth(), getCellWidth(), getCellWidth());
-						Vec3d ofs(ix + it->first[0] * CELLSIZE, iy + it->first[1] * CELLSIZE, iz + it->first[2] * CELLSIZE);
-						glTranslated(ofs[0], ofs[1], ofs[2]);
-
-						if(cell.getRotation()){
-							glTranslated(0.5, 0.5, 0.5);
-							if(char c = (cell.getRotation() & 0x3))
-								glRotatef(90 * c, 1, 0, 0);
-							if(char c = ((cell.getRotation() >> 2) & 0x3))
-								glRotatef(90 * c, 0, 1, 0);
-							if(char c = ((cell.getRotation() >> 4) & 0x3))
-								glRotatef(90 * c, 0, 0, 1);
-							glTranslated(-0.5, -0.5, -0.5);
-						}
-
-						glBegin(GL_TRIANGLES);
-						if(cell.getType() == Cell::ArmorSlope){
-							drawIndexedSlope(numof(slopeIndices), 0);
-						}
-						else if(!x0 && !x1 && !y0 && !y1){
-//							pdev->DrawIndexed(36, 0, 0);
-							drawIndexed(36, 0);
-						}
-						else{
-							if(!x0)
-								drawIndexed(2 * 3, 8 * 3);
-							if(!x1)
-								drawIndexed(2 * 3, 10 * 3);
-							if(!y0)
-								drawIndexed(2 * 3, 0);
-							if(!y1)
-								drawIndexed(2 * 3, 2 * 3);
-							if(!z0)
-								drawIndexed(2 * 3, 4 * 3);
-							if(!z1)
-								drawIndexed(2 * 3, 6 * 3);
-						}
-						glEnd();
-
-						glPopMatrix();
-					}
-				}
-			}
+	static auto drawIndexedGeneral = [](int cnt, int base, const unsigned indices[]){
+		for(int i = base; i < base + cnt; i++){
+			glNormal3dv(vertices[indices[i]].norm);
+			glTexCoord2dv(vertices[indices[i]].tex);
+			glVertex3dv(vertices[indices[i]].pos);
 		}
-		}
+	};
+
+	static auto drawIndexed = [](int cnt, int base){
+		drawIndexedGeneral(cnt, base, indices);
+	};
+
+	static auto drawIndexedSlope = [](int cnt, int base){
+		drawIndexedGeneral(cnt, base, slopeIndices);
+	};
+
+	glPushMatrix();
+	glScaled(getCellWidth(), getCellWidth(), getCellWidth());
+	Vec3d ofs(pos.cast<double>());
+	glTranslated(ofs[0], ofs[1], ofs[2]);
+
+	if(cell.getRotation()){
+		glTranslated(0.5, 0.5, 0.5);
+		if(char c = (cell.getRotation() & 0x3))
+			glRotatef(90 * c, 1, 0, 0);
+		if(char c = ((cell.getRotation() >> 2) & 0x3))
+			glRotatef(90 * c, 0, 1, 0);
+		if(char c = ((cell.getRotation() >> 4) & 0x3))
+			glRotatef(90 * c, 0, 0, 1);
+		glTranslated(-0.5, -0.5, -0.5);
+	}
+
+	bool x0 = false;
+	bool x1 = false;
+	bool y0 = false;
+	bool y1 = false;
+	bool z0 = false;
+	bool z1 = false;
+	if(cv){
+		int ix = posInVolume[0];
+		int iy = posInVolume[1];
+		int iz = posInVolume[2];
+		x0 = !(*cv)(ix - 1, iy, iz).isTranslucent();
+		x1 = !(*cv)(ix + 1, iy, iz).isTranslucent();
+		y0 = !(*cv)(ix, iy - 1, iz).isTranslucent();
+		y1 = !(*cv)(ix, iy + 1, iz).isTranslucent();
+		z0 = !(*cv)(ix, iy, iz - 1).isTranslucent();
+		z1 = !(*cv)(ix, iy, iz + 1).isTranslucent();
+	}
+
+	glBegin(GL_TRIANGLES);
+	if(cell.getType() == Cell::ArmorSlope){
+		drawIndexedSlope(numof(slopeIndices), 0);
+	}
+	else if(!x0 && !x1 && !y0 && !y1){
+		drawIndexed(36, 0);
+	}
+	else{
+		if(!x0)
+			drawIndexed(2 * 3, 8 * 3);
+		if(!x1)
+			drawIndexed(2 * 3, 10 * 3);
+		if(!y0)
+			drawIndexed(2 * 3, 0);
+		if(!y1)
+			drawIndexed(2 * 3, 2 * 3);
+		if(!z0)
+			drawIndexed(2 * 3, 4 * 3);
+		if(!z1)
+			drawIndexed(2 * 3, 6 * 3);
+	}
+	glEnd();
+
+	glPopMatrix();
 }
-
 
 bool VoxelEntity::command(EntityCommand *com){
 	if(ModifyVoxelCommand *mvc = InterpretCommand<ModifyVoxelCommand>(com)){
 		static const double boundHeight = 0.001;
 		Vec3d src = mvc->src - this->pos;
 		Vec3d dir = rot.itrans(mvc->dir);
-		if(mvc->put){
+		if(mvc->mode == mvc->Put || mvc->mode == mvc->Preview){
+
+			if(mvc->mode == mvc->Preview){
+				// Reset preview cell before proceeding
+				previewCell = Cell::Air;
+			}
+
 			for (int i = 1; i < 8; i++){
 				Vec3i ci = real2ind(src + dir * i * getCellWidth() / 2);
 
@@ -781,14 +838,20 @@ bool VoxelEntity::command(EntityCommand *com){
 				if(!supported)
 					continue;
 
-				if(setCell(ci[0], ci[1], ci[2], Cell(mvc->ct, mvc->rotation)))
-				{
-//					player->addBricks(curtype, -1);
-					break;
+				if(mvc->mode == mvc->Put){
+					if(setCell(ci[0], ci[1], ci[2], Cell(mvc->ct, mvc->rotation)))
+					{
+	//					player->addBricks(curtype, -1);
+						break;
+					}
+				}
+				else{ // Preview
+					previewCellPos = ci;
+					previewCell = Cell(mvc->ct, mvc->rotation);
 				}
 			}
 		}
-		else{
+		else if(mvc->mode == mvc->Remove){
 			// Dig the cell forward
 			for(int i = 1; i < 8; i++){
 				Vec3i ci = real2ind(src + dir * i * getCellWidth() / 2);
@@ -857,14 +920,14 @@ IMPLEMENT_COMMAND(ModifyVoxelCommand, "ModifyVoxel")
 void ModifyVoxelCommand::serialize(SerializeContext &sc){
 	sc.o << src;
 	sc.o << dir;
-	sc.o << put;
+	sc.o << mode;
 	sc.o << int(ct);
 }
 
 void ModifyVoxelCommand::unserialize(UnserializeContext &sc){
 	sc.i >> src;
 	sc.i >> dir;
-	sc.i >> put;
+	sc.i >> (int&)mode;
 	sc.i >> (int&)ct;
 }
 
@@ -879,10 +942,15 @@ ModifyVoxelCommand::ModifyVoxelCommand(HSQUIRRELVM v, Entity &){
 	qvdir.getValue(v, 4);
 	dir = qvdir.value;
 
-	SQBool sqb;
-	if(SQ_FAILED(sq_getbool(v, 5, &sqb)))
-		throw SQFError(_SC("4th argument must be bool"));
-	put = sqb;
+	const SQChar *sqstr;
+	if(SQ_FAILED(sq_getstring(v, 5, &sqstr)))
+		throw SQFError(_SC("4th argument must be string"));
+	if(!scstrcmp(sqstr, _SC("Put")))
+		mode = Put;
+	else if(!scstrcmp(sqstr, _SC("Remove")))
+		mode = Remove;
+	else if(!scstrcmp(sqstr, _SC("Preview")))
+		mode = Preview;
 
 	ct = Cell::Rock;
 	SQInteger sqct;

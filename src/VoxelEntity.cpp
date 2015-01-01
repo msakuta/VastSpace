@@ -34,22 +34,24 @@ public:
 		Rock, ///< Rock cell
 		Iron, ///< Iron ore cell
 		Armor,
+		ArmorSlope,
 		NumTypes
 	};
 
-	Cell(Type t = Air) : type(t), adjacents(0){}
+	Cell(Type t = Air) : type(t), adjacents(0), rotation(0){}
 	Type getType()const{return type;}
 	short getValue()const{return value;}
 	void setValue(short avalue){value = avalue;}
 	int getAdjacents()const{return adjacents;}
 	bool isSolid()const{return type != Air;}
-	bool isTranslucent()const{return type == Air;}
+	bool isTranslucent()const{return type == Air || type == ArmorSlope;}
 	void serialize(std::ostream &o);
 	void unserialize(std::istream &i);
 protected:
 	enum Type type;
 	short value;
 	char adjacents;
+	char rotation;
 
 	friend class CellVolume;
 };
@@ -458,6 +460,8 @@ void VoxelEntity::draw(WarDraw *wd){
 	for(std::vector<CellVolume*>::iterator it = changed.begin(); it != changed.end(); it++)
 		(*it)->updateCache();
 
+	static const Vec3d slopeNormal = Vec3d(1,1,0).norm();
+
 	// Create vertex buffer
 	static const VERTEX vertices[] =
 	{
@@ -490,6 +494,11 @@ void VoxelEntity::draw(WarDraw *wd){
 		{Vec3d(1, 0, 1), Vec3d(1, 0, 0), Vec2d(0, 1)},
 		{Vec3d(1, 1, 1), Vec3d(1, 0, 0), Vec2d(1, 1)},
 		{Vec3d(1, 1, 0), Vec3d(1, 0, 0), Vec2d(1, 0)},
+
+		{Vec3d(1, 0, 0), slopeNormal, Vec2d(0, 0)},
+		{Vec3d(0, 1, 0), slopeNormal, Vec2d(0, 1)},
+		{Vec3d(0, 1, 1), slopeNormal, Vec2d(1, 1)},
+		{Vec3d(1, 0, 1), slopeNormal, Vec2d(1, 0)},
 	};
 
 	static const unsigned indices[] =
@@ -513,11 +522,33 @@ void VoxelEntity::draw(WarDraw *wd){
 		20,23,22
 	};
 
+	static const unsigned slopeIndices[] = {
+		2,1,0,
+		0,3,2,
+
+		18,17,16,
+		16,19,18,
+
+		11,9,8,
+
+		15,13,12,
+
+		24,25,26,
+		26,27,24
+	};
+
 	{
 		GLmatrix glm;
+		GLattrib gla(GL_TEXTURE_BIT | GL_CURRENT_BIT);
 		Mat4d mat;
 		transform(mat);
 		glMultMatrixd(mat);
+
+		// Set some ambient illumination for showing features in the shadow.
+		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vec4<float>(.25,.25,.25,1.));
+		// Reset specular and shininess parameters to prevent strange shading in GeForce boards with shaders.
+		glMaterialfv(GL_FRONT, GL_SPECULAR, Vec4f(0,0,0,1));
+		glMaterialfv(GL_FRONT, GL_SHININESS, Vec3f(50,0,0));
 
 		static GLuint texlist_rock = CallCacheBitmap("rock.jpg", "textures/rock.jpg", NULL, NULL);
 		static GLuint texlist_iron = CallCacheBitmap("iron.jpg", "textures/iron.jpg", NULL, NULL);
@@ -596,16 +627,25 @@ void VoxelEntity::draw(WarDraw *wd){
 							switch(celltype){
 							case Cell::Rock: glCallList(texlist_rock); break;
 							case Cell::Iron: glCallList(texlist_iron); break;
-							case Cell::Armor: glCallList(texlist_armor); break;
+							case Cell::Armor:
+							case Cell::ArmorSlope: glCallList(texlist_armor); break;
 							}
 						}
 
-						auto drawIndexed = [](int cnt, int base){
+						static auto drawIndexedGeneral = [](int cnt, int base, const unsigned indices[]){
 							for(int i = base; i < base + cnt; i++){
 								glNormal3dv(vertices[indices[i]].norm);
 								glTexCoord2dv(vertices[indices[i]].tex);
 								glVertex3dv(vertices[indices[i]].pos);
 							}
+						};
+
+						static auto drawIndexed = [](int cnt, int base){
+							drawIndexedGeneral(cnt, base, indices);
+						};
+
+						static auto drawIndexedSlope = [](int cnt, int base){
+							drawIndexedGeneral(cnt, base, slopeIndices);
 						};
 
 						glPushMatrix();
@@ -614,7 +654,10 @@ void VoxelEntity::draw(WarDraw *wd){
 						glTranslated(ofs[0], ofs[1], ofs[2]);
 
 						glBegin(GL_TRIANGLES);
-						if(!x0 && !x1 && !y0 && !y1){
+						if(cell.getType() == Cell::ArmorSlope){
+							drawIndexedSlope(numof(slopeIndices), 0);
+						}
+						else if(!x0 && !x1 && !y0 && !y1){
 //							pdev->DrawIndexed(36, 0, 0);
 							drawIndexed(36, 0);
 						}

@@ -10,7 +10,7 @@ if(earthlo){
 
 universe.paused = false;
 
-local e = player.cs.addent("Soldier", Vec3d(-0.05, 0, 0));
+local e = player.cs.addent("Soldier", Vec3d(-0.01, 0, 0));
 player.chase = e;
 player.select([e]);
 
@@ -21,6 +21,7 @@ cmd("bind h digvoxel");
 cmd("bind 1 selvoxel 1");
 cmd("bind 2 selvoxel 2");
 cmd("bind 3 selvoxel 3");
+cmd("bind 4 selvoxel 4");
 
 local voxelType = 1;
 
@@ -44,6 +45,7 @@ register_console_command("selvoxel", function(typestr){
 		case 1: print("Rock is selected"); break;
 		case 2: print("Iron ore is selected"); break;
 		case 3: print("Armor is selected"); break;
+		case 4: print("ArmorSlope is selected"); break;
 		default: print("Unknown voxel type is given to selvoxel");
 	}
 });

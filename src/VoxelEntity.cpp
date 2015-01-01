@@ -31,35 +31,24 @@ class Cell{
 public:
 	enum Type{
 		Air, ///< Null cell
-		Grass, ///< Grass cell
-		Dirt, ///< Dirt cell
-		Gravel, ///< Gravel cell
 		Rock, ///< Rock cell
-		Water, ///< Water cell
-		HalfBit = 0x8, ///< Bit indicating half height of base material.
-		HalfAir = HalfBit | Air, ///< This does not really exist, just a theoretical entity.
-		HalfGrass = HalfBit | Grass, ///< Half-height Grass.
-		HalfDirt = HalfBit | Dirt,
-		HalfGravel = HalfBit | Gravel,
-		HalfRock = HalfBit | Rock,
+		Iron, ///< Iron ore cell
 		NumTypes
 	};
 
-	Cell(Type t = Air) : type(t), adjacents(0), adjacentWater(0){}
+	Cell(Type t = Air) : type(t), adjacents(0){}
 	Type getType()const{return type;}
 	short getValue()const{return value;}
 	void setValue(short avalue){value = avalue;}
 	int getAdjacents()const{return adjacents;}
-	int getAdjacentWaterCells()const{return adjacentWater;}
-	bool isSolid()const{return type != Air && type != Water;}
-	bool isTranslucent()const{return type == Air || type == Water || type & HalfBit;}
+	bool isSolid()const{return type != Air;}
+	bool isTranslucent()const{return type == Air;}
 	void serialize(std::ostream &o);
 	void unserialize(std::istream &i);
 protected:
 	enum Type type;
 	short value;
 	char adjacents;
-	char adjacentWater;
 
 	friend class CellVolume;
 };
@@ -197,7 +186,7 @@ public:
 	Vec3d ind2real(const Vec3i &ipos)const;
 	double getCellWidth()const{return 0.0025;} ///< Length of an edge of a cell, in kilometers
 	double getBaseHeight()const{return 0.05;}
-	double getNoiseHeight()const{return 0.005;}
+	double getNoiseHeight()const{return 0.015;}
 
 	const Cell &cell(int ix, int iy, int iz){
 		Vec3i ci = Vec3i(SignDiv(ix, CELLSIZE), SignDiv(iy, CELLSIZE), SignDiv(iz, CELLSIZE));
@@ -335,6 +324,20 @@ int CellVolume::cellInvokes = 0;
 int CellVolume::cellForeignInvokes = 0;
 int CellVolume::cellForeignExists = 0;
 
+/// Simplex Fractal Noise in 3D
+static double sfnoise3(const Vec3d &basepos, int octaves, double persistence){
+	assert(0 < octaves);
+	double ret = 0.;
+	double f = 1.;
+	double fsum = 0.;
+	for(int i = 0; i < octaves; i++){
+		double s = (1 << i);
+		f *= persistence;
+		ret += f * snoise3d(basepos[0] * s, basepos[1] * s, basepos[2] * s);
+		fsum += f;
+	}
+	return ret / fsum;
+}
 
 /// <summary>
 /// Initialize this CellVolume with Perlin Noise with given position index.
@@ -357,12 +360,12 @@ void CellVolume::initialize(const Vec3i &ci){
 				double height = pos.len();
 				Vec3d basepos = height ? pos / height : pos;
 				double s = 1.;
-				double noiseVal = snoise3d(basepos[0] * s, basepos[1] * s, basepos[2] * s);
+				double noiseVal = sfnoise3(basepos * s, 3, 0.5);
 
 				if(noiseVal * noiseHeight + baseHeight < height)
 					v[ix][iy][iz] = Cell(Cell::Air);
 				else{
-					Cell::Type ct = Cell::Rock;
+					Cell::Type ct = sfnoise3(pos / world->getCellWidth() / CELLSIZE, 3, 0.5) < 0.25 ? Cell::Rock : Cell::Iron;
 					world->bricks[ct]++;
 					v[ix][iy][iz] = Cell(ct);
 					_solidcount++;
@@ -384,13 +387,6 @@ void CellVolume::updateAdj(int ix, int iy, int iz){
         (!cell(ix, iy + 1, iz).isTranslucent() ? 1 : 0) +
         (!cell(ix, iy, iz - 1).isTranslucent() ? 1 : 0) +
         (!cell(ix, iy, iz + 1).isTranslucent() ? 1 : 0);
-	v[ix][iy][iz].adjacentWater =
-		(cell(ix - 1, iy, iz).getType() == Cell::Water ? 1 : 0) +
-        (cell(ix + 1, iy, iz).getType() == Cell::Water ? 1 : 0) +
-        (cell(ix, iy - 1, iz).getType() == Cell::Water ? 1 : 0) +
-        (cell(ix, iy + 1, iz).getType() == Cell::Water ? 1 : 0) +
-        (cell(ix, iy, iz - 1).getType() == Cell::Water ? 1 : 0) +
-        (cell(ix, iy, iz + 1).getType() == Cell::Water ? 1 : 0);
 }
 
 void CellVolume::updateCache()
@@ -415,14 +411,6 @@ void CellVolume::updateCache()
 					_scanLines[ix][iz][0] = iy;
 				}
 				_scanLines[ix][iz][1] = iy + 1;
-			}
-
-			if(c.type == Cell::Water && c.adjacents != 6 && c.adjacentWater != 6 && c.adjacents + c.adjacentWater != 6){
-				if(!transBegun){
-					transBegun = true;
-					tranScanLines[ix][iz][0] = iy;
-				}
-				tranScanLines[ix][iz][1] = iy + 1;
 			}
 		}
 	}
@@ -530,14 +518,19 @@ void VoxelEntity::draw(WarDraw *wd){
 		transform(mat);
 		glMultMatrixd(mat);
 
+		static GLuint texlist_rock = CallCacheBitmap("rock.jpg", "textures/rock.jpg", NULL, NULL);
+		static GLuint texlist_iron = CallCacheBitmap("iron.jpg", "textures/iron.jpg", NULL, NULL);
+
+		const ShaderBind *sb = NULL;
 		if(wd->shadowMap){
-			const ShaderBind *sb = wd->shadowMap->getShader();
+			sb = wd->shadowMap->getShader();
 			if(sb){
 				sb->enableTextures(true, false);
-				static GLuint texlist = CallCacheBitmap("rock.jpg", "textures/rock.jpg", NULL, NULL);
-				glCallList(texlist);
+				glCallList(texlist_rock);
 			}
 		}
+
+		Cell::Type celltype = Cell::Rock;
 
 		const double maxViewCells = maxViewDistance / getCellWidth();
 
@@ -595,27 +588,14 @@ void VoxelEntity::draw(WarDraw *wd){
 						bool z0 = !cv(ix, iy, iz - 1).isTranslucent();
 						bool z1 = !cv(ix, iy, iz + 1).isTranslucent();
 						const Cell &cell = cv(ix, iy, iz);
-//						pdev->SetTexture(0, g_pTextures[cell.getType() & ~Cell::HalfBit]);
-//						pdev->PSSetShaderResources( 0, 1, &g_pTextures[cell.getType() & ~Cell::HalfBit]->TexSv );
-/*						XMMATRIX matWorld = XMMatrixTranslation(
-							it->first[0] * CELLSIZE + (ix - CELLSIZE / 2),
-							it->first[1] * CELLSIZE + (iy - CELLSIZE / 2),
-							it->first[2] * CELLSIZE + (iz - CELLSIZE / 2));*/
 
-						if(cell.getType() == Cell::Water)
-							continue;
-
-/*						if(cell.getType() & Cell::HalfBit){
-							XMMATRIX matscale = XMMatrixScaling(1, 0.5, 1.);
-							XMMATRIX matresult = XMMatrixMultiply(matscale, matWorld);
-
-							cbwt.mWorld = XMMatrixTranspose(matresult);
-							pdev->UpdateSubresource(pConstantBufferWorldTransform, 0, nullptr, &cbwt, 0, 0);
+						if(celltype != cell.getType()){
+							celltype = cell.getType();
+							switch(celltype){
+							case Cell::Rock: glCallList(texlist_rock); break;
+							case Cell::Iron: glCallList(texlist_iron); break;
+							}
 						}
-						else{
-							cbwt.mWorld = XMMatrixTranspose(matWorld);
-							pdev->UpdateSubresource(pConstantBufferWorldTransform, 0, nullptr, &cbwt, 0, 0);
-						}*/
 
 						auto drawIndexed = [](int cnt, int base){
 							for(int i = base; i < base + cnt; i++){
@@ -775,7 +755,7 @@ bool VoxelEntity::isSolid(const Vec3d &rv){
 	if(volume.find(ci) != volume.end()){
 		CellVolume &cv = volume[ci];
 		const Cell &c = cv(SignModulo(v[0], CELLSIZE), SignModulo(v[1], CELLSIZE), SignModulo(v[2], CELLSIZE));
-		return c.getType() & Cell::HalfBit ? rv[1] - floor(rv[1]) < .5 : c.isSolid();
+		return c.isSolid();
 	}
 	else
 		return false;

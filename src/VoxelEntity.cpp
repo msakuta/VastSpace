@@ -38,11 +38,12 @@ public:
 		NumTypes
 	};
 
-	Cell(Type t = Air) : type(t), adjacents(0), rotation(0){}
+	Cell(Type t = Air, char arotation = 0) : type(t), adjacents(0), rotation(arotation){}
 	Type getType()const{return type;}
 	short getValue()const{return value;}
 	void setValue(short avalue){value = avalue;}
 	int getAdjacents()const{return adjacents;}
+	char getRotation()const{return rotation;}
 	bool isSolid()const{return type != Air;}
 	bool isTranslucent()const{return type == Air || type == ArmorSlope;}
 	void serialize(std::ostream &o);
@@ -148,6 +149,7 @@ struct EXPORT ModifyVoxelCommand : public SerializableCommand{
 
 	bool put; ///< Whether to put a voxel (false means removing)
 	Cell::Type ct; ///< Cell type to place
+	char rotation;
 
 	virtual void serialize(SerializeContext &);
 	virtual void unserialize(UnserializeContext &);
@@ -653,6 +655,17 @@ void VoxelEntity::draw(WarDraw *wd){
 						Vec3d ofs(ix + it->first[0] * CELLSIZE, iy + it->first[1] * CELLSIZE, iz + it->first[2] * CELLSIZE);
 						glTranslated(ofs[0], ofs[1], ofs[2]);
 
+						if(cell.getRotation()){
+							glTranslated(0.5, 0.5, 0.5);
+							if(char c = (cell.getRotation() & 0x3))
+								glRotatef(90 * c, 1, 0, 0);
+							if(char c = ((cell.getRotation() >> 2) & 0x3))
+								glRotatef(90 * c, 0, 1, 0);
+							if(char c = ((cell.getRotation() >> 4) & 0x3))
+								glRotatef(90 * c, 0, 0, 1);
+							glTranslated(-0.5, -0.5, -0.5);
+						}
+
 						glBegin(GL_TRIANGLES);
 						if(cell.getType() == Cell::ArmorSlope){
 							drawIndexedSlope(numof(slopeIndices), 0);
@@ -736,7 +749,7 @@ bool VoxelEntity::command(EntityCommand *com){
 				if(!supported)
 					continue;
 
-				if(setCell(ci[0], ci[1], ci[2], mvc->ct))
+				if(setCell(ci[0], ci[1], ci[2], Cell(mvc->ct, mvc->rotation)))
 				{
 //					player->addBricks(curtype, -1);
 					break;
@@ -843,4 +856,9 @@ ModifyVoxelCommand::ModifyVoxelCommand(HSQUIRRELVM v, Entity &){
 	SQInteger sqct;
 	if(SQ_SUCCEEDED(sq_getinteger(v, 6, &sqct)))
 		ct = Cell::Type(sqct);
+
+	rotation = 0;
+	SQInteger sqrotation;
+	if(SQ_SUCCEEDED(sq_getinteger(v, 7, &sqrotation)))
+		rotation = sqrotation;
 }

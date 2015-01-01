@@ -22,16 +22,24 @@ cmd("bind 1 selvoxel 1");
 cmd("bind 2 selvoxel 2");
 cmd("bind 3 selvoxel 3");
 cmd("bind 4 selvoxel 4");
+cmd("bind pageup rotvoxel 0 1");
+cmd("bind pagedown rotvoxel 0 -1");
+cmd("bind home rotvoxel 1 1");
+cmd("bind end rotvoxel 1 -1");
+cmd("bind insert rotvoxel 2 1");
+cmd("bind delete rotvoxel 2 -1");
 
 local voxelType = 1;
+local voxelRot = [0,0,0];
 
 local function modifyVoxel(put){
 	print("putvoxel invoked");
 	local src = player.getpos();
 	local dir = player.getrot().cnj().trans(Vec3d(0, 0, -1));
+	local rottype = voxelRot[0] | (voxelRot[1] << 2) | (voxelRot[2] << 4);
 	foreachents(player.cs, function(e){
-		print("performing ModifyVoxel on " + e);
-		e.command("ModifyVoxel", src, dir, put, voxelType);
+		print("performing ModifyVoxel on " + e + " where rotation is " + rottype);
+		e.command("ModifyVoxel", src, dir, put, voxelType, rottype);
 	});
 }
 
@@ -48,4 +56,11 @@ register_console_command("selvoxel", function(typestr){
 		case 4: print("ArmorSlope is selected"); break;
 		default: print("Unknown voxel type is given to selvoxel");
 	}
+});
+
+register_console_command("rotvoxel", function(axisstr, deltastr){
+	local axis = axisstr.tointeger();
+	local delta = deltastr.tointeger();
+	voxelRot[axis] = (voxelRot[axis] + delta + 4) % 4;
+	print("Rotation is " + voxelRot[axis]);
 });

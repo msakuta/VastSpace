@@ -18,6 +18,11 @@ local voxel = player.cs.addent("VoxelEntity", Vec3d(0.05, 0, 0));
 
 cmd("bind g putvoxel");
 cmd("bind h digvoxel");
+cmd("bind 1 selvoxel 1");
+cmd("bind 2 selvoxel 2");
+cmd("bind 3 selvoxel 3");
+
+local voxelType = 1;
 
 local function modifyVoxel(put){
 	print("putvoxel invoked");
@@ -25,9 +30,20 @@ local function modifyVoxel(put){
 	local dir = player.getrot().cnj().trans(Vec3d(0, 0, -1));
 	foreachents(player.cs, function(e){
 		print("performing ModifyVoxel on " + e);
-		e.command("ModifyVoxel", src, dir, put);
+		e.command("ModifyVoxel", src, dir, put, voxelType);
 	});
 }
 
 register_console_command("putvoxel", @() modifyVoxel(true));
 register_console_command("digvoxel", @() modifyVoxel(false));
+
+register_console_command("selvoxel", function(typestr){
+	local type = typestr.tointeger();
+	voxelType = type;
+	switch(type){
+		case 1: print("Rock is selected"); break;
+		case 2: print("Iron ore is selected"); break;
+		case 3: print("Armor is selected"); break;
+		default: print("Unknown voxel type is given to selvoxel");
+	}
+});

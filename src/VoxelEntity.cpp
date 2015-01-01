@@ -33,6 +33,7 @@ public:
 		Air, ///< Null cell
 		Rock, ///< Rock cell
 		Iron, ///< Iron ore cell
+		Armor,
 		NumTypes
 	};
 
@@ -520,6 +521,7 @@ void VoxelEntity::draw(WarDraw *wd){
 
 		static GLuint texlist_rock = CallCacheBitmap("rock.jpg", "textures/rock.jpg", NULL, NULL);
 		static GLuint texlist_iron = CallCacheBitmap("iron.jpg", "textures/iron.jpg", NULL, NULL);
+		static GLuint texlist_armor = CallCacheBitmap("armor.png", "textures/armor.png", NULL, NULL);
 
 		const ShaderBind *sb = NULL;
 		if(wd->shadowMap){
@@ -594,6 +596,7 @@ void VoxelEntity::draw(WarDraw *wd){
 							switch(celltype){
 							case Cell::Rock: glCallList(texlist_rock); break;
 							case Cell::Iron: glCallList(texlist_iron); break;
+							case Cell::Armor: glCallList(texlist_armor); break;
 							}
 						}
 
@@ -794,4 +797,7 @@ ModifyVoxelCommand::ModifyVoxelCommand(HSQUIRRELVM v, Entity &){
 	put = sqb;
 
 	ct = Cell::Rock;
+	SQInteger sqct;
+	if(SQ_SUCCEEDED(sq_getinteger(v, 6, &sqct)))
+		ct = Cell::Type(sqct);
 }

@@ -19,6 +19,10 @@
 #include "noises/simplexnoise1234d.h"
 #include "SignModulo.h"
 
+extern "C"{
+#include "clib/mathdef.h"
+}
+
 #include <cpplib/vec2.h>
 
 const int CELLSIZE = 16;
@@ -48,6 +52,10 @@ public:
 	bool isTranslucent()const{return type == Air || type == ArmorSlope;}
 	void serialize(std::ostream &o);
 	void unserialize(std::istream &i);
+
+	/// \brief Query if a connection to a given direction can be secured for this block.
+	/// \param direction Vector to query the information, must be unit length, single axis vector.
+	bool connection(const Vec3i &direction)const;
 protected:
 	enum Type type;
 	short value;
@@ -231,6 +239,24 @@ private:
 Entity::EntityRegister<VoxelEntity> VoxelEntity::entityRegister("VoxelEntity");
 
 
+
+bool Cell::connection(const Vec3i &direction)const{
+	if(type == Air)
+		return false; // Air cannot connect to anything
+	if(type != ArmorSlope)
+		return true;
+	Quatd rot = Quatd::rotation(2. * M_PI / 4. * (rotation & 3), 1, 0, 0)
+		.rotate(2. * M_PI / 4. * ((rotation >> 2) & 3), 0, 1, 0)
+		.rotate(2. * M_PI / 4. * ((rotation >> 4) & 3), 0, 0, 1);
+	// Transform the direction vector to the cell's local coordinate system to
+	// examinie if a connection to the direction can be kept.
+	Vec3d dirAfterRot = rot.itrans(direction.cast<double>());
+	// Use 0.5 threshold to prevent floating point errors from affecting result
+	return !(0.5 < dirAfterRot[0] || 0.5 < dirAfterRot[1]);
+}
+
+
+
 /// <summary>Returns Cell object indexed by coordinates in this CellVolume.</summary>
 /// <remarks>
 /// If the indices reach border of the CellVolume, it will recursively retrieve foreign Cells.
@@ -408,7 +434,9 @@ void CellVolume::updateCache()
 		for (int iy = 0; iy < CELLSIZE; iy++)
 		{
 			Cell &c = v[ix][iy][iz];
-			if (c.type != Cell::Air && (c.adjacents != 0 && c.adjacents != 6))
+			// If this cell is not air but translucent (i.e. partially visible),
+			// we must draw it however their surronding voxels are.
+			if (c.type != Cell::Air && (c.isTranslucent() || c.adjacents != 0 && c.adjacents != 6))
 			{
 				if (!begun)
 				{
@@ -741,7 +769,11 @@ bool VoxelEntity::command(EntityCommand *com){
 
 				bool supported = false;
 				for(int j = 0; j < numof(directions); j++){
-					if (isSolid(ci + directions[j])){
+					if(!isSolid(ci + directions[j]))
+						continue;
+					if(!Cell(mvc->ct, mvc->rotation).connection(directions[j]))
+						continue;
+					if(cell(ci + directions[j]).connection(-directions[j])){
 						supported = true;
 						break;
 					}

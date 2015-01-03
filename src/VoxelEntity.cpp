@@ -40,6 +40,7 @@ public:
 		Armor,
 		ArmorSlope,
 		ArmorCorner,
+		ArmorInvCorner,
 		NumTypes
 	};
 
@@ -50,7 +51,9 @@ public:
 	int getAdjacents()const{return adjacents;}
 	char getRotation()const{return rotation;}
 	bool isSolid()const{return type != Air;}
-	bool isTranslucent()const{return type == Air || type == ArmorSlope || type == ArmorCorner;}
+	bool isTranslucent()const{
+		return type == Air || type == ArmorSlope || type == ArmorCorner || type == ArmorInvCorner;
+	}
 	void serialize(std::ostream &o);
 	void unserialize(std::istream &i);
 
@@ -249,7 +252,7 @@ Entity::EntityRegister<VoxelEntity> VoxelEntity::entityRegister("VoxelEntity");
 bool Cell::connection(const Vec3i &direction)const{
 	if(type == Air)
 		return false; // Air cannot connect to anything
-	if(type != ArmorSlope && type != ArmorCorner)
+	if(type != ArmorSlope && type != ArmorCorner && type != ArmorInvCorner)
 		return true;
 	Quatd rot = Quatd::rotation(2. * M_PI / 4. * (rotation & 3), 1, 0, 0)
 		.rotate(2. * M_PI / 4. * ((rotation >> 2) & 3), 0, 1, 0)
@@ -260,8 +263,10 @@ bool Cell::connection(const Vec3i &direction)const{
 	// Use 0.5 threshold to prevent floating point errors from affecting result
 	if(type == ArmorSlope)
 		return !(0.5 < dirAfterRot[0] || 0.5 < dirAfterRot[1]);
-	else // if(type == ArmorCorner)
+	else if(type == ArmorCorner)
 		return !(0.5 < dirAfterRot[0] || 0.5 < dirAfterRot[1] || 0.5 < dirAfterRot[2]);
+	else // if(type == ArmorInvCorner)
+		return true;
 }
 
 
@@ -659,6 +664,10 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		{Vec3d(1, 0, 0), cornerNormal, Vec2d(0, 0)},
 		{Vec3d(0, 1, 0), cornerNormal, Vec2d(0, 1)},
 		{Vec3d(0, 0, 1), cornerNormal, Vec2d(1, 1)},
+
+		{Vec3d(1, 1, 0), cornerNormal, Vec2d(0, 0)},
+		{Vec3d(0, 1, 1), cornerNormal, Vec2d(0, 1)},
+		{Vec3d(1, 0, 1), cornerNormal, Vec2d(1, 1)},
 	};
 
 	static const unsigned indices[] =
@@ -707,6 +716,25 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		28,29,30,
 	};
 
+	static const unsigned invCornerIndices[] = {
+		2,1,0,
+		0,3,2,
+
+		10,9,8,
+		8,11,10,
+
+		18,17,16,
+		16,19,18,
+
+		20,23,21,
+
+		4,7,5,
+
+		12,15,13,
+
+		31,32,33,
+	};
+
 	static GLuint texlist_rock = CallCacheBitmap("rock.jpg", "textures/rock.jpg", NULL, NULL);
 	static GLuint texlist_iron = CallCacheBitmap("iron.jpg", "textures/iron.jpg", NULL, NULL);
 	static GLuint texlist_armor = CallCacheBitmap("armor.png", "textures/armor.png", NULL, NULL);
@@ -718,7 +746,8 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		case Cell::Iron: glCallList(texlist_iron); break;
 		case Cell::Armor:
 		case Cell::ArmorSlope:
-		case Cell::ArmorCorner: glCallList(texlist_armor); break;
+		case Cell::ArmorCorner:
+		case Cell::ArmorInvCorner: glCallList(texlist_armor); break;
 		}
 	}
 
@@ -778,6 +807,9 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 	}
 	else if(cell.getType() == Cell::ArmorCorner){
 		drawIndexedGeneral(numof(cornerIndices), 0, cornerIndices);
+	}
+	else if(cell.getType() == Cell::ArmorInvCorner){
+		drawIndexedGeneral(numof(invCornerIndices), 0, invCornerIndices);
 	}
 	else if(!x0 && !x1 && !y0 && !y1){
 		drawIndexed(36, 0);

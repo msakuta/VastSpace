@@ -18,6 +18,7 @@
 #include "glstack.h"
 #include "noises/simplexnoise1234d.h"
 #include "SignModulo.h"
+#include "draw/mqoadapt.h"
 
 extern "C"{
 #include "clib/mathdef.h"
@@ -41,6 +42,7 @@ public:
 		ArmorSlope,
 		ArmorCorner,
 		ArmorInvCorner,
+		Engine,
 		NumTypes
 	};
 
@@ -767,7 +769,7 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		drawIndexedGeneral(cnt, base, slopeIndices);
 	};
 
-	glPushMatrix();
+	GLmatrix glm;
 	glScaled(getCellWidth(), getCellWidth(), getCellWidth());
 	Vec3d ofs(pos.cast<double>());
 	glTranslated(ofs[0], ofs[1], ofs[2]);
@@ -781,6 +783,17 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		if(char c = ((cell.getRotation() >> 4) & 0x3))
 			glRotatef(90 * c, 0, 0, 1);
 		glTranslated(-0.5, -0.5, -0.5);
+	}
+
+	if(cell.getType() == Cell::Engine){
+		static Model *model = LoadMQOModel("models/block_engine.mqo");
+		static const double modelScale = 0.01;
+		if(model){
+			glTranslated(0.5, 0.5, 0.5);
+			glScaled(modelScale, modelScale, modelScale);
+			DrawMQOPose(model, NULL);
+		}
+		return;
 	}
 
 	bool x0 = false;
@@ -830,7 +843,6 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 	}
 	glEnd();
 
-	glPopMatrix();
 }
 
 bool VoxelEntity::command(EntityCommand *com){

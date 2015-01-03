@@ -24,6 +24,7 @@ cmd("bind 3 selvoxel 3");
 cmd("bind 4 selvoxel 4");
 cmd("bind 5 selvoxel 5");
 cmd("bind 6 selvoxel 6");
+cmd("bind 7 selvoxel 7");
 cmd("bind pageup rotvoxel 0 1");
 cmd("bind pagedown rotvoxel 0 -1");
 cmd("bind home rotvoxel 1 1");

@@ -43,6 +43,7 @@ public:
 		ArmorCorner,
 		ArmorInvCorner,
 		Engine,
+		Occupied,
 		NumTypes
 	};
 
@@ -54,7 +55,8 @@ public:
 	char getRotation()const{return rotation;}
 	bool isSolid()const{return type != Air;}
 	bool isTranslucent()const{
-		return type == Air || type == ArmorSlope || type == ArmorCorner || type == ArmorInvCorner;
+		return type == Air || type == ArmorSlope || type == ArmorCorner || type == ArmorInvCorner
+			|| type == Occupied;
 	}
 	void serialize(std::ostream &o);
 	void unserialize(std::istream &i);
@@ -62,6 +64,12 @@ public:
 	/// \brief Query if a connection to a given direction can be secured for this block.
 	/// \param direction Vector to query the information, must be unit length, single axis vector.
 	bool connection(const Vec3i &direction)const;
+
+	/// \brief Calculate rotated vector by given rotation code
+	static Vec3i rotate(char rotation, const Vec3i &dir);
+
+	/// \brief Calculate inverse rotated vector by given rotation code
+	static Vec3i irotate(char rotation, const Vec3i &dir);
 protected:
 	enum Type type;
 	short value;
@@ -262,6 +270,7 @@ bool Cell::connection(const Vec3i &direction)const{
 	// Transform the direction vector to the cell's local coordinate system to
 	// examinie if a connection to the direction can be kept.
 	Vec3d dirAfterRot = rot.itrans(direction.cast<double>());
+	dirAfterRot = irotate(rotation, direction).cast<double>();
 	// Use 0.5 threshold to prevent floating point errors from affecting result
 	if(type == ArmorSlope)
 		return !(0.5 < dirAfterRot[0] || 0.5 < dirAfterRot[1]);
@@ -269,6 +278,48 @@ bool Cell::connection(const Vec3i &direction)const{
 		return !(0.5 < dirAfterRot[0] || 0.5 < dirAfterRot[1] || 0.5 < dirAfterRot[2]);
 	else // if(type == ArmorInvCorner)
 		return true;
+}
+
+Vec3i Cell::rotate(char rotation, const Vec3i &dir){
+	Vec3i ret;
+	switch(rotation & 3){
+	case 1: ret = Vec3i(dir[0], -dir[2], dir[1]); break;
+	case 2: ret = Vec3i(dir[0], -dir[1], -dir[2]); break;
+	case 3: ret = Vec3i(dir[0], dir[2], -dir[1]); break;
+	default: ret = dir; break;
+	}
+	switch((rotation >> 2) & 3){
+	case 1: ret = Vec3i(ret[2], ret[1], -ret[0]); break;
+	case 2: ret = Vec3i(-ret[0], ret[1], -ret[2]); break;
+	case 3: ret = Vec3i(-ret[2], ret[1], ret[0]); break;
+	}
+	switch((rotation >> 4) & 3){
+	case 1: ret = Vec3i(-ret[1], ret[0], ret[2]); break;
+	case 2: ret = Vec3i(-ret[0], -ret[1], ret[2]); break;
+	case 3: ret = Vec3i(ret[1], -ret[0], ret[2]); break;
+	}
+	return ret;
+}
+
+Vec3i Cell::irotate(char rotation, const Vec3i &dir){
+	Vec3i ret;
+	switch(rotation & 3){
+	case 1: ret = Vec3i(dir[0], dir[2], -dir[1]); break;
+	case 2: ret = Vec3i(dir[0], -dir[1], -dir[2]); break;
+	case 3: ret = Vec3i(dir[0], -dir[2], dir[1]); break;
+	default: ret = dir; break;
+	}
+	switch((rotation >> 2) & 3){
+	case 1: ret = Vec3i(-ret[2], ret[1], ret[0]); break;
+	case 2: ret = Vec3i(-ret[0], ret[1], -ret[2]); break;
+	case 3: ret = Vec3i(ret[2], ret[1], -ret[0]); break;
+	}
+	switch((rotation >> 4) & 3){
+	case 1: ret = Vec3i(ret[1], -ret[0], ret[2]); break;
+	case 2: ret = Vec3i(-ret[0], -ret[1], ret[2]); break;
+	case 3: ret = Vec3i(-ret[1], ret[0], ret[2]); break;
+	}
+	return ret;
 }
 
 
@@ -750,6 +801,7 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		case Cell::ArmorSlope:
 		case Cell::ArmorCorner:
 		case Cell::ArmorInvCorner: glCallList(texlist_armor); break;
+		case Cell::Occupied: return; // The occupied cell is not rendered because another cell should draw it.
 		}
 	}
 
@@ -857,64 +909,87 @@ bool VoxelEntity::command(EntityCommand *com){
 				previewCell = Cell::Air;
 			}
 
+			int length = mvc->ct == Cell::Engine ? 2 : 1;
 			for (int i = 1; i < 8; i++){
-				Vec3i ci = real2ind(src + dir * i * getCellWidth() / 2);
-
-				if(isSolid(ci[0], ci[1], ci[2]))
-					continue;
-
-				// If this placing makes the Player to be stuck in a brick, do not allow it.
-				bool buried = false;
-				for(int ix = 0; ix < 2 && !buried; ix++){
-					for(int iy = 0; iy < 2 && !buried; iy++){
-						for(int iz = 0; iz < 2 && !buried; iz++){
-							// Position to check collision with the walls
-							Vec3d hitcheck(
-								src[0] + (ix * 2 - 1) * boundHeight,
-								src[1] + (iy * 2 - 1) * boundHeight,
-								src[2] + (iz * 2 - 1) * boundHeight);
-
-							if(ci == real2ind(hitcheck))
-								buried = true;
-						}
-					}
-				}
-				if(buried)
-					continue;
-
-				static const Vec3i directions[] = {
-					Vec3i(1,0,0),
-					Vec3i(-1,0,0),
-					Vec3i(0,1,0),
-					Vec3i(0,-1,0),
-					Vec3i(0,0,1),
-					Vec3i(0,0,-1),
-				};
+				Vec3i baseIdx = real2ind(src + dir * i * getCellWidth() / 2);
 
 				bool supported = false;
-				for(int j = 0; j < numof(directions); j++){
-					if(!isSolid(ci + directions[j]))
-						continue;
-					if(!Cell(mvc->ct, mvc->rotation).connection(directions[j]))
-						continue;
-					if(cell(ci + directions[j]).connection(-directions[j])){
-						supported = true;
+				for(int iz = 0; iz < length; iz++){
+					Cell::Type ct = iz == 0 ? mvc->ct : Cell::Occupied;
+					Vec3i ci = baseIdx + Cell::rotate(mvc->rotation, Vec3i(0, 0, iz));
+
+					if(isSolid(ci[0], ci[1], ci[2])){
+						supported = false;
 						break;
 					}
+
+					// If this placing makes the Player to be stuck in a brick, do not allow it.
+					bool buried = false;
+					for(int ix = 0; ix < 2 && !buried; ix++){
+						for(int iy = 0; iy < 2 && !buried; iy++){
+							for(int iz = 0; iz < 2 && !buried; iz++){
+								// Position to check collision with the walls
+								Vec3d hitcheck(
+									src[0] + (ix * 2 - 1) * boundHeight,
+									src[1] + (iy * 2 - 1) * boundHeight,
+									src[2] + (iz * 2 - 1) * boundHeight);
+
+								if(ci == real2ind(hitcheck))
+									buried = true;
+							}
+						}
+					}
+					if(buried){
+						supported = false;
+						break;
+					}
+
+					static const Vec3i directions[] = {
+						Vec3i(1,0,0),
+						Vec3i(-1,0,0),
+						Vec3i(0,1,0),
+						Vec3i(0,-1,0),
+						Vec3i(0,0,1),
+						Vec3i(0,0,-1),
+					};
+
+					for(int j = 0; j < numof(directions); j++){
+						Vec3i dirAfterRot = Cell::rotate(mvc->rotation, directions[j]);
+						if(!isSolid(ci + directions[j]))
+							continue;
+						if(!Cell(ct, mvc->rotation).connection(directions[j]))
+							continue;
+						if(cell(ci + directions[j]).connection(-directions[j])){
+							supported = true;
+							break;
+						}
+					}
+					if(supported)
+						break;
 				}
 				if(!supported)
 					continue;
 
 				if(mvc->mode == mvc->Put){
-					if(setCell(ci[0], ci[1], ci[2], Cell(mvc->ct, mvc->rotation)))
-					{
-	//					player->addBricks(curtype, -1);
-						break;
+					bool notdone = false;
+					for(int iz = 0; iz < length; iz++){
+						Cell::Type ct = iz == 0 ? mvc->ct : Cell::Occupied;
+						Vec3i ci = baseIdx + Cell::rotate(mvc->rotation, Vec3i(0, 0, iz));
+						if(setCell(ci[0], ci[1], ci[2], Cell(ct, mvc->rotation))){
+		//					player->addBricks(curtype, -1);
+						}
+						else{
+							notdone = true;
+							break;
+						}
 					}
+					if(!notdone)
+						break;
 				}
 				else{ // Preview
-					previewCellPos = ci;
+					previewCellPos = baseIdx;
 					previewCell = Cell(mvc->ct, mvc->rotation);
+					break;
 				}
 			}
 		}

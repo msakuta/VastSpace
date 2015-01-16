@@ -4,6 +4,7 @@
 #include "Mesh.h"
 #include "Cmd.h"
 #include "StaticInitializer.h"
+#include "draw/VBO.h"
 extern "C"{
 #include "clib/c.h"
 #include "clib/cfloat.h"
@@ -167,35 +168,6 @@ void Mesh::polyDraw(Flags flags, Cache *c, int i, Index *plast, const MeshTex *t
 	glEnd();
 }
 
-#if defined(WIN32)
-static PFNGLGENBUFFERSPROC glGenBuffers;
-static PFNGLISBUFFERPROC glIsBuffer;
-static PFNGLBINDBUFFERPROC glBindBuffer;
-static PFNGLBUFFERDATAPROC glBufferData;
-static PFNGLBUFFERSUBDATAPROC glBufferSubData;
-static PFNGLMAPBUFFERPROC glMapBuffer;
-static PFNGLUNMAPBUFFERPROC glUnmapBuffer;
-static PFNGLDELETEBUFFERSPROC glDeleteBuffers;
-static bool initBuffers(){
-	static bool init = false;
-	static bool result = false;
-	if(!init){
-		init = true;
-		result = !(!(glGenBuffers = (PFNGLGENBUFFERSPROC)wglGetProcAddress("glGenBuffers"))
-		|| !(glIsBuffer = (PFNGLISBUFFERPROC)wglGetProcAddress("glIsBuffer"))
-		|| !(glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer"))
-		|| !(glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData"))
-		|| !(glBufferSubData = (PFNGLBUFFERSUBDATAPROC)wglGetProcAddress("glBufferSubData"))
-		|| !(glMapBuffer = (PFNGLMAPBUFFERPROC)wglGetProcAddress("glMapBuffer"))
-		|| !(glUnmapBuffer = (PFNGLUNMAPBUFFERPROC)wglGetProcAddress("glUnmapBuffer"))
-		|| !(glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)wglGetProcAddress("glDeleteBuffers")));
-	}
-	return result;
-}
-#else
-static bool initBuffers(){return -1;}
-#endif
-
 static double textime = 0.;
 static int r_vbomesh = 1;
 
@@ -273,7 +245,7 @@ void Mesh::beginTexture(Attrib *atr, bool mismatch, const MeshTex *tex, int ai, 
 
 void Mesh::decalDraw(Flags flags, Cache *c, const MeshTex *tex, Decal *sd, void *sdg)const{
 	// Check if we can use vertex buffer objects.
-	if(r_vbomesh && initBuffers()){
+	if(r_vbomesh && vboInitBuffers()){
 		if(buf.size() == 0)
 			compileVertexBuffers();
 

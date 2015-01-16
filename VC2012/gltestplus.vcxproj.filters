@@ -357,6 +357,9 @@
     <ClCompile Include="..\src\VoxelEntity.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\draw\VBO.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\effects.h">
@@ -671,7 +674,6 @@
     <ClInclude Include="..\include\StarEnum.h">
       <Filter>Exported Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Entity-property.h\Header.h" />
     <ClInclude Include="..\src\CoordSys-sq.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -692,6 +694,9 @@
     </ClInclude>
     <ClInclude Include="..\src\draw\DrawTextureSphere.h">
       <Filter>Headers\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\draw\VBO.h">
+      <Filter>Exported Headers\draw</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

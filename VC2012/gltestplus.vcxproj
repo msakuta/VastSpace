@@ -218,6 +218,7 @@
     <ClCompile Include="..\src\draw\Scarry-Draw.cpp" />
     <ClCompile Include="..\src\draw\Sceptor-Draw.cpp" />
     <ClCompile Include="..\src\draw\Shipyard-Draw.cpp" />
+    <ClCompile Include="..\src\draw\VBO.cpp" />
     <ClCompile Include="..\src\draw\war-draw.cpp" />
     <ClCompile Include="..\src\draw\Warpable-draw.cpp" />
     <ClCompile Include="..\src\draw\Worker-Draw.cpp" />
@@ -307,9 +308,9 @@
     <ClInclude Include="..\include\draw\ring-draw.h" />
     <ClInclude Include="..\include\draw\ShaderBind.h" />
     <ClInclude Include="..\include\draw\ShadowMap.h" />
+    <ClInclude Include="..\include\draw\VBO.h" />
     <ClInclude Include="..\include\draw\WarDraw.h" />
     <ClInclude Include="..\include\dstring.h" />
-    <ClInclude Include="..\include\Entity-property.h\Header.h" />
     <ClInclude Include="..\include\Entity.h" />
     <ClInclude Include="..\include\EntityCommand.h" />
     <ClInclude Include="..\include\ExplosiveBullet.h" />

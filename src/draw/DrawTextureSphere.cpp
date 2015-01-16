@@ -10,6 +10,7 @@
 #include "bitmap.h"
 #include "draw/HDR.h"
 #include "glw/GLWchart.h"
+#include "draw/VBO.h"
 #undef exit
 extern "C"{
 #include <clib/timemeas.h>
@@ -1036,35 +1037,6 @@ struct CubeExVertex{
 	Vec3d nrm;
 };
 
-#if defined(WIN32)
-static PFNGLGENBUFFERSPROC glGenBuffers;
-static PFNGLISBUFFERPROC glIsBuffer;
-static PFNGLBINDBUFFERPROC glBindBuffer;
-static PFNGLBUFFERDATAPROC glBufferData;
-static PFNGLBUFFERSUBDATAPROC glBufferSubData;
-static PFNGLMAPBUFFERPROC glMapBuffer;
-static PFNGLUNMAPBUFFERPROC glUnmapBuffer;
-static PFNGLDELETEBUFFERSPROC glDeleteBuffers;
-static bool initBuffers(){
-	static bool init = false;
-	static bool result = false;
-	if(!init){
-		init = true;
-		result = !(!(glGenBuffers = (PFNGLGENBUFFERSPROC)wglGetProcAddress("glGenBuffers"))
-		|| !(glIsBuffer = (PFNGLISBUFFERPROC)wglGetProcAddress("glIsBuffer"))
-		|| !(glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer"))
-		|| !(glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData"))
-		|| !(glBufferSubData = (PFNGLBUFFERSUBDATAPROC)wglGetProcAddress("glBufferSubData"))
-		|| !(glMapBuffer = (PFNGLMAPBUFFERPROC)wglGetProcAddress("glMapBuffer"))
-		|| !(glUnmapBuffer = (PFNGLUNMAPBUFFERPROC)wglGetProcAddress("glUnmapBuffer"))
-		|| !(glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)wglGetProcAddress("glDeleteBuffers")));
-	}
-	return result;
-}
-#else
-static bool initBuffers(){return -1;}
-#endif
-
 DrawTextureCubeEx::BufferSets DrawTextureCubeEx::bufsets;
 
 int DrawTextureCubeEx::getPatchSize(int lod){
@@ -1134,7 +1106,7 @@ bool DrawTextureCubeEx::draw(){
 
 	glEnable(GL_CULL_FACE);
 
-	if(initBuffers()) do{
+	if(vboInitBuffers()) do{
 		auto it = bufsets.find(a);
 		if(it == bufsets.end()){
 			compileVertexBuffers();

@@ -105,8 +105,8 @@ protected:
 		Num_Mat
 	};
 
-	std::vector<VERTEX> vlist[Num_Mat];
-	mutable std::vector<GLuint> vidx[Num_Mat];
+	int vlistCounts[Num_Mat];
+	int vidxCounts[Num_Mat];
 	GLuint vbo[Num_Mat];
 	GLuint vboIdx[Num_Mat];
 	bool vboDirty;
@@ -279,7 +279,7 @@ public:
 
 protected:
 	void drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv = NULL, const Vec3i &posInVolume = Vec3i(0,0,0),
-		std::vector<VERTEX> *vlist = NULL)const;
+		std::vector<VERTEX> *vlist = NULL, std::vector<GLuint> *vidx = NULL)const;
 private:
 	VolumeMap volume;
 	int bricks[Cell::NumTypes];
@@ -655,10 +655,8 @@ void VoxelEntity::draw(WarDraw *wd){
 				continue;
 
 			if(cv.vboDirty){
-				for(int i = 0; i < cv.Num_Mat; i++){
-					cv.vlist[i].clear();
-					cv.vidx[i].clear();
-				}
+				std::vector<VERTEX> vlist[cv.Num_Mat];
+				std::vector<GLuint> vidx[cv.Num_Mat];
 				cv.modeledCells.clear();
 
 				for(int ix = 0; ix < CELLSIZE; ix++){
@@ -685,23 +683,28 @@ void VoxelEntity::draw(WarDraw *wd){
 							const Cell &cell = cv(ix, iy, iz);
 							Vec3i posInVolume(ix, iy, iz);
 
-							drawCell(cell, posInVolume + it->first * CELLSIZE, celltype, &cv, posInVolume, cv.vlist);
+							drawCell(cell, posInVolume + it->first * CELLSIZE, celltype, &cv, posInVolume, vlist, vidx);
 						}
 					}
 				}
 
 				for(int i = 0; i < cv.Num_Mat; i++){
-					if(0 < cv.vidx[i].size()){
+					if(0 < vidx[i].size()){
 						if(cv.vbo[i] == 0)
 							glGenBuffers(1, &cv.vbo[i]);
 						if(cv.vboIdx[i] == 0)
 							glGenBuffers(1, &cv.vboIdx[i]);
 
 						glBindBuffer(GL_ARRAY_BUFFER, cv.vbo[i]);
-						glBufferData(GL_ARRAY_BUFFER, cv.vlist[i].size() * sizeof(cv.vlist[i][0]), &cv.vlist[i].front(), GL_STATIC_DRAW);
+						glBufferData(GL_ARRAY_BUFFER, vlist[i].size() * sizeof(vlist[i][0]), &vlist[i].front(), GL_STATIC_DRAW);
 						glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cv.vboIdx[i]);
-						glBufferData(GL_ELEMENT_ARRAY_BUFFER, cv.vidx[i].size() * sizeof(cv.vidx[i][0]), &cv.vidx[i].front(), GL_STATIC_DRAW);
+						glBufferData(GL_ELEMENT_ARRAY_BUFFER, vidx[i].size() * sizeof(vidx[i][0]), &vidx[i].front(), GL_STATIC_DRAW);
 					}
+
+					// We can forget about the actual buffer content, but must remember the number of elements
+					// in the buffer in order to perform glDrawElements() afterwards.
+					cv.vlistCounts[i] = vlist[i].size();
+					cv.vidxCounts[i] = vidx[i].size();
 				}
 
 				cv.vboDirty = false;
@@ -731,7 +734,7 @@ void VoxelEntity::draw(WarDraw *wd){
 					// Index array
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cv.vboIdx[i]);
 
-					glDrawElements(GL_TRIANGLES, cv.vidx[i].size(), GL_UNSIGNED_INT, 0);
+					glDrawElements(GL_TRIANGLES, cv.vidxCounts[i], GL_UNSIGNED_INT, 0);
 
 					glDisableClientState(GL_VERTEX_ARRAY);
 					glDisableClientState(GL_NORMAL_ARRAY);
@@ -779,8 +782,11 @@ void VoxelEntity::drawtra(WarDraw *wd){
 /// \param celltype A rendering state variable to minimize number of texture switching
 /// \param cv A CellVolume object for adjacent cell checking
 /// \param posInVolume The position vector in the CellVolume object
+/// \param vlist A pointer to an array with size 3 of vertex buffer for list of vertices, can be NULL for direct drawing
+/// \param vidx A pointer to an array with size 3 of index buffer for list of primitives
 void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv, const Vec3i &posInVolume,
-						   std::vector<VERTEX> *vlist)const{
+						   std::vector<VERTEX> *vlist, std::vector<GLuint> *vidx)const
+{
 	static const Vec3d slopeNormal = Vec3d(1,1,0).norm();
 	static const Vec3d cornerNormal = Vec3d(1,1,1).norm();
 
@@ -926,7 +932,7 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 
 	Mat4d rotmat;
 
-	auto drawIndexedGeneral = [cv, vlist, &pos, material, &rotmat](int cnt, int base, const unsigned indices[]){
+	auto drawIndexedGeneral = [cv, vlist, vidx, &pos, material, &rotmat](int cnt, int base, const unsigned indices[]){
 		for(int i = base; i < base + cnt; i++){
 			if(vlist){
 				std::vector<VERTEX> &vl = vlist[material];
@@ -936,12 +942,12 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 				bool match = false;
 				for(int j = MAX(0, vl.size() - 16); j < vl.size(); j++){
 					if(vl[j] == vtx){
-						cv->vidx[material].push_back(j);
+						vidx[material].push_back(j);
 						match = true;
 					}
 				}
 				if(!match){
-					cv->vidx[material].push_back(vl.size());
+					vidx[material].push_back(vl.size());
 					vl.push_back(vtx);
 				}
 			}

@@ -924,12 +924,15 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		}
 	}
 
-	auto drawIndexedGeneral = [cv, vlist, &pos, material](int cnt, int base, const unsigned indices[]){
+	Mat4d rotmat;
+
+	auto drawIndexedGeneral = [cv, vlist, &pos, material, &rotmat](int cnt, int base, const unsigned indices[]){
 		for(int i = base; i < base + cnt; i++){
 			if(vlist){
 				std::vector<VERTEX> &vl = vlist[material];
 				VERTEX vtx = vertices[indices[i]];
-				vtx.pos += pos.cast<double>();
+				vtx.pos = rotmat.vp3(vtx.pos) + pos.cast<double>();
+				vtx.norm = rotmat.dvp3(vtx.norm);
 				bool match = false;
 				for(int j = MAX(0, vl.size() - 16); j < vl.size(); j++){
 					if(vl[j] == vtx){
@@ -987,6 +990,19 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		}
 	}
 	else{
+		if(cell.getRotation()){
+			Mat4d mid = mat4_u.translate(0.5, 0.5, 0.5);
+			if(char c = (cell.getRotation() & 0x3))
+				mid = mid.rotx(M_PI / 2. * c);
+			if(char c = ((cell.getRotation() >> 2) & 0x3))
+				mid = mid.roty(M_PI / 2. * c);
+			if(char c = ((cell.getRotation() >> 4) & 0x3))
+				mid = mid.rotz(M_PI / 2. * c);
+			rotmat = mid.translate(-0.5, -0.5, -0.5);
+		}
+		else
+			rotmat = mat4_u;
+
 		if(cell.getType() == Cell::Engine){
 			cv->modeledCells.push_back(posInVolume);
 			return;

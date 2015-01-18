@@ -111,6 +111,8 @@ protected:
 	GLuint vboIdx[Num_Mat];
 	bool vboDirty;
 
+	mutable std::vector<Vec3i> modeledCells;
+
 	/// <summary>
 	/// Indices are in order of [X, Z, beginning and end]
 	/// </summary>
@@ -140,6 +142,9 @@ public:
 	const Cell &operator()(int ix, int iy, int iz)const;
 	const Cell &cell(int ix, int iy, int iz)const{
 		return operator()(ix, iy, iz);
+	}
+	const Cell &cell(const Vec3i &ipos)const{
+		return cell(ipos[0], ipos[1], ipos[2]);
 	}
 	bool isSolid(const Vec3i &ipos)const{
 		return
@@ -654,6 +659,7 @@ void VoxelEntity::draw(WarDraw *wd){
 					cv.vlist[i].clear();
 					cv.vidx[i].clear();
 				}
+				cv.modeledCells.clear();
 
 				for(int ix = 0; ix < CELLSIZE; ix++){
 					for(int iz = 0; iz < CELLSIZE; iz++){
@@ -733,6 +739,8 @@ void VoxelEntity::draw(WarDraw *wd){
 				}
 			}
 
+			for(auto ipos : cv.modeledCells)
+				drawCell(cv.cell(ipos), ipos + it->first * CELLSIZE, celltype, &cv, ipos);
 		}
 	}
 }
@@ -975,6 +983,12 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 				glScaled(modelScale, modelScale, modelScale);
 				DrawMQOPose(model, NULL);
 			}
+			return;
+		}
+	}
+	else{
+		if(cell.getType() == Cell::Engine){
+			cv->modeledCells.push_back(posInVolume);
 			return;
 		}
 	}

@@ -19,6 +19,7 @@
 #include "noises/simplexnoise1234d.h"
 #include "SignModulo.h"
 #include "draw/mqoadapt.h"
+#include "draw/VBO.h"
 
 extern "C"{
 #include "clib/mathdef.h"
@@ -79,6 +80,15 @@ protected:
 	friend class CellVolume;
 };
 
+struct VERTEX{
+	Vec3d pos;
+	Vec3d norm;
+	Vec2d tex;
+	bool operator==(const VERTEX &o)const{
+		return pos == o.pos && norm == o.norm && tex == o.tex;
+	}
+};
+
 class CellVolume{
 public:
 	static const Cell v0;
@@ -87,6 +97,19 @@ protected:
 	VoxelEntity *world;
 	Vec3i index;
 	Cell v[CELLSIZE][CELLSIZE][CELLSIZE];
+
+	enum Material{
+		MatRock,
+		MatIron,
+		MatArmor,
+		Num_Mat
+	};
+
+	std::vector<VERTEX> vlist[Num_Mat];
+	mutable std::vector<GLuint> vidx[Num_Mat];
+	GLuint vbo[Num_Mat];
+	GLuint vboIdx[Num_Mat];
+	bool vboDirty;
 
 	/// <summary>
 	/// Indices are in order of [X, Z, beginning and end]
@@ -101,7 +124,11 @@ protected:
 
 	void updateAdj(int ix, int iy, int iz);
 public:
-	CellVolume(VoxelEntity *world = NULL, const Vec3i &ind = Vec3i(0,0,0)) : world(world), index(ind), _solidcount(0){
+	CellVolume(VoxelEntity *world = NULL, const Vec3i &ind = Vec3i(0,0,0)) : world(world), index(ind), _solidcount(0), vboDirty(true){
+		for(int i = 0; i < numof(vbo); i++)
+			vbo[i] = 0;
+		for(int i = 0; i < numof(vboIdx); i++)
+			vboIdx[i] = 0;
 		for(int ix = 0; ix < CELLSIZE; ix++) for(int iy = 0; iy < CELLSIZE; iy++) for(int iz = 0; iz < 2; iz++){
 			_scanLines[ix][iy][iz] = 0;
 			tranScanLines[ix][iy][iz] = 0;
@@ -140,6 +167,7 @@ public:
 	static int cellInvokes;
 	static int cellForeignInvokes;
 	static int cellForeignExists;
+	friend class VoxelEntity;
 };
 
 inline bool operator<(const Vec3i &a, const Vec3i &b){
@@ -245,17 +273,30 @@ public:
 	bool isSolid(const Vec3d &rv);
 
 protected:
-	void drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv = NULL, const Vec3i &posInVolume = Vec3i(0,0,0))const;
+	void drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv = NULL, const Vec3i &posInVolume = Vec3i(0,0,0),
+		std::vector<VERTEX> *vlist = NULL)const;
 private:
 	VolumeMap volume;
 	int bricks[Cell::NumTypes];
 	Vec3i previewCellPos;
 	Cell previewCell;
+
+	static bool texlist_init;
+	static GLuint texlist_rock;
+	static GLuint texlist_iron;
+	static GLuint texlist_armor;
+	static void initTexLists();
+
 	friend class CellVolume;
 };
 
 
 Entity::EntityRegister<VoxelEntity> VoxelEntity::entityRegister("VoxelEntity");
+
+bool VoxelEntity::texlist_init = false;
+GLuint VoxelEntity::texlist_rock;
+GLuint VoxelEntity::texlist_iron;
+GLuint VoxelEntity::texlist_armor;
 
 
 
@@ -514,17 +555,13 @@ void CellVolume::updateCache()
 			}
 		}
 	}
+
+	vboDirty = true;
 }
 
 
 VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<){
 }
-
-struct VERTEX{
-	Vec3d pos;
-	Vec3d norm;
-	Vec2d tex;
-};
 
 static const int maxViewDistance = 10.;
 
@@ -557,6 +594,8 @@ void VoxelEntity::draw(WarDraw *wd){
 	for(std::vector<CellVolume*>::iterator it = changed.begin(); it != changed.end(); it++)
 		(*it)->updateCache();
 
+	vboInitBuffers();
+
 	{
 		GLmatrix glm;
 		GLattrib gla(GL_TEXTURE_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT);
@@ -586,6 +625,8 @@ void VoxelEntity::draw(WarDraw *wd){
 			const Vec3i &key = it->first;
 			CellVolume &cv = it->second;
 
+			initTexLists();
+
 			// If all content is air, skip drawing
 			if(cv.getSolidCount() == 0)
 				continue;
@@ -608,34 +649,90 @@ void VoxelEntity::draw(WarDraw *wd){
 			if (inf[2] < key[2] * CELLSIZE - maxViewCells)
 				continue;
 
-			for(int ix = 0; ix < CELLSIZE; ix++){
-				for(int iz = 0; iz < CELLSIZE; iz++){
-					// This detail culling is not much effective.
-					//if (bf.Contains(new BoundingBox(ind2real(keyindex + new Vec3i(ix, kv.Value.scanLines[ix, iz, 0], iz)), ind2real(keyindex + new Vec3i(ix + 1, kv.Value.scanLines[ix, iz, 1] + 1, iz + 1)))) != ContainmentType.Disjoint)
-					const int (&scanLines)[CELLSIZE][CELLSIZE][2] = cv.getScanLines();
-					for (int iy = scanLines[ix][iz][0]; iy < scanLines[ix][iz][1]; iy++){
+			if(cv.vboDirty){
+				for(int i = 0; i < cv.Num_Mat; i++){
+					cv.vlist[i].clear();
+					cv.vidx[i].clear();
+				}
 
-						// Cull too far Cells
-						if (cv(ix, iy, iz).getType() == Cell::Air)
-							continue;
-						if (maxViewCells < abs(ix + it->first[0] * CELLSIZE - inf[0]))
-							continue;
-						if (maxViewCells < abs(iy + it->first[1] * CELLSIZE - inf[1]))
-							continue;
-						if (maxViewCells < abs(iz + it->first[2] * CELLSIZE - inf[2]))
-							continue;
+				for(int ix = 0; ix < CELLSIZE; ix++){
+					for(int iz = 0; iz < CELLSIZE; iz++){
+						// This detail culling is not much effective.
+						//if (bf.Contains(new BoundingBox(ind2real(keyindex + new Vec3i(ix, kv.Value.scanLines[ix, iz, 0], iz)), ind2real(keyindex + new Vec3i(ix + 1, kv.Value.scanLines[ix, iz, 1] + 1, iz + 1)))) != ContainmentType.Disjoint)
+						const int (&scanLines)[CELLSIZE][CELLSIZE][2] = cv.getScanLines();
+						for (int iy = scanLines[ix][iz][0]; iy < scanLines[ix][iz][1]; iy++){
 
-						// If the Cell is buried under ground, it's no use examining each face of the Cell.
-						if(6 <= cv(ix, iy, iz).getAdjacents())
-							continue;
+							// Cull too far Cells
+							if (cv(ix, iy, iz).getType() == Cell::Air)
+								continue;
+							if (maxViewCells < abs(ix + it->first[0] * CELLSIZE - inf[0]))
+								continue;
+							if (maxViewCells < abs(iy + it->first[1] * CELLSIZE - inf[1]))
+								continue;
+							if (maxViewCells < abs(iz + it->first[2] * CELLSIZE - inf[2]))
+								continue;
 
-						const Cell &cell = cv(ix, iy, iz);
-						Vec3i posInVolume(ix, iy, iz);
+							// If the Cell is buried under ground, it's no use examining each face of the Cell.
+							if(6 <= cv(ix, iy, iz).getAdjacents())
+								continue;
 
-						drawCell(cell, posInVolume + it->first * CELLSIZE, celltype, &cv, posInVolume);
+							const Cell &cell = cv(ix, iy, iz);
+							Vec3i posInVolume(ix, iy, iz);
+
+							drawCell(cell, posInVolume + it->first * CELLSIZE, celltype, &cv, posInVolume, cv.vlist);
+						}
 					}
 				}
+
+				for(int i = 0; i < cv.Num_Mat; i++){
+					if(0 < cv.vidx[i].size()){
+						if(cv.vbo[i] == 0)
+							glGenBuffers(1, &cv.vbo[i]);
+						if(cv.vboIdx[i] == 0)
+							glGenBuffers(1, &cv.vboIdx[i]);
+
+						glBindBuffer(GL_ARRAY_BUFFER, cv.vbo[i]);
+						glBufferData(GL_ARRAY_BUFFER, cv.vlist[i].size() * sizeof(cv.vlist[i][0]), &cv.vlist[i].front(), GL_STATIC_DRAW);
+						glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cv.vboIdx[i]);
+						glBufferData(GL_ELEMENT_ARRAY_BUFFER, cv.vidx[i].size() * sizeof(cv.vidx[i][0]), &cv.vidx[i].front(), GL_STATIC_DRAW);
+					}
+				}
+
+				cv.vboDirty = false;
 			}
+
+			for(int i = 0; i < cv.Num_Mat; i++){
+				if(cv.vboIdx[i]){
+					GLmatrix glm;
+
+					switch(i){
+					case CellVolume::MatRock: glCallList(texlist_rock); break;
+					case CellVolume::MatIron: glCallList(texlist_iron); break;
+					case CellVolume::MatArmor: glCallList(texlist_armor); break;
+					}
+
+					glScaled(getCellWidth(), getCellWidth(), getCellWidth());
+
+					glEnableClientState(GL_VERTEX_ARRAY);
+					glEnableClientState(GL_NORMAL_ARRAY);
+					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+					glBindBuffer(GL_ARRAY_BUFFER, cv.vbo[i]);
+					glVertexPointer(3, GL_DOUBLE, sizeof(VERTEX), (void*)offsetof(VERTEX, pos)); // Vertex array
+					glNormalPointer(GL_DOUBLE, sizeof(VERTEX), (void*)offsetof(VERTEX, norm)); // Normal array
+					glTexCoordPointer(2, GL_DOUBLE, sizeof(VERTEX), (void*)offsetof(VERTEX, tex)); // Texture coordinates array
+
+					// Index array
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cv.vboIdx[i]);
+
+					glDrawElements(GL_TRIANGLES, cv.vidx[i].size(), GL_UNSIGNED_INT, 0);
+
+					glDisableClientState(GL_VERTEX_ARRAY);
+					glDisableClientState(GL_NORMAL_ARRAY);
+					glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+				}
+			}
+
 		}
 	}
 }
@@ -651,6 +748,8 @@ void VoxelEntity::drawtra(WarDraw *wd){
 		glColor4f(1,1,1,0.5f);
 
 		glEnable(GL_CULL_FACE);
+
+		initTexLists();
 
 		const ShaderBind *sb = NULL;
 		if(wd->shadowMap){
@@ -672,7 +771,8 @@ void VoxelEntity::drawtra(WarDraw *wd){
 /// \param celltype A rendering state variable to minimize number of texture switching
 /// \param cv A CellVolume object for adjacent cell checking
 /// \param posInVolume The position vector in the CellVolume object
-void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv, const Vec3i &posInVolume)const{
+void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv, const Vec3i &posInVolume,
+						   std::vector<VERTEX> *vlist)const{
 	static const Vec3d slopeNormal = Vec3d(1,1,0).norm();
 	static const Vec3d cornerNormal = Vec3d(1,1,1).norm();
 
@@ -788,64 +888,95 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		31,32,33,
 	};
 
-	static GLuint texlist_rock = CallCacheBitmap("rock.jpg", "textures/rock.jpg", NULL, NULL);
-	static GLuint texlist_iron = CallCacheBitmap("iron.jpg", "textures/iron.jpg", NULL, NULL);
-	static GLuint texlist_armor = CallCacheBitmap("armor.png", "textures/armor.png", NULL, NULL);
-
-	if(celltype != cell.getType()){
+	int material = 0;
+	if(!vlist){
+		if(celltype != cell.getType()){
+			celltype = cell.getType();
+			switch(celltype){
+			case Cell::Rock: glCallList(texlist_rock); break;
+			case Cell::Iron: glCallList(texlist_iron); break;
+			case Cell::Armor:
+			case Cell::ArmorSlope:
+			case Cell::ArmorCorner:
+			case Cell::ArmorInvCorner: glCallList(texlist_armor); break;
+			case Cell::Occupied: return; // The occupied cell is not rendered because another cell should draw it.
+			}
+		}
+	}
+	else{
 		celltype = cell.getType();
 		switch(celltype){
-		case Cell::Rock: glCallList(texlist_rock); break;
-		case Cell::Iron: glCallList(texlist_iron); break;
+		case Cell::Rock: material = CellVolume::MatRock; break;
+		case Cell::Iron: material = CellVolume::MatIron; break;
 		case Cell::Armor:
 		case Cell::ArmorSlope:
 		case Cell::ArmorCorner:
-		case Cell::ArmorInvCorner: glCallList(texlist_armor); break;
+		case Cell::ArmorInvCorner: material = CellVolume::MatArmor; break;
 		case Cell::Occupied: return; // The occupied cell is not rendered because another cell should draw it.
 		}
 	}
 
-	static auto drawIndexedGeneral = [](int cnt, int base, const unsigned indices[]){
+	auto drawIndexedGeneral = [cv, vlist, &pos, material](int cnt, int base, const unsigned indices[]){
 		for(int i = base; i < base + cnt; i++){
-			glNormal3dv(vertices[indices[i]].norm);
-			glTexCoord2dv(vertices[indices[i]].tex);
-			glVertex3dv(vertices[indices[i]].pos);
+			if(vlist){
+				std::vector<VERTEX> &vl = vlist[material];
+				VERTEX vtx = vertices[indices[i]];
+				vtx.pos += pos.cast<double>();
+				bool match = false;
+				for(int j = MAX(0, vl.size() - 16); j < vl.size(); j++){
+					if(vl[j] == vtx){
+						cv->vidx[material].push_back(j);
+						match = true;
+					}
+				}
+				if(!match){
+					cv->vidx[material].push_back(vl.size());
+					vl.push_back(vtx);
+				}
+			}
+			else{
+				glNormal3dv(vertices[indices[i]].norm);
+				glTexCoord2dv(vertices[indices[i]].tex);
+				glVertex3dv(vertices[indices[i]].pos);
+			}
 		}
 	};
 
-	static auto drawIndexed = [](int cnt, int base){
+	auto drawIndexed = [&](int cnt, int base){
 		drawIndexedGeneral(cnt, base, indices);
 	};
 
-	static auto drawIndexedSlope = [](int cnt, int base){
+	auto drawIndexedSlope = [&](int cnt, int base){
 		drawIndexedGeneral(cnt, base, slopeIndices);
 	};
 
 	GLmatrix glm;
-	glScaled(getCellWidth(), getCellWidth(), getCellWidth());
 	Vec3d ofs(pos.cast<double>());
-	glTranslated(ofs[0], ofs[1], ofs[2]);
+	if(!vlist){
+		glScaled(getCellWidth(), getCellWidth(), getCellWidth());
+		glTranslated(ofs[0], ofs[1], ofs[2]);
 
-	if(cell.getRotation()){
-		glTranslated(0.5, 0.5, 0.5);
-		if(char c = (cell.getRotation() & 0x3))
-			glRotatef(90 * c, 1, 0, 0);
-		if(char c = ((cell.getRotation() >> 2) & 0x3))
-			glRotatef(90 * c, 0, 1, 0);
-		if(char c = ((cell.getRotation() >> 4) & 0x3))
-			glRotatef(90 * c, 0, 0, 1);
-		glTranslated(-0.5, -0.5, -0.5);
-	}
-
-	if(cell.getType() == Cell::Engine){
-		static Model *model = LoadMQOModel("models/block_engine.mqo");
-		static const double modelScale = 0.01;
-		if(model){
+		if(cell.getRotation()){
 			glTranslated(0.5, 0.5, 0.5);
-			glScaled(modelScale, modelScale, modelScale);
-			DrawMQOPose(model, NULL);
+			if(char c = (cell.getRotation() & 0x3))
+				glRotatef(90 * c, 1, 0, 0);
+			if(char c = ((cell.getRotation() >> 2) & 0x3))
+				glRotatef(90 * c, 0, 1, 0);
+			if(char c = ((cell.getRotation() >> 4) & 0x3))
+				glRotatef(90 * c, 0, 0, 1);
+			glTranslated(-0.5, -0.5, -0.5);
 		}
-		return;
+
+		if(cell.getType() == Cell::Engine){
+			static Model *model = LoadMQOModel("models/block_engine.mqo");
+			static const double modelScale = 0.01;
+			if(model){
+				glTranslated(0.5, 0.5, 0.5);
+				glScaled(modelScale, modelScale, modelScale);
+				DrawMQOPose(model, NULL);
+			}
+			return;
+		}
 	}
 
 	bool x0 = false;
@@ -866,7 +997,8 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		z1 = !(*cv)(ix, iy, iz + 1).isTranslucent();
 	}
 
-	glBegin(GL_TRIANGLES);
+	if(!vlist)
+		glBegin(GL_TRIANGLES);
 	if(cell.getType() == Cell::ArmorSlope){
 		drawIndexedSlope(numof(slopeIndices), 0);
 	}
@@ -893,8 +1025,18 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		if(!z1)
 			drawIndexed(2 * 3, 6 * 3);
 	}
-	glEnd();
+	if(!vlist)
+		glEnd();
 
+}
+
+void VoxelEntity::initTexLists(){
+	if(!texlist_init){
+		texlist_init = true;
+		texlist_rock = CallCacheBitmap("rock.jpg", "textures/rock.jpg", NULL, NULL);
+		texlist_iron = CallCacheBitmap("iron.jpg", "textures/iron.jpg", NULL, NULL);
+		texlist_armor = CallCacheBitmap("armor.png", "textures/armor.png", NULL, NULL);
+	}
 }
 
 bool VoxelEntity::command(EntityCommand *com){

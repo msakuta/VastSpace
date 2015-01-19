@@ -1065,7 +1065,7 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 			VERTEX vtx;
 			vtx.pos = tris[i].p[j] + pos.cast<double>();
 			vtx.norm = Vec3d(0,1,0);
-			vtx.tex = Vec2d(tris[i].p[j][0], tris[i].p[j][1]);
+			vtx.tex = Vec2d(j == 1 || j == 2, j == 2);
 			bool match = false;
 			for(int k = std::max(0, (int)vl.size() - 16); k < vl.size(); k++){
 				if(vl[k] == vtx){

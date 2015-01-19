@@ -20,6 +20,7 @@
 #include "SignModulo.h"
 #include "draw/mqoadapt.h"
 #include "draw/VBO.h"
+#include "draw/MarchingCube.h"
 
 extern "C"{
 #include "clib/mathdef.h"
@@ -664,21 +665,21 @@ void VoxelEntity::draw(WarDraw *wd){
 						// This detail culling is not much effective.
 						//if (bf.Contains(new BoundingBox(ind2real(keyindex + new Vec3i(ix, kv.Value.scanLines[ix, iz, 0], iz)), ind2real(keyindex + new Vec3i(ix + 1, kv.Value.scanLines[ix, iz, 1] + 1, iz + 1)))) != ContainmentType.Disjoint)
 						const int (&scanLines)[CELLSIZE][CELLSIZE][2] = cv.getScanLines();
-						for (int iy = scanLines[ix][iz][0]; iy < scanLines[ix][iz][1]; iy++){
+						for (int iy = 0; iy < CELLSIZE; iy++){
 
 							// Cull too far Cells
-							if (cv(ix, iy, iz).getType() == Cell::Air)
+/*							if (cv(ix, iy, iz).getType() == Cell::Air)
 								continue;
 							if (maxViewCells < abs(ix + it->first[0] * CELLSIZE - inf[0]))
 								continue;
 							if (maxViewCells < abs(iy + it->first[1] * CELLSIZE - inf[1]))
 								continue;
 							if (maxViewCells < abs(iz + it->first[2] * CELLSIZE - inf[2]))
-								continue;
+								continue;*/
 
 							// If the Cell is buried under ground, it's no use examining each face of the Cell.
-							if(6 <= cv(ix, iy, iz).getAdjacents())
-								continue;
+//							if(6 <= cv(ix, iy, iz).getAdjacents())
+//								continue;
 
 							const Cell &cell = cv(ix, iy, iz);
 							Vec3i posInVolume(ix, iy, iz);
@@ -726,6 +727,10 @@ void VoxelEntity::draw(WarDraw *wd){
 					glEnableClientState(GL_NORMAL_ARRAY);
 					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
+					glPushAttrib(GL_POLYGON_BIT);
+					glFrontFace(GL_CW);
+//					glDisable(GL_CULL_FACE);
+
 					glBindBuffer(GL_ARRAY_BUFFER, cv.vbo[i]);
 					glVertexPointer(3, GL_DOUBLE, sizeof(VERTEX), (void*)offsetof(VERTEX, pos)); // Vertex array
 					glNormalPointer(GL_DOUBLE, sizeof(VERTEX), (void*)offsetof(VERTEX, norm)); // Normal array
@@ -735,6 +740,8 @@ void VoxelEntity::draw(WarDraw *wd){
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cv.vboIdx[i]);
 
 					glDrawElements(GL_TRIANGLES, cv.vidxCounts[i], GL_UNSIGNED_INT, 0);
+
+					glPopAttrib();
 
 					glDisableClientState(GL_VERTEX_ARRAY);
 					glDisableClientState(GL_NORMAL_ARRAY);
@@ -1044,22 +1051,52 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 	else if(cell.getType() == Cell::ArmorInvCorner){
 		drawIndexedGeneral(numof(invCornerIndices), 0, invCornerIndices);
 	}
-	else if(!x0 && !x1 && !y0 && !y1){
-		drawIndexed(36, 0);
+	else if(vlist){
+		using namespace MarchingCube;
+		GRIDCELL gcell;
+		for(int k = 0; k < 8; k++){
+			gcell.p[k] = vertexOffsets[k].cast<double>();
+			gcell.val[k] = (*cv).cell(posInVolume + vertexOffsets[k]).isTranslucent();
+		}
+		TRIANGLE tris[5];
+		int ntris = Polygonise(gcell, 0.5, tris);
+		for(int i = 0; i < ntris; i++) for(int j = 0; j < 3; j++){
+			std::vector<VERTEX> &vl = vlist[material];
+			VERTEX vtx;
+			vtx.pos = tris[i].p[j] + pos.cast<double>();
+			vtx.norm = Vec3d(0,1,0);
+			vtx.tex = Vec2d(tris[i].p[j][0], tris[i].p[j][1]);
+			bool match = false;
+			for(int k = std::max(0, (int)vl.size() - 16); k < vl.size(); k++){
+				if(vl[k] == vtx){
+					vidx[material].push_back(k);
+					match = true;
+				}
+			}
+			if(!match){
+				vidx[material].push_back(vl.size());
+				vl.push_back(vtx);
+			}
+		}
 	}
 	else{
-		if(!x0)
-			drawIndexed(2 * 3, 8 * 3);
-		if(!x1)
-			drawIndexed(2 * 3, 10 * 3);
-		if(!y0)
-			drawIndexed(2 * 3, 0);
-		if(!y1)
-			drawIndexed(2 * 3, 2 * 3);
-		if(!z0)
-			drawIndexed(2 * 3, 4 * 3);
-		if(!z1)
-			drawIndexed(2 * 3, 6 * 3);
+		if(!x0 && !x1 && !y0 && !y1){
+			drawIndexed(36, 0);
+		}
+		else{
+			if(!x0)
+				drawIndexed(2 * 3, 8 * 3);
+			if(!x1)
+				drawIndexed(2 * 3, 10 * 3);
+			if(!y0)
+				drawIndexed(2 * 3, 0);
+			if(!y1)
+				drawIndexed(2 * 3, 2 * 3);
+			if(!z0)
+				drawIndexed(2 * 3, 4 * 3);
+			if(!z1)
+				drawIndexed(2 * 3, 6 * 3);
+		}
 	}
 	if(!vlist)
 		glEnd();

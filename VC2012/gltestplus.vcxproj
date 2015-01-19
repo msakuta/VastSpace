@@ -208,6 +208,7 @@
     <ClCompile Include="..\src\draw\GatlingTurret-draw.cpp" />
     <ClCompile Include="..\src\draw\LMissileTurret-draw.cpp" />
     <ClCompile Include="..\src\draw\LTurret-draw.cpp" />
+    <ClCompile Include="..\src\draw\MarchingCube.cpp" />
     <ClCompile Include="..\src\draw\material.cpp" />
     <ClCompile Include="..\src\draw\Mesh-draw.cpp" />
     <ClCompile Include="..\src\draw\Missile-draw.cpp" />
@@ -302,6 +303,7 @@
     <ClInclude Include="..\include\draw\blackbody.h" />
     <ClInclude Include="..\include\draw\effects.h" />
     <ClInclude Include="..\include\draw\HDR.h" />
+    <ClInclude Include="..\include\draw\MarchingCube.h" />
     <ClInclude Include="..\include\draw\material.h" />
     <ClInclude Include="..\include\draw\mqoadapt.h" />
     <ClInclude Include="..\include\draw\OpenGLState.h" />

@@ -360,6 +360,7 @@
     <ClCompile Include="..\src\draw\VBO.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\draw\MarchingCube.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\effects.h">
@@ -698,6 +699,7 @@
     <ClInclude Include="..\include\draw\VBO.h">
       <Filter>Exported Headers\draw</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\draw\MarchingCube.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\VastSpace.rc" />

@@ -90,6 +90,23 @@ struct VERTEX{
 	}
 };
 
+/// Type for smoothing vertex normals.  A pointer to a VERTEX doesn't work because
+/// the VERTEX vector can be reallocated while enumerating vertices.
+struct VertexMapValue{
+	int material;
+	int index;
+};
+
+/// Map for accumulating vertices at the same position
+typedef std::map<Vec3d, std::vector<VertexMapValue>, bool (*)(const Vec3d&, const Vec3d&)> VertexMap;
+
+/// Operator to order vectors to build a Vec3d map
+static bool operator<(const Vec3d &a, const Vec3d &b){
+	return a[0] < b[0] ? true : b[0] < a[0] ? false
+		: a[1] < b[1] ? true : b[1] < a[1] ? false
+		: a[2] < b[2];
+}
+
 class CellVolume{
 public:
 	static const Cell v0;
@@ -280,7 +297,7 @@ public:
 
 protected:
 	void drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv = NULL, const Vec3i &posInVolume = Vec3i(0,0,0),
-		std::vector<VERTEX> *vlist = NULL, std::vector<GLuint> *vidx = NULL)const;
+		std::vector<VERTEX> *vlist = NULL, std::vector<GLuint> *vidx = NULL, VertexMap *vertexMap = NULL)const;
 private:
 	VolumeMap volume;
 	int bricks[Cell::NumTypes];
@@ -656,6 +673,7 @@ void VoxelEntity::draw(WarDraw *wd){
 				continue;
 
 			if(cv.vboDirty){
+				VertexMap vertexMap(operator<);
 				std::vector<VERTEX> vlist[cv.Num_Mat];
 				std::vector<GLuint> vidx[cv.Num_Mat];
 				cv.modeledCells.clear();
@@ -684,8 +702,28 @@ void VoxelEntity::draw(WarDraw *wd){
 							const Cell &cell = cv(ix, iy, iz);
 							Vec3i posInVolume(ix, iy, iz);
 
-							drawCell(cell, posInVolume + it->first * CELLSIZE, celltype, &cv, posInVolume, vlist, vidx);
+							drawCell(cell, posInVolume + it->first * CELLSIZE, celltype, &cv, posInVolume, vlist, vidx, &vertexMap);
 						}
+					}
+				}
+
+				// Smooth shading by averaging normal vectors for vertices at the same position
+				for(auto vi : vertexMap){
+					// If this vertex is not shared, do not bother trying to calculate average of normals.
+					if(vi.second.size() <= 1)
+						continue;
+
+					Vec3d sum(0,0,0);
+					for(auto v : vi.second)
+						sum += vlist[v.material][v.index].norm;
+
+					// If the summed normal is zero, leave the normal vector
+					if(0 < sum.slen()){
+						sum.normin();
+
+						// Replace the normal with the average of vertex normals in the same position.
+						for(auto v : vi.second)
+							vlist[v.material][v.index].norm = sum;
 					}
 				}
 
@@ -786,7 +824,7 @@ void VoxelEntity::drawtra(WarDraw *wd){
 /// \param vlist A pointer to an array with size 3 of vertex buffer for list of vertices, can be NULL for direct drawing
 /// \param vidx A pointer to an array with size 3 of index buffer for list of primitives
 void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv, const Vec3i &posInVolume,
-						   std::vector<VERTEX> *vlist, std::vector<GLuint> *vidx)const
+						   std::vector<VERTEX> *vlist, std::vector<GLuint> *vidx, VertexMap *vertexMap)const
 {
 	static const Vec3d slopeNormal = Vec3d(1,1,0).norm();
 	static const Vec3d cornerNormal = Vec3d(1,1,1).norm();
@@ -1078,6 +1116,12 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 				}
 				if(!match){
 					vidx[material].push_back(vl.size());
+					if(vertexMap){
+						VertexMapValue vmv;
+						vmv.material = material;
+						vmv.index = vl.size();
+						(*vertexMap)[vtx.pos].push_back(vmv);
+					}
 					vl.push_back(vtx);
 				}
 			}

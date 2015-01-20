@@ -247,8 +247,8 @@ public:
 	Vec3i real2ind(const Vec3d &pos)const;
 	Vec3d ind2real(const Vec3i &ipos)const;
 	double getCellWidth()const{return 0.0025;} ///< Length of an edge of a cell, in kilometers
-	double getBaseHeight()const{return 0.05;}
-	double getNoiseHeight()const{return 0.015;}
+	double getBaseHeight()const{return 0.01;}
+	double getNoiseHeight()const{return 0.005;}
 
 	const Cell &cell(int ix, int iy, int iz){
 		Vec3i ci = Vec3i(SignDiv(ix, CELLSIZE), SignDiv(iy, CELLSIZE), SignDiv(iz, CELLSIZE));
@@ -727,10 +727,6 @@ void VoxelEntity::draw(WarDraw *wd){
 					glEnableClientState(GL_NORMAL_ARRAY);
 					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-					glPushAttrib(GL_POLYGON_BIT);
-					glFrontFace(GL_CW);
-//					glDisable(GL_CULL_FACE);
-
 					glBindBuffer(GL_ARRAY_BUFFER, cv.vbo[i]);
 					glVertexPointer(3, GL_DOUBLE, sizeof(VERTEX), (void*)offsetof(VERTEX, pos)); // Vertex array
 					glNormalPointer(GL_DOUBLE, sizeof(VERTEX), (void*)offsetof(VERTEX, norm)); // Normal array
@@ -740,8 +736,6 @@ void VoxelEntity::draw(WarDraw *wd){
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cv.vboIdx[i]);
 
 					glDrawElements(GL_TRIANGLES, cv.vidxCounts[i], GL_UNSIGNED_INT, 0);
-
-					glPopAttrib();
 
 					glDisableClientState(GL_VERTEX_ARRAY);
 					glDisableClientState(GL_NORMAL_ARRAY);
@@ -1060,22 +1054,32 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		}
 		TRIANGLE tris[5];
 		int ntris = Polygonise(gcell, 0.5, tris);
-		for(int i = 0; i < ntris; i++) for(int j = 0; j < 3; j++){
-			std::vector<VERTEX> &vl = vlist[material];
-			VERTEX vtx;
-			vtx.pos = tris[i].p[j] + pos.cast<double>();
-			vtx.norm = Vec3d(0,1,0);
-			vtx.tex = Vec2d(j == 1 || j == 2, j == 2);
-			bool match = false;
-			for(int k = std::max(0, (int)vl.size() - 16); k < vl.size(); k++){
-				if(vl[k] == vtx){
-					vidx[material].push_back(k);
-					match = true;
+		for(int i = 0; i < ntris; i++){
+			TRIANGLE &tri = tris[i];
+			Vec3d v01 = tri.p[1] - tri.p[0];
+			Vec3d v02 = tri.p[2] - tri.p[0];
+			Vec3d normal = v02.vp(v01);
+			if(0 < normal.slen())
+				normal.normin();
+			else
+				normal = Vec3d(0,1,0);
+			for(int j = 2; 0 <= j; j--){
+				std::vector<VERTEX> &vl = vlist[material];
+				VERTEX vtx;
+				vtx.pos = tris[i].p[j] + pos.cast<double>();
+				vtx.norm = normal;
+				vtx.tex = Vec2d(j == 1 || j == 2, j == 2);
+				bool match = false;
+				for(int k = std::max(0, (int)vl.size() - 16); k < vl.size(); k++){
+					if(vl[k] == vtx){
+						vidx[material].push_back(k);
+						match = true;
+					}
 				}
-			}
-			if(!match){
-				vidx[material].push_back(vl.size());
-				vl.push_back(vtx);
+				if(!match){
+					vidx[material].push_back(vl.size());
+					vl.push_back(vtx);
+				}
 			}
 		}
 	}

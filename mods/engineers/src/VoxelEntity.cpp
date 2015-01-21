@@ -16,8 +16,8 @@
 #include "draw/ShaderBind.h"
 #include "draw/material.h"
 #include "glstack.h"
-#include "noises/simplexnoise1234d.h"
-#include "SignModulo.h"
+#include "../../src/noises/simplexnoise1234d.h"
+#include "../../src/SignModulo.h"
 #include "draw/mqoadapt.h"
 #include "draw/VBO.h"
 #include "draw/MarchingCube.h"
@@ -211,7 +211,7 @@ inline bool operator<(const Vec3i &a, const Vec3i &b){
 /// \brief An EntityCommand for making changes to cells in VoxelEntity
 ///
 /// It can place or remove a voxel by parameters.
-struct EXPORT ModifyVoxelCommand : public SerializableCommand{
+struct ModifyVoxelCommand : public SerializableCommand{
 	COMMAND_BASIC_MEMBERS(ModifyVoxelCommand, EntityCommand);
 	ModifyVoxelCommand(){}
 	ModifyVoxelCommand(HSQUIRRELVM v, Entity &e);
@@ -229,7 +229,7 @@ struct EXPORT ModifyVoxelCommand : public SerializableCommand{
 	virtual void unserialize(UnserializeContext &);
 };
 
-class EXPORT VoxelEntity : public Entity{
+class VoxelEntity : public Entity{
 public:
 	typedef Entity st;
 

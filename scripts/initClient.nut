@@ -975,30 +975,29 @@ if(!isServer()){
 // Reserve the previous function
 client_old_init_Universe <- "init_Universe" in this ? init_Universe : null;
 
+function callTest(){
+	print("Closing mainmenu" + mainmenu);
+	mainmenu.close();
+	mainmenu = GLWbigMenu();
+	print("New mainmenu" + mainmenu);
+	mainmenu.title = "Test Missions";
+	mainmenu.addItem("Eternal Fight Demo", @() sendCM("load_eternalFight"));
+	mainmenu.addItem("Interceptor vs Defender", @() sendCM("load_demo1"));
+	mainmenu.addItem("Interceptor vs Frigate", @() sendCM("load_demo2"));
+	mainmenu.addItem("Interceptor vs Destroyer", @() sendCM("load_demo3"));
+	mainmenu.addItem("Defender vs Destroyer", @() sendCM("load_demo4"));
+	mainmenu.addItem("Demo 5", @() sendCM("load_demo5"));
+
+	// Adjust window position to center of screen, after all menu items are added.
+	mainmenu.x = screenwidth() / 2 - mainmenu.width / 2;
+	mainmenu.y = screenheight() / 2 - mainmenu.height / 2;
+}
+
 function init_Universe(){
 	cmd("scripter");
 
 	// The default star name sector radius settings
 	cmd("r_star_name_sectors " + 1);
-
-	function callTest(){
-		print("Closing mainmenu" + mainmenu);
-		mainmenu.close();
-		mainmenu = GLWbigMenu();
-		print("New mainmenu" + mainmenu);
-		mainmenu.title = "Test Missions";
-		mainmenu.addItem("Eternal Fight Demo", @() sendCM("load_eternalFight"));
-		mainmenu.addItem("Interceptor vs Defender", @() sendCM("load_demo1"));
-		mainmenu.addItem("Interceptor vs Frigate", @() sendCM("load_demo2"));
-		mainmenu.addItem("Interceptor vs Destroyer", @() sendCM("load_demo3"));
-		mainmenu.addItem("Defender vs Destroyer", @() sendCM("load_demo4"));
-		mainmenu.addItem("Demo 5", @() sendCM("load_demo5"));
-		mainmenu.addItem("Engineers Demo", @() sendCM("load_engdemo"));
-
-		// Adjust window position to center of screen, after all menu items are added.
-		mainmenu.x = screenwidth() / 2 - mainmenu.width / 2;
-		mainmenu.y = screenheight() / 2 - mainmenu.height / 2;
-	}
 
 	local scw = screenwidth();
 	local sch = screenheight();

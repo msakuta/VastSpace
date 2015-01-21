@@ -23,10 +23,12 @@
     <ClCompile Include="..\..\..\src\noises\simplexnoise1234.cpp" />
     <ClCompile Include="..\..\..\src\noises\simplexnoise1234d.cpp" />
     <ClCompile Include="..\src\draw\MarchingCube.cpp" />
+    <ClCompile Include="..\src\draw\VoxelEntity-draw.cpp" />
     <ClCompile Include="..\src\VoxelEntity.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\MarchingCube.h" />
+    <ClInclude Include="..\include\VoxelEntity.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8F43E1A8-E2BC-44B6-9A66-2F5B5908EA0B}</ProjectGuid>

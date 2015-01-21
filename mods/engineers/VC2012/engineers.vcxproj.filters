@@ -36,10 +36,16 @@
     <ClCompile Include="..\..\..\src\noises\simplexnoise1234.cpp">
       <Filter>Sources\noises</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\draw\VoxelEntity-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\MarchingCube.h">
       <Filter>Headers\draw</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\VoxelEntity.h">
+      <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

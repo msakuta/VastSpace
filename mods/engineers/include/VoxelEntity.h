@@ -229,9 +229,9 @@ public:
 
 	Vec3i real2ind(const Vec3d &pos)const;
 	Vec3d ind2real(const Vec3i &ipos)const;
-	double getCellWidth()const{return 0.0025;} ///< Length of an edge of a cell, in kilometers
-	double getBaseHeight()const{return 0.01;}
-	double getNoiseHeight()const{return 0.005;}
+	double getCellWidth()const{return cellWidth;} ///< Length of an edge of a cell, in kilometers
+	double getBaseHeight()const{return baseHeight;}
+	double getNoiseHeight()const{return noiseHeight;}
 
 	const Cell &cell(int ix, int iy, int iz){
 		Vec3i ci = Vec3i(SignDiv(ix, CELLSIZE), SignDiv(iy, CELLSIZE), SignDiv(iz, CELLSIZE));
@@ -262,8 +262,15 @@ public:
 	bool isSolid(const Vec3d &rv);
 
 protected:
+	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
+	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
+
 	void drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv = NULL, const Vec3i &posInVolume = Vec3i(0,0,0),
 		std::vector<VERTEX> *vlist = NULL, std::vector<GLuint> *vidx = NULL, VertexMap *vertexMap = NULL)const;
+
+	double cellWidth;
+	double baseHeight;
+	double noiseHeight;
 private:
 	VolumeMap volume;
 	int bricks[Cell::NumTypes];

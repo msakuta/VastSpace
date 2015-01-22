@@ -16,6 +16,10 @@ player.select([e]);
 
 local voxel = player.cs.addent("VoxelEntity", Vec3d(0.05, 0, 0));
 
+voxel.cellWidth = 0.0025;
+voxel.baseHeight = 0.03;
+voxel.noiseHeight = 0.015;
+
 cmd("bind g putvoxel");
 cmd("bind h digvoxel");
 cmd("bind 1 selvoxel 1");

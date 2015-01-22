@@ -302,7 +302,7 @@ void CellVolume::updateCache()
 }
 
 
-VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<){
+VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(0.0025), baseHeight(0.01), noiseHeight(0.005){
 }
 
 void VoxelEntity::anim(double dt){
@@ -467,6 +467,50 @@ bool VoxelEntity::isSolid(const Vec3d &rv){
 	}
 	else
 		return false;
+}
+
+SQInteger VoxelEntity::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!scstrcmp(name, _SC("cellWidth"))){
+		sq_pushfloat(v, cellWidth);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("baseHeight"))){
+		sq_pushfloat(v, baseHeight);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("noiseHeight"))){
+		sq_pushfloat(v, noiseHeight);
+		return 1;
+	}
+	else
+		return st::sqGet(v, name);
+}
+
+SQInteger VoxelEntity::sqSet(HSQUIRRELVM v, const SQChar *name){
+	SQInteger ret;
+	auto setter = [this, &ret, &v](const SQChar *name, const SQChar *vname, double &vvalue){
+		if(scstrcmp(name, vname))
+			return false;
+		if(volume.size()){
+			ret = sq_throwerror(v, gltestp::dstring("Could not set ") << vname << _SC(" because VoxelEntity has already materialized"));
+			return true;
+		}
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf))){
+			ret = sq_throwerror(v, gltestp::dstring("Value not convertible to float for ") << vname);
+			return true;
+		}
+		vvalue = retf;
+		ret = 0;
+		return true;
+	};
+
+	if(setter(name, _SC("cellWidth"), cellWidth)
+		|| setter(name, _SC("baseHeight"), baseHeight)
+		|| setter(name, _SC("noiseHeight"), noiseHeight))
+		return ret;
+	else
+		return st::sqSet(v, name);
 }
 
 

@@ -581,8 +581,8 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 void VoxelEntity::initTexLists(){
 	if(!texlist_init){
 		texlist_init = true;
-		texlist_rock = CallCacheBitmap("rock.jpg", "textures/rock.jpg", NULL, NULL);
-		texlist_iron = CallCacheBitmap("iron.jpg", "textures/iron.jpg", NULL, NULL);
-		texlist_armor = CallCacheBitmap("armor.png", "textures/armor.png", NULL, NULL);
+		texlist_rock = CallCacheBitmap("rock.jpg", texRockName, NULL, NULL);
+		texlist_iron = CallCacheBitmap("iron.jpg", texIronName, NULL, NULL);
+		texlist_armor = CallCacheBitmap("armor.png", texArmorName, NULL, NULL);
 	}
 }

@@ -204,6 +204,8 @@ public:
 
 	static EntityRegister<VoxelEntity> entityRegister;
 
+	void init();
+
 //	virtual void serialize(SerializeContext &sc);
 //	virtual void unserialize(UnserializeContext &sc);
 //	virtual void addRigidBody(WarSpace*);
@@ -261,6 +263,10 @@ public:
 	bool isSolid(const Vec3i &v);
 	bool isSolid(const Vec3d &rv);
 
+	static gltestp::dstring modPath(){
+		return "mods/engineers/";
+	}
+
 protected:
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
 	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
@@ -276,6 +282,10 @@ private:
 	int bricks[Cell::NumTypes];
 	Vec3i previewCellPos;
 	Cell previewCell;
+
+	static gltestp::dstring texRockName;
+	static gltestp::dstring texIronName;
+	static gltestp::dstring texArmorName;
 
 	static bool texlist_init;
 	static GLuint texlist_rock;

@@ -10,6 +10,7 @@
 #include "Game.h"
 #include "sqadapt.h"
 #include "../../src/noises/simplexnoise1234d.h"
+#include "SqInitProcess.h"
 
 extern "C"{
 #include "clib/mathdef.h"
@@ -34,6 +35,10 @@ inline bool operator<(const Vec3i &a, const Vec3i &b){
 
 
 Entity::EntityRegister<VoxelEntity> VoxelEntity::entityRegister("VoxelEntity");
+
+gltestp::dstring VoxelEntity::texRockName;
+gltestp::dstring VoxelEntity::texIronName;
+gltestp::dstring VoxelEntity::texArmorName;
 
 bool VoxelEntity::texlist_init = false;
 GLuint VoxelEntity::texlist_rock;
@@ -303,10 +308,24 @@ void CellVolume::updateCache()
 
 
 VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(0.0025), baseHeight(0.01), noiseHeight(0.005){
+	init();
 }
 
 void VoxelEntity::anim(double dt){
 }
+
+void VoxelEntity::init(){
+	static bool initialized = false;
+	if(!initialized){
+		SqInit(game->sqvm, modPath() << _SC("scripts/VoxelEntity.nut"),
+				StringProcess(texRockName, "rockTexture") <<=
+				StringProcess(texIronName, "ironTexture") <<=
+				StringProcess(texArmorName, "armorTexture")
+				);
+		initialized = true;
+	}
+}
+
 
 
 bool VoxelEntity::command(EntityCommand *com){

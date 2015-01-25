@@ -39,12 +39,24 @@
     <ClCompile Include="..\src\draw\VoxelEntity-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Engineer.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\draw\Engineer-draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\MarchingCube.h">
       <Filter>Headers\draw</Filter>
     </ClInclude>
     <ClInclude Include="..\include\VoxelEntity.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Engineer.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\engineers.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

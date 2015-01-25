@@ -22,12 +22,16 @@
     <ClCompile Include="..\..\..\src\draw\VBO.cpp" />
     <ClCompile Include="..\..\..\src\noises\simplexnoise1234.cpp" />
     <ClCompile Include="..\..\..\src\noises\simplexnoise1234d.cpp" />
+    <ClCompile Include="..\src\draw\Engineer-draw.cpp" />
     <ClCompile Include="..\src\draw\MarchingCube.cpp" />
     <ClCompile Include="..\src\draw\VoxelEntity-draw.cpp" />
+    <ClCompile Include="..\src\Engineer.cpp" />
     <ClCompile Include="..\src\VoxelEntity.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\MarchingCube.h" />
+    <ClInclude Include="..\include\Engineer.h" />
+    <ClInclude Include="..\include\engineers.h" />
     <ClInclude Include="..\include\VoxelEntity.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -10,7 +10,7 @@ if(earthlo){
 
 universe.paused = false;
 
-local e = player.cs.addent("Soldier", Vec3d(-0.01, 0, 0));
+local e = player.cs.addent("Engineer", Vec3d(-0.01, 0, 0));
 player.chase = e;
 player.select([e]);
 

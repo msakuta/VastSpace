@@ -338,7 +338,7 @@ bool JoyStick::InitJoystick()
 			break;
 		}
 	}
-	if(i == uiNumJoysticks){
+	if(i != uiNumJoysticks){
 		return false;
 	}
 

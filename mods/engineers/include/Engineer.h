@@ -69,6 +69,64 @@ protected:
 };
 
 
+class InventoryItem{
+public:
+	virtual gltestp::dstring typeString()const = 0;
+	virtual double getVolume()const = 0;
+	virtual double getMass()const = 0;
+	virtual bool stack(const InventoryItem &o){return false;}
+};
+
+typedef std::list<InventoryItem*> InventoryItemList;
+
+class OreItem : public InventoryItem{
+public:
+	OreItem(double amass) : mass(amass){}
+
+	double getVolume()const override{
+		return getSpecificWeight() * mass;
+	}
+	double getMass()const override{
+		return mass;
+	}
+	bool stack(const InventoryItem &o){
+		if(typeString() == o.typeString()){
+			const OreItem &oi = static_cast<const OreItem&>(o);
+			mass += oi.mass;
+			return true;
+		}
+		return false;
+	}
+
+	virtual double getSpecificWeight()const = 0;
+protected:
+	double mass;
+};
+
+class RockOreItem : public OreItem{
+public:
+	RockOreItem(double amass = 0) : OreItem(amass){}
+	gltestp::dstring typeString()const override{
+		return "RockOre";
+	}
+	double getSpecificWeight()const override{
+		return 5.5;
+	};
+};
+
+class IronOreItem : public OreItem{
+public:
+	IronOreItem(double amass = 0) : OreItem(amass){}
+	gltestp::dstring typeString()const override{
+		return "IronOre";
+	}
+	double getSpecificWeight()const override{
+		return 9.2;
+	};
+};
+
+
+
 /// \breif The infantryman with firearms and a spacesuit equipped.
 class Engineer : public Autonomous{
 public:
@@ -106,6 +164,8 @@ public:
 	virtual bool command(EntityCommand *com);
 	virtual const ManeuverParams &getManeuve()const;
 	virtual HitBoxList *getTraceHitBoxes()const{return &hitboxes;}
+
+	bool addItem(InventoryItem &);
 
 	static double getModelScale(){return modelScale;}
 
@@ -163,6 +223,8 @@ protected:
 	bool hooked;
 	bool hookretract;
 
+	InventoryItemList inventory;
+
 	static HitBoxList hitboxes;
 	static double modelScale;
 	static double hitRadius;
@@ -176,6 +238,8 @@ protected:
 	static GLuint overlayDisp;
 	static double muzzleFlashRadius[2];
 	static Vec3d muzzleFlashOffset[2];
+
+	friend class EntityRegister<Engineer>;
 };
 
 

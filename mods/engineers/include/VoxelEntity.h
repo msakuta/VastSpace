@@ -190,6 +190,19 @@ struct ModifyVoxelCommand : public SerializableCommand{
 	Mode mode; ///< Whether to put a voxel (false means removing)
 	Cell::Type ct; ///< Cell type to place
 	char rotation;
+	Entity *modifier;
+
+	virtual void serialize(SerializeContext &);
+	virtual void unserialize(UnserializeContext &);
+};
+
+struct GainItemCommand : public SerializableCommand{
+	COMMAND_BASIC_MEMBERS(GainItemCommand, EntityCommand);
+	GainItemCommand(){}
+	GainItemCommand(HSQUIRRELVM v, Entity &e);
+
+	gltestp::dstring typeString;
+	double amount;
 
 	virtual void serialize(SerializeContext &);
 	virtual void unserialize(UnserializeContext &);

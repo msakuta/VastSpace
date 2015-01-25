@@ -407,7 +407,12 @@ bool VoxelEntity::command(EntityCommand *com){
 						Cell::Type ct = iz == 0 ? mvc->ct : Cell::Occupied;
 						Vec3i ci = baseIdx + Cell::rotate(mvc->rotation, Vec3i(0, 0, iz));
 						if(setCell(ci[0], ci[1], ci[2], Cell(ct, mvc->rotation))){
-		//					player->addBricks(curtype, -1);
+							if(mvc->modifier){
+								GainItemCommand gic;
+								gic.typeString = ct == Cell::Iron ? "IronOre" : "RockOre";
+								gic.amount = -1.;
+								mvc->modifier->command(&gic);
+							}
 						}
 						else{
 							notdone = true;
@@ -431,6 +436,12 @@ bool VoxelEntity::command(EntityCommand *com){
 				Cell c = cell(ci[0], ci[1], ci[2]);
 				if (c.isSolid() && setCell(ci[0], ci[1], ci[2], Cell::Air))
 				{
+					if(mvc->modifier){
+						GainItemCommand gic;
+						gic.typeString = c.getType() == c.Iron ? "IronOre" : "RockOre";
+						gic.amount = 1.;
+						mvc->modifier->command(&gic);
+					}
 //					player->addBricks(c.getType(), 1);
 					break;
 				}
@@ -546,6 +557,7 @@ void ModifyVoxelCommand::serialize(SerializeContext &sc){
 	sc.o << dir;
 	sc.o << mode;
 	sc.o << int(ct);
+	sc.o << modifier;
 }
 
 void ModifyVoxelCommand::unserialize(UnserializeContext &sc){
@@ -553,6 +565,7 @@ void ModifyVoxelCommand::unserialize(UnserializeContext &sc){
 	sc.i >> dir;
 	sc.i >> (int&)mode;
 	sc.i >> (int&)ct;
+	sc.i >> modifier;
 }
 
 ModifyVoxelCommand::ModifyVoxelCommand(HSQUIRRELVM v, Entity &){
@@ -585,4 +598,34 @@ ModifyVoxelCommand::ModifyVoxelCommand(HSQUIRRELVM v, Entity &){
 	SQInteger sqrotation;
 	if(SQ_SUCCEEDED(sq_getinteger(v, 7, &sqrotation)))
 		rotation = sqrotation;
+
+	modifier = Entity::sq_refobj(v, 8);
 }
+
+
+IMPLEMENT_COMMAND(GainItemCommand, "GainItem")
+
+void GainItemCommand::serialize(SerializeContext &sc){
+	sc.o << typeString;
+	sc.o << amount;
+}
+
+void GainItemCommand::unserialize(UnserializeContext &sc){
+	sc.i >> typeString;
+	sc.i >> amount;
+}
+
+GainItemCommand::GainItemCommand(HSQUIRRELVM v, Entity &){
+	int argc = sq_gettop(v);
+	if(argc < 2)
+		throw SQFArgumentError();
+	const SQChar *str;
+	if(SQ_FAILED(sq_getstring(v, 2, &str)))
+		throw SQFError(_SC("typeString required"));
+	typeString = str;
+
+	SQFloat f;
+	if(SQ_SUCCEEDED(sq_getfloat(v, 3, &f)))
+		amount = f;
+}
+

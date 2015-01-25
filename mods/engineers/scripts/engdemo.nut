@@ -43,9 +43,12 @@ local function modifyVoxel(mode){
 	local src = player.getpos();
 	local dir = player.getrot().cnj().trans(Vec3d(0, 0, -1));
 	local rottype = voxelRot[0] | (voxelRot[1] << 2) | (voxelRot[2] << 4);
-	foreachents(player.cs, function(e){
-		e.command("ModifyVoxel", src, dir, mode, voxelType, rottype);
-	});
+	local chase = player.chase;
+	if(chase != null){
+		foreachents(player.cs, function(e){
+			e.command("ModifyVoxel", src, dir, mode, voxelType, rottype, chase);
+		});
+	}
 }
 
 register_console_command("putvoxel", @() modifyVoxel("Put"));

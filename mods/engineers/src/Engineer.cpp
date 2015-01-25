@@ -58,6 +58,28 @@ struct SetSoldierRotCommand : public SerializableCommand{
 };
 
 
+std::map<gltestp::dstring, std::function<InventoryItem *(double amount)>> inventoryItemCtors;
+
+template<> void Entity::EntityRegister<Engineer>::sq_defineInt(HSQUIRRELVM v){
+	inventoryItemCtors["RockOre"] = [](double amount){return new RockOreItem(amount);};
+	inventoryItemCtors["IronOre"] = [](double amount){return new IronOreItem(amount);};
+	register_closure(v, _SC("addItem"), [](HSQUIRRELVM v){
+		Engineer *e = static_cast<Engineer*>(sq_refobj(v));
+		if(!e)
+			return SQInteger(0);
+		const SQChar *str;
+		if(SQ_FAILED(sq_getstring(v, 2, &str)))
+			return sq_throwerror(v, _SC("addItem's second argument must be a string"));
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+			return sq_throwerror(v, _SC("addItem's third argument must be a float"));
+		auto it = inventoryItemCtors.find(str);
+		if(it != inventoryItemCtors.end())
+			e->addItem(*it->second(f));
+		return SQInteger(0);
+	});
+}
+
 Entity::EntityRegister<Engineer> Engineer::entityRegister("Engineer");
 const unsigned Engineer::classid = registerClass("Engineer", Conster<Engineer>);
 const char *Engineer::classname()const{return "Engineer";}
@@ -225,6 +247,8 @@ Engineer::~Engineer(){
 			delete arms[i];
 		}
 	}
+	for(auto it : inventory)
+		delete it;
 }
 
 void Engineer::init(){
@@ -1571,8 +1595,27 @@ bool Engineer::command(EntityCommand *com){
 			standEntity = NULL;
 		}
 	}
+	else if(GainItemCommand *gic = InterpretCommand<GainItemCommand>(com)){
+		auto it = inventoryItemCtors.find(gic->typeString);
+		if(it != inventoryItemCtors.end()){
+			addItem(*it->second(gic->amount));
+		}
+	}
 	else
 		return st::command(com);
+}
+
+bool Engineer::addItem(InventoryItem &item){
+	for(auto it : this->inventory){
+		if(it->typeString() == item.typeString()){
+			if(it->stack(item)){
+				delete &item;
+				return true;
+			}
+		}
+	}
+	inventory.push_back(&item);
+	return true;
 }
 
 const Autonomous::ManeuverParams &Engineer::getManeuve()const{

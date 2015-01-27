@@ -124,6 +124,7 @@ int g_gear_toggle_mode = 0;
 static int show_planets_name = 0;
 static int r_star_name_sectors = 1;
 static int cmdwnd = 0;
+static int g_joystick_enable = 0;
 //static bool g_focusset = false;
 //GLwindow *glwcmdmenu = NULL;
 ClientApplication application;
@@ -1187,7 +1188,7 @@ void ClientGame::clientUpdate(double dt){
 	// or MotionGetChange() always returns 0.
 	MotionFrame(dt);
 
-	if(joyStick.InitJoystick()){
+	if(g_joystick_enable && joyStick.InitJoystick()){
 		joyStick.CheckJoystick(inputs);
 	}
 	for(PlayerList::iterator it = players.begin(); it != players.end(); ++it){
@@ -2638,6 +2639,7 @@ int main(int argc, char *argv[])
 	CvarAdd("g_debug_sound", &g_debug_sound, cvar_int);
 	CvarAdd("g_interpolate_sound", &g_interpolate_sound, cvar_int);
 	CvarAdd("g_interpolate_sound_3d", &g_interpolate_sound_3d, cvar_int);
+	CvarAdd("g_joystick_enable", &g_joystick_enable, cvar_int);
 	Player::cmdInit(application);
 
 	CmdExec("@exec autoexec.cfg");

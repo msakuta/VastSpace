@@ -15,6 +15,8 @@ extern "C"{
 #include "clib/mathdef.h"
 }
 
+#include "cpplib/crc32.h"
+
 static const int maxViewDistance = 10.;
 
 
@@ -515,7 +517,13 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		GRIDCELL gcell;
 		for(int k = 0; k < 8; k++){
 			gcell.p[k] = vertexOffsets[k].cast<double>();
-			gcell.val[k] = (*cv).cell(posInVolume + vertexOffsets[k]).isTranslucent();
+			bool solid = (*cv).cell(posInVolume + vertexOffsets[k]).isTranslucent();
+			if(solid){
+				Vec3i posbuf = pos + vertexOffsets[k];
+				gcell.val[k] = RandomSequence(crc32(&posbuf, sizeof posbuf)).nextd() + 0.5;
+			}
+			else
+				gcell.val[k] = 0;
 		}
 		TRIANGLE tris[5];
 		int ntris = Polygonise(gcell, 0.5, tris);

@@ -35,6 +35,7 @@ cmd("bind home rotvoxel 1 1");
 cmd("bind end rotvoxel 1 -1");
 cmd("bind insert rotvoxel 2 1");
 cmd("bind delete rotvoxel 2 -1");
+cmd("bind i inventory");
 
 local voxelType = 1;
 local voxelRot = [0,0,0];

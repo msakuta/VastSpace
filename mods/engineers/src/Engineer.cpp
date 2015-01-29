@@ -78,6 +78,28 @@ template<> void Entity::EntityRegister<Engineer>::sq_defineInt(HSQUIRRELVM v){
 			e->addItem(*it->second(f));
 		return SQInteger(0);
 	});
+	register_closure(v, _SC("listItems"), [](HSQUIRRELVM v){
+		Engineer *e = static_cast<Engineer*>(sq_refobj(v));
+		if(!e)
+			return SQInteger(0);
+		sq_newarray(v, e->inventory.size());
+		int idx = 0;
+		for(auto it : e->inventory){
+			sq_pushinteger(v, idx++);
+			sq_newtable(v);
+			sq_pushstring(v, _SC("name"), -1);
+			sq_pushstring(v, it->typeString(), -1);
+			sq_createslot(v, -3);
+			sq_pushstring(v, _SC("mass"), -1);
+			sq_pushfloat(v, it->getMass());
+			sq_createslot(v, -3);
+			sq_pushstring(v, _SC("volume"), -1);
+			sq_pushfloat(v, it->getVolume());
+			sq_createslot(v, -3);
+			sq_set(v, -3);
+		}
+		return SQInteger(1);
+	});
 }
 
 Entity::EntityRegister<Engineer> Engineer::entityRegister("Engineer");

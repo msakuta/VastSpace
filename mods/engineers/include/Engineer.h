@@ -133,8 +133,7 @@ public:
 	typedef Autonomous st;
 
 	static EntityRegister<Engineer> entityRegister;
-	static const unsigned classid;
-	virtual const char *classname()const;
+	EntityStatic &getStatic()const override{return entityRegister;}
 
 	Engineer(Game *);
 	Engineer(WarField *);

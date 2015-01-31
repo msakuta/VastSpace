@@ -103,8 +103,6 @@ template<> void Entity::EntityRegister<Engineer>::sq_defineInt(HSQUIRRELVM v){
 }
 
 Entity::EntityRegister<Engineer> Engineer::entityRegister("Engineer");
-const unsigned Engineer::classid = registerClass("Engineer", Conster<Engineer>);
-const char *Engineer::classname()const{return "Engineer";}
 
 HitBoxList Engineer::hitboxes;
 double Engineer::modelScale = 2e-6;

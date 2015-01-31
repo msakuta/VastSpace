@@ -41,24 +41,45 @@ local voxelType = 1;
 local voxelRot = [0,0,0];
 
 local function modifyVoxel(mode){
-	local src = player.getpos();
-	local dir = player.getrot().cnj().trans(Vec3d(0, 0, -1));
-	local rottype = voxelRot[0] | (voxelRot[1] << 2) | (voxelRot[2] << 4);
-	local chase = player.chase;
-	if(chase != null){
-		local hit = false;
-		foreach(e in player.cs.entlist){
-			if("modifyVoxel" in e){
-				if(e.modifyVoxel(src, dir, mode, voxelType, rottype, chase)){
-					hit = true;
-					break;
-				}
+	local con = player.controlled;
+	if(con == null || !(con instanceof Engineer))
+		return;
+	if(mode == "Put" || mode == "Preview"){
+		local items = con.listItems();
+		local item = null;
+		local itemName = "";
+		switch(voxelType){
+			case 1: itemName = "RockOre"; break;
+			case 2: itemName = "IronOre"; break;
+			case 3:
+			case 4:
+			case 5:
+			case 6: itemName = "SteelPlate"; break;
+		}
+		for(local i = 0; i < items.len(); i++){
+			if(items[i].name == itemName && 1 < items[i].volume){
+				item = items[i];
+				break;
 			}
 		}
-		if(!hit && mode == "Put"){
-			local newve = player.cs.addent("VoxelEntity", src + dir * 0.01);
-			newve.setVoxel(voxelType);
+		if(item == null)
+			return;
+	}
+	local src = con.pos;
+	local dir = con.rot.trans(Vec3d(0, 0, -1));
+	local rottype = voxelRot[0] | (voxelRot[1] << 2) | (voxelRot[2] << 4);
+	local hit = false;
+	foreach(e in player.cs.entlist){
+		if("modifyVoxel" in e){
+			if(e.modifyVoxel(src, dir, mode, voxelType, rottype, con)){
+				hit = true;
+				break;
+			}
 		}
+	}
+	if(!hit && mode == "Put"){
+		local newve = player.cs.addent("VoxelEntity", src + dir * 0.01);
+		newve.setVoxel(voxelType);
 	}
 }
 

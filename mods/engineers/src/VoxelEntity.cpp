@@ -33,6 +33,50 @@ inline bool operator<(const Vec3i &a, const Vec3i &b){
 		return false;
 }
 
+template<> void Entity::EntityRegister<VoxelEntity>::sq_defineInt(HSQUIRRELVM v){
+	register_closure(v, _SC("modifyVoxel"), [](HSQUIRRELVM v){
+		VoxelEntity *e = static_cast<VoxelEntity*>(sq_refobj(v));
+		if(!e){
+			sq_pushbool(v, SQFalse);
+			return SQInteger(1);
+		}
+		try{
+			ModifyVoxelCommand mvc;
+			mvc.init(v, *e, 0);
+			if(!e->command(&mvc))
+				sq_pushbool(v, SQFalse);
+			else
+				sq_pushbool(v, mvc.retModified ? SQTrue : SQFalse);
+			return SQInteger(1);
+		}
+		catch(SQFError &err){
+			return sq_throwerror(v, err.what());
+		}
+		return SQInteger(0);
+	});
+	register_closure(v, _SC("setVoxel"), [](HSQUIRRELVM v){
+		VoxelEntity *e = static_cast<VoxelEntity*>(sq_refobj(v));
+		if(!e){
+			sq_pushbool(v, SQFalse);
+			return SQInteger(1);
+		}
+		try{
+			Cell::Type ct = Cell::Rock;
+			SQInteger sqct;
+			if(SQ_SUCCEEDED(sq_getinteger(v, 2, &sqct)))
+				ct = Cell::Type(sqct);
+
+			e->setCell(0,0,0, ct);
+
+			sq_pushbool(v, SQTrue);
+			return SQInteger(1);
+		}
+		catch(SQFError &e){
+			return sq_throwerror(v, e.what());
+		}
+		return SQInteger(0);
+	});
+}
 
 Entity::EntityRegister<VoxelEntity> VoxelEntity::entityRegister("VoxelEntity");
 
@@ -182,18 +226,29 @@ inline bool CellVolume::setCell(int ix, int iy, int iz, const Cell &newCell){
 
 		v[ix][iy][iz] = newCell;
 		updateCache();
+
+		auto updateIfExists = [this](Vec3i &ci){
+			auto it = world->volume.find(ci);
+			CellVolume *cv;
+			if(it == world->volume.end())
+				cv = &(world->volume[ci] = CellVolume(world, ci));
+			else
+				cv = &it->second;
+			cv->updateCache();
+		};
+
 		if(ix <= 0)
-			world->volume[Vec3i(index[0] - 1, index[1], index[2])].updateCache();
+			updateIfExists(Vec3i(index[0] - 1, index[1], index[2]));
 		else if(CELLSIZE - 1 <= ix)
-			world->volume[Vec3i(index[0] + 1, index[1], index[2])].updateCache();
+			updateIfExists(Vec3i(index[0] + 1, index[1], index[2]));
 		if(iy <= 0)
-			world->volume[Vec3i(index[0], index[1] - 1, index[2])].updateCache();
+			updateIfExists(Vec3i(index[0], index[1] - 1, index[2]));
 		else if (CELLSIZE - 1 <= iy)
-			world->volume[Vec3i(index[0], index[1] + 1, index[2])].updateCache();
+			updateIfExists(Vec3i(index[0], index[1] + 1, index[2]));
 		if(iz <= 0)
-			world->volume[Vec3i(index[0], index[1], index[2] - 1)].updateCache();
+			updateIfExists(Vec3i(index[0], index[1], index[2] - 1));
 		else if (CELLSIZE - 1 <= iz)
-			world->volume[Vec3i(index[0], index[1], index[2] + 1)].updateCache();
+			updateIfExists(Vec3i(index[0], index[1], index[2] + 1));
 		return true;
 	}
 }
@@ -307,11 +362,37 @@ void CellVolume::updateCache()
 }
 
 
-VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(0.0025), baseHeight(0.01), noiseHeight(0.005){
+VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(0.0025), baseHeight(0.01), noiseHeight(0.005), volumeInitialized(false){
 	init();
 }
 
 void VoxelEntity::anim(double dt){
+	if(!volumeInitialized){
+		volumeInitialized = true;
+
+		std::vector<CellVolume*> changed;
+		double noiseHeight = getNoiseHeight();
+		double baseHeight = getBaseHeight();
+		double maxHeight = baseHeight + noiseHeight * 2.; // Theoretical limit height
+		int maxCellCount = int(maxHeight / getCellWidth() / CELLSIZE) + 1;
+		for (int ix = -maxCellCount; ix <= maxCellCount; ix++){
+			for (int iy = -maxCellCount; iy <= maxCellCount; iy++){
+				for (int iz = -maxCellCount; iz <= maxCellCount; iz++){
+					Vec3i ci(ix, iy, iz);
+					if(volume.find(ci) == volume.end()){
+						volume[ci] = CellVolume(this, ci);
+						CellVolume &cv = volume[ci];
+						cv.initialize(ci);
+						changed.push_back(&volume[ci]);
+					}
+				}
+			}
+		}
+
+		for(std::vector<CellVolume*>::iterator it = changed.begin(); it != changed.end(); it++)
+			(*it)->updateCache();
+
+	}
 }
 
 void VoxelEntity::init(){
@@ -333,6 +414,7 @@ bool VoxelEntity::command(EntityCommand *com){
 		static const double boundHeight = 0.001;
 		Vec3d src = mvc->src - this->pos;
 		Vec3d dir = rot.itrans(mvc->dir);
+		mvc->retModified = false;
 		if(mvc->mode == mvc->Put || mvc->mode == mvc->Preview){
 
 			if(mvc->mode == mvc->Preview){
@@ -407,6 +489,7 @@ bool VoxelEntity::command(EntityCommand *com){
 						Cell::Type ct = iz == 0 ? mvc->ct : Cell::Occupied;
 						Vec3i ci = baseIdx + Cell::rotate(mvc->rotation, Vec3i(0, 0, iz));
 						if(setCell(ci[0], ci[1], ci[2], Cell(ct, mvc->rotation))){
+							mvc->retModified = true;
 							if(mvc->modifier){
 								GainItemCommand gic;
 								gic.typeString = ct == Cell::Iron ? "IronOre" : "RockOre";
@@ -425,6 +508,7 @@ bool VoxelEntity::command(EntityCommand *com){
 				else{ // Preview
 					previewCellPos = baseIdx;
 					previewCell = Cell(mvc->ct, mvc->rotation);
+					mvc->retModified = true;
 					break;
 				}
 			}
@@ -436,6 +520,7 @@ bool VoxelEntity::command(EntityCommand *com){
 				Cell c = cell(ci[0], ci[1], ci[2]);
 				if (c.isSolid() && setCell(ci[0], ci[1], ci[2], Cell::Air))
 				{
+					mvc->retModified = true;
 					if(mvc->modifier){
 						GainItemCommand gic;
 						gic.typeString = c.getType() == c.Iron ? "IronOre" : "RockOre";
@@ -448,7 +533,7 @@ bool VoxelEntity::command(EntityCommand *com){
 			}
 		}
 
-		return false;
+		return true;
 	}
 	else
 		return st::command(com);
@@ -473,6 +558,18 @@ Vec3i VoxelEntity::real2ind(const Vec3d &pos)const{
 Vec3d VoxelEntity::ind2real(const Vec3i &ipos)const{
 	Vec3i tpos = (ipos) * getCellWidth();
 	return tpos.cast<double>();
+}
+
+bool VoxelEntity::setCell(int ix, int iy, int iz, const Cell &newCell){
+	Vec3i ci = Vec3i(SignDiv(ix, CELLSIZE), SignDiv(iy, CELLSIZE), SignDiv(iz, CELLSIZE));
+	VolumeMap::iterator it = volume.find(ci);
+	CellVolume *cv;
+	if(it == volume.end())
+		cv = &(volume[ci] = CellVolume(this, ci));
+	else
+		cv = &it->second;
+	volumeInitialized = true;
+	return cv->setCell(SignModulo(ix, CELLSIZE), SignModulo(iy, CELLSIZE), SignModulo(iz, CELLSIZE), newCell);
 }
 
 /// <summary>Solidity check for given index coordinates</summary>
@@ -568,19 +665,23 @@ void ModifyVoxelCommand::unserialize(UnserializeContext &sc){
 	sc.i >> modifier;
 }
 
-ModifyVoxelCommand::ModifyVoxelCommand(HSQUIRRELVM v, Entity &){
+ModifyVoxelCommand::ModifyVoxelCommand(HSQUIRRELVM v, Entity &e){
+	init(v, e);
+}
+
+void ModifyVoxelCommand::init(HSQUIRRELVM v, Entity &e, int offset){
 	int argc = sq_gettop(v);
 	if(argc < 2)
 		throw SQFArgumentError();
 	SQVec3d qvsrc;
-	qvsrc.getValue(v, 3);
+	qvsrc.getValue(v, 2 + offset);
 	src = qvsrc.value;
 	SQVec3d qvdir;
-	qvdir.getValue(v, 4);
+	qvdir.getValue(v, 3 + offset);
 	dir = qvdir.value;
 
 	const SQChar *sqstr;
-	if(SQ_FAILED(sq_getstring(v, 5, &sqstr)))
+	if(SQ_FAILED(sq_getstring(v, 4 + offset, &sqstr)))
 		throw SQFError(_SC("4th argument must be string"));
 	if(!scstrcmp(sqstr, _SC("Put")))
 		mode = Put;
@@ -591,15 +692,15 @@ ModifyVoxelCommand::ModifyVoxelCommand(HSQUIRRELVM v, Entity &){
 
 	ct = Cell::Rock;
 	SQInteger sqct;
-	if(SQ_SUCCEEDED(sq_getinteger(v, 6, &sqct)))
+	if(SQ_SUCCEEDED(sq_getinteger(v, 5 + offset, &sqct)))
 		ct = Cell::Type(sqct);
 
 	rotation = 0;
 	SQInteger sqrotation;
-	if(SQ_SUCCEEDED(sq_getinteger(v, 7, &sqrotation)))
+	if(SQ_SUCCEEDED(sq_getinteger(v, 6 + offset, &sqrotation)))
 		rotation = sqrotation;
 
-	modifier = Entity::sq_refobj(v, 8);
+	modifier = Entity::sq_refobj(v, 7 + offset);
 }
 
 

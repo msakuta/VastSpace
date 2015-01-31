@@ -182,6 +182,8 @@ struct ModifyVoxelCommand : public SerializableCommand{
 	ModifyVoxelCommand(){}
 	ModifyVoxelCommand(HSQUIRRELVM v, Entity &e);
 
+	void init(HSQUIRRELVM v, Entity &e, int offset = 1);
+
 	// Vector parameters of a ray for placing or removing a voxel.
 	Vec3d src;
 	Vec3d dir;
@@ -191,6 +193,8 @@ struct ModifyVoxelCommand : public SerializableCommand{
 	Cell::Type ct; ///< Cell type to place
 	char rotation;
 	Entity *modifier;
+
+	bool retModified; ///< Returned flag whether the target VoxelEntity has modified
 
 	virtual void serialize(SerializeContext &);
 	virtual void unserialize(UnserializeContext &);
@@ -216,6 +220,7 @@ public:
 	VoxelEntity(WarField *w);
 
 	static EntityRegister<VoxelEntity> entityRegister;
+	EntityStatic &getStatic()const override{return entityRegister;}
 
 	void init();
 
@@ -261,13 +266,7 @@ public:
 		return cell(pos[0], pos[1], pos[2]);
 	}
 
-	bool setCell(int ix, int iy, int iz, const Cell &newCell){
-		Vec3i ci = Vec3i(SignDiv(ix, CELLSIZE), SignDiv(iy, CELLSIZE), SignDiv(iz, CELLSIZE));
-		VolumeMap::iterator it = volume.find(ci);
-		if(it != volume.end())
-			return it->second.setCell(SignModulo(ix, CELLSIZE), SignModulo(iy, CELLSIZE), SignModulo(iz, CELLSIZE), newCell);
-		return false;
-	}
+	bool setCell(int ix, int iy, int iz, const Cell &newCell);
 
 	bool isSolid(int ix, int iy, int iz){
 		return isSolid(Vec3i(ix, iy, iz));
@@ -295,6 +294,7 @@ private:
 	int bricks[Cell::NumTypes];
 	Vec3i previewCellPos;
 	Cell previewCell;
+	bool volumeInitialized;
 
 	static gltestp::dstring texRockName;
 	static gltestp::dstring texIronName;

@@ -46,9 +46,19 @@ local function modifyVoxel(mode){
 	local rottype = voxelRot[0] | (voxelRot[1] << 2) | (voxelRot[2] << 4);
 	local chase = player.chase;
 	if(chase != null){
-		foreachents(player.cs, function(e){
-			e.command("ModifyVoxel", src, dir, mode, voxelType, rottype, chase);
-		});
+		local hit = false;
+		foreach(e in player.cs.entlist){
+			if("modifyVoxel" in e){
+				if(e.modifyVoxel(src, dir, mode, voxelType, rottype, chase)){
+					hit = true;
+					break;
+				}
+			}
+		}
+		if(!hit && mode == "Put"){
+			local newve = player.cs.addent("VoxelEntity", src + dir * 0.01);
+			newve.setVoxel(voxelType);
+		}
 	}
 }
 

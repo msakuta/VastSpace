@@ -23,28 +23,7 @@ static const int maxViewDistance = 10.;
 void VoxelEntity::draw(WarDraw *wd){
 
 	const Vec3i inf = VoxelEntity::real2ind(wd->vw->pos - this->pos);
-	std::vector<CellVolume*> changed;
-	double noiseHeight = getNoiseHeight();
-	double baseHeight = getBaseHeight();
-	double maxHeight = baseHeight + noiseHeight * 2.; // Theoretical limit height
-	int maxCellCount = int(maxHeight / getCellWidth() / CELLSIZE) + 1;
 	int radius = maxViewDistance / getCellWidth() / CELLSIZE;
-	for (int ix = -maxCellCount; ix <= maxCellCount; ix++){
-		for (int iy = -maxCellCount; iy <= maxCellCount; iy++){
-			for (int iz = -maxCellCount; iz <= maxCellCount; iz++){
-				Vec3i ci(ix, iy, iz);
-				if(volume.find(ci) == volume.end()){
-					volume[ci] = CellVolume(this, ci);
-					CellVolume &cv = volume[ci];
-					cv.initialize(ci);
-					changed.push_back(&volume[ci]);
-				}
-			}
-		}
-	}
-
-	for(std::vector<CellVolume*>::iterator it = changed.begin(); it != changed.end(); it++)
-		(*it)->updateCache();
 
 	vboInitBuffers();
 

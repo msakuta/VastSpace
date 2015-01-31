@@ -482,6 +482,25 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 
 	if(!vlist)
 		glBegin(GL_TRIANGLES);
+	if(cell.getType() == Cell::Armor){
+		if(!x0 && !x1 && !y0 && !y1){
+			drawIndexed(36, 0);
+		}
+		else{
+			if(!x0)
+				drawIndexed(2 * 3, 8 * 3);
+			if(!x1)
+				drawIndexed(2 * 3, 10 * 3);
+			if(!y0)
+				drawIndexed(2 * 3, 0);
+			if(!y1)
+				drawIndexed(2 * 3, 2 * 3);
+			if(!z0)
+				drawIndexed(2 * 3, 4 * 3);
+			if(!z1)
+				drawIndexed(2 * 3, 6 * 3);
+		}
+	}
 	if(cell.getType() == Cell::ArmorSlope){
 		drawIndexedSlope(numof(slopeIndices), 0);
 	}
@@ -496,7 +515,7 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		GRIDCELL gcell;
 		for(int k = 0; k < 8; k++){
 			gcell.p[k] = vertexOffsets[k].cast<double>();
-			bool solid = (*cv).cell(posInVolume + vertexOffsets[k]).isTranslucent();
+			bool solid = (*cv).cell(posInVolume + vertexOffsets[k]).isAsteroid();
 			if(solid){
 				Vec3i posbuf = pos + vertexOffsets[k];
 				gcell.val[k] = RandomSequence(crc32(&posbuf, sizeof posbuf)).nextd() + 0.5;
@@ -510,12 +529,12 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 			TRIANGLE &tri = tris[i];
 			Vec3d v01 = tri.p[1] - tri.p[0];
 			Vec3d v02 = tri.p[2] - tri.p[0];
-			Vec3d normal = v02.vp(v01);
+			Vec3d normal = v01.vp(v02);
 			if(0 < normal.slen())
 				normal.normin();
 			else
 				normal = Vec3d(0,1,0);
-			for(int j = 2; 0 <= j; j--){
+			for(int j = 0; j < 3; j++){
 				std::vector<VERTEX> &vl = vlist[material];
 				VERTEX vtx;
 				vtx.pos = tris[i].p[j] + pos.cast<double>();

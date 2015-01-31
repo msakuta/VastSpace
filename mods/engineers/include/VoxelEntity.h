@@ -41,6 +41,10 @@ public:
 		return type == Air || type == ArmorSlope || type == ArmorCorner || type == ArmorInvCorner
 			|| type == Occupied;
 	}
+	/// Whether this cell is made of natural asteroid materials
+	bool isAsteroid()const{
+		return type == Rock || type == Iron;
+	}
 	void serialize(std::ostream &o);
 	void unserialize(std::istream &i);
 

@@ -125,6 +125,36 @@ public:
 	};
 };
 
+class CountableItem : public InventoryItem{
+public:
+	CountableItem(int count) : count(count){}
+	double getVolume()const override{return getSingleVolume() * count;}
+	double getMass()const override{return getSingleMass() * count;}
+	bool stack(const InventoryItem &o)override{
+		if(typeString() == o.typeString()){
+			const CountableItem &oi = static_cast<const CountableItem&>(o);
+			count += oi.count;
+			return true;
+		}
+		return false;
+	}
+
+	virtual double getSingleVolume()const = 0;
+	virtual double getSingleMass()const = 0;
+protected:
+	int count;
+};
+
+class SteelPlateItem : public CountableItem{
+public:
+	SteelPlateItem(int count = 1) : CountableItem(count){}
+	gltestp::dstring typeString()const override{
+		return "SteelPlate";
+	}
+	double getSingleVolume()const override{return 0.1;}
+	double getSingleMass()const override{return 1;}
+};
+
 
 
 /// \breif The infantryman with firearms and a spacesuit equipped.

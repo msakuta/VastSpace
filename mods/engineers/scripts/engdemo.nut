@@ -13,6 +13,7 @@ universe.paused = false;
 local e = player.cs.addent("Engineer", Vec3d(-0.01, 0, 0));
 player.chase = e;
 player.select([e]);
+e.addItem("SteelPlate", 100);
 
 local voxel = player.cs.addent("VoxelEntity", Vec3d(0.05, 0, 0));
 

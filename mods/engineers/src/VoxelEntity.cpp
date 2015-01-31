@@ -492,7 +492,7 @@ bool VoxelEntity::command(EntityCommand *com){
 							mvc->retModified = true;
 							if(mvc->modifier){
 								GainItemCommand gic;
-								gic.typeString = ct == Cell::Iron ? "IronOre" : "RockOre";
+								gic.typeString = ct == Cell::Iron ? "IronOre" : ct == Cell::Rock ? "RockOre" : "SteelPlate";
 								gic.amount = -1.;
 								mvc->modifier->command(&gic);
 							}

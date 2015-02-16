@@ -38,7 +38,6 @@ cmd("bind insert rotvoxel 2 1");
 cmd("bind delete rotvoxel 2 -1");
 cmd("bind i inventory");
 
-local voxelRot = [0,0,0];
 
 local function modifyVoxel(mode){
 	local con = player.controlled;
@@ -68,7 +67,7 @@ local function modifyVoxel(mode){
 	}
 	local src = con.pos;
 	local dir = con.rot.trans(Vec3d(0, 0, -1));
-	local rottype = voxelRot[0] | (voxelRot[1] << 2) | (voxelRot[2] << 4);
+	local rottype = con.currentCellRotation;
 	local hit = false;
 	foreach(e in player.cs.entlist){
 		if("modifyVoxel" in e){
@@ -104,10 +103,21 @@ register_console_command("selvoxel", function(typestr){
 });
 
 register_console_command("rotvoxel", function(axisstr, deltastr){
+	local con = player.controlled;
+	if(con == null || !(con instanceof Engineer))
+		return;
 	local axis = axisstr.tointeger();
 	local delta = deltastr.tointeger();
-	voxelRot[axis] = (voxelRot[axis] + delta + 4) % 4;
-	print("Rotation is " + voxelRot[axis]);
+	local rot = con.currentCellRotation;
+	local axisRot = (rot >> (axis * 2)) & 3;
+	axisRot = (axisRot + delta + 4) % 4;
+	// There is no compound assignment operators for bitwise AND and OR operators (&= and |=)
+	// in Squirrel, so we must write them as normal assignment.
+	rot = rot
+		& ~(3 << (axis * 2)) // Clear the rotation
+		| (axisRot << (axis * 2)); // Set the new rotation in place of the axis in question
+	con.currentCellRotation = rot;
+	print("Rotation is " + rot);
 });
 
 frameProcs.append(function (dt){

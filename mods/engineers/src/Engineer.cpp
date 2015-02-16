@@ -343,6 +343,7 @@ void Engineer::init(){
 		hooked = false;
 		hookretract = false;
 		currentCellType = Cell::Armor;
+		currentCellRotation = 0;
 	}
 	hurtdir = vec3_000;
 	hurt = 0.;
@@ -1954,6 +1955,10 @@ SQInteger Engineer::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushinteger(v, currentCellType);
 		return 1;
 	}
+	else if(!scstrcmp(name, _SC("currentCellRotation"))){
+		sq_pushinteger(v, currentCellRotation);
+		return 1;
+	}
 	else
 		return st::sqGet(v, name);
 }
@@ -1971,6 +1976,13 @@ SQInteger Engineer::sqSet(HSQUIRRELVM v, const SQChar *name){
 		if(SQ_FAILED(sq_getinteger(v, 3, &sqint)))
 			return sq_throwerror(v, _SC("Value not convertible to int for currentCellType"));
 		currentCellType = Cell::Type(sqint);
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("currentCellRotation"))){
+		SQInteger sqint;
+		if(SQ_FAILED(sq_getinteger(v, 3, &sqint)))
+			return sq_throwerror(v, _SC("Value not convertible to int for currentCellRotation"));
+		currentCellRotation = char(sqint);
 		return 0;
 	}
 	else

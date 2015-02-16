@@ -253,6 +253,7 @@ protected:
 	bool hooked;
 	bool hookretract;
 	Cell::Type currentCellType;
+	char currentCellRotation;
 
 	InventoryItemList inventory;
 

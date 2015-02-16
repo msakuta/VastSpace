@@ -14,6 +14,7 @@ local e = player.cs.addent("Engineer", Vec3d(-0.01, 0, 0));
 player.chase = e;
 player.select([e]);
 e.addItem("SteelPlate", 100);
+e.addItem("Engine", 10);
 
 local voxel = player.cs.addent("VoxelEntity", Vec3d(0.05, 0, 0));
 
@@ -55,6 +56,7 @@ local function modifyVoxel(mode){
 			case 4:
 			case 5:
 			case 6: itemName = "SteelPlate"; break;
+			case 7: itemName = "Engine"; break;
 		}
 		for(local i = 0; i < items.len(); i++){
 			if(items[i].name == itemName && 1 < items[i].volume){

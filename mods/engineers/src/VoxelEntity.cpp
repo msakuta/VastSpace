@@ -163,6 +163,7 @@ const char *Cell::typeName(Cell::Type type){
 	case Cell::ArmorSlope: return "ArmorSlope";
 	case Cell::ArmorCorner: return "ArmorCorner";
 	case Cell::ArmorInvCorner: return "ArmorInvCorner";
+	case Cell::Engine: return "Engine";
 	default: return "Unknown";
 	}
 }
@@ -505,9 +506,19 @@ bool VoxelEntity::command(EntityCommand *com){
 							mvc->retModified = true;
 							if(mvc->modifier){
 								GainItemCommand gic;
-								gic.typeString = ct == Cell::Iron ? "IronOre" : ct == Cell::Rock ? "RockOre" : "SteelPlate";
-								gic.amount = -1.;
-								mvc->modifier->command(&gic);
+								switch(ct){
+								case Cell::Iron: gic.typeString = "IronOre"; break;
+								case Cell::Rock: gic.typeString = "RockOre"; break;
+								case Cell::ArmorSlope:
+								case Cell::ArmorCorner:
+								case Cell::ArmorInvCorner:
+								case Cell::Armor: gic.typeString = "SteelPlate"; break;
+								case Cell::Engine: gic.typeString = "Engine"; break;
+								}
+								if(gic.typeString.len() != 0){
+									gic.amount = -1.;
+									mvc->modifier->command(&gic);
+								}
 							}
 						}
 						else{

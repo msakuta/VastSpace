@@ -4,6 +4,7 @@
 #ifndef ENGINEER_H
 #define ENGINEER_H
 #include "Autonomous.h"
+#include "VoxelEntity.h"
 #include "war.h"
 #include "arms.h"
 #include "judge.h"
@@ -251,6 +252,7 @@ protected:
 	bool hookshot;
 	bool hooked;
 	bool hookretract;
+	Cell::Type currentCellType;
 
 	InventoryItemList inventory;
 

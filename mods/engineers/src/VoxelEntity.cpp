@@ -154,6 +154,19 @@ Vec3i Cell::irotate(char rotation, const Vec3i &dir){
 	return ret;
 }
 
+const char *Cell::typeName(Cell::Type type){
+	switch(type){
+	case Cell::Air: return "Air";
+	case Cell::Rock: return "RockOre";
+	case Cell::Iron: return "IronOre";
+	case Cell::Armor: return "Armor";
+	case Cell::ArmorSlope: return "ArmorSlope";
+	case Cell::ArmorCorner: return "ArmorCorner";
+	case Cell::ArmorInvCorner: return "ArmorInvCorner";
+	default: return "Unknown";
+	}
+}
+
 
 
 /// <summary>Returns Cell object indexed by coordinates in this CellVolume.</summary>

@@ -38,13 +38,13 @@ cmd("bind insert rotvoxel 2 1");
 cmd("bind delete rotvoxel 2 -1");
 cmd("bind i inventory");
 
-local voxelType = 1;
 local voxelRot = [0,0,0];
 
 local function modifyVoxel(mode){
 	local con = player.controlled;
 	if(con == null || !(con instanceof Engineer))
 		return;
+	local voxelType = con.currentCellType;
 	if(mode == "Put" || mode == "Preview"){
 		local items = con.listItems();
 		local item = null;
@@ -88,8 +88,10 @@ register_console_command("putvoxel", @() modifyVoxel("Put"));
 register_console_command("digvoxel", @() modifyVoxel("Remove"));
 
 register_console_command("selvoxel", function(typestr){
+	local con = player.controlled;
+	if(con == null || !(con instanceof Engineer))
+		return;
 	local type = typestr.tointeger();
-	voxelType = type;
 	switch(type){
 		case 1: print("Rock is selected"); break;
 		case 2: print("Iron ore is selected"); break;
@@ -98,6 +100,7 @@ register_console_command("selvoxel", function(typestr){
 		case 5: print("ArmorCorner is selected"); break;
 		default: print("Unknown voxel type is given to selvoxel");
 	}
+	con.currentCellType = type;
 });
 
 register_console_command("rotvoxel", function(axisstr, deltastr){

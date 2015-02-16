@@ -613,6 +613,13 @@ void Engineer::drawHUD(WarDraw *wd){
 			}
 		}
 
+		// Show currently selected voxel type
+		if(currentCellType != Cell::Air){
+			const char *typeName = Cell::typeName(currentCellType);
+			glRasterPos3d(.0 - 8. * (strlen(typeName)-1) / m, .15 - 10. / m, -0.);
+			gldprintf(typeName);
+		}
+
 		// Icon to show the current status (standing on a surface or floating about space)
 		static suftexparam_t params = {STP_ALPHA};
 		static GLuint statusFreeModel = CallCacheBitmap5("Soldier-free.png", modPath() << "models/Soldier-free.png", &params, NULL, NULL);

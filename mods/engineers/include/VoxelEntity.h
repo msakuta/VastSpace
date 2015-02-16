@@ -57,6 +57,9 @@ public:
 
 	/// \brief Calculate inverse rotated vector by given rotation code
 	static Vec3i irotate(char rotation, const Vec3i &dir);
+
+	/// \brief Obtains type name as a string from cell type
+	static const char *typeName(Type type);
 protected:
 	enum Type type;
 	short value;

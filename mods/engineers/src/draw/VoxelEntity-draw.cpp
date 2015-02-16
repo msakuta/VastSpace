@@ -432,7 +432,7 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		}
 
 		if(cell.getType() == Cell::Engine){
-			static Model *model = LoadMQOModel("models/block_engine.mqo");
+			static Model *model = LoadMQOModel(modPath() << "models/block_engine.mqo");
 			static const double modelScale = 0.01;
 			if(model){
 				glTranslated(0.5, 0.5, 0.5);

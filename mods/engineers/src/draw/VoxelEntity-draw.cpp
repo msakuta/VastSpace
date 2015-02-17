@@ -13,6 +13,7 @@
 
 extern "C"{
 #include "clib/mathdef.h"
+#include "clib/GL/gldraw.h"
 }
 
 #include "cpplib/crc32.h"
@@ -220,6 +221,56 @@ void VoxelEntity::drawtra(WarDraw *wd){
 		Cell::Type celltype = Cell::Air;
 
 		drawCell(previewCell, previewCellPos, celltype);
+	}
+
+	// Search for all CellVolumes to see if this Entity has a reactor.
+	// If a section is disjoint to the reactor, it should become a separate VoxelEntity.
+	bool hasReactor = false;
+	for(auto it : this->volume){
+		CellVolume &cv = it.second;
+		for(auto ipos : cv.modeledCells){
+			if(cv.cell(ipos).getType() == Cell::Reactor){
+				hasReactor = true;
+				break;
+			}
+		}
+		if(hasReactor)
+			break;
+	}
+
+	if(hasReactor){
+		Mat4d mat;
+		transform(mat);
+		struct{VoxelEntity *thisptr; double time;} seedbuf = {this, wd->vw->viewtime};
+		RandomSequence rs(crc32(&seedbuf, sizeof seedbuf));
+		for(auto it : this->volume){
+			CellVolume &cv = it.second;
+			for(auto ipos : cv.modeledCells){
+				const Cell &cell = cv.cell(ipos);
+				if(cell.getType() == Cell::Engine){
+					Mat4d matscale = mat4_u;
+					matscale.scalein(getCellWidth(), getCellWidth(), getCellWidth());
+					Mat4d mattrans = matscale.translate((it.first * CELLSIZE + ipos).cast<double>());
+
+					if(cell.getRotation()){
+						mattrans.translatein(0.5, 0.5, 0.5);
+						if(char c = (cell.getRotation() & 0x3))
+							mattrans = mattrans.rotx(M_PI / 2. * c);
+						if(char c = ((cell.getRotation() >> 2) & 0x3))
+							mattrans = mattrans.roty(M_PI / 2. * c);
+						if(char c = ((cell.getRotation() >> 4) & 0x3))
+							mattrans = mattrans.rotz(M_PI / 2. * c);
+						mattrans.translatein(-0.5, -0.5, -0.5);
+					}
+
+					mattrans.translatein(0.5, 0.5, 0.5);
+
+					Vec3d wpos = mat.vp3(mattrans.vp3(Vec3d(0, 0, 1.5)));
+
+					gldSpriteGlow(wpos, getCellWidth() * (0.5 + rs.nextd() * 0.15), Vec4<GLubyte>(63, 127, 255, 255), wd->vw->irot);
+				}
+			}
+		}
 	}
 }
 

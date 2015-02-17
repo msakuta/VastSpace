@@ -441,6 +441,16 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 			}
 			return;
 		}
+		else if(cell.getType() == Cell::Reactor){
+			static Model *model = LoadMQOModel(modPath() << "models/block_reactor.mqo");
+			static const double modelScale = 0.01;
+			if(model){
+				glTranslated(0.5, 0.5, 0.5);
+				glScaled(modelScale, modelScale, modelScale);
+				DrawMQOPose(model, NULL);
+			}
+			return;
+		}
 	}
 	else{
 		if(cell.getRotation()){
@@ -456,7 +466,7 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 		else
 			rotmat = mat4_u;
 
-		if(cell.getType() == Cell::Engine){
+		if(cell.getType() == Cell::Engine || cell.getType() == Cell::Reactor){
 			cv->modeledCells.push_back(posInVolume);
 			return;
 		}

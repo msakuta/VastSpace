@@ -166,6 +166,16 @@ public:
 	double getSingleMass()const override{return 150;}
 };
 
+class ReactorComponentItem : public CountableItem{
+public:
+	ReactorComponentItem(int count = 1) : CountableItem(count){}
+	gltestp::dstring typeString()const override{
+		return "ReactorComponent";
+	}
+	double getSingleVolume()const override{return 1;}
+	double getSingleMass()const override{return 50;}
+};
+
 
 
 /// \breif The infantryman with firearms and a spacesuit equipped.

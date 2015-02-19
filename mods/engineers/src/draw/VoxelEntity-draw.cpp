@@ -10,6 +10,7 @@
 #include "draw/mqoadapt.h"
 #include "draw/VBO.h"
 #include "draw/MarchingCube.h"
+#include "Engineer.h"
 
 extern "C"{
 #include "clib/mathdef.h"
@@ -507,7 +508,7 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 			static const double modelScale = 0.01;
 			if(model){
 				glTranslated(0.5, 0.5, 0.5);
-				glScaled(modelScale, modelScale, modelScale);
+				glScaled(-modelScale, modelScale, -modelScale);
 				DrawMQOPose(model, NULL);
 			}
 			return;

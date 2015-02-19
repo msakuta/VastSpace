@@ -272,6 +272,7 @@ Engineer::~Engineer(){
 	}
 	for(auto it : inventory)
 		delete it;
+	delete entityControllerForShip;
 }
 
 void Engineer::init(){
@@ -355,6 +356,7 @@ void Engineer::init(){
 	kickvelo[0] = kickvelo[1] = 0.;
 	aimphase = 0.;
 	walkphase = 0.;
+	entityControllerForShip = new EngineerController(game);
 /*	if(infantry_random_weapons){
 		int i, n = 0, k;
 		for(i = 0; i < num_armstype; i++) if(arms_static[i].cls == armc_infarm)
@@ -674,8 +676,8 @@ void Engineer::anim(double dt){
 	int i = inputs.press, ic = inputs.change;
 	static int init = 0;
 	avec3_t normal;
-	int x = i & PL_D ? 1 : i & PL_A ? -1 : 0,
-		y = i & PL_Q ? 1 : i & PL_Z ? -1 : 0,
+	int /*x = i & PL_D ? 1 : i & PL_A ? -1 : 0,
+		y = i & PL_Q ? 1 : i & PL_Z ? -1 : 0,*/
 		z = i & PL_W ? -1 : i & PL_S ? 1 : 0;
 	double h = 0.;
 
@@ -686,6 +688,13 @@ void Engineer::anim(double dt){
 
 	if(game->isServer() && health <= 0. /*&& 120. < walkphase*/){
 		delete this;
+		return;
+	}
+
+	if(controlledShip){
+		Quatd crot;
+		Vec3d cpos = controlledShip->getControllerCockpitPos(crot);
+		setPosition(&cpos, &crot, &controlledShip->velo, &controlledShip->omg);
 		return;
 	}
 
@@ -1457,6 +1466,11 @@ void Engineer::clientUpdate(double dt){
 }
 
 void Engineer::control(const input_t *inputs, double dt){
+	if(controlledShip){
+		// Maneuver the ship instead of this Engineer.
+		controlledShip->control(inputs, dt);
+		return;
+	}
 	const double speed = .001 / 2. * getFov();
 	st::control(inputs, dt);
 
@@ -1960,6 +1974,10 @@ SQInteger Engineer::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 	}
 	else if(!scstrcmp(name, _SC("currentCellRotation"))){
 		sq_pushinteger(v, currentCellRotation);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("controlledShip"))){
+		sq_pushobj(v, controlledShip);
 		return 1;
 	}
 	else

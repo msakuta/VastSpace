@@ -1,3 +1,9 @@
+local THIS_FILE = "mods/engineers/scripts/engdemo.nut";
+
+// Prevent multiple includes
+if(THIS_FILE in this)
+	return;
+this[THIS_FILE] <- true;
 
 // Reset current position to the Earth's low orbit
 local earthlo = universe.findcspath("/sol/mars/marsorbit");
@@ -13,6 +19,7 @@ universe.paused = false;
 local e = player.cs.addent("Engineer", Vec3d(-0.01, 0, 0));
 player.chase = e;
 player.select([e]);
+player.controlled = e;
 e.addItem("SteelPlate", 100);
 e.addItem("Engine", 10);
 e.addItem("ReactorComponent", 10);
@@ -42,11 +49,15 @@ cmd("bind end rotvoxel 1 -1");
 cmd("bind insert rotvoxel 2 1");
 cmd("bind delete rotvoxel 2 -1");
 cmd("bind i inventory");
+cmd("bind t controlShip");
 
 
 local function modifyVoxel(mode){
 	local con = player.controlled;
 	if(con == null || !(con instanceof Engineer))
+		return;
+	// If we are controlling a ship, do not try to build blocks
+	if(con.controlledShip != null)
 		return;
 	local voxelType = con.currentCellType;
 	if(mode == "Put" || mode == "Preview"){
@@ -130,6 +141,22 @@ register_console_command("rotvoxel", function(axisstr, deltastr){
 		| (axisRot << (axis * 2)); // Set the new rotation in place of the axis in question
 	con.currentCellRotation = rot;
 	print("Rotation is " + rot);
+});
+
+register_console_command("controlShip", function(){
+	local con = player.controlled;
+	if(con == null)
+		return;
+	if(con instanceof Engineer && con.controlledShip != null){
+		con.controlledShip.command("EnterCockpit", con);
+		return;
+	}
+	foreach(e in player.cs.entlist){
+		if(e != con){
+			if(e.command("EnterCockpit", con))
+				break;
+		}
+	}
 });
 
 frameProcs.append(function (dt){

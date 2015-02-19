@@ -9,6 +9,7 @@
 #include "CoordSys.h"
 #include "Game.h"
 #include "sqadapt.h"
+#include "Engineer.h"
 #include "../../src/noises/simplexnoise1234d.h"
 #include "SqInitProcess.h"
 
@@ -378,7 +379,17 @@ void CellVolume::updateCache()
 }
 
 
-VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(0.0025), baseHeight(0.01), noiseHeight(0.005), volumeInitialized(false){
+
+const Autonomous::ManeuverParams VoxelEntity::maneuverParams = {
+	0.01, // accel
+	0.01, // maxspeed
+	M_PI * 0.1, // angleaccel
+	M_PI * 0.1, // maxanglespeed
+	1, // capacity
+	1, // capacitor_gen
+};
+
+VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(0.0025), baseHeight(0.01), noiseHeight(0.005), volumeInitialized(false), controllerCockpitPos(0,0,0){
 	init();
 }
 
@@ -409,6 +420,8 @@ void VoxelEntity::anim(double dt){
 			(*it)->updateCache();
 
 	}
+
+	st::anim(dt);
 }
 
 void VoxelEntity::init(){
@@ -563,6 +576,37 @@ bool VoxelEntity::command(EntityCommand *com){
 
 		return true;
 	}
+	else if(EnterCockpitCommand *ecc = InterpretCommand<EnterCockpitCommand>(com)){
+		if(!ecc->requester)
+			return true; // Just ignore this
+		if(controllerEngineer){
+			if(controllerEngineer == ecc->requester){
+				controllerEngineer->controlledShip = NULL;
+				controllerEngineer = NULL;
+				controller = NULL;
+			}
+		}
+		else{
+			Vec3d src = ecc->requester->pos - this->pos;
+			Vec3d dir = rot.itrans(ecc->requester->rot.trans(Vec3d(0,0,-1)));
+			for(int i = 1; i < 8; i++){
+				Vec3i ci = real2ind(src + dir * i * getCellWidth() / 2);
+				Cell c = cell(ci[0], ci[1], ci[2]);
+				if(c.getType() == Cell::Cockpit){
+					this->controllerEngineer = ecc->requester;
+					ecc->requester->controlledShip = this;
+					this->controller = ecc->requester->entityControllerForShip;
+					this->controllerCockpitPos = ci;
+					this->previewCell = Cell::Air; // Temporarily disable preview
+					Quatd crot;
+					Vec3d pos = getControllerCockpitPos(crot);
+					ecc->requester->setPosition(&pos, &crot, &this->velo, &this->omg);
+					break;
+				}
+			}
+		}
+		return true;
+	}
 	else
 		return st::command(com);
 }
@@ -622,6 +666,20 @@ bool VoxelEntity::isSolid(const Vec3d &rv){
 	}
 	else
 		return false;
+}
+
+Vec3d VoxelEntity::getControllerCockpitPos(Quatd &rot)const{
+	Quatd localRot = quat_u;
+	if(char rotation = cell(controllerCockpitPos).getRotation()){
+		if(char c = (rotation & 0x3))
+			localRot = localRot.rotate(M_PI / 2. * c, 1, 0, 0);
+		if(char c = ((rotation >> 2) & 0x3))
+			localRot = localRot.rotate(M_PI / 2. * c, 0, 1, 0);
+		if(char c = ((rotation >> 4) & 0x3))
+			localRot = localRot.rotate(M_PI / 2. * c, 0, 0, 1);
+	}
+	rot = this->rot * localRot;
+	return rot.trans((controllerCockpitPos.cast<double>() + Vec3d(0.5, 0.5, 0.5)) * cellWidth) + this->pos;
 }
 
 SQInteger VoxelEntity::sqGet(HSQUIRRELVM v, const SQChar *name)const{
@@ -756,5 +814,23 @@ GainItemCommand::GainItemCommand(HSQUIRRELVM v, Entity &){
 	SQFloat f;
 	if(SQ_SUCCEEDED(sq_getfloat(v, 3, &f)))
 		amount = f;
+}
+
+IMPLEMENT_COMMAND(EnterCockpitCommand, "EnterCockpit")
+
+void EnterCockpitCommand::serialize(SerializeContext &sc){
+	sc.o << requester;
+}
+
+void EnterCockpitCommand::unserialize(UnserializeContext &sc){
+	sc.i >> requester;
+}
+
+EnterCockpitCommand::EnterCockpitCommand(HSQUIRRELVM v, Entity &){
+	int argc = sq_gettop(v);
+	if(argc < 3)
+		throw SQFArgumentError();
+	Entity *e = Entity::sq_refobj(v, 3);
+	requester = dynamic_cast<Engineer*>(e);
 }
 

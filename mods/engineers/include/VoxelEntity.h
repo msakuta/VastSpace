@@ -2,7 +2,7 @@
 /// \brief Definition of VoxelEntity class.
 #ifndef VOXELENTITY_H
 #define VOXELENTITY_H
-#include "Entity.h"
+#include "Autonomous.h"
 #include "EntityRegister.h"
 #include "EntityCommand.h"
 #include "../../src/SignModulo.h"
@@ -11,6 +11,7 @@
 
 class Game;
 class VoxelEntity;
+class Engineer;
 
 const int CELLSIZE = 16;
 
@@ -221,9 +222,20 @@ struct GainItemCommand : public SerializableCommand{
 	virtual void unserialize(UnserializeContext &);
 };
 
-class VoxelEntity : public Entity{
+struct EnterCockpitCommand : public SerializableCommand{
+	COMMAND_BASIC_MEMBERS(EnterCockpitCommand, EntityCommand);
+	EnterCockpitCommand(){}
+	EnterCockpitCommand(HSQUIRRELVM v, Entity &e);
+
+	Engineer *requester;
+
+	virtual void serialize(SerializeContext &);
+	virtual void unserialize(UnserializeContext &);
+};
+
+class VoxelEntity : public Autonomous{
 public:
-	typedef Entity st;
+	typedef Autonomous st;
 
 	VoxelEntity(Game *game) : st(game){}
 	VoxelEntity(WarField *w);
@@ -262,16 +274,16 @@ public:
 	double getBaseHeight()const{return baseHeight;}
 	double getNoiseHeight()const{return noiseHeight;}
 
-	const Cell &cell(int ix, int iy, int iz){
+	const Cell &cell(int ix, int iy, int iz)const{
 		Vec3i ci = Vec3i(SignDiv(ix, CELLSIZE), SignDiv(iy, CELLSIZE), SignDiv(iz, CELLSIZE));
-		VolumeMap::iterator it = volume.find(ci);
+		VolumeMap::const_iterator it = volume.find(ci);
 		if(it != volume.end()){
 			return it->second(SignModulo(ix, CELLSIZE), SignModulo(iy, CELLSIZE), SignModulo(iz, CELLSIZE));
 		}
 		else
 			return CellVolume::v0;
 	}
-	const Cell &cell(const Vec3i &pos){
+	const Cell &cell(const Vec3i &pos)const{
 		return cell(pos[0], pos[1], pos[2]);
 	}
 
@@ -288,6 +300,12 @@ public:
 		return "mods/engineers/";
 	}
 
+	/// \brief Returns position and rotation of the cockpit being used
+	/// \param rot A reference to a variable to hold rotation in world coordinates after this function returns
+	Vec3d getControllerCockpitPos(Quatd &rot)const;
+
+	const ManeuverParams &getManeuve()const override{return maneuverParams;}
+
 protected:
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
 	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
@@ -298,12 +316,15 @@ protected:
 	double cellWidth;
 	double baseHeight;
 	double noiseHeight;
+	static const ManeuverParams maneuverParams;
 private:
 	VolumeMap volume;
 	int bricks[Cell::NumTypes];
 	Vec3i previewCellPos;
 	Cell previewCell;
 	bool volumeInitialized;
+	WeakPtr<Engineer> controllerEngineer;
+	Vec3i controllerCockpitPos;
 
 	static gltestp::dstring texRockName;
 	static gltestp::dstring texIronName;

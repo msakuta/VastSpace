@@ -186,7 +186,13 @@ public:
 	double getSingleMass()const override{return 150;}
 };
 
-
+/// \brief A proxy class for Engineer to mark a VoxelEntity that it's under control
+class EngineerController : public EntityController{
+public:
+	EngineerController(Game *game) : EntityController(game){}
+	const char *classname()const override{return "EngineerController";} ///< Defining a class name is mandatory
+	bool control(Entity *, double)override{return true;} ///< Do nothing
+};
 
 /// \breif The infantryman with firearms and a spacesuit equipped.
 class Engineer : public Autonomous{
@@ -284,6 +290,8 @@ protected:
 	bool hookretract;
 	Cell::Type currentCellType;
 	char currentCellRotation;
+	WeakPtr<VoxelEntity> controlledShip;
+	EngineerController *entityControllerForShip;
 
 	InventoryItemList inventory;
 
@@ -302,6 +310,7 @@ protected:
 	static Vec3d muzzleFlashOffset[2];
 
 	friend class EntityRegister<Engineer>;
+	friend class VoxelEntity;
 };
 
 

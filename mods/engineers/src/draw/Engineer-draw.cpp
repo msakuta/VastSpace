@@ -614,7 +614,7 @@ void Engineer::drawHUD(WarDraw *wd){
 		}
 
 		// Show currently selected voxel type
-		if(currentCellType != Cell::Air){
+		if(currentCellType != Cell::Empty){
 			const char *typeName = Cell::typeName(currentCellType);
 			glRasterPos3d(.0 - 8. * (strlen(typeName)-1) / m, .15 - 10. / m, -0.);
 			gldprintf(typeName);

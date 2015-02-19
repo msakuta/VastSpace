@@ -93,8 +93,8 @@ GLuint VoxelEntity::texlist_armor;
 
 
 bool Cell::connection(const Vec3i &direction)const{
-	if(type == Air)
-		return false; // Air cannot connect to anything
+	if(type == Empty)
+		return false; // Empty cannot connect to anything
 	if(type != ArmorSlope && type != ArmorCorner && type != ArmorInvCorner)
 		return true;
 	Quatd rot = Quatd::rotation(2. * M_PI / 4. * (rotation & 3), 1, 0, 0)
@@ -157,7 +157,7 @@ Vec3i Cell::irotate(char rotation, const Vec3i &dir){
 
 const char *Cell::typeName(Cell::Type type){
 	switch(type){
-	case Cell::Air: return "Air";
+	case Cell::Empty: return "Empty";
 	case Cell::Rock: return "RockOre";
 	case Cell::Iron: return "IronOre";
 	case Cell::Armor: return "Armor";
@@ -275,7 +275,7 @@ inline bool CellVolume::setCell(int ix, int iy, int iz, const Cell &newCell){
 
 /// <summary>The constant object that will returned when index is out of range.</summary>
 /// <remarks>What a mess.</remarks>
-const Cell CellVolume::v0(Cell::Air);
+const Cell CellVolume::v0(Cell::Empty);
 
 
 int CellVolume::cellInvokes = 0;
@@ -321,7 +321,7 @@ void CellVolume::initialize(const Vec3i &ci){
 				double noiseVal = sfnoise3(basepos * s, 3, 0.5);
 
 				if(noiseVal * noiseHeight + baseHeight < height)
-					v[ix][iy][iz] = Cell(Cell::Air);
+					v[ix][iy][iz] = Cell(Cell::Empty);
 				else{
 					Cell::Type ct = sfnoise3(pos / world->getCellWidth() / CELLSIZE, 3, 0.5) < 0.25 ? Cell::Rock : Cell::Iron;
 					world->bricks[ct]++;
@@ -361,9 +361,9 @@ void CellVolume::updateCache()
 		for (int iy = 0; iy < CELLSIZE; iy++)
 		{
 			Cell &c = v[ix][iy][iz];
-			// If this cell is not air but translucent (i.e. partially visible),
+			// If this cell is not empty but translucent (i.e. partially visible),
 			// we must draw it however their surronding voxels are.
-			if (c.type != Cell::Air && (c.isTranslucent() || c.adjacents != 0 && c.adjacents != 6))
+			if (c.type != Cell::Empty && (c.isTranslucent() || c.adjacents != 0 && c.adjacents != 6))
 			{
 				if (!begun)
 				{
@@ -448,7 +448,7 @@ bool VoxelEntity::command(EntityCommand *com){
 
 			if(mvc->mode == mvc->Preview){
 				// Reset preview cell before proceeding
-				previewCell = Cell::Air;
+				previewCell = Cell::Empty;
 			}
 
 			int length = mvc->ct == Cell::Thruster ? 2 : 1;
@@ -559,7 +559,7 @@ bool VoxelEntity::command(EntityCommand *com){
 			for(int i = 1; i < 8; i++){
 				Vec3i ci = real2ind(src + dir * i * getCellWidth() / 2);
 				Cell c = cell(ci[0], ci[1], ci[2]);
-				if (c.isSolid() && setCell(ci[0], ci[1], ci[2], Cell::Air))
+				if (c.isSolid() && setCell(ci[0], ci[1], ci[2], Cell::Empty))
 				{
 					mvc->retModified = true;
 					if(mvc->modifier){
@@ -597,7 +597,7 @@ bool VoxelEntity::command(EntityCommand *com){
 					ecc->requester->controlledShip = this;
 					this->controller = ecc->requester->entityControllerForShip;
 					this->controllerCockpitPos = ci;
-					this->previewCell = Cell::Air; // Temporarily disable preview
+					this->previewCell = Cell::Empty; // Temporarily disable preview
 					Quatd crot;
 					Vec3d pos = getControllerCockpitPos(crot);
 					ecc->requester->setPosition(&pos, &crot, &this->velo, &this->omg);

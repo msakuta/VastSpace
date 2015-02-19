@@ -50,7 +50,7 @@ void VoxelEntity::draw(WarDraw *wd){
 			}
 		}
 
-		Cell::Type celltype = Cell::Air;
+		Cell::Type celltype = Cell::Empty;
 
 		const double maxViewCells = maxViewDistance / getCellWidth();
 
@@ -60,7 +60,7 @@ void VoxelEntity::draw(WarDraw *wd){
 
 			initTexLists();
 
-			// If all content is air, skip drawing
+			// If all content is empty, skip drawing
 			if(cv.getSolidCount() == 0)
 				continue;
 
@@ -96,7 +96,7 @@ void VoxelEntity::draw(WarDraw *wd){
 						for (int iy = 0; iy < CELLSIZE; iy++){
 
 							// Cull too far Cells
-/*							if (cv(ix, iy, iz).getType() == Cell::Air)
+/*							if (cv(ix, iy, iz).getType() == Cell::Empty)
 								continue;
 							if (maxViewCells < abs(ix + it->first[0] * CELLSIZE - inf[0]))
 								continue;
@@ -198,7 +198,7 @@ void VoxelEntity::draw(WarDraw *wd){
 }
 
 void VoxelEntity::drawtra(WarDraw *wd){
-	if(previewCell.getType() != Cell::Air){
+	if(previewCell.getType() != Cell::Empty){
 		GLmatrix glm;
 		GLattrib gla(GL_TEXTURE_BIT | GL_CURRENT_BIT);
 		Mat4d mat;
@@ -219,7 +219,7 @@ void VoxelEntity::drawtra(WarDraw *wd){
 			}
 		}
 
-		Cell::Type celltype = Cell::Air;
+		Cell::Type celltype = Cell::Empty;
 
 		drawCell(previewCell, previewCellPos, celltype);
 	}

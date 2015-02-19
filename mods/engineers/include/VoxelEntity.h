@@ -19,7 +19,7 @@ const int CELLSIZE = 16;
 class Cell{
 public:
 	enum Type{
-		Air, ///< Null cell
+		Empty, ///< Null cell
 		Rock, ///< Rock cell
 		Iron, ///< Iron ore cell
 		Armor,
@@ -33,15 +33,15 @@ public:
 		NumTypes
 	};
 
-	Cell(Type t = Air, char arotation = 0) : type(t), adjacents(0), rotation(arotation){}
+	Cell(Type t = Empty, char arotation = 0) : type(t), adjacents(0), rotation(arotation){}
 	Type getType()const{return type;}
 	short getValue()const{return value;}
 	void setValue(short avalue){value = avalue;}
 	int getAdjacents()const{return adjacents;}
 	char getRotation()const{return rotation;}
-	bool isSolid()const{return type != Air;}
+	bool isSolid()const{return type != Empty;}
 	bool isTranslucent()const{
-		return type == Air || type == ArmorSlope || type == ArmorCorner || type == ArmorInvCorner
+		return type == Empty || type == ArmorSlope || type == ArmorCorner || type == ArmorInvCorner
 			|| type == Reactor || type == Cockpit || type == Occupied;
 	}
 	/// Whether this cell is made of natural asteroid materials
@@ -160,7 +160,7 @@ public:
 			0 <= ipos[0] && ipos[0] < CELLSIZE &&
 			0 <= ipos[1] && ipos[1] < CELLSIZE &&
 			0 <= ipos[2] && ipos[2] < CELLSIZE &&
-			v[ipos[0]][ipos[1]][ipos[2]].getType() != Cell::Air;
+			v[ipos[0]][ipos[1]][ipos[2]].getType() != Cell::Empty;
 	}
 	bool setCell(int ix, int iy, int iz, const Cell &newCell);
 	void initialize(const Vec3i &index);

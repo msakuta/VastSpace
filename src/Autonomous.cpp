@@ -340,10 +340,10 @@ Vec3d Autonomous::absvelo()const{
 	return velo;
 }
 
-/** \brief Definition of how to maneuver spaceships, shared among ship classes deriving Warpable.
+/** \brief Definition of how to maneuver spaceships, shared among ship classes deriving Autonomous.
  *
  * Assumption is that accelerations towards all directions except forward movement
- * is a half the maximum accel. */
+ * is a half of the maximum accel. */
 void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn){
 	Entity *pt = this;
 	double const maxspeed2 = mn->maxspeed * mn->maxspeed;

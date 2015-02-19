@@ -26,7 +26,7 @@ public:
 		ArmorSlope,
 		ArmorCorner,
 		ArmorInvCorner,
-		Engine,
+		Thruster,
 		Reactor,
 		Cockpit,
 		Occupied,

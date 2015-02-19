@@ -156,11 +156,11 @@ public:
 	double getSingleMass()const override{return 1;}
 };
 
-class EngineItem : public CountableItem{
+class ThrusterItem : public CountableItem{
 public:
-	EngineItem(int count = 1) : CountableItem(count){}
+	ThrusterItem(int count = 1) : CountableItem(count){}
 	gltestp::dstring typeString()const override{
-		return "Engine";
+		return "Thruster";
 	}
 	double getSingleVolume()const override{return 3;}
 	double getSingleMass()const override{return 150;}

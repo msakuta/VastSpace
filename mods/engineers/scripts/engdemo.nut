@@ -21,7 +21,7 @@ player.chase = e;
 player.select([e]);
 player.controlled = e;
 e.addItem("SteelPlate", 100);
-e.addItem("Engine", 10);
+e.addItem("Thruster", 10);
 e.addItem("ReactorComponent", 10);
 e.addItem("CockpitComponent", 10);
 
@@ -71,7 +71,7 @@ local function modifyVoxel(mode){
 			case 4:
 			case 5:
 			case 6: itemName = "SteelPlate"; break;
-			case 7: itemName = "Engine"; break;
+			case 7: itemName = "Thruster"; break;
 			case 8: itemName = "ReactorComponent"; break;
 			case 9: itemName = "CockpitComponent"; break;
 		}
@@ -117,7 +117,7 @@ register_console_command("selvoxel", function(typestr){
 		case 4: print("ArmorSlope is selected"); break;
 		case 5: print("ArmorCorner is selected"); break;
 		case 6: print("ArmorInvCorner is selected"); break;
-		case 7: print("Engine is selected"); break;
+		case 7: print("Thruster is selected"); break;
 		case 8: print("Reactor is selected"); break;
 		case 9: print("Cockpit is selected"); break;
 		default: print("Unknown voxel type is given to selvoxel");

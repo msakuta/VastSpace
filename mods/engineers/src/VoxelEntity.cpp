@@ -164,7 +164,7 @@ const char *Cell::typeName(Cell::Type type){
 	case Cell::ArmorSlope: return "ArmorSlope";
 	case Cell::ArmorCorner: return "ArmorCorner";
 	case Cell::ArmorInvCorner: return "ArmorInvCorner";
-	case Cell::Engine: return "Engine";
+	case Cell::Thruster: return "Thruster";
 	case Cell::Reactor: return "Reactor";
 	case Cell::Cockpit: return "Cockpit";
 	default: return "Unknown";
@@ -451,7 +451,7 @@ bool VoxelEntity::command(EntityCommand *com){
 				previewCell = Cell::Air;
 			}
 
-			int length = mvc->ct == Cell::Engine ? 2 : 1;
+			int length = mvc->ct == Cell::Thruster ? 2 : 1;
 			for (int i = 1; i < 8; i++){
 				Vec3i baseIdx = real2ind(src + dir * i * getCellWidth() / 2);
 
@@ -528,7 +528,7 @@ bool VoxelEntity::command(EntityCommand *com){
 								case Cell::ArmorCorner:
 								case Cell::ArmorInvCorner:
 								case Cell::Armor: gic.typeString = "SteelPlate"; break;
-								case Cell::Engine: gic.typeString = "Engine"; break;
+								case Cell::Thruster: gic.typeString = "Thruster"; break;
 								case Cell::Reactor: gic.typeString = "ReactorComponent"; break;
 								case Cell::Cockpit: gic.typeString = "CockpitComponent"; break;
 								}

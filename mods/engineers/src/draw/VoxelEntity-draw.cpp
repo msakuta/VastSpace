@@ -248,7 +248,7 @@ void VoxelEntity::drawtra(WarDraw *wd){
 			CellVolume &cv = it.second;
 			for(auto ipos : cv.modeledCells){
 				const Cell &cell = cv.cell(ipos);
-				if(cell.getType() == Cell::Engine){
+				if(cell.getType() == Cell::Thruster){
 					Mat4d matscale = mat4_u;
 					matscale.scalein(getCellWidth(), getCellWidth(), getCellWidth());
 					Mat4d mattrans = matscale.translate((it.first * CELLSIZE + ipos).cast<double>());
@@ -483,8 +483,8 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 			glTranslated(-0.5, -0.5, -0.5);
 		}
 
-		if(cell.getType() == Cell::Engine){
-			static Model *model = LoadMQOModel(modPath() << "models/block_engine.mqo");
+		if(cell.getType() == Cell::Thruster){
+			static Model *model = LoadMQOModel(modPath() << "models/block_thruster.mqo");
 			static const double modelScale = 0.01;
 			if(model){
 				glTranslated(0.5, 0.5, 0.5);
@@ -529,7 +529,7 @@ void VoxelEntity::drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &cellt
 			rotmat = mat4_u;
 
 		switch(cell.getType()){
-		case Cell::Engine:
+		case Cell::Thruster:
 		case Cell::Reactor:
 		case Cell::Cockpit:
 			cv->modeledCells.push_back(posInVolume);

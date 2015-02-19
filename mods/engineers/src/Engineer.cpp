@@ -63,7 +63,7 @@ template<> void Entity::EntityRegister<Engineer>::sq_defineInt(HSQUIRRELVM v){
 	inventoryItemCtors["RockOre"] = [](double amount){return new RockOreItem(amount);};
 	inventoryItemCtors["IronOre"] = [](double amount){return new IronOreItem(amount);};
 	inventoryItemCtors["SteelPlate"] = [](double amount){return new SteelPlateItem(int(amount));};
-	inventoryItemCtors["Engine"] = [](double amount){return new EngineItem(int(amount));};
+	inventoryItemCtors["Thruster"] = [](double amount){return new ThrusterItem(int(amount));};
 	inventoryItemCtors["ReactorComponent"] = [](double amount){return new ReactorComponentItem(int(amount));};
 	inventoryItemCtors["CockpitComponent"] = [](double amount){return new CockpitComponentItem(int(amount));};
 	register_closure(v, _SC("addItem"), [](HSQUIRRELVM v){

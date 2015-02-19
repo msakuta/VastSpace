@@ -16,6 +16,7 @@ player.select([e]);
 e.addItem("SteelPlate", 100);
 e.addItem("Engine", 10);
 e.addItem("ReactorComponent", 10);
+e.addItem("CockpitComponent", 10);
 
 local voxel = player.cs.addent("VoxelEntity", Vec3d(0.05, 0, 0));
 
@@ -33,6 +34,7 @@ cmd("bind 5 selvoxel 5");
 cmd("bind 6 selvoxel 6");
 cmd("bind 7 selvoxel 7");
 cmd("bind 8 selvoxel 8");
+cmd("bind 9 selvoxel 9");
 cmd("bind pageup rotvoxel 0 1");
 cmd("bind pagedown rotvoxel 0 -1");
 cmd("bind home rotvoxel 1 1");
@@ -60,6 +62,7 @@ local function modifyVoxel(mode){
 			case 6: itemName = "SteelPlate"; break;
 			case 7: itemName = "Engine"; break;
 			case 8: itemName = "ReactorComponent"; break;
+			case 9: itemName = "CockpitComponent"; break;
 		}
 		for(local i = 0; i < items.len(); i++){
 			if(items[i].name == itemName && 1 < items[i].volume){
@@ -105,6 +108,7 @@ register_console_command("selvoxel", function(typestr){
 		case 6: print("ArmorInvCorner is selected"); break;
 		case 7: print("Engine is selected"); break;
 		case 8: print("Reactor is selected"); break;
+		case 9: print("Cockpit is selected"); break;
 		default: print("Unknown voxel type is given to selvoxel");
 	}
 	con.currentCellType = type;

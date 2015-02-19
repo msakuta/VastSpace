@@ -165,6 +165,7 @@ const char *Cell::typeName(Cell::Type type){
 	case Cell::ArmorInvCorner: return "ArmorInvCorner";
 	case Cell::Engine: return "Engine";
 	case Cell::Reactor: return "Reactor";
+	case Cell::Cockpit: return "Cockpit";
 	default: return "Unknown";
 	}
 }
@@ -516,6 +517,7 @@ bool VoxelEntity::command(EntityCommand *com){
 								case Cell::Armor: gic.typeString = "SteelPlate"; break;
 								case Cell::Engine: gic.typeString = "Engine"; break;
 								case Cell::Reactor: gic.typeString = "ReactorComponent"; break;
+								case Cell::Cockpit: gic.typeString = "CockpitComponent"; break;
 								}
 								if(gic.typeString.len() != 0){
 									gic.amount = -1.;

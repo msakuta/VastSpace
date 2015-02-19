@@ -27,6 +27,7 @@ public:
 		ArmorInvCorner,
 		Engine,
 		Reactor,
+		Cockpit,
 		Occupied,
 		NumTypes
 	};
@@ -40,7 +41,7 @@ public:
 	bool isSolid()const{return type != Air;}
 	bool isTranslucent()const{
 		return type == Air || type == ArmorSlope || type == ArmorCorner || type == ArmorInvCorner
-			|| type == Reactor || type == Occupied;
+			|| type == Reactor || type == Cockpit || type == Occupied;
 	}
 	/// Whether this cell is made of natural asteroid materials
 	bool isAsteroid()const{

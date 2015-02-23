@@ -82,6 +82,16 @@ public:
 		double maxanglespeed; ///< Maximum angular speed [rad/s], which also wouldn't exist.
 		double capacity; ///< The capacity of capacitor [MJ]
 		double capacitor_gen; ///< Rate of generated energy [MW]
+
+		/// An optional parameter to define anisotropic acceleration. Leaving them unspecified make them all zeros, which means
+		/// falling back to default acceleration.
+		double dir_accel[6];
+
+		/// Direction code for querying specific acceleration in direction.
+		enum Direction{NX, PX, NY, PY, NZ, PZ};
+
+		/// Queries acceleration toward the given direction, taking anisotropic acceleration into account.
+		double getAccel(Direction)const;
 	};
 protected:
 	virtual void init();

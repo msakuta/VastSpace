@@ -342,8 +342,7 @@ Vec3d Autonomous::absvelo()const{
 
 /** \brief Definition of how to maneuver spaceships, shared among ship classes deriving Autonomous.
  *
- * Assumption is that accelerations towards all directions except forward movement
- * is a half of the maximum accel. */
+ *  */
 void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn){
 	Entity *pt = this;
 	double const maxspeed2 = mn->maxspeed * mn->maxspeed;
@@ -416,22 +415,22 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 
 	Vec3d forceAccum(0,0,0);
 	if(pt->inputs.press & PL_W){
-		forceAccum += mat.vec3(2) * -mn->accel;
+		forceAccum += mat.vec3(2) * -mn->getAccel(ManeuverParams::NZ);
 	}
 	if(pt->inputs.press & PL_S){
-		forceAccum += mat.vec3(2) * mn->accel * .5;
+		forceAccum += mat.vec3(2) * mn->getAccel(ManeuverParams::PZ);
 	}
 	if(pt->inputs.press & PL_A){
-		forceAccum += mat.vec3(0) * -mn->accel * .5;
+		forceAccum += mat.vec3(0) * -mn->getAccel(ManeuverParams::NX);
 	}
 	if(pt->inputs.press & PL_D){
-		forceAccum += mat.vec3(0) * mn->accel * .5;
+		forceAccum += mat.vec3(0) * mn->getAccel(ManeuverParams::PX);
 	}
 	if(pt->inputs.press & PL_Q){
-		forceAccum += mat.vec3(1) * mn->accel * .5;
+		forceAccum += mat.vec3(1) * mn->getAccel(ManeuverParams::PY);
 	}
 	if(pt->inputs.press & PL_Z){
-		forceAccum += mat.vec3(1) * -mn->accel * .5;
+		forceAccum += mat.vec3(1) * -mn->getAccel(ManeuverParams::NY);
 	}
 	if(pt->inputs.press & (PL_W | PL_S | PL_A | PL_D | PL_Q | PL_Z)){
 		if(bbody){
@@ -676,6 +675,16 @@ unsigned Autonomous::analog_mask(){
 }
 
 
+/// Assumption is that accelerations towards all directions except forward movement
+/// is a half of the maximum accel.
+ double Autonomous::ManeuverParams::getAccel(Direction dir)const{
+	if(dir_accel[dir] != 0.)
+		return dir_accel[dir];
+	else if(dir == NZ)
+		return accel;
+	else
+		return accel * 0.5;
+}
 
 const Autonomous::ManeuverParams Autonomous::mymn = {
 	0, // double accel;
@@ -1006,6 +1015,22 @@ void Autonomous::ManeuverParamsProcess::process(HSQUIRRELVM v)const{
 		if(SQ_FAILED(sq_getfloat(v, -1, &f)))
 			throw SQFError(gltestp::dstring(paramNames[i]) << _SC(" couldn't be converted to float"));
 		mn.*paramOfs[i] = f;
+		sq_poptop(v);
+	}
+
+	// See if directional acceleration table is defined
+	sq_pushstring(v, _SC("dir_accel"), -1);
+	if(SQ_FAILED(sq_get(v, -2))){
+		for(int i = 0; i < numof(mn.dir_accel); i++)
+			mn.dir_accel[i] = 0.; // Make sure to reset the parameters to zeros.
+		return; // Not defining a directional acceleration is not an error.
+	}
+	for(int i = 0; i < numof(mn.dir_accel); i++){
+		SQFloat f;
+		// Defining a directional accel table and not providing sufficient parameters is an error.
+		if(SQ_FAILED(sq_getfloat(v, -1, &f)))
+			throw SQFError(gltestp::dstring("dir_accel[") << i << _SC("] couldn't be converted to float"));
+		mn.dir_accel[i] = f;
 		sq_poptop(v);
 	}
 }

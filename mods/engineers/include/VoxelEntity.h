@@ -304,7 +304,7 @@ public:
 	/// \param rot A reference to a variable to hold rotation in world coordinates after this function returns
 	Vec3d getControllerCockpitPos(Quatd &rot)const;
 
-	const ManeuverParams &getManeuve()const override{return maneuverParams;}
+	const ManeuverParams &getManeuve()const override;
 
 protected:
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
@@ -316,7 +316,8 @@ protected:
 	double cellWidth;
 	double baseHeight;
 	double noiseHeight;
-	static const ManeuverParams maneuverParams;
+	mutable ManeuverParams maneuverParams;
+	static const ManeuverParams defaultManeuverParams;
 private:
 	VolumeMap volume;
 	int bricks[Cell::NumTypes];

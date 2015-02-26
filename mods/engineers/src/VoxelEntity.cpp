@@ -380,7 +380,7 @@ void CellVolume::updateCache()
 
 
 
-const Autonomous::ManeuverParams VoxelEntity::maneuverParams = {
+const Autonomous::ManeuverParams VoxelEntity::defaultManeuverParams = {
 	0.01, // accel
 	0.01, // maxspeed
 	M_PI * 0.1, // angleaccel
@@ -680,6 +680,10 @@ Vec3d VoxelEntity::getControllerCockpitPos(Quatd &rot)const{
 	}
 	rot = this->rot * localRot;
 	return rot.trans((controllerCockpitPos.cast<double>() + Vec3d(0.5, 0.5, 0.5)) * cellWidth) + this->pos;
+}
+
+const Autonomous::ManeuverParams &VoxelEntity::getManeuve()const{
+	return defaultManeuverParams;
 }
 
 SQInteger VoxelEntity::sqGet(HSQUIRRELVM v, const SQChar *name)const{

@@ -87,11 +87,13 @@ public:
 		/// falling back to default acceleration.
 		double dir_accel[6];
 
-		/// Direction code for querying specific acceleration in direction.
+		/// Direction code for querying specific acceleration in direction. Positive and negative directions for each axis.
 		enum Direction{NX, PX, NY, PY, NZ, PZ};
 
-		/// Queries acceleration toward the given direction, taking anisotropic acceleration into account.
+		/// \brief Queries acceleration toward the given direction, taking anisotropic acceleration into account.
 		double getAccel(Direction)const;
+
+		Vec3d getAccelVec(const Vec3d &velo)const;
 	};
 protected:
 	virtual void init();

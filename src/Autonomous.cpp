@@ -413,27 +413,34 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 			omg *= (len - dt * mn->angleaccel) / len;
 	}
 
+	bool controlledAxes[3] = {false};
 	Vec3d forceAccum(0,0,0);
 	if(pt->inputs.press & PL_W){
 		forceAccum += mat.vec3(2) * -mn->getAccel(ManeuverParams::NZ);
+		controlledAxes[2] = true;
 	}
 	if(pt->inputs.press & PL_S){
 		forceAccum += mat.vec3(2) * mn->getAccel(ManeuverParams::PZ);
+		controlledAxes[2] = true;
 	}
 	if(pt->inputs.press & PL_A){
 		forceAccum += mat.vec3(0) * -mn->getAccel(ManeuverParams::NX);
+		controlledAxes[0] = true;
 	}
 	if(pt->inputs.press & PL_D){
 		forceAccum += mat.vec3(0) * mn->getAccel(ManeuverParams::PX);
+		controlledAxes[0] = true;
 	}
 	if(pt->inputs.press & PL_Q){
 		forceAccum += mat.vec3(1) * mn->getAccel(ManeuverParams::PY);
+		controlledAxes[1] = true;
 	}
 	if(pt->inputs.press & PL_Z){
 		forceAccum += mat.vec3(1) * -mn->getAccel(ManeuverParams::NY);
+		controlledAxes[1] = true;
 	}
 	if(pt->inputs.press & (PL_W | PL_S | PL_A | PL_D | PL_Q | PL_Z)){
-		if(bbody){
+		if(bbody && 0 < bbody->getInvMass()){
 			btVector3 btforceAccum = btvc(forceAccum);
 			// It could be zero if arrow keys in opposite directions are pressed
 //			assert(!btforceAccum.isZero());
@@ -445,14 +452,14 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 				// If desired steering direction is differing from real velocity,
 				// compensate sliding velocity with side thrusts.
 				if(!btvelo.isZero()){
-					if(btvelo.dot(btdirection) < -DBL_EPSILON)
-						btmainThrust = -btvelo.normalized() * mn->accel * .5;
-					else{
-						btVector3 v = btvelo - btvelo.dot(btdirection) * btdirection;
-						if(!v.fuzzyZero())
-							btmainThrust = -v.normalize() * mn->accel * .5;
+					Vec3d localRestingAccel = mn->getAccelVec(this->rot.itrans(btvc(-btvelo / dt)));
+					for(int i = 0; i < 3; i++){
+						// Apply to only non-controlled axis.  Without this, the inertia dampeners will try to stop
+						// the intentional thrust.
+						if(controlledAxes[i])
+							localRestingAccel[i] = 0.;
 					}
-
+					btmainThrust = btvc(this->rot.trans(localRestingAccel));
 				}
 
 				if(btvelo.length2() < mn->maxspeed * mn->maxspeed){
@@ -473,13 +480,9 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 		btVector3 btvelo = bbody->getLinearVelocity();
 
 		// Try to stop motion if not instructed to move.
-		if(!btvelo.isZero()){
-			btVector3 impulseToStop = -btvelo / bbody->getInvMass();
-			double thrust = dt * mn->accel * .5 / bbody->getInvMass();
-			if(impulseToStop.length2() < thrust * thrust)
-				bbody->applyCentralImpulse(impulseToStop);
-			else
-				bbody->applyCentralImpulse(impulseToStop.normalize() * thrust);
+		if(!btvelo.isZero() && 0 < bbody->getInvMass()){
+			btVector3 thrust = btvc(dt * this->rot.trans(mn->getAccelVec(this->rot.itrans(btvc(-btvelo / dt)))) / bbody->getInvMass());
+			bbody->applyCentralImpulse(thrust);
 		}
 	}
 	if(!bbody){
@@ -677,7 +680,7 @@ unsigned Autonomous::analog_mask(){
 
 /// Assumption is that accelerations towards all directions except forward movement
 /// is a half of the maximum accel.
- double Autonomous::ManeuverParams::getAccel(Direction dir)const{
+double Autonomous::ManeuverParams::getAccel(Direction dir)const{
 	if(dir_accel[dir] != 0.)
 		return dir_accel[dir];
 	else if(dir == NZ)
@@ -685,6 +688,15 @@ unsigned Autonomous::analog_mask(){
 	else
 		return accel * 0.5;
 }
+
+ /// Get acceleration from an arbitrary vector in the local coordinates.
+Vec3d Autonomous::ManeuverParams::getAccelVec(const Vec3d &velo)const{
+	return Vec3d(
+		velo[0] < 0 ? MAX(velo[0], -getAccel(NX)) : MIN(velo[0], getAccel(PX)),
+		velo[1] < 0 ? MAX(velo[1], -getAccel(NY)) : MIN(velo[1], getAccel(PY)),
+		velo[2] < 0 ? MAX(velo[2], -getAccel(NZ)) : MIN(velo[2], getAccel(PZ)));
+ }
+
 
 const Autonomous::ManeuverParams Autonomous::mymn = {
 	0, // double accel;

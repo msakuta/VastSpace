@@ -472,25 +472,41 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 				bbody->activate();
 			}
 		}
-		else if(0 < forceAccum.slen() && pt->velo.sp(forceAccum) / forceAccum.len() < mn->maxspeed){
-			pt->velo += forceAccum * dt;
-		}
-	}
-	else if(bbody){
-		btVector3 btvelo = bbody->getLinearVelocity();
+		else{
+			// The same algorithm as above for those Entities without bbody.
+			if(0 < forceAccum.slen()){
+				Vec3d localRestingAccel = mn->getAccelVec(this->rot.itrans(-velo / dt));
+				for(int i = 0; i < 3; i++){
+					// Apply to only non-controlled axis.  Without this, the inertia dampeners will try to stop
+					// the intentional thrust.
+					if(controlledAxes[i])
+						localRestingAccel[i] = 0.;
+				}
+				Vec3d mainThrust = this->rot.trans(localRestingAccel);
 
-		// Try to stop motion if not instructed to move.
-		if(!btvelo.isZero() && 0 < bbody->getInvMass()){
-			btVector3 thrust = btvc(dt * this->rot.trans(mn->getAccelVec(this->rot.itrans(btvc(-btvelo / dt)))) / bbody->getInvMass());
-			bbody->applyCentralImpulse(thrust);
+				if(velo.slen() < mn->maxspeed * mn->maxspeed){
+					mainThrust += forceAccum;
+				}
+
+				pt->velo += forceAccum * dt;
+			}
 		}
 	}
-	if(!bbody){
-		double f, dropoff = !(pt->inputs.press & (PL_W | PL_S | PL_A | PL_D | PL_Q | PL_Z)) ? mn->accel : mn->accel * .2;
-		f = pt->velo.len();
-		if(f){
-			f = MAX(0, f - dt * dropoff) / f;
-			pt->velo *= f;
+	else{
+		if(bbody){
+			btVector3 btvelo = bbody->getLinearVelocity();
+
+			// Try to stop motion if not instructed to move.
+			if(!btvelo.isZero() && 0 < bbody->getInvMass()){
+				btVector3 thrust = btvc(dt * this->rot.trans(mn->getAccelVec(this->rot.itrans(btvc(-btvelo / dt)))) / bbody->getInvMass());
+				bbody->applyCentralImpulse(thrust);
+			}
+		}
+		else{ // The same algorithm as above for those Entities without bbody.
+			if(0 < velo.slen()){
+				Vec3d thrust = dt * this->rot.trans(mn->getAccelVec(this->rot.itrans(-velo / dt)));
+				pt->velo += thrust;
+			}
 		}
 	}
 	direction = inputs.press;

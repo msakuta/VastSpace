@@ -378,10 +378,22 @@ void CellVolume::updateCache()
 	vboDirty = true;
 }
 
+void CellVolume::enumSolid(EnumSolidProc &proc){
+	for(int ix = 0; ix < CELLSIZE; ix++){
+		for(int iz = 0; iz < CELLSIZE; iz++){
+			// Use the scanlines to avoid empty cells in scanning.
+			for (int iy = _scanLines[ix][iz][0]; iy < _scanLines[ix][iz][1]; iy++){
+				Vec3i idx(ix, iy, iz);
+				proc(idx, cell(idx));
+			}
+		}
+	}
+}
+
 
 
 const Autonomous::ManeuverParams VoxelEntity::defaultManeuverParams = {
-	0.01, // accel
+	0.0, // accel, defaults no accel
 	0.01, // maxspeed
 	M_PI * 0.1, // angleaccel
 	M_PI * 0.1, // maxanglespeed
@@ -419,6 +431,8 @@ void VoxelEntity::anim(double dt){
 		for(std::vector<CellVolume*>::iterator it = changed.begin(); it != changed.end(); it++)
 			(*it)->updateCache();
 
+		updateManeuverParams();
+
 	}
 
 	st::anim(dt);
@@ -434,6 +448,9 @@ void VoxelEntity::init(){
 				);
 		initialized = true;
 	}
+
+	// Initialize the maneuverability parameters
+	maneuverParams = defaultManeuverParams;
 }
 
 
@@ -537,6 +554,9 @@ bool VoxelEntity::command(EntityCommand *com){
 									mvc->modifier->command(&gic);
 								}
 							}
+
+							// Whenever a block is removed, the ship's maneuverability is affected.
+							updateManeuverParams();
 						}
 						else{
 							notdone = true;
@@ -568,6 +588,9 @@ bool VoxelEntity::command(EntityCommand *com){
 						gic.amount = 1.;
 						mvc->modifier->command(&gic);
 					}
+
+					// Whenever a block is removed, the ship's maneuverability is affected.
+					updateManeuverParams();
 //					player->addBricks(c.getType(), 1);
 					break;
 				}
@@ -683,7 +706,46 @@ Vec3d VoxelEntity::getControllerCockpitPos(Quatd &rot)const{
 }
 
 const Autonomous::ManeuverParams &VoxelEntity::getManeuve()const{
-	return defaultManeuverParams;
+	return maneuverParams;
+}
+
+void VoxelEntity::updateManeuverParams(){
+	static const Vec3i refvecs[3][2] = {
+		{Vec3i(1,0,0), Vec3i(-1,0,0)},
+		{Vec3i(0,1,0), Vec3i(0,-1,0)},
+		{Vec3i(0,0,1), Vec3i(0,0,-1)},
+	};
+	int thrusters[3][2] = {0}; // Suffices are axes and directions
+	for(auto it : volume){
+		it.second.enumSolid(CellVolume::EnumSolidProc([&](const Vec3i &, const Cell &c){
+			// Non-thruster blocks are skipped
+			if(c.getType() != Cell::Thruster)
+				return;
+
+			// Obtain this thruster's direction
+			Vec3i thrustVector = Cell::rotate(c.getRotation(), Vec3i(0, 0, 1));
+
+			// Count up thrusters for each direction
+			for(int axis = 0; axis < 3; axis++){
+				for(int dir = 0; dir < 2; dir++){
+					 if(thrustVector == refvecs[axis][dir]){
+						thrusters[axis][dir]++;
+						return;
+					 }
+				}
+			}
+		}));
+	}
+
+	// Start from the default maneuverability parameters and override certain values.
+	maneuverParams = defaultManeuverParams;
+
+	// Update anisotropic acceleration strength by accumulated number of thrusters.
+	for(int axis = 0; axis < 3; axis++){
+		for(int dir = 0; dir < 2; dir++){
+			maneuverParams.dir_accel[axis * 2 + dir] = thrusters[axis][dir] * 0.001;
+		}
+	}
 }
 
 SQInteger VoxelEntity::sqGet(HSQUIRRELVM v, const SQChar *name)const{

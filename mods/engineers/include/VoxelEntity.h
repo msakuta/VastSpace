@@ -9,6 +9,8 @@
 
 #include <cpplib/vec2.h>
 
+#include <functional>
+
 class Game;
 class VoxelEntity;
 class Engineer;
@@ -175,6 +177,13 @@ public:
 	int getSolidCount()const{return _solidcount;}
 	int getBricks(int i)const{return bricks[i];}
 
+	/// \brief The function object type for enumerating solid blocks
+	typedef std::function<void (const Vec3i &idx, const Cell &)> EnumSolidProc;
+
+	/// \brief Enumerates only solid blocks and passes them to the given function object.
+	/// \param callback The function object to process the cell.
+	void enumSolid(EnumSolidProc &callback);
+
 	void serialize(std::ostream &o);
 	void unserialize(std::istream &i);
 
@@ -312,6 +321,15 @@ protected:
 
 	void drawCell(const Cell &cell, const Vec3i &pos, Cell::Type &celltype, const CellVolume *cv = NULL, const Vec3i &posInVolume = Vec3i(0,0,0),
 		std::vector<VERTEX> *vlist = NULL, std::vector<GLuint> *vidx = NULL, VertexMap *vertexMap = NULL)const;
+
+	/// \brief Update the maneuverParams variable specific to this VoxelEntity.
+	///
+	/// A VoxelEntity's maneuverability depends on its block configuration, so it's different
+	/// between instances.  We cannot universally define a fixed ManeuverParams to properly
+	/// adapt to this situation, but Autonomous class tree assumes it's stored in a static-like
+	/// memory storage.  To address this issue, we define a member variable for each VoxelEntity
+	/// to hold ManeuverParams and occasionally update it.
+	void updateManeuverParams();
 
 	double cellWidth;
 	double baseHeight;

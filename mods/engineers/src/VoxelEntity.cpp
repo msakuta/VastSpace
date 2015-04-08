@@ -171,6 +171,13 @@ const char *Cell::typeName(Cell::Type type){
 	}
 }
 
+UnserializeStream &operator>>(UnserializeStream &s, Vec3i &i){
+	s >> i[0];
+	s >> i[1];
+	s >> i[2];
+	return s;
+}
+
 
 
 /// <summary>Returns Cell object indexed by coordinates in this CellVolume.</summary>
@@ -403,6 +410,51 @@ const Autonomous::ManeuverParams VoxelEntity::defaultManeuverParams = {
 
 VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(0.0025), baseHeight(0.01), noiseHeight(0.005), volumeInitialized(false), controllerCockpitPos(0,0,0){
 	init();
+}
+
+SerializeStream &operator <<(SerializeStream &s, const Cell &c){
+	s << c.type;
+	s << c.value;
+	s << c.rotation;
+	return s;
+}
+
+UnserializeStream &operator>>(UnserializeStream &s, Cell &c){
+	s >> (int&)c.type;
+	s >> c.value;
+	s >> c.rotation;
+	return s;
+}
+
+void VoxelEntity::serialize(SerializeContext &sc){
+	st::serialize(sc);
+	for(auto it : volume){
+		const CellVolume &cv = it.second;
+		sc.o << it.first;
+		for(int x = 0; x < CELLSIZE; x++){
+			for(int y = 0; y < CELLSIZE; y++){
+				for(int z = 0; z < CELLSIZE; z++){
+					sc.o << cv.v[x][y][z];
+				}
+			}
+		}
+	}
+}
+
+void VoxelEntity::unserialize(UnserializeContext &sc){
+	st::unserialize(sc);
+	while(true){
+		Vec3i idx;
+		sc.i >> idx;
+		CellVolume &cv = this->volume[idx];
+		for(int x = 0; x < CELLSIZE; x++){
+			for(int y = 0; y < CELLSIZE; y++){
+				for(int z = 0; z < CELLSIZE; z++){
+					sc.i >> cv.v[x][y][z];
+				}
+			}
+		}
+	}
 }
 
 void VoxelEntity::anim(double dt){

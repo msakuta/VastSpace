@@ -72,6 +72,8 @@ protected:
 	char rotation;
 
 	friend class CellVolume;
+	friend SerializeStream &operator<<(SerializeStream &, const Cell &);
+	friend UnserializeStream &operator>>(UnserializeStream &, Cell &);
 };
 
 struct VERTEX{
@@ -254,8 +256,8 @@ public:
 
 	void init();
 
-//	virtual void serialize(SerializeContext &sc);
-//	virtual void unserialize(UnserializeContext &sc);
+	virtual void serialize(SerializeContext &sc);
+	virtual void unserialize(UnserializeContext &sc);
 //	virtual void addRigidBody(WarSpace*);
 	void anim(double dt)override;
 	void draw(WarDraw *)override;

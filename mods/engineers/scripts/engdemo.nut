@@ -50,6 +50,7 @@ cmd("bind insert rotvoxel 2 1");
 cmd("bind delete rotvoxel 2 -1");
 cmd("bind i inventory");
 cmd("bind t controlShip");
+cmd("bind c savevoxel");
 
 
 local function modifyVoxel(mode){
@@ -157,6 +158,16 @@ register_console_command("controlShip", function(){
 				break;
 		}
 	}
+});
+
+register_console_command("savevoxel", function(){
+	local sels = player.selected;
+	if(sels.len() == 0)
+		return;
+	local e = sels[0];
+	if(e == null || !(e instanceof VoxelEntity) || !("save" in e))
+		return;
+	e.save("temp.bin");
 });
 
 frameProcs.append(function (dt){

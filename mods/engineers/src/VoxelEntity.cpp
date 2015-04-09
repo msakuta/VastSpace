@@ -17,6 +17,7 @@ extern "C"{
 #include "clib/mathdef.h"
 }
 
+#include <fstream>
 
 
 inline bool operator<(const Vec3i &a, const Vec3i &b){
@@ -76,6 +77,22 @@ template<> void Entity::EntityRegister<VoxelEntity>::sq_defineInt(HSQUIRRELVM v)
 			return sq_throwerror(v, e.what());
 		}
 		return SQInteger(0);
+	});
+	register_closure(v, _SC("save"), [](HSQUIRRELVM v){
+		const SQChar *sc;
+		if(SQ_FAILED(sq_getstring(v, 2, &sc)))
+			return sq_throwerror(v, _SC("save() requires an argument as file path"));
+		Entity *e = Entity::sq_refobj(v, 1);
+		if(!e)
+			return sq_throwerror(v, _SC("this object is invalid for a call to save()"));
+		BinSerializeStream bss;
+		Serializable *visit_list = NULL;
+		SerializeContext context(bss, visit_list);
+		e->serialize(context);
+
+		std::ofstream o(sc, std::ios::binary);
+		o.write((const char*)bss.getbuf(), bss.getsize());
+		return SQInteger(1);
 	});
 }
 

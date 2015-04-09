@@ -413,16 +413,22 @@ VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(0.00
 }
 
 SerializeStream &operator <<(SerializeStream &s, const Cell &c){
-	s << c.type;
-	s << c.value;
-	s << c.rotation;
+	s << (uint16_t)c.type;
+	if(c.type != Cell::Empty){
+		s << c.value;
+		s << c.rotation;
+	}
 	return s;
 }
 
 UnserializeStream &operator>>(UnserializeStream &s, Cell &c){
-	s >> (int&)c.type;
-	s >> c.value;
-	s >> c.rotation;
+	uint16_t type;
+	s >> type;
+	c.type = Cell::Type(type);
+	if(c.type != Cell::Empty){
+		s >> c.value;
+		s >> c.rotation;
+	}
 	return s;
 }
 

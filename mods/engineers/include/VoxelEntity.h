@@ -317,6 +317,11 @@ public:
 
 	const ManeuverParams &getManeuve()const override;
 
+	/// Serialize only blocks configuration, without belonging WarField, position or orientation information
+	void serializeBlocks(SerializeStream &ss);
+	/// Unserialize only blocks configuration
+	void unserializeBlocks(UnserializeStream &us);
+
 protected:
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
 	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;

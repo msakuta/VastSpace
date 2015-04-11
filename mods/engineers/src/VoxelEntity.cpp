@@ -82,16 +82,37 @@ template<> void Entity::EntityRegister<VoxelEntity>::sq_defineInt(HSQUIRRELVM v)
 		const SQChar *sc;
 		if(SQ_FAILED(sq_getstring(v, 2, &sc)))
 			return sq_throwerror(v, _SC("save() requires an argument as file path"));
-		Entity *e = Entity::sq_refobj(v, 1);
+		VoxelEntity *e = static_cast<VoxelEntity*>(Entity::sq_refobj(v, 1));
 		if(!e)
 			return sq_throwerror(v, _SC("this object is invalid for a call to save()"));
 		BinSerializeStream bss;
-		Serializable *visit_list = NULL;
-		SerializeContext context(bss, visit_list);
-		e->serialize(context);
+		e->serializeBlocks(bss);
 
 		std::ofstream o(sc, std::ios::binary);
 		o.write((const char*)bss.getbuf(), bss.getsize());
+		return SQInteger(1);
+	});
+	register_closure(v, _SC("load"), [](HSQUIRRELVM v){
+		const SQChar *sc;
+		if(SQ_FAILED(sq_getstring(v, 2, &sc)))
+			return sq_throwerror(v, _SC("load() requires an argument as file path"));
+		CoordSys *cs = CoordSys::sq_refobj(v, 3);
+		if(!cs)
+			return sq_throwerror(v, _SC("load() requires the second argument as a valid CoordSys"));
+
+		std::ifstream ifs(sc, std::ios::binary);
+		if(!ifs)
+			return sq_throwerror(v, _SC("Cannot open the file in VoxelEntity.load()"));
+		std::vector<unsigned char> str((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+		BinUnserializeStream bus(&str.front(), str.size());
+
+		if(!cs->w)
+			cs->w = new WarSpace(cs);
+		VoxelEntity *e = new VoxelEntity(cs->w);
+		e->unserializeBlocks(bus);
+		cs->w->addent(e);
+
+		sq_pushobj(v, e);
 		return SQInteger(1);
 	});
 }
@@ -463,13 +484,17 @@ UnserializeStream &operator>>(UnserializeStream &s, Cell &c){
 
 void VoxelEntity::serialize(SerializeContext &sc){
 	st::serialize(sc);
+	serializeBlocks(sc.o);
+}
+
+void VoxelEntity::serializeBlocks(SerializeStream &ss){
 	for(auto it : volume){
 		const CellVolume &cv = it.second;
-		sc.o << it.first;
+		ss << it.first;
 		for(int x = 0; x < CELLSIZE; x++){
 			for(int y = 0; y < CELLSIZE; y++){
 				for(int z = 0; z < CELLSIZE; z++){
-					sc.o << cv.v[x][y][z];
+					ss << cv.v[x][y][z];
 				}
 			}
 		}
@@ -478,18 +503,32 @@ void VoxelEntity::serialize(SerializeContext &sc){
 
 void VoxelEntity::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	while(true){
-		Vec3i idx;
-		sc.i >> idx;
-		CellVolume &cv = this->volume[idx];
+	unserializeBlocks(sc.i);
+}
+
+void VoxelEntity::unserializeBlocks(UnserializeStream &us){
+	while(!us.eof()){
+		Vec3i ci;
+		us >> ci;
+		volume[ci] = CellVolume(this, ci);
+		CellVolume &cv = volume[ci];
 		for(int x = 0; x < CELLSIZE; x++){
 			for(int y = 0; y < CELLSIZE; y++){
 				for(int z = 0; z < CELLSIZE; z++){
-					sc.i >> cv.v[x][y][z];
+					us >> cv.v[x][y][z];
+					if(cv.v[x][y][z].isSolid())
+						cv._solidcount++;
 				}
 			}
 		}
 	}
+
+	for(auto it : volume)
+		it.second.updateCache();
+
+	updateManeuverParams();
+
+	volumeInitialized = true;
 }
 
 void VoxelEntity::anim(double dt){

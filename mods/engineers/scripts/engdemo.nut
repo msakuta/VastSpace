@@ -51,7 +51,7 @@ cmd("bind delete rotvoxel 2 -1");
 cmd("bind i inventory");
 cmd("bind t controlShip");
 cmd("bind c savevoxel");
-
+cmd("bind l loadvoxel");
 
 local function modifyVoxel(mode){
 	local con = player.controlled;
@@ -168,6 +168,13 @@ register_console_command("savevoxel", function(){
 	if(e == null || !(e instanceof VoxelEntity) || !("save" in e))
 		return;
 	e.save("temp.bin");
+});
+
+register_console_command("loadvoxel", function(){
+	local cs = player.cs;
+	local pos = player.getpos() + player.getrot().trans(Vec3d(0,0,-0.05));
+	local e = VoxelEntity.load("temp.bin", cs);
+	e.pos = pos;
 });
 
 frameProcs.append(function (dt){

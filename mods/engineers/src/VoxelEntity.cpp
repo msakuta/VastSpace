@@ -188,6 +188,15 @@ const char *Cell::typeName(Cell::Type type){
 	}
 }
 
+/// Overload stream-out operator for Vec3i, which is not defined by serial-util.h.
+SerializeStream &operator<<(SerializeStream &s, const Vec3i &i){
+	s << i[0];
+	s << i[1];
+	s << i[2];
+	return s;
+}
+
+/// Overload stream-in operator for Vec3i, which is not defined by serial-util.h.
 UnserializeStream &operator>>(UnserializeStream &s, Vec3i &i){
 	s >> i[0];
 	s >> i[1];

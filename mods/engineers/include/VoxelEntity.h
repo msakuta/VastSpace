@@ -248,7 +248,7 @@ class VoxelEntity : public Autonomous{
 public:
 	typedef Autonomous st;
 
-	VoxelEntity(Game *game) : st(game){}
+	VoxelEntity(Game *game);
 	VoxelEntity(WarField *w);
 
 	static EntityRegister<VoxelEntity> entityRegister;

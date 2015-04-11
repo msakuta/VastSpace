@@ -434,6 +434,9 @@ const Autonomous::ManeuverParams VoxelEntity::defaultManeuverParams = {
 	1, // capacitor_gen
 };
 
+VoxelEntity::VoxelEntity(Game *game) : st(game), volume(operator<){
+}
+
 VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(0.0025), baseHeight(0.01), noiseHeight(0.005), volumeInitialized(false), controllerCockpitPos(0,0,0){
 	init();
 }

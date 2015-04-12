@@ -848,10 +848,17 @@ void VoxelEntity::updateManeuverParams(){
 		{Vec3i(0,1,0), Vec3i(0,-1,0)},
 		{Vec3i(0,0,1), Vec3i(0,0,-1)},
 	};
+	double totalMass = 0.;
 	int thrusters[3][2] = {0}; // Suffices are axes and directions
 
 	// Make the functionoid outside the loop to prevent construction for each iteration
 	auto countThrusters = CellVolume::EnumSolidProc([&](const Vec3i &, const Cell &c){
+		// Natural asteroid rocks have specific gravity of 3.2, which results 50 tonnes in 2.5 meter cube.
+		if(c.getType() == Cell::Rock || c.getType() == Cell::Iron)
+			totalMass += 50.;
+		else // Artificial armors and components are far lighter because they are designed to have space inside them.
+			totalMass += 1.;
+
 		// Non-thruster blocks are skipped
 		if(c.getType() != Cell::Thruster)
 			return;
@@ -875,13 +882,19 @@ void VoxelEntity::updateManeuverParams(){
 		it.second.enumSolid(countThrusters);
 	}
 
+	// TotalMass is measured in tonnes.
+	this->mass = totalMass * 1000.;
+
 	// Start from the default maneuverability parameters and override certain values.
 	maneuverParams = defaultManeuverParams;
 
-	// Update anisotropic acceleration strength by accumulated number of thrusters.
-	for(int axis = 0; axis < 3; axis++){
-		for(int dir = 0; dir < 2; dir++){
-			maneuverParams.dir_accel[axis * 2 + dir] = thrusters[axis][dir] * 0.001;
+	if(0 < mass){
+		// Update anisotropic acceleration strength by accumulated number of thrusters.
+		for(int axis = 0; axis < 3; axis++){
+			for(int dir = 0; dir < 2; dir++){
+				// Each thruster have 100[N] thrust strength
+				maneuverParams.dir_accel[axis * 2 + dir] = thrusters[axis][dir] * 100. / mass;
+			}
 		}
 	}
 }

@@ -393,12 +393,12 @@ void CellVolume::initialize(const Vec3i &ci){
 
 void CellVolume::updateAdj(int ix, int iy, int iz){
 	v[ix][iy][iz].adjacents =
-		(!cell(ix - 1, iy, iz).isTranslucent() ? 1 : 0) +
-        (!cell(ix + 1, iy, iz).isTranslucent() ? 1 : 0) +
-        (!cell(ix, iy - 1, iz).isTranslucent() ? 1 : 0) +
-        (!cell(ix, iy + 1, iz).isTranslucent() ? 1 : 0) +
-        (!cell(ix, iy, iz - 1).isTranslucent() ? 1 : 0) +
-        (!cell(ix, iy, iz + 1).isTranslucent() ? 1 : 0);
+		(!cell(ix - 1, iy, iz).isSolid() ? 1 : 0) +
+        (!cell(ix + 1, iy, iz).isSolid() ? 1 : 0) +
+        (!cell(ix, iy - 1, iz).isSolid() ? 1 : 0) +
+        (!cell(ix, iy + 1, iz).isSolid() ? 1 : 0) +
+        (!cell(ix, iy, iz - 1).isSolid() ? 1 : 0) +
+        (!cell(ix, iy, iz + 1).isSolid() ? 1 : 0);
 }
 
 void CellVolume::updateCache()
@@ -411,6 +411,7 @@ void CellVolume::updateCache()
 	{
 		// Find start and end points for this scan line
 		bool begun = false;
+		bool solidBegun = false;
 		bool transBegun = false;
 		for (int iy = 0; iy < CELLSIZE; iy++)
 		{
@@ -426,6 +427,13 @@ void CellVolume::updateCache()
 				}
 				_scanLines[ix][iz][1] = iy + 1;
 			}
+			if(c.isSolid()){
+				if (!solidBegun){
+					solidBegun = true;
+					solidScanLines[ix][iz][0] = iy;
+				}
+				solidScanLines[ix][iz][1] = iy + 1;
+			}
 		}
 	}
 
@@ -436,7 +444,7 @@ void CellVolume::enumSolid(EnumSolidProc &proc){
 	for(int ix = 0; ix < CELLSIZE; ix++){
 		for(int iz = 0; iz < CELLSIZE; iz++){
 			// Use the scanlines to avoid empty cells in scanning.
-			for (int iy = _scanLines[ix][iz][0]; iy < _scanLines[ix][iz][1]; iy++){
+			for (int iy = solidScanLines[ix][iz][0]; iy < solidScanLines[ix][iz][1]; iy++){
 				Vec3i idx(ix, iy, iz);
 				proc(idx, cell(idx));
 			}
@@ -523,7 +531,8 @@ void VoxelEntity::unserializeBlocks(UnserializeStream &us){
 		}
 	}
 
-	for(auto it : volume)
+	// We must use auto & (reference) to update the volume's contents.
+	for(auto &it : volume)
 		it.second.updateCache();
 
 	updateManeuverParams();

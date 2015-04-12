@@ -131,6 +131,12 @@ protected:
 	/// </summary>
 	int _scanLines[CELLSIZE][CELLSIZE][2];
 
+	/// \brief Scanlines for solid cells
+	///
+	/// Because rendered cells and solid (content) cells are not necessarily the same,
+	/// we should have distinct scanline buffers for them.
+	int solidScanLines[CELLSIZE][CELLSIZE][2];
+
 	/// Scanlines for transparent cells
 	int tranScanLines[CELLSIZE][CELLSIZE][2];
 
@@ -146,6 +152,7 @@ public:
 			vboIdx[i] = 0;
 		for(int ix = 0; ix < CELLSIZE; ix++) for(int iy = 0; iy < CELLSIZE; iy++) for(int iz = 0; iz < 2; iz++){
 			_scanLines[ix][iy][iz] = 0;
+			solidScanLines[ix][iy][iz] = 0;
 			tranScanLines[ix][iy][iz] = 0;
 		}
 		for(int i = 0; i < Cell::NumTypes; i++)

@@ -12,6 +12,7 @@
 #include "Engineer.h"
 #include "../../src/noises/simplexnoise1234d.h"
 #include "SqInitProcess.h"
+#include "btadapt.h"
 
 extern "C"{
 #include "clib/mathdef.h"
@@ -461,11 +462,16 @@ const Autonomous::ManeuverParams VoxelEntity::defaultManeuverParams = {
 	1, // capacitor_gen
 };
 
-VoxelEntity::VoxelEntity(Game *game) : st(game), volume(operator<){
+VoxelEntity::VoxelEntity(Game *game) : st(game), volume(operator<), shape(NULL), shapeDirty(false), myMotionState(NULL){
 }
 
-VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(0.0025), baseHeight(0.01), noiseHeight(0.005), volumeInitialized(false), controllerCockpitPos(0,0,0){
+VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(0.0025), baseHeight(0.01), noiseHeight(0.005), shape(NULL), shapeDirty(false), myMotionState(NULL), volumeInitialized(false), controllerCockpitPos(0,0,0){
 	init();
+}
+
+VoxelEntity::~VoxelEntity(){
+	delete shape;
+	delete myMotionState;
 }
 
 SerializeStream &operator <<(SerializeStream &s, const Cell &c){
@@ -566,6 +572,15 @@ void VoxelEntity::anim(double dt){
 
 		updateManeuverParams();
 
+	}
+
+	// We don't want to reconstruct the shape more than once in a frame, so we monitor shapeDirty
+	// flag to see if any changes to this VoxelEntity requires reconstruction of shape.
+	if(shapeDirty){
+		if(!bbody)
+			addRigidBody(*w);
+		else
+			buildBody();
 	}
 
 	st::anim(dt);
@@ -767,6 +782,74 @@ bool VoxelEntity::command(EntityCommand *com){
 		return st::command(com);
 }
 
+bool VoxelEntity::buildBody(){
+
+	// A local function to add child shapes to the root shape.
+	auto reshape = [this](){
+		Vec3d basePos;
+
+		// Add a solid block to the compound shape.
+		auto addShape = CellVolume::EnumSolidProc([this, &basePos](const Vec3i &idx, const Cell &c){
+			btBoxShape *box = new btBoxShape(btVector3(cellWidth / 2, cellWidth / 2, cellWidth / 2));
+			btTransform trans = btTransform(btQuaternion(0, 0, 0, 1), btvc(basePos + (idx.cast<double>() + Vec3d(0.5, 0.5, 0.5)) * cellWidth));
+
+			shape->addChildShape(trans, box);
+		});
+
+		for(auto &it : volume){
+			basePos = it.first.cast<double>() * cellWidth * CELLSIZE;
+			it.second.enumSolid(addShape);
+		}
+	};
+
+	// A local function to make Bullet recalculate local moment of inertia
+	auto getInertia = [this](){
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			shape->calculateLocalInertia(mass,localInertia);
+		return localInertia;
+	};
+
+
+	// Wait until volume is initialized before building bbody and shape.
+	if(!bbody && volumeInitialized){
+		if(!shape){
+			shape = new btCompoundShape();
+			reshape();
+		}
+
+		btTransform startTransform;
+		startTransform.setIdentity();
+		startTransform.setOrigin(btvc(pos));
+
+		shapeDirty = false;
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		myMotionState = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,getInertia());
+		bbody = new btRigidBody(rbInfo);
+	}
+
+	// If bbody and shape are already present but needs update, modify the shape to match current volume.
+	if(bbody && shape && shapeDirty){
+		// Remove all child shapes and add all blocks again
+		while(0 < shape->getNumChildShapes()){
+			btCollisionShape *subshape = shape->getChildShape(0);
+			shape->removeChildShapeByIndex(0);
+			delete subshape;
+		}
+		reshape();
+
+		bbody->setMassProps(mass, getInertia());
+
+		shapeDirty = false;
+	}
+	return true;
+}
+
 /// <summary>
 /// Convert from real world coords to massvolume index vector
 /// </summary>
@@ -797,6 +880,7 @@ bool VoxelEntity::setCell(int ix, int iy, int iz, const Cell &newCell){
 	else
 		cv = &it->second;
 	volumeInitialized = true;
+	shapeDirty = true;
 	return cv->setCell(SignModulo(ix, CELLSIZE), SignModulo(iy, CELLSIZE), SignModulo(iz, CELLSIZE), newCell);
 }
 

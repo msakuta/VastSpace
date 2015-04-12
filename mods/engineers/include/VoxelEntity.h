@@ -257,6 +257,7 @@ public:
 
 	VoxelEntity(Game *game);
 	VoxelEntity(WarField *w);
+	~VoxelEntity()override;
 
 	static EntityRegister<VoxelEntity> entityRegister;
 	EntityStatic &getStatic()const override{return entityRegister;}
@@ -279,6 +280,7 @@ public:
 	bool isSelectable()const override{return true;}
 	bool command(EntityCommand *com)override;
 	int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn)override{return 0;}
+	bool buildBody()override;
 
 //	virtual short getDefaultCollisionMask()const;
 
@@ -350,6 +352,9 @@ protected:
 	double noiseHeight;
 	mutable ManeuverParams maneuverParams;
 	static const ManeuverParams defaultManeuverParams;
+	btCompoundShape *shape;
+	btDefaultMotionState* myMotionState;
+	bool shapeDirty;
 private:
 	VolumeMap volume;
 	int bricks[Cell::NumTypes];

@@ -851,25 +851,30 @@ void VoxelEntity::updateManeuverParams(){
 		{Vec3i(0,0,1), Vec3i(0,0,-1)},
 	};
 	int thrusters[3][2] = {0}; // Suffices are axes and directions
-	for(auto it : volume){
-		it.second.enumSolid(CellVolume::EnumSolidProc([&](const Vec3i &, const Cell &c){
-			// Non-thruster blocks are skipped
-			if(c.getType() != Cell::Thruster)
-				return;
 
-			// Obtain this thruster's direction
-			Vec3i thrustVector = Cell::rotate(c.getRotation(), Vec3i(0, 0, 1));
+	// Make the functionoid outside the loop to prevent construction for each iteration
+	auto countThrusters = CellVolume::EnumSolidProc([&](const Vec3i &, const Cell &c){
+		// Non-thruster blocks are skipped
+		if(c.getType() != Cell::Thruster)
+			return;
 
-			// Count up thrusters for each direction
-			for(int axis = 0; axis < 3; axis++){
-				for(int dir = 0; dir < 2; dir++){
-					 if(thrustVector == refvecs[axis][dir]){
-						thrusters[axis][dir]++;
-						return;
-					 }
+		// Obtain this thruster's direction
+		Vec3i thrustVector = Cell::rotate(c.getRotation(), Vec3i(0, 0, 1));
+
+		// Count up thrusters for each direction
+		for(int axis = 0; axis < 3; axis++){
+			for(int dir = 0; dir < 2; dir++){
+				if(thrustVector == refvecs[axis][dir]){
+					thrusters[axis][dir]++;
+					return;
 				}
 			}
-		}));
+		}
+	});
+
+	// Using auto & (reference) would prevent unnecessary copies of objects.
+	for(auto &it : volume){
+		it.second.enumSolid(countThrusters);
 	}
 
 	// Start from the default maneuverability parameters and override certain values.

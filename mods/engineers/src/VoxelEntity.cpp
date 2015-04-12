@@ -758,7 +758,7 @@ bool VoxelEntity::command(EntityCommand *com){
 			}
 		}
 		else{
-			Vec3d src = ecc->requester->pos - this->pos;
+			Vec3d src = rot.itrans(ecc->requester->pos - this->pos);
 			Vec3d dir = rot.itrans(ecc->requester->rot.trans(Vec3d(0,0,-1)));
 			for(int i = 1; i < 8; i++){
 				Vec3i ci = real2ind(src + dir * i * getCellWidth() / 2);

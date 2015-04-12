@@ -152,43 +152,41 @@ bool Cell::connection(const Vec3i &direction)const{
 }
 
 Vec3i Cell::rotate(char rotation, const Vec3i &dir){
-	Vec3i ret;
-	switch(rotation & 3){
-	case 1: ret = Vec3i(dir[0], -dir[2], dir[1]); break;
-	case 2: ret = Vec3i(dir[0], -dir[1], -dir[2]); break;
-	case 3: ret = Vec3i(dir[0], dir[2], -dir[1]); break;
-	default: ret = dir; break;
+	Vec3i ret = dir;
+	switch((rotation >> 4) & 3){
+	case 1: ret = Vec3i(-ret[1], ret[0], ret[2]); break;
+	case 2: ret = Vec3i(-ret[0], -ret[1], ret[2]); break;
+	case 3: ret = Vec3i(ret[1], -ret[0], ret[2]); break;
 	}
 	switch((rotation >> 2) & 3){
 	case 1: ret = Vec3i(ret[2], ret[1], -ret[0]); break;
 	case 2: ret = Vec3i(-ret[0], ret[1], -ret[2]); break;
 	case 3: ret = Vec3i(-ret[2], ret[1], ret[0]); break;
 	}
-	switch((rotation >> 4) & 3){
-	case 1: ret = Vec3i(-ret[1], ret[0], ret[2]); break;
-	case 2: ret = Vec3i(-ret[0], -ret[1], ret[2]); break;
-	case 3: ret = Vec3i(ret[1], -ret[0], ret[2]); break;
+	switch(rotation & 3){
+	case 1: ret = Vec3i(ret[0], -ret[2], ret[1]); break;
+	case 2: ret = Vec3i(ret[0], -ret[1], -ret[2]); break;
+	case 3: ret = Vec3i(ret[0], ret[2], -ret[1]); break;
 	}
 	return ret;
 }
 
 Vec3i Cell::irotate(char rotation, const Vec3i &dir){
-	Vec3i ret;
-	switch(rotation & 3){
-	case 1: ret = Vec3i(dir[0], dir[2], -dir[1]); break;
-	case 2: ret = Vec3i(dir[0], -dir[1], -dir[2]); break;
-	case 3: ret = Vec3i(dir[0], -dir[2], dir[1]); break;
-	default: ret = dir; break;
+	Vec3i ret = dir;
+	switch((rotation >> 4) & 3){
+	case 1: ret = Vec3i(ret[1], -ret[0], ret[2]); break;
+	case 2: ret = Vec3i(-ret[0], -ret[1], ret[2]); break;
+	case 3: ret = Vec3i(-ret[1], ret[0], ret[2]); break;
 	}
 	switch((rotation >> 2) & 3){
 	case 1: ret = Vec3i(-ret[2], ret[1], ret[0]); break;
 	case 2: ret = Vec3i(-ret[0], ret[1], -ret[2]); break;
 	case 3: ret = Vec3i(ret[2], ret[1], -ret[0]); break;
 	}
-	switch((rotation >> 4) & 3){
-	case 1: ret = Vec3i(ret[1], -ret[0], ret[2]); break;
-	case 2: ret = Vec3i(-ret[0], -ret[1], ret[2]); break;
-	case 3: ret = Vec3i(-ret[1], ret[0], ret[2]); break;
+	switch(rotation & 3){
+	case 1: ret = Vec3i(ret[0], ret[2], -ret[1]); break;
+	case 2: ret = Vec3i(ret[0], -ret[1], -ret[2]); break;
+	case 3: ret = Vec3i(ret[0], -ret[2], ret[1]); break;
 	}
 	return ret;
 }

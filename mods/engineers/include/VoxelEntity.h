@@ -63,6 +63,14 @@ public:
 	/// \brief Calculate inverse rotated vector by given rotation code
 	static Vec3i irotate(char rotation, const Vec3i &dir);
 
+	/// @brief Convert rotation code to rotation quaternion
+	static Quatd quatRotation(char rotation);
+
+	/// @brief Obtain rotation quaternion of this Cell
+	Quatd getQuatRotation()const{
+		return quatRotation(rotation);
+	}
+
 	/// \brief Obtains type name as a string from cell type
 	static const char *typeName(Type type);
 protected:

@@ -192,6 +192,26 @@ Vec3i Cell::irotate(char rotation, const Vec3i &dir){
 	return ret;
 }
 
+Quatd Cell::quatRotation(char rotation){
+	Quatd ret = quat_u;
+	switch((rotation >> 4) & 3){
+	case 1: ret = ret.rotate(M_PI * 0.5, 0, 0, 1); break;
+	case 2: ret = ret.rotate(M_PI * 1.0, 0, 0, 1); break;
+	case 3: ret = ret.rotate(M_PI * 1.5, 0, 0, 1); break;
+	}
+	switch((rotation >> 2) & 3){
+	case 1: ret = ret.rotate(M_PI * 0.5, 0, 1, 0); break;
+	case 2: ret = ret.rotate(M_PI * 1.0, 0, 1, 0); break;
+	case 3: ret = ret.rotate(M_PI * 1.5, 0, 1, 0); break;
+	}
+	switch(rotation & 3){
+	case 1: ret = ret.rotate(M_PI * 0.5, 1, 0, 0); break;
+	case 2: ret = ret.rotate(M_PI * 1.0, 1, 0, 0); break;
+	case 3: ret = ret.rotate(M_PI * 1.5, 1, 0, 0); break;
+	}
+	return ret;
+}
+
 const char *Cell::typeName(Cell::Type type){
 	switch(type){
 	case Cell::Empty: return "Empty";
@@ -790,10 +810,46 @@ bool VoxelEntity::buildBody(){
 
 		// Add a solid block to the compound shape.
 		auto addShape = CellVolume::EnumSolidProc([this, &basePos](const Vec3i &idx, const Cell &c){
-			btBoxShape *box = new btBoxShape(btVector3(cellWidth / 2, cellWidth / 2, cellWidth / 2));
-			btTransform trans = btTransform(btQuaternion(0, 0, 0, 1), btvc(basePos + (idx.cast<double>() + Vec3d(0.5, 0.5, 0.5)) * cellWidth));
+			btCollisionShape *subshape;
+			btScalar p0 = -0.5 * cellWidth;
+			btScalar p1 = 0.5 * cellWidth;
+			if(c.getType() == Cell::ArmorSlope){
+				btScalar vertices[6*3] = {
+					p0, p0, p0,
+					p1, p0, p0,
+					p0, p1, p0,
+					p0, p0, p1,
+					p1, p0, p1,
+					p0, p1, p1,
+				};
+				subshape = new btConvexHullShape(vertices, 6, 3 * sizeof(btScalar));
+			}
+			else if(c.getType() == Cell::ArmorCorner){
+				btScalar vertices[4*3] = {
+					p0, p0, p0,
+					p1, p0, p0,
+					p0, p1, p0,
+					p0, p0, p1,
+				};
+				subshape = new btConvexHullShape(vertices, 4, 3 * sizeof(btScalar));
+			}
+			else if(c.getType() == Cell::ArmorInvCorner){
+				btScalar vertices[7*3] = {
+					p0, p0, p0,
+					p1, p0, p0,
+					p0, p1, p0,
+					p0, p0, p1,
+					p1, p1, p0,
+					p0, p1, p1,
+					p1, p0, p1,
+				};
+				subshape = new btConvexHullShape(vertices, 7, 3 * sizeof(btScalar));
+			}
+			else
+				subshape = new btBoxShape(btVector3(p1, p1, p1));
+			btTransform trans = btTransform(btqc(c.getQuatRotation()), btvc(basePos + (idx.cast<double>() + Vec3d(0.5, 0.5, 0.5)) * cellWidth));
 
-			shape->addChildShape(trans, box);
+			shape->addChildShape(trans, subshape);
 		});
 
 		for(auto &it : volume){

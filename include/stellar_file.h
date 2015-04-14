@@ -16,7 +16,7 @@ struct StellarContext{
 	const char *fname;
 	CoordSys *root;
 	FILE *fp;
-	cpplib::dstring buf;
+	gltestp::dstring buf;
 	long line;
 	HSQOBJECT vars; ///< Squirrel table to hold locally-defined variables
 	HSQUIRRELVM v;

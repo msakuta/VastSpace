@@ -35,23 +35,23 @@ extern double gravityfactor;
 class StellarStructureScanner{
 public:
 	StellarStructureScanner(FILE *fp);
-	cpplib::dstring nextLine(std::vector<cpplib::dstring>* = NULL);
+	gltestp::dstring nextLine(std::vector<gltestp::dstring>* = NULL);
 	bool eof()const{return 0 != feof(fp);}
 	long long getLine()const{return line;} /// Returns line number.
 protected:
 	FILE *fp;
 	long long line;
 	enum{Normal, LineComment, BlockComment, Quotes} state;
-	cpplib::dstring buf;
-	cpplib::dstring currentToken;
-	std::vector<cpplib::dstring> tokens;
+	gltestp::dstring buf;
+	gltestp::dstring currentToken;
+	std::vector<gltestp::dstring> tokens;
 };
 
 StellarStructureScanner::StellarStructureScanner(FILE *fp) : fp(fp), line(0), state(Normal){
 }
 
 /// Scan and interpret input stream, separate them into tokens, returns on end of line.
-cpplib::dstring StellarStructureScanner::nextLine(std::vector<cpplib::dstring> *argv){
+gltestp::dstring StellarStructureScanner::nextLine(std::vector<gltestp::dstring> *argv){
 	buf = "";
 	tokens.clear();
 	currentToken = "";
@@ -197,7 +197,7 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	sq_createinstance(v, -1);
 	sqa::sqa_newobj(v, cs);*/
 	while(mode && !sc.scanner->eof()){
-		std::vector<cpplib::dstring> argv;
+		std::vector<gltestp::dstring> argv;
 		sc.buf = sc.scanner->nextLine(&argv);
 		int c = 0;
 		sc.line = long(sc.scanner->getLine());
@@ -218,8 +218,8 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			if(argv.size() == 0)
 				continue;
 		}
-		cpplib::dstring s = argv[0];
-		cpplib::dstring ps = 1 < argv.size() ? argv[1] : "";
+		gltestp::dstring s = argv[0];
+		gltestp::dstring ps = 1 < argv.size() ? argv[1] : "";
 		if(!strcmp(s, "define")){
 			sq_pushstring(sc.v, ps, -1);
 			sq_pushfloat(sc.v, SQFloat(CoordSys::sqcalc(sc, argv[2], s)));

@@ -31,6 +31,7 @@ extern "C"{
 extern double gravityfactor;
 
 typedef std::deque<gltestp::dstring> TokenList;
+typedef long linenum_t; ///< I think 2 billions would be enough.
 
 /// \brief The scanner class to interpret a Stellar Structure Definition file.
 ///
@@ -38,20 +39,20 @@ typedef std::deque<gltestp::dstring> TokenList;
 /// It would be even possible to suspend scanning per-character basis.
 class StellarStructureScanner{
 public:
-	StellarStructureScanner(std::istream *fp);
+	StellarStructureScanner(std::istream *fp, linenum_t line = 0);
 	gltestp::dstring nextLine(TokenList* = NULL);
 	bool eof()const{return 0 != fp->eof();}
-	long long getLine()const{return line;} /// Returns line number.
+	linenum_t getLine()const{return line;} /// Returns line number.
 protected:
 	std::istream *fp;
-	long long line;
+	linenum_t line;
 	enum{Normal, LineComment, BlockComment, Quotes, Braces} state;
 	gltestp::dstring buf;
 	gltestp::dstring currentToken;
 	TokenList tokens;
 };
 
-StellarStructureScanner::StellarStructureScanner(std::istream *fp) : fp(fp), line(0), state(Normal){
+StellarStructureScanner::StellarStructureScanner(std::istream *fp, linenum_t line) : fp(fp), line(line), state(Normal){
 }
 
 /// Scan and interpret input stream, separate them into tokens, returns on end of line.
@@ -236,9 +237,11 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	sq_get(v, 1);
 	sq_createinstance(v, -1);
 	sqa::sqa_newobj(v, cs);*/
+	linenum_t lastLine = 0;
 	while(mode && !sc.scanner->eof()){
 		TokenList argv;
 		sc.buf = sc.scanner->nextLine(&argv);
+		lastLine = sc.line;
 		sc.line = long(sc.scanner->getLine());
 		if(argv.size() == 0)
 			continue;
@@ -296,7 +299,7 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				if((a = cs->findastrobj(argv[1])) && a->parent == cs){
 					StellarContext sc2 = sc;
 					std::stringstream sstr = std::stringstream(std::string(argv[2]));
-					StellarStructureScanner ssc(&sstr);
+					StellarStructureScanner ssc(&sstr, lastLine);
 					sc2.scanner = &ssc;
 					stellar_coordsys(sc2, a);
 				}
@@ -317,7 +320,7 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 					}
 					StellarContext sc2 = sc;
 					std::stringstream sstr = std::stringstream(std::string(argv[2]));
-					StellarStructureScanner ssc(&sstr);
+					StellarStructureScanner ssc(&sstr, lastLine);
 					sc2.scanner = &ssc;
 					stellar_coordsys(sc2, a);
 				}

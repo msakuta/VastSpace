@@ -15,7 +15,7 @@ class StellarStructureScanner;
 struct StellarContext{
 	const char *fname;
 	CoordSys *root;
-	FILE *fp;
+	std::istream *fp;
 	gltestp::dstring buf;
 	long line;
 	HSQOBJECT vars; ///< Squirrel table to hold locally-defined variables

@@ -24,6 +24,8 @@ extern "C"{
 #include <string.h>
 #include <ctype.h>
 
+#include <fstream>
+
 extern double gravityfactor;
 
 
@@ -34,12 +36,12 @@ extern double gravityfactor;
 /// It would be even possible to suspend scanning per-character basis.
 class StellarStructureScanner{
 public:
-	StellarStructureScanner(FILE *fp);
+	StellarStructureScanner(std::istream *fp);
 	gltestp::dstring nextLine(std::vector<gltestp::dstring>* = NULL);
-	bool eof()const{return 0 != feof(fp);}
+	bool eof()const{return 0 != fp->eof();}
 	long long getLine()const{return line;} /// Returns line number.
 protected:
-	FILE *fp;
+	std::istream *fp;
 	long long line;
 	enum{Normal, LineComment, BlockComment, Quotes} state;
 	gltestp::dstring buf;
@@ -47,7 +49,7 @@ protected:
 	std::vector<gltestp::dstring> tokens;
 };
 
-StellarStructureScanner::StellarStructureScanner(FILE *fp) : fp(fp), line(0), state(Normal){
+StellarStructureScanner::StellarStructureScanner(std::istream *fp) : fp(fp), line(0), state(Normal){
 }
 
 /// Scan and interpret input stream, separate them into tokens, returns on end of line.
@@ -57,7 +59,7 @@ gltestp::dstring StellarStructureScanner::nextLine(std::vector<gltestp::dstring>
 	currentToken = "";
 	int c, lc = EOF;
 	bool escaped = false; // We never yield scanning in escaped state, so it don't need to be a member of StellarStructureScanner.
-	while((c = getc(fp)) != EOF){
+	while((c = fp->get()) != EOF){
 
 		// Return the line unless it's escaped by a backslash.
 		if(c == '\n'){
@@ -329,7 +331,9 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	{
-		FILE *fp;
+		std::ifstream fp(fname);
+		if(!fp)
+			return -1;
 		int mode = 0;
 		int inquote = 0;
 		StellarContext sc;
@@ -339,10 +343,8 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *
 		sc.fname = fname;
 		sc.root = root;
 		sc.line = 0;
-		sc.fp = fp = fopen(fname, "r");
-		sc.scanner = new StellarStructureScanner(fp);
-		if(!fp)
-			return -1;
+		sc.fp = &fp;
+		sc.scanner = new StellarStructureScanner(&fp);
 //		sqa_init(&sc.v);
 
 		HSQUIRRELVM v = sqvm;
@@ -358,7 +360,7 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *
 		stellar_coordsys(sc, root);
 
 /*		CmdPrint("space.dat loaded.");*/
-		fclose(fp);
+		fp.close();
 		delete sc.scanner;
 //		sq_close(sc.v);
 //		CmdPrintf("%s loaded time %lg", fname, TimeMeasLap(&tm));

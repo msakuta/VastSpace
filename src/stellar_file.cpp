@@ -56,21 +56,36 @@ gltestp::dstring StellarStructureScanner::nextLine(std::vector<gltestp::dstring>
 	tokens.clear();
 	currentToken = "";
 	int c, lc = EOF;
+	bool escaped = false; // We never yield scanning in escaped state, so it don't need to be a member of StellarStructureScanner.
 	while((c = getc(fp)) != EOF){
 
-		// Return the line
+		// Return the line unless it's escaped by a backslash.
 		if(c == '\n'){
-			if(0 < currentToken.len()){
-				tokens.push_back(currentToken);
-				currentToken = "";
-			}
-			if(argv){
-				*argv = tokens;
-			}
-			if(state == LineComment)
-				state = Normal;
+			// Increment the line number regardless of whether escaped or not, because the line number is used by
+			// the users who use ordinary editors to examine contents of Stellar Structure Definition files.
 			line++;
-			return buf;
+
+			// Substitute the newline with a whitespace if escaped.
+			if(escaped)
+				c = ' ';
+			else{
+				if(0 < currentToken.len()){
+					tokens.push_back(currentToken);
+					currentToken = "";
+				}
+				if(argv){
+					*argv = tokens;
+				}
+				if(state == LineComment)
+					state = Normal;
+				return buf;
+			}
+		}
+
+		// If we have a backslash without escaping by backslash itself, skip it.
+		if(!escaped && c == '\\'){
+			escaped = true;
+			continue;
 		}
 
 		switch(state){
@@ -149,6 +164,7 @@ gltestp::dstring StellarStructureScanner::nextLine(std::vector<gltestp::dstring>
 			break;
 		}
 		lc = c;
+		escaped = false;
 	}
 				if(argv)
 					*argv = tokens;

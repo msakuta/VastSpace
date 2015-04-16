@@ -25,10 +25,12 @@ extern "C"{
 #include <ctype.h>
 
 #include <fstream>
+#include <sstream>
+#include <deque>
 
 extern double gravityfactor;
 
-
+typedef std::deque<gltestp::dstring> TokenList;
 
 /// \brief The scanner class to interpret a Stellar Structure Definition file.
 ///
@@ -37,28 +39,29 @@ extern double gravityfactor;
 class StellarStructureScanner{
 public:
 	StellarStructureScanner(std::istream *fp);
-	gltestp::dstring nextLine(std::vector<gltestp::dstring>* = NULL);
+	gltestp::dstring nextLine(TokenList* = NULL);
 	bool eof()const{return 0 != fp->eof();}
 	long long getLine()const{return line;} /// Returns line number.
 protected:
 	std::istream *fp;
 	long long line;
-	enum{Normal, LineComment, BlockComment, Quotes} state;
+	enum{Normal, LineComment, BlockComment, Quotes, Braces} state;
 	gltestp::dstring buf;
 	gltestp::dstring currentToken;
-	std::vector<gltestp::dstring> tokens;
+	TokenList tokens;
 };
 
 StellarStructureScanner::StellarStructureScanner(std::istream *fp) : fp(fp), line(0), state(Normal){
 }
 
 /// Scan and interpret input stream, separate them into tokens, returns on end of line.
-gltestp::dstring StellarStructureScanner::nextLine(std::vector<gltestp::dstring> *argv){
+gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 	buf = "";
 	tokens.clear();
 	currentToken = "";
 	int c, lc = EOF;
 	bool escaped = false; // We never yield scanning in escaped state, so it don't need to be a member of StellarStructureScanner.
+	int braceNests = 0; // We never yield in the middle of braces.
 	while((c = fp->get()) != EOF){
 
 		// Return the line unless it's escaped by a backslash.
@@ -70,6 +73,8 @@ gltestp::dstring StellarStructureScanner::nextLine(std::vector<gltestp::dstring>
 			// Substitute the newline with a whitespace if escaped.
 			if(escaped)
 				c = ' ';
+			else if(state == Braces)
+				; // Do nothing
 			else{
 				if(0 < currentToken.len()){
 					tokens.push_back(currentToken);
@@ -112,15 +117,14 @@ gltestp::dstring StellarStructureScanner::nextLine(std::vector<gltestp::dstring>
 				continue;
 			}
 
-			if(c == '{' || c == '}'){
+			if(c == '{'){
 				if(0 < currentToken.len()){
 					tokens.push_back(currentToken);
 					currentToken = "";
 				}
-				tokens.push_back(char(c));
-				if(argv)
-					*argv = tokens;
-				return buf;
+				braceNests = 1;
+				state = Braces;
+				continue;
 			}
 
 			if(c == '"'){
@@ -163,6 +167,24 @@ gltestp::dstring StellarStructureScanner::nextLine(std::vector<gltestp::dstring>
 				currentToken << char(c);
 
 			buf << char(c);
+			break;
+
+		case Braces:
+			// Read the whole string (including newlines!) until matching closing brace is found.
+			if(c == '}' && --braceNests <= 0){
+				tokens.push_back(currentToken);
+				currentToken = "";
+				state = Normal;
+			}
+			else{
+				// Store the character into string verbatim
+				currentToken << char(c);
+				buf << char(c);
+
+				// Count up braces to properly parse nested structure.
+				if(c == '{')
+					braceNests++;
+			}
 			break;
 		}
 		lc = c;
@@ -215,31 +237,15 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 	sq_createinstance(v, -1);
 	sqa::sqa_newobj(v, cs);*/
 	while(mode && !sc.scanner->eof()){
-		std::vector<gltestp::dstring> argv;
+		TokenList argv;
 		sc.buf = sc.scanner->nextLine(&argv);
-		int c = 0;
 		sc.line = long(sc.scanner->getLine());
 		if(argv.size() == 0)
 			continue;
 
-		bool enterBrace = false;
-
-		if(!strcmp("}", argv.back())){
-			argv.pop_back();
-			mode = 0;
-			if(argv.size() == 0)
-				break;
-		}
-		if(!strcmp("{", argv.back())){
-			argv.pop_back();
-			enterBrace = true;
-			if(argv.size() == 0)
-				continue;
-		}
 		gltestp::dstring s = argv[0];
-		gltestp::dstring ps = 1 < argv.size() ? argv[1] : "";
 		if(!strcmp(s, "define")){
-			sq_pushstring(sc.v, ps, -1);
+			sq_pushstring(sc.v, argv[1], -1);
 			sq_pushfloat(sc.v, SQFloat(CoordSys::sqcalc(sc, argv[2], s)));
 			sq_createslot(sc.v, -3);
 			continue;
@@ -255,14 +261,14 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			// Assume string before a slash or backslash a path
 			if(pathDelimit)
 				path.strncat(sc.fname, pathDelimit - sc.fname + 1);
-			path.strcat(ps);
+			path.strcat(argv[1]);
 			StellarFileLoadInt(path, cs, &sc);
 			// TODO: Avoid recursive includes
 			continue;
 		}
 		if(!strcmp(argv[0], "new"))
-			s = argv[1], ps = argv[2], c++;
-		if(!strcmp(s, "astro") || !strcmp(s, "coordsys") || enterBrace){
+			s = argv[1], argv.pop_front();
+		if(!strcmp(s, "astro") || !strcmp(s, "coordsys")){
 			CoordSys *a = NULL;
 			CoordSys *(*ctor)(const char *path, CoordSys *root) = CoordSys::classRegister.construct;
 			if(argv.size() == 1){
@@ -272,36 +278,48 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 					ctor = Astrobj::classRegister.construct;
 				else
 					ctor = CoordSys::classRegister.construct;
-				ps = s;
 			}
 			else{
 				const CoordSys::CtorMap &cm = CoordSys::ctormap();
 				for(CoordSys::CtorMap::const_reverse_iterator it = cm.rbegin(); it != cm.rend(); it++){
 					ClassId id = it->first;
-					if(!strcmp(id, ps)){
+					if(!strcmp(id, argv[1])){
 						ctor = it->second->construct;
-						c++;
-						s = argv[c];
-						ps = argv[c+1];
 						break;
 					}
 				}
 			}
-			if(ps){
-				if((a = cs->findastrobj(ps)) && a->parent == cs)
-					stellar_coordsys(sc, a);
+			if(4 <= argv.size())
+				argv.pop_front();
+
+			if(argv[1]){
+				if((a = cs->findastrobj(argv[1])) && a->parent == cs){
+					StellarContext sc2 = sc;
+					std::stringstream sstr = std::stringstream(std::string(argv[2]));
+					StellarStructureScanner ssc(&sstr);
+					sc2.scanner = &ssc;
+					stellar_coordsys(sc2, a);
+				}
 				else
 					a = NULL;
 			}
 			if(!a){
-				a = ctor(ps, cs);
+				if(argv.size() < 3){
+					printf("%s(%ld): Lacking body block for %s %s\n", sc.fname, sc.line, argv[0].c_str(), argv[1].c_str());
+					continue;
+				}
+				a = ctor(argv[1], cs);
 				if(a){
 					if(ctor){
 						CoordSys *eis = a->findeisystem();
 						if(eis)
 							eis->addToDrawList(a);
 					}
-					stellar_coordsys(sc, a);
+					StellarContext sc2 = sc;
+					std::stringstream sstr = std::stringstream(std::string(argv[2]));
+					StellarStructureScanner ssc(&sstr);
+					sc2.scanner = &ssc;
+					stellar_coordsys(sc2, a);
 				}
 			}
 		}

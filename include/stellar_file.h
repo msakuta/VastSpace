@@ -6,13 +6,19 @@
 #include "CoordSys.h"
 #include <squirrel.h>
 #include <exception>
+#include <deque>
 
 
 class StellarStructureScanner;
 
+typedef std::deque<gltestp::dstring> TokenList;
+
+typedef long linenum_t; ///< I think 2 billions would be enough.
+
 
 /// Context object in the process of interpreting a stellar file.
 struct StellarContext{
+	Game *game;
 	const char *fname;
 	CoordSys *root;
 	std::istream *fp;
@@ -21,6 +27,24 @@ struct StellarContext{
 	HSQOBJECT vars; ///< Squirrel table to hold locally-defined variables
 	HSQUIRRELVM v;
 	StellarStructureScanner *scanner;
+
+	/// @brief Parse single command
+	int parseCommand(TokenList &argv, CoordSys *cs);
+
+	/// @brief Parse a block of commands without growing stack
+	int parseBlock(CoordSys *cs);
+
+	/// @brief Parse and interpret a string as a list of commands
+	/// @param enterCoordSys Whether to grow the stack frame for the new CoordSys.
+	///                      Callers of this function varies whether they need it.
+	/// @param linenum Starting line number in the file.
+	int parseString(const char *commands, CoordSys *cs, bool enterCoordSys, linenum_t linenum = 0);
+
+	/// @brief Parse a CoordSys, almost equivalent to parseBlock with growing stack
+	int parseCoordSys(CoordSys *cs);
+
+	/// @brief Parse single file, could be recursively called
+	static int parseFile(const char *fname, CoordSys *root, StellarContext *prev_sc);
 };
 
 /// \brief Base type for any errors that could happen in stellar file interpretation.

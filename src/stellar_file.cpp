@@ -30,9 +30,6 @@ extern "C"{
 
 extern double gravityfactor;
 
-typedef std::deque<gltestp::dstring> TokenList;
-typedef long linenum_t; ///< I think 2 billions would be enough.
-
 /// \brief The scanner class to interpret a Stellar Structure Definition file.
 ///
 /// Can handle line comments, block comments and curly braces.
@@ -204,41 +201,50 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 
 
 
-#define MAX_LINE_LENGTH 512
 
-/* stack state machine */
-static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl);
-static int stellar_astro(StellarContext *sc, Astrobj *a);
+int StellarContext::parseCommand(TokenList &argv, CoordSys *cs){
 
-int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
-	typedef CoordSys *(Game::*CC)(const char *name, CoordSys *cs);
+	try{
 
-	const char *fname = sc.fname;
-	const CoordSys *root = sc.root;
-	int mode = 1;
-	int enable = 0;
-	HSQUIRRELVM v = sqvm;
-	cs->readFileStart(sc);
-	sqa::StackReserver sr(v);
+		if(argv[0] == "if"){
+			if(argv.size() < 3){
+				printf("%s(%ld): Insufficient number of arguments to if command\n", this->fname, this->line);
+				return -1;
+			}
+			else if(0 != stellar_util::sqcalcb(*this, argv[1], "if"))
+				parseString(argv[2], cs, false, scanner->getLine());
+			else if(5 <= argv.size() && argv[3] == "else") // With "else" keyword (which is ignored)
+				parseString(argv[4], cs, false, scanner->getLine());
+			else if(4 <= argv.size())
+				parseString(argv[3], cs, false, scanner->getLine());
+		}
+		else if(argv[0] == "expr"){
+			gltestp::dstring catstr;
+			for(TokenList::iterator it = argv.begin() + 1; it != argv.end(); ++it)
+				catstr += *it;
+			CoordSys::sqcalc(*this, catstr, "expr");
+		}
 
-	// Create a temporary table for Squirrel to save CoordSys-local defines.
-	// Defined variables in parent CoordSys's can be referenced by delegation.
-	sq_newtable(v);
-	sq_pushobject(v, sc.vars);
-	sq_setdelegate(v, -2);
+		std::vector<const char *> cargs(argv.size());
+		for(int i = 0; i < argv.size(); i++)
+			cargs[i] = argv[i];
+		if(cs->readFile(*this, argv.size(), &cargs[0]));
+		else{
+//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
+			printf("%s(%ld): Unknown parameter for %s: %s\n", this->fname, this->line, cs->classname(), argv[0].c_str());
+		}
+	}
+	catch(StellarError &e){
+		printf("%s(%ld): Error %s: %s\n", this->fname, this->line, cs->classname(), e.what());
+	}
+	return 0;
+}
 
-	// Replace StellarContext's current variables table with the temporary table.
-	HSQOBJECT vars;
-	sq_getstackobj(v, -1, &vars);
-	HSQOBJECT old_vars = sc.vars;
-	sc.vars = vars;
+int StellarContext::parseBlock(CoordSys *cs){
+	StellarContext &sc = *this;
 
-/*	sq_pushstring(v, _SC("CoordSys"), -1);
-	sq_get(v, 1);
-	sq_createinstance(v, -1);
-	sqa::sqa_newobj(v, cs);*/
 	linenum_t lastLine = 0;
-	while(mode && !sc.scanner->eof()){
+	while(!sc.scanner->eof()){
 		TokenList argv;
 		sc.buf = sc.scanner->nextLine(&argv);
 		lastLine = sc.line;
@@ -265,7 +271,7 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 			if(pathDelimit)
 				path.strncat(sc.fname, pathDelimit - sc.fname + 1);
 			path.strcat(argv[1]);
-			StellarFileLoadInt(path, cs, &sc);
+			parseFile(path, cs, &sc);
 			// TODO: Avoid recursive includes
 			continue;
 		}
@@ -296,13 +302,8 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 				argv.pop_front();
 
 			if(argv[1]){
-				if((a = cs->findastrobj(argv[1])) && a->parent == cs){
-					StellarContext sc2 = sc;
-					std::stringstream sstr = std::stringstream(std::string(argv[2]));
-					StellarStructureScanner ssc(&sstr, lastLine);
-					sc2.scanner = &ssc;
-					stellar_coordsys(sc2, a);
-				}
+				if((a = cs->findastrobj(argv[1])) && a->parent == cs)
+					parseString(argv[2], a, true, lastLine);
 				else
 					a = NULL;
 			}
@@ -318,37 +319,60 @@ int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
 						if(eis)
 							eis->addToDrawList(a);
 					}
-					StellarContext sc2 = sc;
-					std::stringstream sstr = std::stringstream(std::string(argv[2]));
-					StellarStructureScanner ssc(&sstr, lastLine);
-					sc2.scanner = &ssc;
-					stellar_coordsys(sc2, a);
+					parseString(argv[2], a, true, lastLine);
 				}
 			}
 		}
 		else{
-			std::vector<const char *> cargs(argv.size());
-			for(int i = 0; i < argv.size(); i++)
-				cargs[i] = argv[i];
-			try{
-				if(cs->readFile(sc, argv.size(), &cargs[0]));
-				else{
-		//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
-					printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s.operator const char *());
-				}
-			}
-			catch(StellarError &e){
-				printf("%s(%ld): Error %s: %s\n", sc.fname, sc.line, cs->classname(), e.what());
-			}
+			sc.parseCommand(argv, cs);
 		}
 	}
+	return 0;
+}
+
+int StellarContext::parseString(const char *s, CoordSys *cs, bool enterCoordSys, linenum_t linenum){
+	StellarContext sc2 = *this;
+	std::stringstream sstr = std::stringstream(std::string(s));
+	StellarStructureScanner ssc(&sstr, linenum);
+	sc2.scanner = &ssc;
+	if(enterCoordSys)
+		return sc2.parseCoordSys(cs);
+	else
+		return sc2.parseBlock(cs);
+}
+
+int StellarContext::parseCoordSys(CoordSys *cs){
+	StellarContext &sc = *this;
+	typedef CoordSys *(Game::*CC)(const char *name, CoordSys *cs);
+
+	const char *fname = sc.fname;
+	const CoordSys *root = sc.root;
+	int enable = 0;
+	HSQUIRRELVM v = sc.game->sqvm;
+	cs->readFileStart(sc);
+	sqa::StackReserver sr(v);
+
+	// Create a temporary table for Squirrel to save CoordSys-local defines.
+	// Defined variables in parent CoordSys's can be referenced by delegation.
+	sq_newtable(v);
+	sq_pushobject(v, sc.vars);
+	sq_setdelegate(v, -2);
+
+	// Replace StellarContext's current variables table with the temporary table.
+	HSQOBJECT vars;
+	sq_getstackobj(v, -1, &vars);
+	HSQOBJECT old_vars = sc.vars;
+	sc.vars = vars;
+
+	sc.parseBlock(cs);
+
 //	sq_poptop(v);
 	cs->readFileEnd(sc);
 	sc.vars = old_vars; // Restore original variables table before returning
-	return mode;
+	return 0;
 }
 
-int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *prev_sc){
+int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext *prev_sc){
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	{
@@ -361,6 +385,7 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *
 		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;
 		Astrobj *a = NULL;
+		sc.game = root->getGame();
 		sc.fname = fname;
 		sc.root = root;
 		sc.line = 0;
@@ -368,7 +393,7 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *
 		sc.scanner = new StellarStructureScanner(&fp);
 //		sqa_init(&sc.v);
 
-		HSQUIRRELVM v = sqvm;
+		HSQUIRRELVM v = sc.game->sqvm;
 		sc.v = v;
 
 		if(prev_sc)
@@ -378,7 +403,7 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *
 			sq_getstackobj(v, -1, &sc.vars);
 		}
 
-		stellar_coordsys(sc, root);
+		sc.parseCoordSys(root);
 
 /*		CmdPrint("space.dat loaded.");*/
 		fp.close();
@@ -391,7 +416,7 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *
 }
 
 int Game::StellarFileLoad(const char *fname){
-	return StellarFileLoadInt(fname, universe, nullptr);
+	return StellarContext::parseFile(fname, universe, nullptr);
 }
 
 double stellar_util::sqcalcd(StellarContext &sc, const char *str, const SQChar *context){

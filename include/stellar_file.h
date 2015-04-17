@@ -7,6 +7,7 @@
 #include <squirrel.h>
 #include <exception>
 #include <deque>
+#include <unordered_map>
 
 
 class StellarStructureScanner;
@@ -18,6 +19,7 @@ typedef long linenum_t; ///< I think 2 billions would be enough.
 
 /// Context object in the process of interpreting a stellar file.
 struct StellarContext{
+	typedef std::unordered_map<gltestp::dstring, void (*)(StellarContext &, TokenList &), size_t (*)(const gltestp::dstring &)> CommandMap;
 	Game *game;
 	const char *fname;
 	CoordSys *root;
@@ -27,6 +29,7 @@ struct StellarContext{
 	HSQOBJECT vars; ///< Squirrel table to hold locally-defined variables
 	HSQUIRRELVM v;
 	StellarStructureScanner *scanner;
+	CommandMap *commands;
 
 	/// @brief Parse single command
 	int parseCommand(TokenList &argv, CoordSys *cs);
@@ -45,6 +48,8 @@ struct StellarContext{
 
 	/// @brief Parse single file, could be recursively called
 	static int parseFile(const char *fname, CoordSys *root, StellarContext *prev_sc);
+
+	static void scmd_define(StellarContext &sc, TokenList &argv);
 };
 
 /// \brief Base type for any errors that could happen in stellar file interpretation.

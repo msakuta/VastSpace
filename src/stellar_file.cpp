@@ -215,7 +215,11 @@ int StellarContext::parseCommand(TokenList &argv, CoordSys *cs){
 
 	try{
 
-		if(argv[0] == "if"){
+		CommandMap::iterator it = commands->find(argv[0]);
+		if(it != commands->end()){
+			it->second(*this, argv);
+		}
+		else if(argv[0] == "if"){
 			if(argv.size() < 3){
 				printf("%s(%ld): Insufficient number of arguments to if command\n", this->fname, this->line);
 				return -1;
@@ -270,13 +274,7 @@ int StellarContext::parseBlock(CoordSys *cs){
 			continue;
 
 		gltestp::dstring s = argv[0];
-		if(!strcmp(s, "define")){
-			sq_pushstring(sc.v, argv[1], -1);
-			sq_pushfloat(sc.v, SQFloat(CoordSys::sqcalc(sc, argv[2], s)));
-			sq_createslot(sc.v, -3);
-			continue;
-		}
-		else if(!strcmp(s, "include")){
+		if(!strcmp(s, "include")){
 			// Concatenate current file's path and given file name to obtain a relative path.
 			// Assume ASCII transparent encoding. (Note that it may not be the case if it's Shift-JIS or something,
 			// but for the moment, just do not use multibyte characters for data file names.)
@@ -389,6 +387,31 @@ int StellarContext::parseCoordSys(CoordSys *cs){
 	return 0;
 }
 
+void StellarContext::scmd_define(StellarContext &sc, TokenList &argv){
+	sq_pushstring(sc.v, argv[1], -1);
+	sq_pushfloat(sc.v, SQFloat(CoordSys::sqcalc(sc, argv[2], argv[1])));
+	sq_createslot(sc.v, -3);
+}
+
+/// Borrowed code from Squirrel library (squirrel3/squirrel/sqstring.h) which in turn borrowed
+/// from Lua code.  The header file is Squirrel's internal header, so we cannot just include it
+/// from this file without confronting dependency hell (which could be much worse when we update
+/// Squirrel library).  Originally we considered using CRC32, but this code would be more efficient
+/// for long strings.
+inline SQHash _hashstr (const SQChar *s, size_t l)
+{
+		SQHash h = (SQHash)l;  /* seed */
+		size_t step = (l>>5)|1;  /* if string is too long, don't hash all its chars */
+		for (; l>=step; l-=step)
+			h = h ^ ((h<<5)+(h>>2)+(unsigned short)*(s++));
+		return h;
+}
+
+/// Return a hash for unordered_map of dstring.
+static size_t hash_dstr(const gltestp::dstring &s){
+	return _hashstr(s.c_str(), s.len());
+}
+
 int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext *prev_sc){
 	timemeas_t tm;
 	TimeMeasStart(&tm);
@@ -398,6 +421,8 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 			return -1;
 		int mode = 0;
 		int inquote = 0;
+		CommandMap commandMap(0, hash_dstr);
+		commandMap["define"] = scmd_define;
 		StellarContext sc;
 		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;
@@ -408,6 +433,7 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		sc.line = 0;
 		sc.fp = &fp;
 		sc.scanner = new StellarStructureScanner(&fp);
+		sc.commands = &commandMap;
 //		sqa_init(&sc.v);
 
 		HSQUIRRELVM v = sc.game->sqvm;

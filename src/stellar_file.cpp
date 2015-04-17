@@ -211,7 +211,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 
 
 
-int StellarContext::parseCommand(TokenList &argv, CoordSys *cs){
+int StellarContext::parseCommand(TokenList &argv){
 
 	try{
 
@@ -261,7 +261,7 @@ int StellarContext::parseCommand(TokenList &argv, CoordSys *cs){
 	return 0;
 }
 
-int StellarContext::parseBlock(CoordSys *cs){
+int StellarContext::parseBlock(){
 	StellarContext &sc = *this;
 
 	linenum_t lastLine = 0;
@@ -274,22 +274,6 @@ int StellarContext::parseBlock(CoordSys *cs){
 			continue;
 
 		gltestp::dstring s = argv[0];
-		if(!strcmp(s, "include")){
-			// Concatenate current file's path and given file name to obtain a relative path.
-			// Assume ASCII transparent encoding. (Note that it may not be the case if it's Shift-JIS or something,
-			// but for the moment, just do not use multibyte characters for data file names.)
-			const char *slash = strrchr(sc.fname, '\\');
-			const char *backslash = strrchr(sc.fname, '/');
-			const char *pathDelimit = slash ? slash : backslash;
-			gltestp::dstring path;
-			// Assume string before a slash or backslash a path
-			if(pathDelimit)
-				path.strncat(sc.fname, pathDelimit - sc.fname + 1);
-			path.strcat(argv[1]);
-			parseFile(path, cs, &sc);
-			// TODO: Avoid recursive includes
-			continue;
-		}
 		if(!strcmp(argv[0], "new"))
 			s = argv[1], argv.pop_front();
 		if(!strcmp(s, "astro") || !strcmp(s, "coordsys")){
@@ -339,7 +323,7 @@ int StellarContext::parseBlock(CoordSys *cs){
 			}
 		}
 		else{
-			sc.parseCommand(argv, cs);
+			sc.parseCommand(argv);
 		}
 	}
 	return 0;
@@ -353,7 +337,7 @@ int StellarContext::parseString(const char *s, CoordSys *cs, bool enterCoordSys,
 	if(enterCoordSys)
 		return sc2.parseCoordSys(cs);
 	else
-		return sc2.parseBlock(cs);
+		return sc2.parseBlock();
 }
 
 int StellarContext::parseCoordSys(CoordSys *cs){
@@ -367,23 +351,34 @@ int StellarContext::parseCoordSys(CoordSys *cs){
 	cs->readFileStart(sc);
 	sqa::StackReserver sr(v);
 
-	// Create a temporary table for Squirrel to save CoordSys-local defines.
-	// Defined variables in parent CoordSys's can be referenced by delegation.
-	sq_newtable(v);
-	sq_pushobject(v, sc.vars);
-	sq_setdelegate(v, -2);
+	CoordSys *prevcs = sc.cs;
+	sc.cs = cs;
+	try{
 
-	// Replace StellarContext's current variables table with the temporary table.
-	HSQOBJECT vars;
-	sq_getstackobj(v, -1, &vars);
-	HSQOBJECT old_vars = sc.vars;
-	sc.vars = vars;
+		// Create a temporary table for Squirrel to save CoordSys-local defines.
+		// Defined variables in parent CoordSys's can be referenced by delegation.
+		sq_newtable(v);
+		sq_pushobject(v, sc.vars);
+		sq_setdelegate(v, -2);
 
-	sc.parseBlock(cs);
+		// Replace StellarContext's current variables table with the temporary table.
+		HSQOBJECT vars;
+		sq_getstackobj(v, -1, &vars);
+		HSQOBJECT old_vars = sc.vars;
+		sc.vars = vars;
 
-//	sq_poptop(v);
-	cs->readFileEnd(sc);
-	sc.vars = old_vars; // Restore original variables table before returning
+		sc.parseBlock();
+
+		cs->readFileEnd(sc);
+		sc.vars = old_vars; // Restore original variables table before returning
+	}
+	catch(StellarError &e){
+		printf("%s(%ld): Error %s: %s\n", this->fname, this->line, cs->classname(), e.what());
+	}
+
+	// Pop CoordSys from the stack regardless of whether an exception is occured or not.
+	sc.cs = prevcs;
+
 	return 0;
 }
 
@@ -391,6 +386,22 @@ void StellarContext::scmd_define(StellarContext &sc, TokenList &argv){
 	sq_pushstring(sc.v, argv[1], -1);
 	sq_pushfloat(sc.v, SQFloat(CoordSys::sqcalc(sc, argv[2], argv[1])));
 	sq_createslot(sc.v, -3);
+}
+
+static void scmd_include(StellarContext &sc, TokenList &argv){
+	// Concatenate current file's path and given file name to obtain a relative path.
+	// Assume ASCII transparent encoding. (Note that it may not be the case if it's Shift-JIS or something,
+	// but for the moment, just do not use multibyte characters for data file names.)
+	const char *slash = strrchr(sc.fname, '\\');
+	const char *backslash = strrchr(sc.fname, '/');
+	const char *pathDelimit = slash ? slash : backslash;
+	gltestp::dstring path;
+	// Assume string before a slash or backslash a path
+	if(pathDelimit)
+		path.strncat(sc.fname, pathDelimit - sc.fname + 1);
+	path.strcat(argv[1]);
+	StellarContext::parseFile(path, sc.cs, &sc);
+	// TODO: Avoid recursive includes
 }
 
 /// Borrowed code from Squirrel library (squirrel3/squirrel/sqstring.h) which in turn borrowed
@@ -423,6 +434,7 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		int inquote = 0;
 		CommandMap commandMap(0, hash_dstr);
 		commandMap["define"] = scmd_define;
+		commandMap["include"] = scmd_include;
 		StellarContext sc;
 		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;
@@ -430,6 +442,7 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		sc.game = root->getGame();
 		sc.fname = fname;
 		sc.root = root;
+		sc.cs = cs;
 		sc.line = 0;
 		sc.fp = &fp;
 		sc.scanner = new StellarStructureScanner(&fp);

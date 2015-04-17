@@ -23,6 +23,7 @@ struct StellarContext{
 	Game *game;
 	const char *fname;
 	CoordSys *root;
+	CoordSys *cs; ///< Active CoordSys, top of the stack
 	std::istream *fp;
 	gltestp::dstring buf;
 	long line;
@@ -32,10 +33,10 @@ struct StellarContext{
 	CommandMap *commands;
 
 	/// @brief Parse single command
-	int parseCommand(TokenList &argv, CoordSys *cs);
+	int parseCommand(TokenList &argv);
 
 	/// @brief Parse a block of commands without growing stack
-	int parseBlock(CoordSys *cs);
+	int parseBlock();
 
 	/// @brief Parse and interpret a string as a list of commands
 	/// @param enterCoordSys Whether to grow the stack frame for the new CoordSys.

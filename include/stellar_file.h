@@ -26,7 +26,8 @@ struct StellarContext{
 	CoordSys *cs; ///< Active CoordSys, top of the stack
 	std::istream *fp;
 	gltestp::dstring buf;
-	long line;
+	linenum_t line;
+	linenum_t lastLine;
 	HSQOBJECT vars; ///< Squirrel table to hold locally-defined variables
 	HSQUIRRELVM v;
 	StellarStructureScanner *scanner;
@@ -51,6 +52,8 @@ struct StellarContext{
 	static int parseFile(const char *fname, CoordSys *root, StellarContext *prev_sc);
 
 	static void scmd_define(StellarContext &sc, TokenList &argv);
+	static void scmd_new(StellarContext &sc, TokenList &argv);
+	static void scmd_coordsys(StellarContext &sc, TokenList &argv);
 };
 
 /// \brief Base type for any errors that could happen in stellar file interpretation.

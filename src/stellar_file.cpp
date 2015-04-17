@@ -238,67 +238,15 @@ int StellarContext::parseCommand(TokenList &argv){
 int StellarContext::parseBlock(){
 	StellarContext &sc = *this;
 
-	linenum_t lastLine = 0;
 	while(!sc.scanner->eof()){
 		TokenList argv;
 		sc.buf = sc.scanner->nextLine(&argv);
-		lastLine = sc.line;
+		sc.lastLine = sc.line;
 		sc.line = long(sc.scanner->getLine());
 		if(argv.size() == 0)
 			continue;
 
-		gltestp::dstring s = argv[0];
-		if(!strcmp(argv[0], "new"))
-			s = argv[1], argv.pop_front();
-		if(!strcmp(s, "astro") || !strcmp(s, "coordsys")){
-			CoordSys *a = NULL;
-			CoordSys *(*ctor)(const char *path, CoordSys *root) = CoordSys::classRegister.construct;
-			if(argv.size() == 1){
-				// If the block begins with keyword "astro", make Astrobj's constructor to default,
-				// otherwise use CoordSys.
-				if(!strcmp(s, "astro"))
-					ctor = Astrobj::classRegister.construct;
-				else
-					ctor = CoordSys::classRegister.construct;
-			}
-			else{
-				const CoordSys::CtorMap &cm = CoordSys::ctormap();
-				for(CoordSys::CtorMap::const_reverse_iterator it = cm.rbegin(); it != cm.rend(); it++){
-					ClassId id = it->first;
-					if(!strcmp(id, argv[1])){
-						ctor = it->second->construct;
-						break;
-					}
-				}
-			}
-			if(4 <= argv.size())
-				argv.pop_front();
-
-			if(argv[1]){
-				if((a = cs->findastrobj(argv[1])) && a->parent == cs)
-					parseString(argv[2], a, lastLine);
-				else
-					a = NULL;
-			}
-			if(!a){
-				if(argv.size() < 3){
-					printf("%s(%ld): Lacking body block for %s %s\n", sc.fname, sc.line, argv[0].c_str(), argv[1].c_str());
-					continue;
-				}
-				a = ctor(argv[1], cs);
-				if(a){
-					if(ctor){
-						CoordSys *eis = a->findeisystem();
-						if(eis)
-							eis->addToDrawList(a);
-					}
-					parseString(argv[2], a, lastLine);
-				}
-			}
-		}
-		else{
-			sc.parseCommand(argv);
-		}
+		sc.parseCommand(argv);
 	}
 	return 0;
 }
@@ -407,6 +355,58 @@ static void scmd_expr(StellarContext &sc, TokenList &argv){
 	CoordSys::sqcalc(sc, catstr, "expr");
 }
 
+void StellarContext::scmd_new(StellarContext &sc, TokenList &argv){
+	argv.pop_front();
+	scmd_coordsys(sc, argv);
+}
+
+void StellarContext::scmd_coordsys(StellarContext &sc, TokenList &argv){
+	CoordSys *cs = sc.cs;
+	CoordSys *a = NULL;
+	CoordSys *(*ctor)(const char *path, CoordSys *root) = CoordSys::classRegister.construct;
+	if(argv.size() == 1){
+		// If the block begins with keyword "astro", make Astrobj's constructor to default,
+		// otherwise use CoordSys.
+		if(!strcmp(argv[0], "astro"))
+			ctor = Astrobj::classRegister.construct;
+		else
+			ctor = CoordSys::classRegister.construct;
+	}
+	else{
+		const CoordSys::CtorMap &cm = CoordSys::ctormap();
+		for(CoordSys::CtorMap::const_reverse_iterator it = cm.rbegin(); it != cm.rend(); it++){
+			ClassId id = it->first;
+			if(!strcmp(id, argv[1])){
+				ctor = it->second->construct;
+				break;
+			}
+		}
+	}
+	if(4 <= argv.size())
+		argv.pop_front();
+
+	if(argv[1]){
+		if((a = cs->findastrobj(argv[1])) && a->parent == cs)
+			sc.parseString(argv[2], a, sc.lastLine);
+		else
+			a = NULL;
+	}
+	if(!a){
+		if(argv.size() < 3){
+			printf("%s(%ld): Lacking body block for %s %s\n", sc.fname, sc.line, argv[0].c_str(), argv[1].c_str());
+			return;
+		}
+		a = ctor(argv[1], cs);
+		if(a){
+			if(ctor){
+				CoordSys *eis = a->findeisystem();
+				if(eis)
+					eis->addToDrawList(a);
+			}
+			sc.parseString(argv[2], a, sc.lastLine);
+		}
+	}
+}
 
 
 /// Borrowed code from Squirrel library (squirrel3/squirrel/sqstring.h) which in turn borrowed
@@ -443,6 +443,9 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		commandMap["if"] = scmd_if;
 		commandMap["while"] = scmd_while;
 		commandMap["expr"] = scmd_expr;
+		commandMap["new"] = scmd_new;
+		commandMap["astro"] = scmd_coordsys;
+		commandMap["coordsys"] = scmd_coordsys;
 		StellarContext sc;
 		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;

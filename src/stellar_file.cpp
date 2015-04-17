@@ -227,20 +227,28 @@ int StellarContext::parseCommand(TokenList &argv, CoordSys *cs){
 			else if(4 <= argv.size())
 				parseString(argv[3], cs, false, scanner->getLine());
 		}
+		else if(argv[0] == "while"){
+			if(argv.size() < 3){
+				printf("%s(%ld): Insufficient number of arguments to while command\n", this->fname, this->line);
+				return -1;
+			}
+			else while(0 != stellar_util::sqcalcb(*this, argv[1], "while"))
+				parseString(argv[2], cs, false, scanner->getLine());
+		}
 		else if(argv[0] == "expr"){
 			gltestp::dstring catstr;
 			for(TokenList::iterator it = argv.begin() + 1; it != argv.end(); ++it)
 				catstr += *it;
 			CoordSys::sqcalc(*this, catstr, "expr");
 		}
-
-		std::vector<const char *> cargs(argv.size());
-		for(int i = 0; i < argv.size(); i++)
-			cargs[i] = argv[i];
-		if(cs->readFile(*this, argv.size(), &cargs[0]));
 		else{
-//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
-			printf("%s(%ld): Unknown parameter for %s: %s\n", this->fname, this->line, cs->classname(), argv[0].c_str());
+
+			std::vector<const char *> cargs(argv.size());
+			for(int i = 0; i < argv.size(); i++)
+				cargs[i] = argv[i];
+			if(cs->readFile(*this, argv.size(), &cargs[0]));
+			else
+				printf("%s(%ld): Unknown parameter for %s: %s\n", this->fname, this->line, cs->classname(), argv[0].c_str());
 		}
 	}
 	catch(StellarError &e){

@@ -219,12 +219,6 @@ int StellarContext::parseCommand(TokenList &argv){
 		if(it != commands->end()){
 			it->second(*this, argv);
 		}
-		else if(argv[0] == "expr"){
-			gltestp::dstring catstr;
-			for(TokenList::iterator it = argv.begin() + 1; it != argv.end(); ++it)
-				catstr += *it;
-			CoordSys::sqcalc(*this, catstr, "expr");
-		}
 		else{
 
 			std::vector<const char *> cargs(argv.size());
@@ -406,6 +400,14 @@ static void scmd_while(StellarContext &sc, TokenList &argv){
 		sc.parseString(argv[2], NULL, sc.scanner->getLine());
 }
 
+static void scmd_expr(StellarContext &sc, TokenList &argv){
+	gltestp::dstring catstr;
+	for(TokenList::iterator it = argv.begin() + 1; it != argv.end(); ++it)
+		catstr += *it;
+	CoordSys::sqcalc(sc, catstr, "expr");
+}
+
+
 
 /// Borrowed code from Squirrel library (squirrel3/squirrel/sqstring.h) which in turn borrowed
 /// from Lua code.  The header file is Squirrel's internal header, so we cannot just include it
@@ -440,6 +442,7 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		commandMap["include"] = scmd_include;
 		commandMap["if"] = scmd_if;
 		commandMap["while"] = scmd_while;
+		commandMap["expr"] = scmd_expr;
 		StellarContext sc;
 		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;

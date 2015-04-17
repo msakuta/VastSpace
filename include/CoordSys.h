@@ -299,6 +299,14 @@ public:
 	typedef std::map<gltestp::dstring, PropertyEntry> PropertyMap;
 	virtual const PropertyMap &propertyMap()const;
 
+	/// @brief Evaluate an expression with Squirrel one-linear compiler
+	/// \param str The Squirrel expression to evaluate
+	/// \param context The context name for the compiled buffer, printed on error
+	///
+	/// It's only used by StellarContext which is a friend of this class, but its commands are not
+	/// necessarily declared as friends of this class.
+	static double sqcalc(StellarContext&, const char *str, const SQChar *context = _SC("sqcalc"));
+
 protected:
 	static bool sq_define(HSQUIRRELVM);
 	static unsigned registerClass(Static &st);
@@ -307,11 +315,6 @@ protected:
 
 	/// The default getter
 	static SQInteger sqf_get(HSQUIRRELVM v);
-
-	/// Evaluate an expression with Squirrel one-linear compiler
-	/// \param str The Squirrel expression to evaluate
-	/// \param context The context name for the compiled buffer, printed on error
-	static double sqcalc(StellarContext&, const char *str, const SQChar *context = _SC("sqcalc"));
 
 private:
 	template<typename T, typename Callback>

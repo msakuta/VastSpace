@@ -219,25 +219,13 @@ int StellarContext::parseCommand(TokenList &argv){
 		if(it != commands->end()){
 			it->second(*this, argv);
 		}
-		else if(argv[0] == "if"){
-			if(argv.size() < 3){
-				printf("%s(%ld): Insufficient number of arguments to if command\n", this->fname, this->line);
-				return -1;
-			}
-			else if(0 != stellar_util::sqcalcb(*this, argv[1], "if"))
-				parseString(argv[2], cs, false, scanner->getLine());
-			else if(5 <= argv.size() && argv[3] == "else") // With "else" keyword (which is ignored)
-				parseString(argv[4], cs, false, scanner->getLine());
-			else if(4 <= argv.size())
-				parseString(argv[3], cs, false, scanner->getLine());
-		}
 		else if(argv[0] == "while"){
 			if(argv.size() < 3){
 				printf("%s(%ld): Insufficient number of arguments to while command\n", this->fname, this->line);
 				return -1;
 			}
 			else while(0 != stellar_util::sqcalcb(*this, argv[1], "while"))
-				parseString(argv[2], cs, false, scanner->getLine());
+				parseString(argv[2], NULL, scanner->getLine());
 		}
 		else if(argv[0] == "expr"){
 			gltestp::dstring catstr;
@@ -302,7 +290,7 @@ int StellarContext::parseBlock(){
 
 			if(argv[1]){
 				if((a = cs->findastrobj(argv[1])) && a->parent == cs)
-					parseString(argv[2], a, true, lastLine);
+					parseString(argv[2], a, lastLine);
 				else
 					a = NULL;
 			}
@@ -318,7 +306,7 @@ int StellarContext::parseBlock(){
 						if(eis)
 							eis->addToDrawList(a);
 					}
-					parseString(argv[2], a, true, lastLine);
+					parseString(argv[2], a, lastLine);
 				}
 			}
 		}
@@ -329,12 +317,12 @@ int StellarContext::parseBlock(){
 	return 0;
 }
 
-int StellarContext::parseString(const char *s, CoordSys *cs, bool enterCoordSys, linenum_t linenum){
+int StellarContext::parseString(const char *s, CoordSys *cs, linenum_t linenum){
 	StellarContext sc2 = *this;
 	std::stringstream sstr = std::stringstream(std::string(s));
 	StellarStructureScanner ssc(&sstr, linenum);
 	sc2.scanner = &ssc;
-	if(enterCoordSys)
+	if(cs)
 		return sc2.parseCoordSys(cs);
 	else
 		return sc2.parseBlock();
@@ -404,6 +392,19 @@ static void scmd_include(StellarContext &sc, TokenList &argv){
 	// TODO: Avoid recursive includes
 }
 
+static void scmd_if(StellarContext &sc, TokenList &argv){
+	if(argv.size() < 3){
+		printf("%s(%ld): Insufficient number of arguments to if command\n", sc.fname, sc.line);
+		return;
+	}
+	else if(0 != stellar_util::sqcalcb(sc, argv[1], "if"))
+		sc.parseString(argv[2], false, sc.scanner->getLine());
+	else if(5 <= argv.size() && argv[3] == "else") // With "else" keyword (which is ignored)
+		sc.parseString(argv[4], false, sc.scanner->getLine());
+	else if(4 <= argv.size())
+		sc.parseString(argv[3], false, sc.scanner->getLine());
+}
+
 /// Borrowed code from Squirrel library (squirrel3/squirrel/sqstring.h) which in turn borrowed
 /// from Lua code.  The header file is Squirrel's internal header, so we cannot just include it
 /// from this file without confronting dependency hell (which could be much worse when we update
@@ -435,6 +436,7 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		CommandMap commandMap(0, hash_dstr);
 		commandMap["define"] = scmd_define;
 		commandMap["include"] = scmd_include;
+		commandMap["if"] = scmd_if;
 		StellarContext sc;
 		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;

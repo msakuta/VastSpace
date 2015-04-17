@@ -219,14 +219,6 @@ int StellarContext::parseCommand(TokenList &argv){
 		if(it != commands->end()){
 			it->second(*this, argv);
 		}
-		else if(argv[0] == "while"){
-			if(argv.size() < 3){
-				printf("%s(%ld): Insufficient number of arguments to while command\n", this->fname, this->line);
-				return -1;
-			}
-			else while(0 != stellar_util::sqcalcb(*this, argv[1], "while"))
-				parseString(argv[2], NULL, scanner->getLine());
-		}
 		else if(argv[0] == "expr"){
 			gltestp::dstring catstr;
 			for(TokenList::iterator it = argv.begin() + 1; it != argv.end(); ++it)
@@ -405,6 +397,16 @@ static void scmd_if(StellarContext &sc, TokenList &argv){
 		sc.parseString(argv[3], false, sc.scanner->getLine());
 }
 
+static void scmd_while(StellarContext &sc, TokenList &argv){
+	if(argv.size() < 3){
+		printf("%s(%ld): Insufficient number of arguments to while command\n", sc.fname, sc.line);
+		return;
+	}
+	else while(0 != stellar_util::sqcalcb(sc, argv[1], "while"))
+		sc.parseString(argv[2], NULL, sc.scanner->getLine());
+}
+
+
 /// Borrowed code from Squirrel library (squirrel3/squirrel/sqstring.h) which in turn borrowed
 /// from Lua code.  The header file is Squirrel's internal header, so we cannot just include it
 /// from this file without confronting dependency hell (which could be much worse when we update
@@ -437,6 +439,7 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		commandMap["define"] = scmd_define;
 		commandMap["include"] = scmd_include;
 		commandMap["if"] = scmd_if;
+		commandMap["while"] = scmd_while;
 		StellarContext sc;
 		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;

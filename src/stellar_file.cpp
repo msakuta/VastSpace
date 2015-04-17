@@ -134,6 +134,15 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 					currentToken = "";
 				}
 			}
+			else if(c == ';'){
+				if(0 < currentToken.len()){
+					tokens.push_back(currentToken);
+					currentToken = "";
+				}
+				if(argv)
+					*argv = tokens;
+				return buf;
+			}
 			else
 				currentToken << char(c);
 

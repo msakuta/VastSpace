@@ -324,7 +324,7 @@ private:
 	int getpathint(cpplib::dstring &)const;
 
 	friend class Game;
-	friend class StellarContext;
+	friend struct StellarContext;
 };
 
 /// Template class to register derived classes to global class list.

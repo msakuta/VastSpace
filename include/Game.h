@@ -150,7 +150,7 @@ protected:
 	DeleteQue deleteque;
 	bool clientDeleting;
 
-	friend class StellarContext;
+	friend struct StellarContext;
 
 	void adjustAutoExposure(Viewer &vw);
 };

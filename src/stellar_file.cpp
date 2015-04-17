@@ -197,8 +197,14 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 		lc = c;
 		escaped = false;
 	}
-				if(argv)
-					*argv = tokens;
+
+	// Write out tokens when the input stream is exhausted.
+	if(argv){
+		// This makes difference if the input stream has no whitespaces after the last token.
+		if(0 < currentToken.len())
+			tokens.push_back(currentToken);
+		*argv = tokens;
+	}
 	return buf;
 }
 

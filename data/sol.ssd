@@ -36,31 +36,7 @@ coordsys Orbit sunlo{
 	bookmark "Sun Low Orbit 1,2" 0 0 -10 "Quatd.rotation(PI, Vec3d(0,1,0))"
 }
 
-coordsys Orbit mercury{
-	fullname Mercury
-	cs_radius 1000000
-	orbits Sol
-	orbit_radius 57909100
-	inclination 7.0051
-	argument_of_periapsis 77.5806
-	ascending_node 48.4257
-	eccentricity 0.205630
-	showorbit
-	astro RoundAstrobj Mercury{
-		radius 2439.7
-		mass 3.3022e23
-		color afafaf
-		planet
-		spherehit
-		texture mer0muu2.jpg
-	}
-	coordsys Orbit mercuryo{
-		orbits Mercury
-		orbit_radius 10000
-		fullname "Mercury orbit"
-		bookmark
-	}
-}
+include Mercury.ssd
 
 include Venus.ssd
 

@@ -116,16 +116,14 @@ coordsys Orbit jupiter{
 		orbit_radius 671034
 		orbit_axis 0 cos(PI*0.470/360) sin(PI*0.470/360)
 	}
-	new astro Ganymede
-	{
+	new astro Ganymede{
 		radius 2631.2
 		planet
 		orbits Jupiter
 		orbit_radius 1070000
 		orbit_axis 0 cos(PI*0.20/360) sin(PI*0.20/360)
 	}
-	new astro Callisto
-	{
+	new astro Callisto{
 		radius 2410.3
 		planet
 		orbits Jupiter
@@ -293,8 +291,7 @@ coordsys Orbit uranus{
 	showorbit
 	fullname "Uranus"
 
-	astro "Uranus"
-	{
+	astro "Uranus"{
 		radius 25559
 		mass 2.98e19
 		color afffff
@@ -303,8 +300,7 @@ coordsys Orbit uranus{
 		spherehit
 	}
 
-	astro "Miranda"
-	{
+	astro "Miranda"{
 		radius   235.8
 		mass 2.98e19
 		planet
@@ -331,8 +327,7 @@ coordsys Orbit neptune{
 		bookmark "Neptune Low Orbit" 10 0 0
 	}
 
-	astro RoundAstrobj "Neptune"
-	{
+	astro RoundAstrobj "Neptune"{
 		radius 24766 # equatorial
 		mass 2.98e19
 		color 7fafff
@@ -342,8 +337,7 @@ coordsys Orbit neptune{
 		texture nep0fds1.jpg
 	}
 
-	astro "Triton"
-	{
+	astro "Triton"{
 		radius 1353.4
 		mass 2.98e19
 		planet

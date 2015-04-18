@@ -361,6 +361,54 @@ static void scmd_expr(StellarContext &sc, TokenList &argv){
 	CoordSys::sqcalc(sc, catstr, "expr");
 }
 
+static void scmd_proc(StellarContext &sc, TokenList &argv){
+	if(argv.size() < 4){
+		printf("%s(%ld): Insufficient number of arguments to proc command\n", sc.fname, sc.line);
+		return;
+	}
+	TokenList params;
+	{
+		std::stringstream sstr = std::stringstream(std::string(argv[2]));
+		StellarStructureScanner ssc(&sstr, sc.line);
+		ssc.nextLine(&params);
+	}
+	gltestp::dstring body = argv[3];
+	(*sc.commands)[argv[1]] = [params, body](StellarContext &sc, TokenList &argv){
+		HSQUIRRELVM v = sc.game->sqvm;
+		sqa::StackReserver sr(v);
+
+		try{
+
+			// Create a temporary table for Squirrel to save CoordSys-local defines.
+			// Defined variables in parent CoordSys's can be referenced by delegation.
+			sq_newtable(v);
+			sq_pushobject(v, sc.vars);
+			sq_setdelegate(v, -2);
+
+			int i = 1;
+			for(TokenList::const_iterator it = params.begin(); it != params.end(); ++it){
+				sq_pushstring(v, *it, it->len());
+				sq_pushstring(v, argv[i], argv[i].len());
+				sq_newslot(v, -3, SQFalse);
+				i++;
+			}
+
+			// Replace StellarContext's current variables table with the temporary table.
+			HSQOBJECT vars;
+			sq_getstackobj(v, -1, &vars);
+			HSQOBJECT old_vars = sc.vars;
+			sc.vars = vars;
+
+			sc.parseString(body, NULL, sc.lastLine);
+
+			sc.vars = old_vars; // Restore original variables table before returning
+		}
+		catch(StellarError &e){
+			printf("%s(%ld): Error %s: %s\n", sc.fname, sc.line, sc.cs->classname(), e.what());
+		}
+	};
+}
+
 void StellarContext::scmd_new(StellarContext &sc, TokenList &argv){
 	argv.pop_front();
 	scmd_coordsys(sc, argv);
@@ -452,6 +500,7 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		commandMap["new"] = scmd_new;
 		commandMap["astro"] = scmd_coordsys;
 		commandMap["coordsys"] = scmd_coordsys;
+		commandMap["proc"] = scmd_proc;
 		StellarContext sc;
 		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;

@@ -8,7 +8,7 @@
 #include <exception>
 #include <deque>
 #include <unordered_map>
-
+#include <functional>
 
 class StellarStructureScanner;
 
@@ -19,7 +19,7 @@ typedef long linenum_t; ///< I think 2 billions would be enough.
 
 /// Context object in the process of interpreting a stellar file.
 struct StellarContext{
-	typedef std::unordered_map<gltestp::dstring, void (*)(StellarContext &, TokenList &), size_t (*)(const gltestp::dstring &)> CommandMap;
+	typedef std::unordered_map<gltestp::dstring, std::function<void (StellarContext &, TokenList &)>, size_t (*)(const gltestp::dstring &)> CommandMap;
 	Game *game;
 	const char *fname;
 	CoordSys *root;

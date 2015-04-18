@@ -62,35 +62,7 @@ coordsys Orbit mercury{
 	}
 }
 
-coordsys Orbit venus{
-	fullname Venus
-	cs_radius 1000000
-	orbits Sol
-	orbit_radius 108208930
-	inclination 3.39471
-	argument_of_periapsis 131.6758
-	ascending_node 76.7520
-	showorbit
-	astro RoundAstrobj Venus{
-		diameter 12103.6
-		mass 3.3022e23
-		color afafaf
-		omega 0 0 1 -2/243.0187/DAY_SECONDS*PI   #rotation speed
-		texture ven0mss2.jpg
-		updirection 0 1 0
-		planet
-		spherehit
-		atmosphere_height 30.
-		atmosphere_color 1 .8 .5
-		atmosphere_dawn 1. .51 .1 
-	}
-	coordsys Orbit venuso{
-		orbits Venus
-		orbit_radius 10000
-		fullname "Venus orbit"
-		bookmark
-	}
-}
+include Venus.ssd
 
 include Earth.ssd
 

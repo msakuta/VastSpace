@@ -36,9 +36,11 @@ coordsys Orbit sunlo{
 	bookmark "Sun Low Orbit 1,2" 0 0 -10 "Quatd.rotation(PI, Vec3d(0,1,0))"
 }
 
-include Mercury.ssd
+if {!debugBuild()} {
+	include Mercury.ssd
 
-include Venus.ssd
+	include Venus.ssd
+}
 
 include Earth.ssd
 
@@ -46,9 +48,10 @@ include Mars.ssd
 
 include Ceres.ssd
 
-include Jupiter.ssd
+if {!debugBuild()} {
+	include Jupiter.ssd
 
-include Saturn.ssd
+	include Saturn.ssd
 
 coordsys Orbit uranus{
 	cs_radius 1000000
@@ -181,4 +184,5 @@ astro "Eris"{
 	argument_of_periapsis 151.52
 	ascending_node 35.96
 	showorbit
+}
 }

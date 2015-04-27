@@ -19,7 +19,7 @@ extern "C"{
 
 #include "cpplib/crc32.h"
 
-static const int maxViewDistance = 10.;
+static const int maxViewDistance = 10.e3;
 
 
 void VoxelEntity::draw(WarDraw *wd){

@@ -16,7 +16,7 @@ if(earthlo){
 
 universe.paused = false;
 
-local e = player.cs.addent("Engineer", Vec3d(-0.01, 0, 0));
+local e = player.cs.addent("Engineer", Vec3d(-10, 0, 0));
 player.chase = e;
 player.select([e]);
 player.controlled = e;
@@ -25,11 +25,11 @@ e.addItem("Thruster", 10);
 e.addItem("ReactorComponent", 10);
 e.addItem("CockpitComponent", 10);
 
-local voxel = player.cs.addent("VoxelEntity", Vec3d(0.05, 0, 0));
+local voxel = player.cs.addent("VoxelEntity", Vec3d(50, 0, 0));
 
-voxel.cellWidth = 0.0025;
-voxel.baseHeight = 0.03;
-voxel.noiseHeight = 0.015;
+voxel.cellWidth = 2.5;
+voxel.baseHeight = 30.;
+voxel.noiseHeight = 15.;
 
 cmd("bind g putvoxel");
 cmd("bind h digvoxel");
@@ -98,7 +98,7 @@ local function modifyVoxel(mode){
 		}
 	}
 	if(!hit && mode == "Put"){
-		local newve = player.cs.addent("VoxelEntity", src + dir * 0.01);
+		local newve = player.cs.addent("VoxelEntity", src + dir * 10.);
 		newve.setVoxel(voxelType);
 	}
 }

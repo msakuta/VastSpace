@@ -455,7 +455,7 @@ void CellVolume::enumSolid(EnumSolidProc &proc){
 
 const Autonomous::ManeuverParams VoxelEntity::defaultManeuverParams = {
 	0.0, // accel, defaults no accel
-	0.01, // maxspeed
+	10, // maxspeed
 	M_PI * 0.1, // angleaccel
 	M_PI * 0.1, // maxanglespeed
 	1, // capacity
@@ -465,7 +465,7 @@ const Autonomous::ManeuverParams VoxelEntity::defaultManeuverParams = {
 VoxelEntity::VoxelEntity(Game *game) : st(game), volume(operator<), shape(NULL), shapeDirty(false), myMotionState(NULL){
 }
 
-VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(0.0025), baseHeight(0.01), noiseHeight(0.005), shape(NULL), shapeDirty(false), myMotionState(NULL), volumeInitialized(false), controllerCockpitPos(0,0,0){
+VoxelEntity::VoxelEntity(WarField *w) : st(w), volume(operator<), cellWidth(2.5), baseHeight(10), noiseHeight(5), shape(NULL), shapeDirty(false), myMotionState(NULL), volumeInitialized(false), controllerCockpitPos(0,0,0){
 	init();
 }
 
@@ -605,7 +605,7 @@ void VoxelEntity::init(){
 
 bool VoxelEntity::command(EntityCommand *com){
 	if(ModifyVoxelCommand *mvc = InterpretCommand<ModifyVoxelCommand>(com)){
-		static const double boundHeight = 0.001;
+		static const double boundHeight = 1.;
 		Vec3d src = mvc->src - this->pos;
 		Vec3d dir = rot.itrans(mvc->dir);
 		mvc->retModified = false;
@@ -977,7 +977,7 @@ void VoxelEntity::updateManeuverParams(){
 		for(int axis = 0; axis < 3; axis++){
 			for(int dir = 0; dir < 2; dir++){
 				// Each thruster have 100[N] thrust strength
-				maneuverParams.dir_accel[axis * 2 + dir] = thrusters[axis][dir] * 100. / mass;
+				maneuverParams.dir_accel[axis * 2 + dir] = thrusters[axis][dir] * 100.e3 / mass;
 			}
 		}
 	}

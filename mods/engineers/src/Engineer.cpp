@@ -108,26 +108,26 @@ template<> void Entity::EntityRegister<Engineer>::sq_defineInt(HSQUIRRELVM v){
 Entity::EntityRegister<Engineer> Engineer::entityRegister("Engineer");
 
 HitBoxList Engineer::hitboxes;
-double Engineer::modelScale = 2e-6;
-double Engineer::hitRadius = 0.002;
+double Engineer::modelScale = 2e-3;
+double Engineer::hitRadius = 2.;
 double Engineer::defaultMass = 60; // kilograms
 double Engineer::maxHealthValue = 10.;
-double Engineer::hookSpeed = 0.2;
-double Engineer::hookRange = 0.2;
-double Engineer::hookPullAccel = 0.05;
-double Engineer::hookStopRange = 0.025;
-double standRange = 0.001; // One meter
+double Engineer::hookSpeed = 200.;
+double Engineer::hookRange = 200.;
+double Engineer::hookPullAccel = 50.;
+double Engineer::hookStopRange = 25.;
+double standRange = 1.000; // One meter
 Autonomous::ManeuverParams Engineer::maneuverParams = {
-	0.01, // accel
-	0.01, // maxspeed
+	10., // accel
+	10., // maxspeed
 	M_PI * 0.1, // angleaccel
 	M_PI * 0.1, // maxanglespeed
 	1, // capacity
 	1, // capacitor_gen
 };
 GLuint Engineer::overlayDisp = 0;
-double Engineer::muzzleFlashRadius[2] = {.0004, .00025};
-Vec3d Engineer::muzzleFlashOffset[2] = {Vec3d(-0.00080, 0.00020, 0.0), Vec3d(-0.00110, 0.00020, 0.0)};
+double Engineer::muzzleFlashRadius[2] = {.4, .25};
+Vec3d Engineer::muzzleFlashOffset[2] = {Vec3d(-0.80, 0.20, 0.0), Vec3d(-1.10, 0.20, 0.0)};
 
 
 HardPointList soldierHP;
@@ -412,7 +412,7 @@ void Engineer::setPosition(const Vec3d *pos, const Quatd *rot, const Vec3d *velo
 
 void Engineer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	const Engineer *p = this;
-	static const Vec3d ofs[2] = {Vec3d(.003, .001, -.002), Vec3d(.00075, .002, .003),};
+	static const Vec3d ofs[2] = {Vec3d(3., 1., -2.), Vec3d(0.75, 2., 3.),};
 	Mat4d mat, mat2;
 	seatid = (seatid + 4) % 4;
 
@@ -427,7 +427,7 @@ void Engineer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 		pos = mat.vp3(ofs[1]);
 	}
 	else{
-		mat4translate(mat, 0., p->state == STATE_STANDING ? 0.00055 : 0.0005, 0.); /* eye position */
+		mat4translate(mat, 0., p->state == STATE_STANDING ? 0.55 : 0.5, 0.); /* eye position */
 		pos = mat.vec3(3);
 		if(seatid == 3){
 			WarField::EntityList::iterator it;

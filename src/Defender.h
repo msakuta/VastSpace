@@ -94,7 +94,7 @@ protected:
 	Entity *findMother();
 	void headTowardEnemy(double dt, const Vec3d &enemyPosition);
 	static double reloadTime(){return 5.;} ///< Time between shoots
-	static double bulletSpeed(){return 5.;} ///< Velocity of projectile shot
+	static double bulletSpeed(){return 5000.;} ///< Velocity of projectile shot
 	bool isDeployed()const{return task == Deploy || Dodge0 <= task && task <= Dodge3;}
 public:
 	Defender(Game *game);

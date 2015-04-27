@@ -38,9 +38,9 @@ Motion *Defender::motions[2] = {NULL};
 
 bool Defender::cull(Viewer &vw)const{
 	double nf = nlipsFactor(vw);
-	if(task == Defender::Undockque || vw.gc->cullFrustum(pos, .012 * nf))
+	if(task == Defender::Undockque || vw.gc->cullFrustum(pos, 12. * nf))
 		return true;
-	double pixels = .008 * fabs(vw.gc->scale(pos)) * nf;
+	double pixels = 8. * fabs(vw.gc->scale(pos)) * nf;
 	if(pixels < 2)
 		return true;
 	return false;
@@ -49,7 +49,7 @@ bool Defender::cull(Viewer &vw)const{
 /// Returns NLIPS factor.
 /// NLIPS: Non-Linear Inverse Perspective Scrolling
 double Defender::nlipsFactor(Viewer &vw)const{
-	double f = vw.fov * g_nlips_factor * 500. / vw.vp.m * 4. * ::sqrt((this->pos - vw.pos).len());
+	double f = vw.fov * g_nlips_factor * .5 / vw.vp.m * 4. * ::sqrt((this->pos - vw.pos).len());
 	return MAX(1., f);
 }
 
@@ -74,9 +74,9 @@ void Defender::draw(wardraw_t *wd){
 		return;
 	wd->lightdraws++;
 
-	double pixels = .010 * fabs(wd->vw->gc->scale(pos)) * nf;
+	double pixels = 10. * fabs(wd->vw->gc->scale(pos)) * nf;
 
-	draw_healthbar(this, wd, health / getMaxHealth(), .01 * nf, fuel / maxfuel(), -1.);
+	draw_healthbar(this, wd, health / getMaxHealth(), 10. * nf, fuel / maxfuel(), -1.);
 
 /*	struct TextureParams{
 		Defender *p;
@@ -250,7 +250,7 @@ void Defender::drawtra(wardraw_t *wd){
 				i ^= 3; // Reverting thrust direction. If you're not familiar with bitwise operations, try not to understand...
 			Mat4d legmat = legTransform(i);
 			Vec3d org(0, 0, 130. * scale);
-			gldScrollTextureBeam(wd->vw->pos, legmat.vp3(org), legmat.vp3(org + Vec3d(0, 0, .020)), .005, tim + 100. * rs.nextd());
+			gldScrollTextureBeam(wd->vw->pos, legmat.vp3(org), legmat.vp3(org + Vec3d(0, 0, 20.)), 5., tim + 100. * rs.nextd());
 		}
 		else{
 			double ofs = 5.*scale;
@@ -258,8 +258,8 @@ void Defender::drawtra(wardraw_t *wd){
 			for(int i = 0; i < 4; i++){
 				Mat4d legmat = legTransform(i);
 				Vec3d org(0, 0, throttle < 0. ? 0. : 130. * scale);
-				Vec3d dst(0, 0, throttle < 0. ? -.020 * amp : .020 * amp);
-				gldScrollTextureBeam(wd->vw->pos, legmat.vp3(org), legmat.vp3(org + dst), .005 * amp, tim + 100. * rs.nextd());
+				Vec3d dst(0, 0, throttle < 0. ? -20. * amp : 20. * amp);
+				gldScrollTextureBeam(wd->vw->pos, legmat.vp3(org), legmat.vp3(org + dst), 5. * amp, tim + 100. * rs.nextd());
 			}
 		}
 		glMatrixMode(GL_TEXTURE);
@@ -273,7 +273,7 @@ void Defender::drawtra(wardraw_t *wd){
 	if(mf){
 		Vec3d pos = rot.trans(gunPos) * nlips + this->pos;
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-		gldSpriteGlow(pos, .01, Vec4<GLubyte>(127,255,255,min(mf*255,255)), wd->vw->irot);
+		gldSpriteGlow(pos, 10., Vec4<GLubyte>(127,255,255,min(mf*255,255)), wd->vw->irot);
 		glPopAttrib();
 	}
 }

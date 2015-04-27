@@ -1,10 +1,10 @@
 
-modelScale <- 1.e-4;
+modelScale <- 1.e-1;
 
 mass <- 16.e3;
 
-accel <- 0.1;
-maxspeed <- 0.1;
+accel <- 100.;
+maxspeed <- 100.;
 angleaccel <- PI * 0.1;
 maxanglespeed <- PI * 0.1;
 capacity <- 1.;

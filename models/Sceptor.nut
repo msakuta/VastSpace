@@ -1,5 +1,5 @@
 
-modelScale <- 1.e-4;
+modelScale <- 1.e-1;
 
 mass <- 4.e3;
 
@@ -8,7 +8,7 @@ maxhealth <- 200.; // Show some guts for demonstrating shooting effect in the cl
 maxfuel <- 120.; // seconds for full thrust
 
 hitbox <- [
-	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(0.005, 0.002, 0.003)],
+	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(5., 2., 3.)],
 ];
  
 enginePos <- [
@@ -39,7 +39,7 @@ function popupMenu(e){
 }
 
 function cockpitView(e,seatid){
-	local src = [Vec3d(0., 0.001, 0.002) * 3, Vec3d(0., 0.008, 0.020), Vec3d(0., 0.008, 0.020)];
+	local src = [Vec3d(0., 1., 2.) * 3, Vec3d(0., 8., 20.), Vec3d(0., 8, 20.)];
 	local ret = {pos = e.pos, rot = e.rot};
 	seatid = (seatid + 3) % 3;
 	local ofs = Vec3d(0,0,0);

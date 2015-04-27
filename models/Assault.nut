@@ -2,24 +2,24 @@ local SIN15 = sin(PI/12);
 local COS15 = cos(PI/12);
 
 hitbox <- [
-	[Vec3d(0., 0., -0.005), Quatd(0,0,0,1), Vec3d(0.015, 0.014, 0.060)],
-	[Vec3d(0., 0.018, 0.0325), Quatd(0,0,0,1), Vec3d(0.010, 0.004, 0.015)],
-	[Vec3d(0.025, -0.015, 0.02), Quatd(0,0, -SIN15, COS15), Vec3d(0.0075, 0.002, 0.02)],
-	[Vec3d(-0.025, -0.015, 0.02), Quatd(0,0, SIN15, COS15), Vec3d(0.0075, 0.002, 0.02)],
-	[Vec3d(0.0, 0.03, 0.0325), Quatd(0,0,0,1), Vec3d(0.002, 0.008, 0.010)],
+	[Vec3d(0., 0., -5.), Quatd(0,0,0,1), Vec3d(15., 14., 60.)],
+	[Vec3d(0., 18., 32.5), Quatd(0,0,0,1), Vec3d(10., 4., 15.)],
+	[Vec3d(25., -15., 20.), Quatd(0,0, -SIN15, COS15), Vec3d(7.5, 2., 20.)],
+	[Vec3d(-25., -15., 20.), Quatd(0,0, SIN15, COS15), Vec3d(7.5, 2., 20.)],
+	[Vec3d(0.0, 30., 32.5), Quatd(0,0,0,1), Vec3d(2., 8., 10.)],
 ]
 
 local SQRT2P2 = sqrt(2)/2;
-modelScale <- 0.0002;
+modelScale <- 0.2;
 
-hitRadius <- 0.1;
+hitRadius <- 100.;
 
 mass <- 1.e5;
 maxhealth <- 3000;
 maxshield <- 3000;
 
-accel <- 0.025;
-maxspeed <- 0.1;
+accel <- 25.;
+maxspeed <- 100.;
 angleaccel <- 100.;
 maxanglespeed <- 0.4;
 capacity <- 50000.;
@@ -53,7 +53,7 @@ navlights <- [
 	foreach(e in navlights){
 		local copy = clone e;
 		copy.color <- [1,1,1,1];
-		copy.radius = 0.003;
+		copy.radius = 3.;
 		copy.pattern = "Step";
 		copy.period <- 2.;
 		copy.duty <- 0.1;

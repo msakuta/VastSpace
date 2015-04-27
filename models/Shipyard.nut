@@ -1,9 +1,9 @@
-local scale = 0.0010;
+local scale = 1.0;
 
 modelScale <- scale;
 
 hitbox <- [
-	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(0.3, 0.2, 0.500)],
+	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(300., 200., 500.)],
 
 	// Exterior scaffolds
 	[Vec3d(-400,170,400) * scale, Quatd(0,0,0,1), Vec3d(200, 10, 10) * scale],
@@ -28,7 +28,7 @@ hitbox <- [
 	[Vec3d(-610,-170,0) * scale, Quatd(0,0,0,1), Vec3d(10, 10, 410) * scale],
 ]
 
-hitRadius <- 1.0;
+hitRadius <- 1000.0;
 
 mass <- 5.e9;
 maxhealth <- 20000.;

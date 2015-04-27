@@ -55,13 +55,13 @@ void ShipyardDocker::dockque(Dockable *e){
 
 
 double Shipyard::maxHealthValue = 200000.;
-#define SCARRY_MAX_SPEED .03
-#define SCARRY_ACCELERATE .01
+#define SCARRY_MAX_SPEED 30.
+#define SCARRY_ACCELERATE 10.
 #define SCARRY_MAX_ANGLESPEED (.005 * M_PI)
 #define SCARRY_ANGLEACCEL (.002 * M_PI)
 
-double Shipyard::modelScale = 0.0010;
-double Shipyard::hitRadius = 1.0;
+double Shipyard::modelScale = 1.0;
+double Shipyard::hitRadius = 1000.0;
 double Shipyard::defaultMass = 5e9;
 
 hardpoint_static *Shipyard::hardpoints = NULL/*[10] = {
@@ -188,9 +188,9 @@ double Shipyard::maxenergy()const{
 
 void Shipyard::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	static const Vec3d pos0[] = {
-		Vec3d(.100, .22, -.610),
-		Vec3d(.100, .10, -1.000),
-		Vec3d(-.100, .10, 1.000),
+		Vec3d(100., 220., -610.),
+		Vec3d(100., 100., -1000.),
+		Vec3d(-100., 100., 1000.),
 	};
 	if(seatid < numof(pos0)){
 		pos = this->pos + this->rot.trans(pos0[seatid % numof(pos0)]);
@@ -198,7 +198,7 @@ void Shipyard::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	}
 	else{
 		Quatd trot = this->rot.rotate(w->war_time() * M_PI / 6., 0, 1, 0).rotate(sin(w->war_time() * M_PI / 23.) * M_PI / 3., 1, 0, 0);
-		pos = this->pos + trot.trans(Vec3d(0, 0, 1.));
+		pos = this->pos + trot.trans(Vec3d(0, 0, 1000.));
 		rot = trot;
 	}
 }
@@ -210,7 +210,7 @@ bool Shipyard::buildBody(){
 			shape = new btCompoundShape();
 			// Assign dummy value if the initialize file is not available.
 			if(hitboxes.empty())
-				hitboxes.push_back(hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.3, .2, .500)));
+				hitboxes.push_back(hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(300., 200., 500.)));
 			for(int i = 0; i < hitboxes.size(); i++){
 				const Vec3d &sc = hitboxes[i].sc;
 				const Quatd &rot = hitboxes[i].rot;
@@ -302,23 +302,23 @@ void Shipyard::clientUpdate(double dt){
 	if(undockingFrigate){
 		double threshdist = .5 + undockingFrigate->getHitRadius();
 		const Vec3d &udpos = undockingFrigate->pos;
-		Vec3d delta = udpos - (pos + rot.trans(Vec3d(0.1, 0, -0.35)));
+		Vec3d delta = udpos - (pos + rot.trans(Vec3d(0.1, 0, -350.)));
 		if(threshdist * threshdist < delta.slen())
 			undockingFrigate = NULL;
 		else
-			doorphase[0] = approach(doorphase[0], 1., dt * .5, 0.);
+			doorphase[0] = approach(doorphase[0], 1., dt * 500., 0.);
 	}
 	else
-		doorphase[0] = approach(doorphase[0], 0., dt * 0.5, 0.);
+		doorphase[0] = approach(doorphase[0], 0., dt * 500., 0.);
 
 	if(dockingFrigate){
 		if(dockingFrigate->w != w)
 			dockingFrigate = NULL;
 		else
-			doorphase[1] = approach(doorphase[1], 1., dt * .5, 0.);
+			doorphase[1] = approach(doorphase[1], 1., dt * 500., 0.);
 	}
 	else
-		doorphase[1] = approach(doorphase[1], 0., dt * .5, 0.);
+		doorphase[1] = approach(doorphase[1], 0., dt * 500., 0.);
 }
 
 Entity::Props Shipyard::props()const{
@@ -487,7 +487,7 @@ bool Shipyard::startBuild(){
 				if(*it == this)
 					continue;
 				// Radius required for building is assumed 300 meters.
-				double radius = (*it)->getHitRadius() + 0.3;
+				double radius = (*it)->getHitRadius() + 300.;
 				if((newPos - (*it)->pos).slen() < radius * radius)
 					return false;
 			}
@@ -531,7 +531,7 @@ void Shipyard::doneBuild(Entity *e){
 		// do not need to addent() here.  If we come to need it, we should leaveField() before doing so.
 //		e->w = this->Entity::w;
 //		this->Entity::w->addent(e);
-		Vec3d newPos = pos + rot.trans(Vec3d(-0.45, 0, 0));
+		Vec3d newPos = pos + rot.trans(Vec3d(-450., 0, 0));
 		e->setPosition(&newPos, &rot, &velo);
 
 		// Send build phase complete message
@@ -540,7 +540,7 @@ void Shipyard::doneBuild(Entity *e){
 
 		// Send move order to go forward
 		MoveCommand com;
-		com.destpos = newPos + rot.trans(Vec3d(0, 0, -1.2));
+		com.destpos = newPos + rot.trans(Vec3d(0, 0, -1200.));
 		e->command(&com);
 	}
 }
@@ -552,13 +552,13 @@ bool ShipyardDocker::undock(Entity::Dockable *pe){
 		pe->command(&com);
 		Vec3d dockPos;
 		if(com.ret == Docker::Fighter)
-			dockPos = Vec3d(-.10, 0.05, 0);
+			dockPos = Vec3d(-100., 50., 0);
 		else if(com.ret == Docker::Frigate){
-			dockPos = Vec3d(.10, 0.0, -.350);
+			dockPos = Vec3d( 100., 0.0, -350.);
 			static_cast<Shipyard*>(e)->undockingFrigate = pe;
 		}
 		else
-			dockPos = Vec3d(1.0, 0.0, 0);
+			dockPos = Vec3d(1000.0, 0.0, 0);
 		Vec3d pos = e->pos + e->rot.trans(dockPos);
 		pe->setPosition(&pos, &e->rot, &e->velo, &e->omg);
 		return true;
@@ -571,9 +571,9 @@ Vec3d ShipyardDocker::getPortPos(Dockable *e)const{
 	com.ret = Fighter;
 	e->command(&com);
 	if(com.ret == Fighter)
-		return Vec3d(-100. * Shipyard::modelScale, -50. * Shipyard::modelScale, -0.350);
+		return Vec3d(-100. * Shipyard::modelScale, -50. * Shipyard::modelScale, -350.);
 	else if(com.ret == Frigate)
-		return Vec3d(100. * Shipyard::modelScale, 0, 0.350);
+		return Vec3d(100. * Shipyard::modelScale, 0, 350.);
 }
 
 Quatd ShipyardDocker::getPortRot(Dockable *)const{

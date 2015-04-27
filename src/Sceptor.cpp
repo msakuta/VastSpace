@@ -36,7 +36,7 @@ extern "C"{
 #define SIN15 0.25881904510252076234889883762405
 #define COS15 0.9659258262890682867497431997289
 
-#define SCEPTOR_SCALE 1./10000
+#define SCEPTOR_SCALE 1./10
 #define SCEPTOR_SMOKE_FREQ 20.
 #define SCEPTOR_COOLTIME .2
 #define SCEPTOR_ROLLSPEED (.2 * M_PI)
@@ -44,7 +44,7 @@ extern "C"{
 #define SCEPTOR_MAX_ANGLESPEED (M_PI * .5)
 #define SCEPTOR_ANGLEACCEL (M_PI * .2)
 #define SCEPTOR_MAX_GIBS 20
-#define BULLETSPEED 2.
+#define BULLETSPEED 2.e3
 #define SCEPTOR_MAGAZINE 10
 #define SCEPTOR_RELOADTIME 2.
 
@@ -56,7 +56,7 @@ extern const struct color_sequence cs_orangeburn, cs_shortburn;
 
 
 HitBoxList Sceptor::hitboxes;
-double Sceptor::modelScale = 1./10000;
+double Sceptor::modelScale = 1./10;
 double Sceptor::defaultMass = 4e3;
 double Sceptor::maxHealthValue = 200.;
 double Sceptor::maxFuelValue = 120.;
@@ -326,7 +326,7 @@ bool Sceptor::findEnemy(){
 	if(forcedEnemy)
 		return !!enemy;
 	Entity *closest = NULL;
-	double best = 1e2 * 1e2;
+	double best = 1e5 * 1e5;
 	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
 		Entity *pt2 = *it;
 
@@ -828,7 +828,7 @@ void Sceptor::anim(double dt){
 				}
 				else if(p->task == Moveto){
 					Vec3d dr = pt->pos - p->dest;
-					if(dr.slen() < .01 * .01){
+					if(dr.slen() < 10. * 10.){
 						p->throttle = 0.;
 						parking = 1;
 						pt->velo += dr * -dt * .5;
@@ -851,9 +851,9 @@ void Sceptor::anim(double dt){
 
 					double dist = delta.len();
 					Vec3d dv = delta;
-					double awaybase = pt->enemy->getHitRadius() * 3. + .1;
-					if(.6 < awaybase)
-						awaybase = pt->enemy->getHitRadius() + 1.; // Constrain awaybase for large targets
+					double awaybase = pt->enemy->getHitRadius() * 3. + 100.;
+					if(600. < awaybase)
+						awaybase = pt->enemy->getHitRadius() + 1000.; // Constrain awaybase for large targets
 					double attackrad = awaybase < .6 ? awaybase * 5. : awaybase + 4.;
 					if(p->task == Attack && dist < awaybase){
 						p->task = Away;
@@ -932,7 +932,7 @@ void Sceptor::anim(double dt){
 							p->thrusts[0][0] = std::min(p->thrusts[0][0], 1.);
 							p->thrusts[0][1] = std::min(p->thrusts[0][1], 1.);
 						}
-						if(trigger && p->task == Attack && dist < 5. * 2. && .99 < dv.sp(forward)){
+						if(trigger && p->task == Attack && dist < 5. * 2000. && .99 < dv.sp(forward)){
 							pt->inputs.change |= PL_ENTER;
 							pt->inputs.press |= PL_ENTER;
 						}
@@ -950,12 +950,12 @@ void Sceptor::anim(double dt){
 							paradec = mother->enumParadeC(mother->Fighter);
 						Vec3d target, target0(-1., 0., -1.);
 						Quatd q2, q1;
-						target0[0] += p->paradec % 10 * -.05;
-						target0[2] += p->paradec / 10 * -.05;
+						target0[0] += p->paradec % 10 * -50.;
+						target0[2] += p->paradec / 10 * -50.;
 						target = pm->rot.trans(target0);
 						target += pm->pos;
 						Vec3d dr = pt->pos - target;
-						if(dr.slen() < .01 * .01){
+						if(dr.slen() < 10. * 10.){
 							q1 = pm->rot;
 							p->throttle = 0.;
 							parking = 1;
@@ -978,7 +978,7 @@ void Sceptor::anim(double dt){
 							bbody->applyCentralForce(btvc(-sidevelo * mass));
 
 //							p->throttle = dr.slen() / 5. + .01;
-							steerArrival(dt, target, pm->velo, 1. / 2., .001);
+							steerArrival(dt, target, pm->velo, 1. / 2., 1.);
 						}
 						if(1. < p->throttle)
 							p->throttle = 1.;
@@ -995,10 +995,10 @@ void Sceptor::anim(double dt){
 							leader = wingman;
 					}
 					if(leader){
-						Vec3d dp((nwingmen % 2 * 2 - 1) * (nwingmen / 2 * .05), 0., nwingmen / 2 * .05);
+						Vec3d dp((nwingmen % 2 * 2 - 1) * (nwingmen / 2 * 50.), 0., nwingmen / 2 * 50.);
 						dest = (leader->task == Moveto ? leader->dest : leader->pos) + dp;
 						Vec3d dr = pt->pos - dest;
-						if(dr.slen() < .01 * .01){
+						if(dr.slen() < 10. * 10.){
 							Quatd q1 = quat_u;
 							p->throttle = 0.;
 							parking = 1;
@@ -1006,7 +1006,7 @@ void Sceptor::anim(double dt){
 							pt->rot = Quatd::slerp(pt->rot, q1, 1. - exp(-dt));
 						}
 						else
-							steerArrival(dt, dest, leader->velo, 1., .001);
+							steerArrival(dt, dest, leader->velo, 1., 1.);
 					}
 				}
 				else if(p->task == Dockque || p->task == Dock){
@@ -1035,9 +1035,9 @@ void Sceptor::anim(double dt){
 
 						Vec3d target = pm->rot.trans(target0);
 						target += pm->pos;
-						steerArrival(dt, target, pm->velo, p->task == Dockque ? 1. / 2. : -mat.vec3(2).sp(velo) < 0 ? 1. : .025, .01);
+						steerArrival(dt, target, pm->velo, p->task == Dockque ? 1. / 2. : -mat.vec3(2).sp(velo) < 0 ? 1000. : 25., 10.);
 						double dist = (target - this->pos).len();
-						if(dist < .01){
+						if(dist < 10.){
 							if(p->task == Dockque)
 								p->task = Dock;
 							else{
@@ -1170,7 +1170,7 @@ void Sceptor::anim(double dt){
 		}
 
 		/* you're not allowed to accel further than certain velocity. */
-		const double maxvelo = .5, speed = std::max(0., -p->velo.sp(mat.vec3(2)));
+		const double maxvelo = 500., speed = std::max(0., -p->velo.sp(mat.vec3(2)));
 		if(maxvelo < speed)
 			p->throttle = 0.;
 		else{
@@ -1198,7 +1198,7 @@ void Sceptor::anim(double dt){
 			}
 			else
 				p->fuel -= consump;
-			double spd = pf->throttle * (p->task != Attack ? .01 : .005);
+			double spd = pf->throttle * (p->task != Attack ? 10. : 5.);
 			acc = pt->rot.trans(acc0);
 			bbody->applyCentralForce(btvc(acc * spd * 20. * mass));
 			pt->velo += acc * spd;
@@ -1433,7 +1433,7 @@ bool Sceptor::isTargettable()const{
 bool Sceptor::isSelectable()const{return true;}
 
 double Sceptor::getHitRadius()const{
-	return .01;
+	return 10.;
 }
 
 int Sceptor::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){

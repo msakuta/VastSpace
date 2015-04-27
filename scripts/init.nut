@@ -307,7 +307,7 @@ function init_Universe(){
 
 	print("Server's init_Universe()");
 
-	player.setpos(Vec3d(0.0, 0.2, 0.5));
+	player.setpos(Vec3d(0.0, 200., 500.));
 	player.setrot(Quatd(0., 1., 0., 0.) * Quatd.rotation(-PI / 3., Vec3d(0, 1, 0)));
 
 	cmd("exec dedsvr.cfg");

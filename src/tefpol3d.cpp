@@ -303,9 +303,9 @@ void TefpolList::anim(double dt){
 #	if ENABLE_THICK
 		tefpol_flags_t thickness = pl->flags & TEP3_THICKNESS;
 		double width =
-			thickness == TEP3_THICK ? .001 :
-			thickness == TEP3_THICKER ? .002 : 
-			thickness == TEP3_FAINT ? .0005 : .005;
+			thickness == TEP3_THICK ? 1. :
+			thickness == TEP3_THICKER ? 2. :
+			thickness == TEP3_FAINT ? 0.5 : 5.;
 #	else
 		tent3d_flags_t thickness = 0;
 		double width = 0.;
@@ -637,8 +637,8 @@ void TefpolList::draw(const Vec3d &view, const glcull *glc){
 				{
 				tefpol_flags_t thickness = pl->flags & TEP3_THICKNESS;
 				double apparence;
-				static const double visdists[5] = {.25 * .25, .5 * .5, 1.5 * 1.5, .5 * .5, .5 * .5};
-				static const double thicknesses[5] = {.00, .001, .002, .005, .00025};
+				static const double visdists[5] = {250. * 250., 500. * 500., 1500. * 1500., 500. * 500., 500. * 500.};
+				static const double thicknesses[5] = {0.0, 1., 2., 5., 0.25};
 				if(thickness == TEP3_FAINT){
 					struct random_sequence rs;
 					init_rseq(&rs, (unsigned long)pv/*(unsigned long)((*d)[0] * (*d)[1] * 1e6)*/);
@@ -650,9 +650,9 @@ void TefpolList::draw(const Vec3d &view, const glcull *glc){
 				apparence = !thickness || !glc ? 1. : fabs(glcullScale(~pv->pos, glc)) * thicknesses[thickness >> THICK_BIT];
 				if(thickness && 1. < apparence/*VECSDIST(pv->pos, view) < visdists[thickness >> THICK_BIT]*/){
 					double width =
-						thickness == TEP3_THICK ? /*t < .5 ? t * .002 :*/ .001 :
-						thickness == TEP3_THICKER ? t < .5 ? t * .004 : .002 : 
-						thickness == TEP3_FAINT ? t < .5 ? t * .001 : .0005 : .005;
+						thickness == TEP3_THICK ? /*t < .5 ? t * 2. :*/ 1. :
+						thickness == TEP3_THICKER ? t < .5 ? t * 4. : 2. : 
+						thickness == TEP3_FAINT ? t < .5 ? t * 1. : 0.5 : 5.;
 					if(linestrip){
 						linestrip = 0;
 						glEnd();

@@ -33,6 +33,8 @@ protected:
 	double bands; ///< Remaining expanding disc effect (bands) this projectile can generate.
 	const color_sequence *cs;
 	static const int maxBands = 10; ///< Maximum number of band effects a projectile can generate.
+
+	void clientUpdateInt(double dt);
 };
 
 #endif

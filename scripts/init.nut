@@ -91,9 +91,10 @@ function stellarReadFile(cs, varlist, name, ...){
 		return 1;
 	}
 	else if(name == "equatorial_coord"){
+		local lengthUnit = 1e3;
 		local RA = vargv[0].tofloat() * 2 * PI / 360;
 		local dec = vargv[1].tofloat() * 2 * PI / 360;
-		local dist = eval(vargv[2]);
+		local dist = eval(vargv[2]) * lengthUnit; // By convention, length is expressed in kilometers in SSD files.
 		local pos = Vec3d(-sin(RA) * cos(dec), cos(RA) * cos(dec), sin(dec)) * dist;
 //		print(cs.name + ": " + RA + ", " + dec + pos);
 		local earths = universe.findcspath("/sol/earth/Earth");

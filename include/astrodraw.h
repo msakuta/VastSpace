@@ -13,8 +13,6 @@
 #include <GL/gl.h>
 /*#include <GL/glut.h>*/
 
-#define LIGHT_SPEED 299792.458 /* km/s */
-
 void drawIcosaSphere(const Vec3d &org, double radius, const Viewer &vw, const Vec3d &scales = Vec3d(1,1,1), const Quatd &qrot = quat_u);
 
 /*

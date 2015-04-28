@@ -808,6 +808,8 @@ bool CoordSys::readFileStart(StellarContext &){
 
 std::map<const CoordSys *, std::vector<dstring> > linemap;
 
+const double CoordSys::lengthUnit = 1e3; // Kilometers
+
 bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 	const char *s = argv[0], *ps = argv[1];
 	if(!strcmp(s, "name")){
@@ -826,28 +828,28 @@ bool CoordSys::readFile(StellarContext &sc, int argc, const char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "pos")){
-		pos[0] = sqcalc(sc, argv[1], s);
+		pos[0] = sqcalc(sc, argv[1], s) * lengthUnit;
 		if(2 < argc)
-			pos[1] = sqcalc(sc, argv[2], s);
+			pos[1] = sqcalc(sc, argv[2], s) * lengthUnit;
 		if(3 < argc)
-			pos[2] = sqcalc(sc, argv[3], s);
+			pos[2] = sqcalc(sc, argv[3], s) * lengthUnit;
 		return true;
 	}
 	else if(!strcmp(s, "galactic_coord")){
 		double lon = sqcalc(sc, argv[1], s) / deg_per_rad;
 		double lat = 2 < argc ? sqcalc(sc, argv[2], s) / deg_per_rad : 0.;
-		double dist = 3 < argc ? sqcalc(sc, argv[3], s) : 1e10;
+		double dist = (3 < argc ? sqcalc(sc, argv[3], s) : 1e10) * lengthUnit;
 		pos = dist * Vec3d(sin(lon) * cos(lat), cos(lon) * cos(lat), sin(lat));
 		return true;
 	}
 	else if(!strcmp(s, "cs_radius")){
 		if(ps)
-			csrad = sqcalc(sc, ps, s);
+			csrad = sqcalc(sc, ps, s) * lengthUnit;
 		return true;
 	}
 	else if(!strcmp(s, "cs_diameter")){
 		if(argv[1])
-			csrad = .5 * sqcalc(sc, argv[1], s);
+			csrad = .5 * sqcalc(sc, argv[1], s) * lengthUnit;
 		return true;
 	}
 	else if(!strcmp(s, "parent")){

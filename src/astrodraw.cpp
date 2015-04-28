@@ -205,7 +205,7 @@ void RoundAstrobj::draw(const Viewer *vw){
 	int ringdrawn = 8;
 	bool drawring = 0. < ringthick && !vw->gc->cullFrustum(calcPos(*vw), rad * ringmax * 1.1);
 
-	GLfloat brightness = GLfloat(sqrt(param.brightness));
+	double brightness = sqrt(param.brightness);
 
 	// Sun distance
 	double sundist = sun ? (parent->tocs(sun->pos, sun->parent) - pos).len() : 1e5;

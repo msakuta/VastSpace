@@ -224,7 +224,7 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 	}
 	else if(!strcmp(s, "orbit_radius") || !strcmp(s, "semimajor_axis")){
 //		if(s = strtok(ps, " \t\r\n"))
-			orbit_rad = sqcalc(sc, ps, s);
+			orbit_rad = sqcalc(sc, ps, s) * lengthUnit;
 		return true;
 	}
 	else if(!strcmp(s, "eccentricity")){
@@ -567,13 +567,13 @@ bool Astrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	if(0);
 	else if(!strcmp(s, "radius")){
 		if(argv[1]){
-			rad = sqcalc(sc, argv[1], s);
+			rad = sqcalc(sc, argv[1], s) * lengthUnit;
 		}
 		return true;
 	}
 	else if(!strcmp(s, "diameter")){
 		if(argv[1])
-			rad = .5 * sqcalc(sc, argv[1], s);
+			rad = .5 * sqcalc(sc, argv[1], s) * lengthUnit;
 		return true;
 	}
 	else if(!strcmp(s, "mass")){
@@ -771,7 +771,7 @@ bool FindBrightestAstrobj::invoke(const CoordSys *cs2){
 		return true;
 
 	// Obtain brightness in ratio to Sun looked from earth
-	double rawval = pow(2.512, -(a->absmag + 26.7)) * 3.e14 * 3.e14 / sd;
+	double rawval = pow(2.512, -(a->absmag - 4.82)) * AU_PER_METER * AU_PER_METER / sd;
 
 	// Omit further investigation if the raw brightness is below the threshold.
 	if(rawval < threshold)

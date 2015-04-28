@@ -116,6 +116,10 @@ public:
 	virtual bool readFile(StellarContext &, int argc, const char *argv[]); /// Interpret a line in stellar file
 	virtual bool readFileEnd(StellarContext &); ///< Exit block in a stellar file.
 
+	/// Length unit used in Stellar Structure Definition files.  A meter is too small for expressing
+	/// astronomical objects, so we use more large units (at least kilometers) in these files.
+	static const double lengthUnit;
+
 	/** Definition of appropriate rotation. some coordinate systems like space colonies have
 	 * odd rules to rotate the camera. Default is 'trackball' type rotation. */
 	virtual Quatd rotation(const Vec3d &pos, const Vec3d &pyr, const Quatd &srcq)const;

@@ -269,7 +269,7 @@ void Bullet::bulletDeathEffect(int hitground, const contact_info *ci){
 		WarField::EntityList::iterator it = w->el.begin();
 		for(; it != w->el.end(); it++) if(*it){
 			Entity *pt = *it;
-			if(pt->w == w && (pos - pt->pos).slen() < damage * damage / 10000. / 10000.){
+			if(pt->w == w && (pos - pt->pos).slen() < damage * damage / 10000.e3 / 10000.e3){
 				pt->takedamage(damage / (1. + VECSDIST(pos, pt->pos)), 0);
 			}
 		}
@@ -278,26 +278,26 @@ void Bullet::bulletDeathEffect(int hitground, const contact_info *ci){
 			Vec3d gravity =	w->accel(pos, vec3_000);
 			for(j = 0; j < 20; j++){
 				double velo[3];
-				velo[0] = .15 * (drseq(&w->rs) - .5);
-				velo[1] = .15 * (drseq(&w->rs) - .5);
-				velo[2] = .15 * (drseq(&w->rs) - .5);
-				AddTeline3D(tell, pos, velo, .005, quat_u, vec3_000, gravity,
+				velo[0] = 150. * (drseq(&w->rs) - .5);
+				velo[1] = 150. * (drseq(&w->rs) - .5);
+				velo[2] = 150. * (drseq(&w->rs) - .5);
+				AddTeline3D(tell, pos, velo, 5., quat_u, vec3_000, gravity,
 					j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255), TEL3_HEADFORWARD | TEL3_FADEEND |  TEL3_REFLECT, 3. + 2. * drseq(&w->rs));
 			}
 			for(j = 0; j < 10; j++){
 				double velo[3];
-				velo[0] = .15 * (drseq(&w->rs) - .5);
-				velo[1] = .15 * (drseq(&w->rs) - .5);
-				velo[2] = .15 * (drseq(&w->rs) - .5);
+				velo[0] = 150. * (drseq(&w->rs) - .5);
+				velo[1] = 150. * (drseq(&w->rs) - .5);
+				velo[2] = 150. * (drseq(&w->rs) - .5);
 				tepl->addTefpol(pos, velo, gravity, &cs_fireburn,
 					TEP3_REFLECT, damage * .001 * (3. + 2. * drseq(&w->rs)));
 			}
 
 			{/* explode shockwave thingie */
 				static const Quatd pyr(SQRT2P2, 0., 0., SQRT2P2);
-				AddTeline3D(tell, pos, vec3_000, damage * .0001, pyr, vec3_000, vec3_000, COLOR32RGBA(255,63,63,255), TEL3_EXPANDISK | TEL3_NOLINE, damage * .001);
+				AddTeline3D(tell, pos, vec3_000, damage * 0.1, pyr, vec3_000, vec3_000, COLOR32RGBA(255,63,63,255), TEL3_EXPANDISK | TEL3_NOLINE, damage * .001);
 				if(ci && 0 <= ci->depth) /* no scorch in midair */
-					AddTeline3D(tell, pos, vec3_000, damage * .0001, pyr, vec3_000, vec3_000, COLOR32RGBA(0,0,0,255), TEL3_STATICDISK | TEL3_NOLINE, 3.);
+					AddTeline3D(tell, pos, vec3_000, damage * 0.1, pyr, vec3_000, vec3_000, COLOR32RGBA(0,0,0,255), TEL3_STATICDISK | TEL3_NOLINE, 3.);
 			}
 		}
 	}
@@ -381,10 +381,10 @@ void Bullet::explosionEffect(const contact_info *ci){
 
 	if(30. < damage) for(int j = 0; j < 5; j++){
 		double velo[3];
-		velo[0] = .05 * (drseq(&w->rs) - .5);
-		velo[1] = .05 * (drseq(&w->rs) - .5);
-		velo[2] = .05 * (drseq(&w->rs) - .5);
-		AddTeline3D(tell, pos, velo, .001, quat_u, vec3_000, gravity, COLOR32RGBA(255,127,0,255), TEL3_HEADFORWARD | TEL3_REFLECT, 1.5);
+		velo[0] = 50. * (drseq(&w->rs) - .5);
+		velo[1] = 50. * (drseq(&w->rs) - .5);
+		velo[2] = 50. * (drseq(&w->rs) - .5);
+		AddTeline3D(tell, pos, velo, 1., quat_u, vec3_000, gravity, COLOR32RGBA(255,127,0,255), TEL3_HEADFORWARD | TEL3_REFLECT, 1.5);
 	}
 
 	if(30. < damage && ci){
@@ -400,14 +400,14 @@ void Bullet::explosionEffect(const contact_info *ci){
 		v = vec3_001.vp(dr);
 		p = sqrt(1. - q[3] * q[3]) / v.len();
 		q = v * p;
-		AddTeline3D(tell, pos, vec3_000, .01, q, vec3_000, vec3_000, COLOR32RGBA(255,127,63,255), TEL3_GLOW | TEL3_NOLINE | TEL3_NEAR | TEL3_QUAT, 1.);
+		AddTeline3D(tell, pos, vec3_000, 10., q, vec3_000, vec3_000, COLOR32RGBA(255,127,63,255), TEL3_GLOW | TEL3_NOLINE | TEL3_NEAR | TEL3_QUAT, 1.);
 	}
 
 /*		if(0 < hitground && w->wmd){
 		double pos[2] = {pb->pos[0], pb->pos[2]};
 		AddWarmapDecal(w->wmd, pos, (void*)4);
 	}*/
-	AddTelineCallback3D(tell, this->pos, vec3_000, damage / 10000. + .003, quat_u, vec3_000, vec3_000, explosmoke, NULL, 0, 1.);
+	AddTelineCallback3D(tell, this->pos, vec3_000, damage / 10000.e3 + 3., quat_u, vec3_000, vec3_000, explosmoke, NULL, 0, 1.);
 }
 
 
@@ -415,25 +415,22 @@ void Bullet::drawtra(wardraw_t *wd){
 	// Do not draw if killed in the client (but not sure for the server).
 	if(!active)
 		return;
-	double length = (this->damage * .25 + VECSLEN(this->velo) * 5 * 5 + 20) * .0005;
-	double span, scale;
-	double pixels;
-	double width = this->damage * .00005, wpix;
+	double length = this->damage * 0.125 + this->velo.len() * 0.02 + 10.;
+	double width = this->damage * 0.05;
 
 	Vec3d velo = this->velo - wd->vw->velo;
 	double velolen = velo.len();
-	double f = 1. * velolen * length;
-	span = MIN(f, .1);
-	length *= span / f;
+	double span = MIN(length, 10000.);
+//	length *= span / f;
 
 	if(wd->vw->gc->cullFrustum(pos, span))
 		return;
-	scale = fabs(wd->vw->gc->scale(pos));
-	pixels = span * scale;
+	double scale = fabs(wd->vw->gc->scale(pos));
+	double pixels = span * scale;
 	if(pixels < 2)
 		return;
 
-	wpix = width * scale;
+	double wpix = width * scale;
 
 	/*	glLineWidth((GLfloat)m / DISTANCE(view, pb->pos));*/
 	if(/*VECSDIST(pb->pos, wd->view) < .2 * .2*/ 1 < wpix){
@@ -441,7 +438,7 @@ void Bullet::drawtra(wardraw_t *wd){
 		glColor4ub(255,127,0,255);
 		start = this->pos;
 		end = this->pos;
-		end += velo * -(runlength / velolen < length ? runlength / velolen : length);
+		end += velo * -(runlength < length ? runlength / velolen : length / velolen);
 		if(true || damage < 500.){
 			static GLuint texname = 0;
 			static const GLfloat envcolor[4] = {.5,0,0,1};
@@ -504,7 +501,7 @@ void Bullet::drawtra(wardraw_t *wd){
 		glBegin(GL_LINES);
 		glColor4d(1., .75, .25, wpix);
 		glVertex3dv(pos);
-		glVertex3dv(pos - velo * (runlength / velolen < length ? runlength / velolen : length));
+		glVertex3dv(pos - velo * (runlength < length ? runlength / velolen : length / velolen));
 		glEnd();
 	}
 }
@@ -515,8 +512,8 @@ void Bullet::drawtra(wardraw_t *wd){
 //-----------------------------------------------------------------------------
 
 void ExplosiveBullet::drawtra(WarDraw *wd){
-	double length = (this->velo.slen() * 5 * 5 + 20) * 0.0015;
-	double width = 0.001;
+	double length = (this->velo.slen() * 5 * 5 + 20) * 1.5;
+	double width = 1.;
 
 	double f = 2. * this->velo.len() * length;
 	double span = std::min(f, .1);

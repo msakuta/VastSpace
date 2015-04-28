@@ -151,19 +151,19 @@ bool Bullet::bulletHit(Entity *pt, WarSpace *ws, otjEnumHitSphereParam &param){
 			// Add spark sprite
 			{
 				double angle = w->rs.nextd() * 2. * M_PI / 2.;
-				AddTelineCallback3D(ws->tell, pos, pt ? pt->velo : vec3_000, .0003 + n * .0005, Quatd(0, 0, sin(angle), cos(angle)),
+				AddTelineCallback3D(ws->tell, pos, pt ? pt->velo : vec3_000, 0.3 + n * 0.5, Quatd(0, 0, sin(angle), cos(angle)),
 					vec3_000, accel, sparkspritedraw, NULL, 0, .20 + drseq(&w->rs) * .20);
 			}
 
 			// Add spark traces
 			for(j = 0; j < n; j++){
-				Vec3d velo = -pb->velo.norm() * .2;
+				Vec3d velo = -pb->velo.norm() * 200.;
 				for(int k = 0; k < 3; k++)
-					velo[k] += .15 * (drseq(&w->rs) - .5);
+					velo[k] += 150. * (drseq(&w->rs) - .5);
 /*				AddTeline3D(ws->tell, pos, velo, .001, quat_u, vec3_000, accel,
 					j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255),
 					TEL3_HEADFORWARD | TEL3_FADEEND, .5 + drseq(&w->rs) * .5);*/
-				AddTelineCallback3D(ws->tell, pos, velo, .00025 + n * .0001, quat_u, vec3_000, accel, sparkdraw, NULL, TEL3_HEADFORWARD | TEL3_REFLECT, .20 + drseq(&w->rs) * .20);
+				AddTelineCallback3D(ws->tell, pos, velo, 0.25 + n * 0.1, quat_u, vec3_000, accel, sparkdraw, NULL, TEL3_HEADFORWARD | TEL3_REFLECT, .20 + drseq(&w->rs) * .20);
 			}
 		}
 	}

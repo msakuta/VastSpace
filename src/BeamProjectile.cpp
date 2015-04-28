@@ -97,7 +97,7 @@ void BeamProjectile::clientUpdate(double dt){
 	if(!active)
 		return;
 	double velolen = velo.len();
-	double bandScale = 0.1 / velolen;
+	double bandScale = 100. / velolen;
 	double bandTime = 0.;
 	while(0 < bands && bandTime < dt){
 		double deltaBands = bands - (ceil(bands) - 1);
@@ -112,7 +112,7 @@ void BeamProjectile::clientUpdate(double dt){
 		if(floor(bands) < floor(bands + deltaBands) && (tell = w->getTeline3d())){
 			Vec3d bpos = pos + velo * bandTime;
 			int alpha = 255 * (1 + floor(bands)) / maxBands;
-			AddTeline3D(tell, bpos, vec3_000, .02, Quatd::direction(velo), vec3_000, vec3_000, COLOR32RGBA(255 - alpha,255,191,alpha), TEL3_EXPANDISK | TEL3_NOLINE, 0.5);
+			AddTeline3D(tell, bpos, vec3_000, 20., Quatd::direction(velo), vec3_000, vec3_000, COLOR32RGBA(255 - alpha,255,191,alpha), TEL3_EXPANDISK | TEL3_NOLINE, 0.5);
 		}
 	}
 	st::clientUpdate(dt);

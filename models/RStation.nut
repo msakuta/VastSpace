@@ -1,6 +1,6 @@
 local SQRT2P2 = sqrt(2)/2;
 
-modelScale <- 0.1;
+modelScale <- 100.;
 modelFile <- "models/rstation.mqo";
 
 hitbox <- [
@@ -15,7 +15,7 @@ hitbox <- [
 
 
 
-hitRadius <- 4.;
+hitRadius <- 4000.;
 
 mass <- 1.e10;
 maxhealth <- 1500000.;

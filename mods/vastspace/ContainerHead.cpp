@@ -479,7 +479,7 @@ TransportResourceCommand::TransportResourceCommand(HSQUIRRELVM v, Entity &e){
 }
 
 
-TransportAI::TransportAI(Entity *ch, Entity *leavesite) : EntityAI(game), phase(Undock), docksite(NULL), leavesite(leavesite), dockAI(ch){
+TransportAI::TransportAI(Entity *ch, Entity *leavesite) : EntityAI(ch->getGame()), phase(Undock), docksite(NULL), leavesite(leavesite), dockAI(ch){
 	std::vector<Entity *> set;
 	findIsland3(ch->w->cs->findcspath("/"), set);
 	if(set.size()){

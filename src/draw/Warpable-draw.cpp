@@ -440,10 +440,10 @@ void ModelEntity::drawNavlights(WarDraw *wd, const NavlightList &navlights, cons
 		double luminance = nv.patternIntensity(wd->vw->viewtime + t0 + nv.phase);
 		double rad = (luminance + 1.) / 2.;
 		if(navlightList){
+			glPushAttrib(GL_TEXTURE_BIT | GL_PIXEL_MODE_BIT);
 			glCallList(navlightList);
 			Vec4<GLfloat> fcol = nv.color;
 			fcol[3] *= luminance;
-			glPushAttrib(GL_TEXTURE_BIT | GL_PIXEL_MODE_BIT);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
 			glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, fcol);
 			glPushMatrix();

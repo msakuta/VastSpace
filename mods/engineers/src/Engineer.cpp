@@ -443,7 +443,7 @@ void Engineer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 }
 
 bool Engineer::buildBody(){
-#if 0
+#if 1
 	if(!bbody){
 		static btSphereShape *shape = NULL;
 		if(!shape){

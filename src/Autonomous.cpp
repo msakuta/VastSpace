@@ -379,7 +379,7 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 		if(bbody){
 			bbody->activate();
 			if(bbody->getAngularVelocity().length2() < mn->maxanglespeed * mn->maxanglespeed)
-				bbody->applyTorque(btvc(torque * bbody->getInvInertiaDiagLocal().length()));
+				bbody->applyTorque(btvc(torque / bbody->getInvInertiaDiagLocal().length()));
 		}
 		else{
 			if(omg.slen() < mn->maxanglespeed * mn->maxanglespeed){
@@ -398,7 +398,7 @@ void Autonomous::maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn)
 			// Control rotation to approach stationary. Avoid expensive tensor products for zero vectors.
 			if(!btomg.isZero()){
 				btVector3 torqueImpulseToStop = bbody->getInvInertiaTensorWorld().inverse() * -btomg;
-				double accelTorqueImpulse = dt * mn->angleaccel * bbody->getInvInertiaDiagLocal().length();
+				double accelTorqueImpulse = dt * mn->angleaccel / bbody->getInvInertiaDiagLocal().length();
 				if(torqueImpulseToStop.length2() < accelTorqueImpulse * accelTorqueImpulse)
 					bbody->applyTorqueImpulse(torqueImpulseToStop);
 				else

@@ -43,8 +43,8 @@ const double Frigate::modelScale = .0002;
 double Frigate::shieldRadius()const{return .09;}
 
 const struct Warpable::ManeuverParams Frigate::frigate_mn = {
-	.025, /* double accel; */
-	.1, /* double maxspeed; */
+	25., /* double accel; */
+	100., /* double maxspeed; */
 	100., /* double angleaccel; */
 	.4, /* double maxanglespeed; */
 	50000., /* double capacity; [MJ] */
@@ -125,10 +125,10 @@ const Warpable::ManeuverParams &Frigate::getManeuve()const{return frigate_mn;}
 
 
 HitBox Frigate::hitboxes[] = {
-	HitBox(Vec3d(0., 0., -.005), Quatd(0,0,0,1), Vec3d(.015, .015, .060)),
-	HitBox(Vec3d(.025, -.015, .02), Quatd(0,0, -SIN15, COS15), Vec3d(.0075, .002, .02)),
-	HitBox(Vec3d(-.025, -.015, .02), Quatd(0,0, SIN15, COS15), Vec3d(.0075, .002, .02)),
-	HitBox(Vec3d(.0, .03, .0325), Quatd(0,0,0,1), Vec3d(.002, .008, .010)),
+	HitBox(Vec3d(0., 0., -5.), Quatd(0,0,0,1), Vec3d(15., 15., 60.)),
+	HitBox(Vec3d(25., -15., 20.), Quatd(0,0, -SIN15, COS15), Vec3d(7.5, 2., 20.)),
+	HitBox(Vec3d(-25., -15., 20.), Quatd(0,0, SIN15, COS15), Vec3d(7.5, 2., 20.)),
+	HitBox(Vec3d(.0, 30., 32.5), Quatd(0,0,0,1), Vec3d(2., 8., 10.)),
 };
 const int Frigate::nhitboxes = numof(Frigate::hitboxes);
 
@@ -193,14 +193,14 @@ int Frigate::takedamage(double damage, int hitpart){
 				double pos[3], velo[3] = {0}, omg[3];
 				/* gaussian spread is desired */
 				for(int j = 0; j < 6; j++)
-					velo[j / 2] += .0125 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+					velo[j / 2] += 12.5 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[0] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[1] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				VECCPY(pos, this->pos);
 				for(int j = 0; j < 3; j++)
 					pos[j] += getHitRadius() * (drseq(&w->rs) - .5);
-				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
+				AddTelineCallback3D(ws->gibs, pos, velo, 10., quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 			}
 
 			/* smokes */
@@ -208,19 +208,19 @@ int Frigate::takedamage(double damage, int hitpart){
 				double pos[3], velo[3];
 				COLOR32 col = 0;
 				VECCPY(pos, p->pos);
-				pos[0] += .1 * (drseq(&w->rs) - .5);
-				pos[1] += .1 * (drseq(&w->rs) - .5);
-				pos[2] += .1 * (drseq(&w->rs) - .5);
+				pos[0] += 100. * (drseq(&w->rs) - .5);
+				pos[1] += 100. * (drseq(&w->rs) - .5);
+				pos[2] += 100. * (drseq(&w->rs) - .5);
 				col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
 				col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
 				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 				col |= COLOR32RGBA(0,0,0,191);
 	//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
-				AddTelineCallback3D(ws->tell, pos, vec3_000, .03, quat_u, vec3_000, vec3_000, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 60.);
+				AddTelineCallback3D(ws->tell, pos, vec3_000, 30., quat_u, vec3_000, vec3_000, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 60.);
 			}
 
 			/* explode shockwave thingie */
-			AddTeline3D(tell, this->pos, vec3_000, 3., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
+			AddTeline3D(tell, this->pos, vec3_000, 3000., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
 #endif
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
@@ -296,7 +296,7 @@ bool Frigate::command(EntityCommand *com){
 
 Entity *Frigate::findMother(){
 	Entity *pm = NULL;
-	double best = 1e10 * 1e10, sl;
+	double best = 1e13 * 1e13, sl;
 	for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); it++) if(*it){
 		Entity *e = *it;
 		if(e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){

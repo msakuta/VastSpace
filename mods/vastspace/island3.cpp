@@ -2,6 +2,7 @@
  * \brief Implementation of Island3 class.
  */
 #include "island3.h"
+#include "vastspace.h"
 #include "EntityRegister.h"
 #include "ContainerHead.h"
 #include "SpacePlane.h"
@@ -2147,6 +2148,8 @@ void Island3::drawtra(const Viewer *vw){
 
 Entity::EntityRegisterNC<Island3Entity> Island3Entity::entityRegister("Island3Entity");
 
+Model *Island3Entity::dockModel = NULL;
+
 void Island3Entity::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << astro;
@@ -2205,7 +2208,6 @@ void Island3Entity::buildShape(){
 	WarSpace *ws = *w;
 	if(ws){
 		if(!btshape){
-			suf_t *suf = loadModel(NULL, NULL, NULL);
 			btshape = new btCompoundShape();
 			for(int i = 0; i < 3; i++){
 				Vec3d sc = Vec3d(ISLAND3_RAD / sqrt(3.), ISLAND3_HALFLEN, ISLAND3_MIRRORTHICK / 2.);
@@ -2222,6 +2224,7 @@ void Island3Entity::buildShape(){
 			btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
 
 			// Adding surface model (mesh) itself as collision model, but it doesn't seem to work.
+#if 0
 			if(suf){
 				static std::vector<Vec3i> tris;
 				if(!tris.size()) for(int i = 0; i < suf->np; i++) for(int j = 2; j < suf->p[i]->p.n; j++){
@@ -2240,6 +2243,7 @@ void Island3Entity::buildShape(){
 				mesh->setScaling(btVector3(10., 10., 10.));
 				btshape->addChildShape(btTransform(btqc(Quatd(sqrt(2.)/2.,0,0,sqrt(2.)/2.)), btVector3(0, -ISLAND3_HALFLEN - ISLAND3_RAD,0)), meshShape);
 			}
+#endif
 		}
 		btTransform startTransform;
 		startTransform.setIdentity();
@@ -2689,38 +2693,20 @@ int Island3Entity::takedamage(double damage, int hitpart){
 	return ret;
 }
 
-suf_t *Island3Entity::loadModel(suf_t *(*psufs)[3], VBO *(*pvbo)[3], suftex_t* (*ppst)[3]){
+Model *Island3Entity::loadModel(){
 	static OpenGLState::weak_ptr<bool> init;
-	static suf_t *sufs[3] = {NULL};
-	static VBO *vbo[3] = {NULL};
-	static suftex_t *pst[3] = {NULL};
 	if(!init){
-		static const char *names[1] = {"models/island3dock.bin"};
-		for(int i = 0; i < 1; i++){
-			sufs[i] = CallLoadSUF(names[i]);
-			vbo[i] = CacheVBO(sufs[i]);
-			CacheSUFMaterials(sufs[i]);
-			pst[i] = gltestp::AllocSUFTex(sufs[i]);
-		}
+		dockModel = LoadMQOModel(modPath() + "models/island3dock.mqo");
 		init.create(*openGLState);
 	}
-	if(psufs)
-		memcpy(*psufs, sufs, sizeof sufs);
-	if(pvbo)
-		memcpy(*pvbo, vbo, sizeof vbo);
-	if(ppst)
-		memcpy(*ppst, pst, sizeof pst);
-	return sufs[0];
+	return dockModel;
 }
 
 // Docking bays
 void Island3Entity::draw(WarDraw *wd){
 #if 1
-	{
-		suf_t *sufs[3] = {NULL};
-		VBO *vbo[3] = {NULL};
-		suftex_t *pst[3] = {NULL};
-		loadModel(&sufs, &vbo, &pst);
+	Model *model = loadModel();
+	if(model){
 		static const double normal[3] = {0., 1., 0.};
 		static const double dscale = 10.;
 		static const GLdouble rotaxis[16] = {
@@ -2729,19 +2715,6 @@ void Island3Entity::draw(WarDraw *wd){
 			0,-1,0,0,
 			0,0,0,1,
 		};
-
-		class IntDraw{
-		public:
-			void drawModel(suf_t *suf, VBO *vbo, suftex_t *tex){
-				if(vbo)
-					DrawVBO(vbo, SUF_ATR /*& ~SUF_TEX/*/| SUF_TEX, tex);
-				else if(suf)
-					DecalDrawSUF(suf, SUF_ATR | SUF_TEX, NULL, tex, NULL, NULL);
-			}
-			void glTranslated(double x, double y, double z){
-				::glTranslated(x, y, z);
-			}
-		} id;
 
 		glPushMatrix();
 		gldTranslate3dv(pos);
@@ -2754,7 +2727,7 @@ void Island3Entity::draw(WarDraw *wd){
 		gldScaled(dscale);
 		glRotatef(-astro->rotation * deg_per_rad, 0, 1, 0);
 		glMultMatrixd(rotaxis);
-		id.drawModel(sufs[0], vbo[0], pst[0]);
+		DrawMQOPose(model, NULL);
 		glPopMatrix();
 
 		glPopMatrix();

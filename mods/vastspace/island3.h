@@ -125,10 +125,10 @@ protected:
 	btBoxShape *wings[3];
 	btTransform wingtrans[3];
 	Island3Docker *docker;
-	static suf_t *sufdock;
+	static Model *dockModel;
 	virtual Docker *getDockerInt();
 	void buildShape();
-	static suf_t *loadModel(suf_t *(*sufs)[3], VBO *(*vbo)[3], suftex_t *(*pst)[3]);
+	static Model *loadModel();
 };
 
 class Island3Docker : public Docker{

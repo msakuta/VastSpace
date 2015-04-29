@@ -108,7 +108,7 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
-	virtual double getHitRadius()const{return 20.;}
+	virtual double getHitRadius()const{return 20000.;}
 	virtual void enterField(WarField *);
 	virtual bool isTargettable()const{return true;}
 	virtual bool isSelectable()const{return true;}

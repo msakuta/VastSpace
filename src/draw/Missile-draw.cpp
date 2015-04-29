@@ -53,9 +53,9 @@ void Missile::draw(wardraw_t *wd){
 	static suftex_t *suft;
 	static OpenGLState::weak_ptr<bool> init;
 
-	if(wd->vw->gc->cullFrustum(pos, .01))
+	if(wd->vw->gc->cullFrustum(pos, 10.))
 		return;
-	double pixels = .005 * fabs(wd->vw->gc->scale(pos));
+	double pixels = 5. * fabs(wd->vw->gc->scale(pos));
 	if(pixels < 5)
 		return;
 
@@ -88,7 +88,7 @@ void Missile::draw(wardraw_t *wd){
 			glPopMatrix();
 		}
 #endif
-		gldScaled(1e-5);
+		gldScaled(modelScale);
 		glScalef(-1, 1, -1);
 		DecalDrawSUF(suf, SUF_ATR, NULL, suft, NULL, NULL);
 		glPopMatrix();
@@ -104,7 +104,7 @@ void Missile::drawtra(wardraw_t *wd){
 	/* burning trail */
 	if(/*p->target &&*/ 0. < fuel){
 		struct gldBeamsData bd;
-		Vec3d v0(.0, .0, .00300);
+		Vec3d v0(.0, .0, 3.);
 		const Vec3d &viewpos = wd->vw->pos;
 		int lumi;
 		struct random_sequence rs;
@@ -119,18 +119,18 @@ void Missile::drawtra(wardraw_t *wd){
 //		drawglow(end, wd->irot, .0015, COLOR32RGBA(255,255,255, 127 / (1. + viewdist)));
 		glColor4ub(255,255,255,255);
 		Vec4<GLubyte> col(255,255,255, 127 / (1. + viewdist));
-		gldTextureGlow(end, .0020, col, wd->vw->irot);
+		gldTextureGlow(end, 2., col, wd->vw->irot);
 
-		gldBeams(&bd, viewpos, end, .00001 * scale, COLOR32RGBA(3,127,191,0));
-		v0[2] += .0003 * scale;
+		gldBeams(&bd, viewpos, end, .01 * scale, COLOR32RGBA(3,127,191,0));
+		v0[2] += .3 * scale;
 		end = mat.vp3(v0);
-		gldBeams(&bd, viewpos, end, .00007 * scale, COLOR32RGBA(255,255,255,lumi));
-		v0[2] += .0003 * scale;
+		gldBeams(&bd, viewpos, end, .07 * scale, COLOR32RGBA(255,255,255,lumi));
+		v0[2] += .3 * scale;
 		end = mat.vp3(v0);
-		gldBeams(&bd, viewpos, end, .00009 * scale, COLOR32RGBA(255,127,63,lumi));
-		v0[2] += .0003 * scale;
+		gldBeams(&bd, viewpos, end, .09 * scale, COLOR32RGBA(255,127,63,lumi));
+		v0[2] += .3 * scale;
 		end = mat.vp3(v0);
-		gldBeams(&bd, viewpos, end, .00005 * scale, COLOR32RGBA(255,0,0,0));
+		gldBeams(&bd, viewpos, end, .05 * scale, COLOR32RGBA(255,0,0,0));
 	}
 }
 

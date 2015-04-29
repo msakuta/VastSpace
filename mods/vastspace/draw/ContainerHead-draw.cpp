@@ -25,7 +25,7 @@ void ContainerHead::draw(wardraw_t *wd){
 		return;
 //	wd->lightdraws++;
 
-	draw_healthbar(this, wd, health / getMaxHealth(), .1, 0, capacitor / frigate_mn.capacity);
+	draw_healthbar(this, wd, health / getMaxHealth(), 100., 0, capacitor / frigate_mn.capacity);
 
 	// The pointed type is not meaningful; it just indicates status of initialization by its presense.
 	static OpenGLState::weak_ptr<bool> initialized = false;

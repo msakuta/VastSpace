@@ -22,7 +22,7 @@ void SpacePlane::draw(WarDraw *wd){
 	if(cull(wd))
 		return;
 
-	draw_healthbar(this, wd, health / getMaxHealth(), .1, 0, capacitor / frigate_mn.capacity);
+	draw_healthbar(this, wd, health / getMaxHealth(), 100., 0, capacitor / frigate_mn.capacity);
 
 	struct TextureParams{
 		SpacePlane *p;
@@ -131,9 +131,9 @@ void SpacePlane::draw(WarDraw *wd){
 
 void SpacePlane::drawtra(wardraw_t *wd){
 	st::drawtra(wd);
-	drawCapitalBlast(wd, engines[0] + Vec3d(0,0,.01), .01);
-	drawCapitalBlast(wd, engines[1] + Vec3d(0,0,.0075), .0075);
-	drawCapitalBlast(wd, engines[2] + Vec3d(0,0,.0075), .0075);
+	drawCapitalBlast(wd, engines[0] + Vec3d(0,0,10.), 10.);
+	drawCapitalBlast(wd, engines[1] + Vec3d(0,0,7.5), 7.5);
+	drawCapitalBlast(wd, engines[2] + Vec3d(0,0,7.5), 7.5);
 }
 
 void SpacePlane::drawOverlay(wardraw_t *){

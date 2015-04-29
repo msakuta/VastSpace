@@ -25,8 +25,8 @@ static const struct color_node cnl_orangeburn[] = {
 static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn, (COLOR32)-1, 2.2);
 
 std::vector<Vec3d> SpacePlane::engines;
-double SpacePlane::modelScale = .0004;
-double SpacePlane::hitRadius = 0.080;
+double SpacePlane::modelScale = .4;
+double SpacePlane::hitRadius = 80.;
 double SpacePlane::defaultMass = 2e7;
 double SpacePlane::maxHealthValue = 15000.;
 GLuint SpacePlane::overlayDisp = 0;
@@ -179,8 +179,8 @@ void SpacePlane::anim(double dt){
 					paradec = mother->enumParadeC(mother->Frigate);
 				Vec3d target, target0(1.5, -1., -1.);
 				Quatd q2, q1;
-				target0[0] += paradec % 10 * .30;
-				target0[2] += paradec / 10 * -.30;
+				target0[0] += paradec % 10 * 300.;
+				target0[2] += paradec / 10 * -300.;
 				target = pm->rot.trans(target0);
 				target += pm->pos;
 				Vec3d dr = this->pos - target;
@@ -194,7 +194,7 @@ void SpacePlane::anim(double dt){
 				}
 				else{
 	//							p->throttle = dr.slen() / 5. + .01;
-					steerArrival(dt, target, pm->velo, 1. / 10., .001);
+					steerArrival(dt, target, pm->velo, 1. / 10., 1.);
 				}
 			}
 			else

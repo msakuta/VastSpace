@@ -2144,8 +2144,7 @@ void Island3::drawtra(const Viewer *vw){
 
 
 
-unsigned Island3Entity::classid = registerClass("Island3Entity", Conster<Island3Entity>);
-
+Entity::EntityRegisterNC<Island3Entity> Island3Entity::entityRegister("Island3Entity");
 
 void Island3Entity::serialize(SerializeContext &sc){
 	st::serialize(sc);

@@ -99,7 +99,7 @@ class Island3Entity : public Entity{
 public:
 	typedef Entity st;
 	friend Island3;
-	static unsigned classid;
+	static EntityRegisterNC<Island3Entity> entityRegister;
 	Island3 *astro;
 	Island3Entity(Game *game);
 	Island3Entity(WarField *w, Island3 &astro);

@@ -2,13 +2,13 @@ local SIN15 = sin(PI/12);
 local COS15 = cos(PI/12);
 
 hitbox <- [
-	[Vec3d(0, 0, -0.058), Quatd(0,0,0,1), Vec3d(0.220, 0.055, 0.300)],
-	[Vec3d(0, -0.06, 0.005), Quatd(0,0,0,1), Vec3d(0.015, 0.030, 0.018)],
-	[Vec3d(0, 0.06, 0.005), Quatd(0,0,0,1), Vec3d(0.015, 0.030, 0.018)],
+	[Vec3d(0, 0, -58.), Quatd(0,0,0,1), Vec3d(220., 55., 300.)],
+	[Vec3d(0, -60., 5.), Quatd(0,0,0,1), Vec3d(15., 30., 18.)],
+	[Vec3d(0, 60., 5.), Quatd(0,0,0,1), Vec3d(15., 30., 18.)],
 ]
 
 local SQRT2P2 = sqrt(2)/2;
-modelScale <- 0.001;
+modelScale <- 1.;
 
 hardpoints <- [
 	{pos = Vec3d(100 * modelScale, 55 * modelScale,  175 * modelScale), rot = Quatd(0, 0, 0, 1), name = "Top Left 1 Turret"},

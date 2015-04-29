@@ -25,11 +25,11 @@ extern "C"{
 
 #define MAX_SHIELD_AMOUNT 5000.
 #define BEAMER_HEALTH 15000.
-#define BEAMER_MAX_SPEED .1
-#define BEAMER_ACCELERATE .05
+#define BEAMER_MAX_SPEED 100.
+#define BEAMER_ACCELERATE 50.
 #define BEAMER_MAX_ANGLESPEED .4
 #define BEAMER_ANGLEACCEL .2
-#define BEAMER_SHIELDRAD .09
+#define BEAMER_SHIELDRAD 90.
 
 
 void Beamer::cache_bridge(void){
@@ -72,7 +72,7 @@ void Beamer::draw(wardraw_t *wd){
 		return;
 //	wd->lightdraws++;
 
-	draw_healthbar(this, wd, health / BEAMER_HEALTH, .1, shieldAmount / MAX_SHIELD_AMOUNT, capacitor / frigate_mn.capacity);
+	draw_healthbar(this, wd, health / BEAMER_HEALTH, 100., shieldAmount / MAX_SHIELD_AMOUNT, capacitor / frigate_mn.capacity);
 
 	if(!init) do{
 		model = LoadMQOModel("models/beamer.mqo");
@@ -115,7 +115,7 @@ void Beamer::drawtra(wardraw_t *wd){
 
 	transform(mat);
 
-	drawCapitalBlast(wd, Vec3d(0,-0.003,.06), .01);
+	drawCapitalBlast(wd, Vec3d(0,-3.,60.), 10.);
 
 	drawShield(wd);
 
@@ -125,7 +125,7 @@ void Beamer::drawtra(wardraw_t *wd){
 	if(charge){
 		int i;
 		GLubyte azure[4] = {63,0,255,95}, bright[4] = {127,63,255,255};
-		Vec3d muzzle, muzzle0(0., 0., -.100);
+		Vec3d muzzle, muzzle0(0., 0., -100.);
 		double glowrad;
 		muzzle = mat.vp3(muzzle0);
 /*		quatrot(muzzle, pt->rot, muzzle0);
@@ -133,12 +133,12 @@ void Beamer::drawtra(wardraw_t *wd){
 
 		if(0. < charge && charge < 4.){
 			double beamrad;
-			Vec3d end, end0(0., 0., -10.);
+			Vec3d end, end0(0., 0., -10000.);
 			end0[2] = -beamlen;
 			end = mat.vp3(end0);
 /*			quatrot(end, pt->rot, end0);
 			VECADDIN(end, pt->pos);*/
-			beamrad = (charge < .5 ? charge / .5 : 3.5 < charge ? (4. - charge) / .5 : 1.) * .005;
+			beamrad = (charge < .5 ? charge / .5 : 3.5 < charge ? (4. - charge) / .5 : 1.) * 5.;
 			for(i = 0; i < 5; i++){
 				Vec3d p0, p1;
 				p0 = muzzle * i / 5.;
@@ -200,7 +200,7 @@ void Beamer::drawtra(wardraw_t *wd){
 			}
 		}
 #endif
-		glowrad = charge < 4. ? charge / 4. * .02 : (6. - charge) / 2. * .02;
+		glowrad = charge < 4. ? charge / 4. * 20. : (6. - charge) / 2. * 20.;
 		gldSpriteGlow(muzzle, glowrad * 3., azure, wd->vw->irot);
 		gldSpriteGlow(muzzle, glowrad, bright, wd->vw->irot);
 	}

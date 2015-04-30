@@ -342,16 +342,13 @@ void Apache::anim(double dt){
 			find_enemy_logic();
 		}
 		if(controller){
-			Mat3d mat3 = mat.tomat3();
-			Mat3d matt = iort3 * mat3;
-			common = matt[7] / 2. /*pt->velo[1] / 5e-0*/;
-			normal = rangein(-matt[1] / .7 / 2., -M_PI / 4., M_PI / 4.);
-			gcommon = common += crotoraxis[0] = rangein(crotoraxis[0] + M_PI * .001 * inputs.analog[1], -M_PI / 6., M_PI / 6.);
-			gnormal = normal += crotoraxis[1] = rangein(crotoraxis[1] - M_PI * .001 * inputs.analog[0], -M_PI / 6., M_PI / 6.);
+			gcommon = common = crotoraxis[0] = rangein(crotoraxis[0] + M_PI * .001 * inputs.analog[1], -M_PI / 6., M_PI / 6.);
+			gnormal = normal = crotoraxis[1] = rangein(crotoraxis[1] - M_PI * .001 * inputs.analog[0], -M_PI / 6., M_PI / 6.);
 		}
 		else{
 			Mat3d mat3 = mat.tomat3();
 			Mat3d matt = iort3 * mat3;
+			// Orientation stabilizer that tries to control cyclic to get the vehicle upright.
 			common = matt[7] / 1. /*pt->velo[1] / 5e-0*/;
 			if(enemy){
 				Vec3d dr = enemy->pos - this->pos;

@@ -372,7 +372,7 @@ SurfaceWar::SurfaceWar(SurfaceCS *cs) : st(cs), entity(new SurfaceEntity(this)){
 	// Just an experiment. Really should be pulled out from planet's mass and radius.
 	// Only apply straight down gravity when there is no proper astronomical body around.
 	if(!cs->cbody)
-		bdw->setGravity(btVector3(0, -.0098,  0));
+		bdw->setGravity(btVector3(0, -9.8,  0));
 
 	// The heightfield should have been already initialized at this time.
 	if(cs->bbody)

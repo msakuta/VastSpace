@@ -27,8 +27,8 @@ extern "C"{
 #define APACHE_PRICE 1450e1
 
 #define SSM_MASS 80.
-#define BULLETSPEED .08
-#define SONICSPEED .340
+#define BULLETSPEED 80.
+#define SONICSPEED 340.
 #define WINGSPEED (.25 * M_PI)
 
 
@@ -39,7 +39,7 @@ extern "C"{
 Entity::EntityRegister<Apache> Apache::entityRegister("Apache");
 
 Model *Apache::model = NULL;
-double Apache::modelScale = 0.00001;
+double Apache::modelScale = 0.01;
 double Apache::defaultMass = 5000.;
 double Apache::maxHealthValue = 100.;
 double Apache::rotorAxisSpeed = 0.1 * M_PI;
@@ -48,14 +48,14 @@ double Apache::tailRotorLiftFactor = 0.003;
 double Apache::featherSpeed = 1.;
 double Apache::tailRotorSpeed = 3.;
 double Apache::chainGunCooldown = 60. / 625.; ///< Defaults 625 rpm
-double Apache::chainGunMuzzleSpeed = 1.;
+double Apache::chainGunMuzzleSpeed = 1000.;
 double Apache::chainGunDamage = 30.;
 double Apache::chainGunVariance = 0.015;
 double Apache::chainGunLife = 5.;
 double Apache::hydraDamage = 300.;
 HSQOBJECT Apache::sqFire = sq_nullobj();
 HSQOBJECT Apache::sqQueryAmmo = sq_nullobj();
-Vec3d Apache::cockpitOfs = Vec3d(0., .0008, -.0022);
+Vec3d Apache::cockpitOfs = Vec3d(0., .8, -2.2);
 HitBoxList Apache::hitboxes;
 Vec3d Apache::hudPos;
 double Apache::hudSize;
@@ -141,7 +141,7 @@ void Apache::leaveField(WarField *w){
 
 void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	amat4_t mat2, mat3;
-	static const Vec3d apache_overview_ofs(0., .010, .025);
+	static const Vec3d apache_overview_ofs(0., 10., 25.);
 	int camera = (seatid + 6) % 6;
 	Mat4d mat;
 	transform(mat);
@@ -157,8 +157,8 @@ void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 			Vec3d dr1 = dr0.vp(ort.vec3(1));
 			Vec3d dr2 = dr1.vp(dr0);
 			dr2.normin();
-			dr0 *= .025;
-			dr0 += dr2 * .01;
+			dr0 *= 25.;
+			dr0 += dr2 * 100.;
 			pos = this->pos + dr0;
 		}
 		else{
@@ -167,7 +167,7 @@ void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	}
 	else if(camera == 3){
 		Vec3d pos0;
-		const double period = this->velo.slen() < .1 * .1 ? .5 : 1.;
+		const double period = this->velo.slen() < 100. * 100. ? 500. : 1000.;
 //		struct contact_info ci;
 		pos0[0] = floor(this->pos[0] / period + .5) * period;
 		pos0[1] = floor(this->pos[1] / period + .5) * period;
@@ -178,7 +178,7 @@ void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	}
 	else if(camera == 4){
 		if(lastMissile){
-			pos = lastMissile->pos + lastMissile->rot.trans(Vec3d(0, 0.002, 0.005));
+			pos = lastMissile->pos + lastMissile->rot.trans(Vec3d(0, 2., 5.));
 			rot = lastMissile->rot;
 			return;
 		}
@@ -187,7 +187,7 @@ void Apache::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	}
 	else if(camera == 5){
 		// Rotation along with the rotor.  Useful on debugging rotor blade pitch control.
-		Vec3d pos0 = Vec3d(sin(rotor), 0.35, cos(rotor)) * 0.010;
+		Vec3d pos0 = Vec3d(sin(rotor), .35, cos(rotor)) * 10000.;
 		pos = mat.vp3(pos0);
 		Quatd rot0 = Quatd::rotation(rotor, 0, 1, 0);
 		rot = this->rot * rot0;
@@ -210,7 +210,7 @@ void Apache::control(const input_t *inputs, double dt){
 	}
 
 	if(inputs->change & inputs->press & PL_SPACE){
-		double best = 3. * 3.;
+		double best = 3000. * 3000.;
 		double mini = enemy ? (pos - enemy->pos).slen() : 0.;
 		double sdist;
 		Entity *target = NULL;
@@ -276,7 +276,7 @@ int shoot_angle(const Vec3d &pos, const Vec3d &epos, double phi0, double v, doub
 }
 
 void Apache::find_enemy_logic(){
-	double best = 100. * 100.; /* sense range */
+	double best = 100.e3 * 100.e3; /* sense range */
 	double sdist;
 	Entity *closest = NULL;
 /*			pt->enemy = &head[(i+1)%n];*/
@@ -303,7 +303,7 @@ void Apache::anim(double dt){
 	double air = w->atmosphericPressure(pos);
 
 	if(WarSpace *ws = *w){
-		const Vec3d offset(0, 0.001, 0);
+		const Vec3d offset(0, 1., 0);
 		// If the CoordSys is a SurfaceCS, we can expect ground in negative y direction.
 		// dynamic_cast should be preferred.
 		if(&w->cs->getStatic() == &SurfaceCS::classRegister){
@@ -376,7 +376,7 @@ void Apache::anim(double dt){
 			Vec3d delta = epos - this->pos;
 			double sd = delta.slen();
 			Vec3d ldelta = qc.trans(delta);
-			ldelta[1] -= .002;
+			ldelta[1] -= 2.;
 			shoot_angle(vec3_000, ldelta, 0., chainGunMuzzleSpeed, &retangles);
 			gnormal = -atan2(ldelta[0], -ldelta[2]);
 			gcommon = retangles[0]/*- -asin(ldelta[1] / sqrt(ldelta[0] * ldelta[0] + ldelta[2] * ldelta[2]))*/;
@@ -434,8 +434,11 @@ void Apache::anim(double dt){
 		cooldown2 -= dt;
 
 	/* global acceleration */
-	if(!bbody){
-		Vec3d accel = w->accel(this->pos, this->velo);
+	Vec3d accel = w->accel(this->pos, this->velo);
+	if(bbody){
+		bbody->applyCentralForce(btvc(accel * mass));
+	}
+	else{
 		this->velo += accel * dt;
 	}
 
@@ -461,7 +464,7 @@ void Apache::anim(double dt){
 	/*	rotor = fmod(rotor + throttle * 8. * M_PI * dt, M_PI * 2.);*/
 		tailrotor = fmod(tailrotor + (rotoromega/* + p->tail*/) * 6. * M_PI * dt, M_PI * 2.);
 		{
-			Vec3d org(0., 0.0002, 0.), tail(0.0005, .00, .0088);
+			Vec3d org(0., 0.2, 0.), tail(0.5, .00, 8.8);
 			Vec3d pos = mat.dvp3(org);
 			double mag = air * mainRotorLiftFactor * rotoromega * (feather - airflux) * mass * dt;
 			Vec3d thrust = rot2.vec3(1) * mag;
@@ -497,7 +500,7 @@ void Apache::anim(double dt){
 		(*it)->align();
 
 	if(!rotorSid){
-		rotorSid = playSound3D(modPath() << "sound/apache-rotor.ogg", this->pos, 0.5, 0.1, 0, true);
+		rotorSid = playSound3D(modPath() << "sound/apache-rotor.ogg", this->pos, 0.5, 10000., 0, true);
 	}
 	else
 		movesound3d(rotorSid, this->pos);
@@ -658,7 +661,7 @@ bool Apache::buildBody(){
 /// \brief Try to shoot the M230 chain gum mounted on the bottom of cockpit.
 /// \returns Count of bullets shot in this frame
 int Apache::shootChainGun(double dt){
-	static const Vec3d pos0(0., -0.0012, -.0032), nh0(0., 0., -1.), xh0(1., 0., 0.);
+	static const Vec3d pos0(0., -1.2, -3.2), nh0(0., 0., -1.), xh0(1., 0., 0.);
 	double phi, theta;
 	double scale = modelScale;
 	double variance = chainGunVariance;
@@ -677,7 +680,7 @@ int Apache::shootChainGun(double dt){
 				.rotx(gun[0] + (rs.nextd() - .5) * variance)
 				.roty(gun[1] + (rs.nextd() - .5) * variance);
 
-			Bullet *pb = new ExplosiveBullet(this, chainGunLife, chainGunDamage, 0.01, false);
+			Bullet *pb = new ExplosiveBullet(this, chainGunLife, chainGunDamage, 10., false);
 			w->addent(pb);
 			Vec3d nh = rmat.dvp3(nh0).norm();
 			pb->velo = this->velo + nh * chainGunMuzzleSpeed;
@@ -715,7 +718,7 @@ int Apache::shootChainGun(double dt){
 			shot = true;
 		}
 		if(shot)
-			playSound3D(modPath() << "sound/apache-gunshot.ogg", this->pos, .6, .01);
+			playSound3D(modPath() << "sound/apache-gunshot.ogg", this->pos, .6, 10000.);
 	}
 	return ret;
 }

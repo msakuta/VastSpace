@@ -450,7 +450,7 @@ void Aerial::anim(double dt){
 			if(pt2 != this && pt2->race != -1 && pt2->race != this->race){
 				Vec3d delta = pt2->pos - this->pos;
 				double c = nh.sp(delta) / delta.len();
-				if(best < c && delta.slen() < 5. * 5.){
+				if(best < c && delta.slen() < 5000. * 5000.){
 					best = c;
 					this->enemy = pt2;
 					break;
@@ -513,7 +513,7 @@ void Aerial::anim(double dt){
 			/* retrieve velocity of the wing center in absolute coordinates */
 			Vec3d velo = this->omg.vp(rpos) + this->velo;
 
-			double len = velolen < .05 ? velolen / .05 : velolen < .340 ? 1. : velolen / .340;
+			double len = velolen < 50. ? velolen / 50. : velolen < 340. ? 1. : velolen / 340.;
 
 			// Calculate attenuation factor
 			double f2 = f * air * (1. + getAirBrake() * brakephase) * this->mass * .15 * len;
@@ -574,7 +574,7 @@ void Aerial::anim(double dt){
 				pitchsound3d(flyingSid, pitch);
 			}
 			else
-				flyingSid = playSound3D(flyingSoundFile, this->pos, lowSound, 0.1, 0, true, pitch);
+				flyingSid = playSound3D(flyingSoundFile, this->pos, lowSound, 10000., 0, true, pitch);
 		}
 
 		if(flyingHiSoundFile){
@@ -585,7 +585,7 @@ void Aerial::anim(double dt){
 				pitchsound3d(flyingHiSid, pitch);
 			}
 			else
-				flyingHiSid = playSound3D(flyingHiSoundFile, this->pos, highSound, 0.1, 0, true, pitch);
+				flyingHiSid = playSound3D(flyingHiSoundFile, this->pos, highSound, 10000., 0, true, pitch);
 		}
 	}
 #endif
@@ -735,7 +735,7 @@ SQInteger Aerial::sqSet(HSQUIRRELVM v, const SQChar *name){
 }
 
 static Serializable::Id monitor = 0;
-static double estimateSpeed = 0.5; ///< Virtual approaching speed for estimating position
+static double estimateSpeed = 500.; ///< Virtual approaching speed for estimating position
 static double rollSense = 2.;
 static double omgSense = 2.;
 static double intSense = -1.;
@@ -854,7 +854,7 @@ void Aerial::animAI(double dt, bool onfeet){
 	Mat4d mat;
 	transform(mat);
 
-	onfeet = onfeet || velo.slen() < 0.05 * 0.05 && 0.9 < mat.vec3(1)[1];
+	onfeet = onfeet || velo.slen() < 50. * 50. && 0.9 < mat.vec3(1)[1];
 
 	Vec3d deltaPos((!onfeet && enemy ? enemy->pos : destPos) - this->pos); // Delta position towards the destination
 	if(!(!onfeet && enemy))
@@ -866,7 +866,7 @@ void Aerial::animAI(double dt, bool onfeet){
 		aileron = approach(aileron, 0, dt, 0);
 		Vec3d localDeltaPos = this->rot.itrans(deltaPos);
 		double phi = atan2(localDeltaPos[0], -localDeltaPos[2]);
-		const double arriveDist = 0.03;
+		const double arriveDist = 30.;
 		if(landingAirport){
 			GetILSCommand gic;
 			if(landingAirport->command(&gic) && 0 < (gic.pos - this->pos).sp(-mat.vec3(2))){
@@ -884,7 +884,7 @@ void Aerial::animAI(double dt, bool onfeet){
 
 			// If we are landing and decelerated below a very slow speed by landing gear brake,
 			// just assume we have landed.  Clearing landingAirport would trigger the next action.
-			if(velo.slen() < 0.01 * 0.01){
+			if(velo.slen() < 10. * 10.){
 				landingAirport = nullptr;
 				if(showILS)
 					showILS = false;
@@ -1053,7 +1053,7 @@ void Aerial::calcCockpitView(Vec3d &pos, Quatd &rot, const CameraPos &cam)const{
 	rot = this->rot;
 	if(cam.type == CameraPos::Type::MissileTrack){
 		if(lastMissile){
-			pos = lastMissile->pos + lastMissile->rot.trans(Vec3d(0, 0.002, 0.005));
+			pos = lastMissile->pos + lastMissile->rot.trans(Vec3d(0, 2., 5.));
 			rot = lastMissile->rot;
 			return;
 		}
@@ -1067,7 +1067,7 @@ void Aerial::calcCockpitView(Vec3d &pos, Quatd &rot, const CameraPos &cam)const{
 	}
 	else if(cam.type == CameraPos::Type::Rotate){
 		Vec3d pos0;
-		const double period = this->velo.len() < .1 * .1 ? .5 : 1.;
+		const double period = this->velo.len() < 100. * 100. ? .5 : 1.;
 		struct contact_info ci;
 		pos0[0] = floor(this->pos[0] / period + .5) * period;
 		pos0[1] = 0./*floor(pt->pos[1] / period + .5) * period*/;

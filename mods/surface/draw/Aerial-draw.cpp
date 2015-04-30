@@ -299,10 +299,10 @@ void Aerial::drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &se
 		glBegin(GL_LINES);
 		double velo = this->velo.len();
 		glVertex2d(-.5, .3);
-		glVertex2d(-.5, velo < .05 ? -velo * .3 / .05 : -.3);
-		for(double d = MAX(.01 - fmod(velo, .01), .05 - velo) - .05; d < .05; d += .01){
-			glVertex2d(-.55, d * .3 / .05);
-			glVertex2d(-.5, d * .3 / .05);
+		glVertex2d(-.5, velo < 50. ? -velo * .3 / 50. : -.3);
+		for(double d = MAX(10. - fmod(velo, 10.), 50. - velo) - 50.; d < 50.; d += 10.){
+			glVertex2d(-.55, d * .3 / 50.);
+			glVertex2d(-.5, d * .3 / 50.);
 		}
 		glEnd();
 
@@ -315,7 +315,7 @@ void Aerial::drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &se
 		glPushMatrix();
 		glTranslated(-.7, .7, 0.);
 		glScaled(.015, .025, .1);
-		gldPolyPrintf("M %lg", velo / .34);
+		gldPolyPrintf("M %lg", velo / 340.);
 		glPopMatrix();
 		glPushMatrix();
 		glTranslated(-.7, .6, 0.);
@@ -327,7 +327,9 @@ void Aerial::drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &se
 		glVertex2d(9.,  1.);
 		glVertex2d(9., -1.);
 		glEnd();
-		gldPolyPrintf("%5.lf", 1944. * velo);
+
+		// Speed in knots
+		gldPolyPrintf("%5.lf", 1.94386 * velo);
 		glPopMatrix();
 
 		if(0 < health && !controller){
@@ -569,17 +571,17 @@ void Aerial::drawTargetMarker(WarDraw *wd){
 			Vec3d dp = this->enemy->pos - this->pos;
 			double dist = dp.len();
 			glRasterPos3d(.01, .02, 0.);
-			if(dist < 1.)
-				gldprintf("%.4g m", dist * 1000.);
+			if(dist < 1000.)
+				gldprintf("%.4g m", dist);
 			else
-				gldprintf("%.4g km", dist);
+				gldprintf("%.4g km", dist / 1000.);
 			Vec3d dv = this->enemy->velo - this->velo;
 			dist = dv.sp(dp) / dist;
 			glRasterPos3d(.01, -.03, 0.);
-			if(dist < 1.)
-				gldprintf("%.4g m/s", dist * 1000.);
+			if(dist < 1000.)
+				gldprintf("%.4g m/s", dist);
 			else
-				gldprintf("%.4g km/s", dist);
+				gldprintf("%.4g km/s", dist / 1000.);
 		}
 		glBegin(GL_LINE_LOOP);
 		glVertex3d(.05, .05, 0.);

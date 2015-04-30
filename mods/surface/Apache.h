@@ -35,7 +35,7 @@ public:
 	int tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn)override;
 	bool isTargettable()const override{return true;}
 	bool isSelectable()const override{return true;}
-	double getHitRadius()const override{return 0.02;}
+	double getHitRadius()const override{return 20.;}
 	double getMaxHealth()const override{return maxHealthValue;}
 
 protected:

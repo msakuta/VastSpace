@@ -15,9 +15,9 @@ extern "C"{
 
 void Apache::draw(WarDraw *wd){
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(this->pos, .03))
+	if(wd->vw->gc->cullFrustum(this->pos, getHitRadius()))
 		return;
-	double pixels = .015 * fabs(wd->vw->gc->scale(this->pos));
+	double pixels = getHitRadius() * fabs(wd->vw->gc->scale(this->pos));
 	if(pixels < 2)
 		return;
 	wd->lightdraws++;
@@ -110,7 +110,7 @@ void Apache::drawtra(WarDraw *wd){
 		muzzle = 0;
 		if(!model)
 			return;
-		static const Vec3d pvo(.0, -.00150, -.00320);
+		static const Vec3d pvo(.0, -1.50, -3.20);
 		Mat4d rmat = this->rot.tomat4().rotx(gun[0]).roty(gun[1]);
 		MotionPose mp[2];
 		gunMotion(mp);

@@ -42,12 +42,12 @@ player.chase = tank;
 //local tank2 = player.cs.addent("M3Truck", Vec3d(0.1, 0, 0.2));
 //tank2.race = 1;
 
-local bldg = player.cs.addent("SurfaceBuilding", Vec3d(0.3, 0, 0.3));
+local bldg = player.cs.addent("SurfaceBuilding", Vec3d(300., 0, 300.));
 bldg.modelFile = "mods/surface/models/bigsight.mqo";
 bldg.modelScale = 0.001;
 bldg.hitRadius = 0.15;
 
-local airport = player.cs.addent("Airport", Vec3d(0, 0, 5.0));
+local airport = player.cs.addent("Airport", Vec3d(0, 0, 5000.0));
 airport.setrot(Quatd(0,1,0,0));
 
 local function localCoord(v){
@@ -62,7 +62,7 @@ local function globalCoord(v){
 
 
 
-local apache = player.cs.addent("Apache", Vec3d(0, 2.71, 5. - 0.2));
+local apache = player.cs.addent("Apache", Vec3d(0, 2710., 5000. - 200.));
 player.chase = apache;
 apache.enemy = tank;
 
@@ -72,7 +72,7 @@ player.setmover("tactical");
 
 local lookrot = Quatd(0., 1., 0., 0.) * Quatd(-sin(PI/8.), 0, 0, cos(PI/8.)) * Quatd(0, sin(PI/8.), 0, cos(PI/8.));
 player.setrot(lookrot);
-player.viewdist = 0.25;
+player.viewdist = 250.;
 
 yawscale <- 1.;
 pitchscale <- -1;
@@ -138,14 +138,14 @@ local function flyProc(e){
 			yield;
 
 		print("Waypoint next ");
-		e.destPos = airport.getpos() + Vec3d(0., 0.0, 15.);
+		e.destPos = airport.getpos() + Vec3d(0., 0.0, 15000.);
 		e.destArrived = false;
 
 		while(!e.destArrived)
 			yield;
 
 		print("Waypoint approach ");
-		e.destPos = airport.getpos() + Vec3d(0., 0.0, 10.);
+		e.destPos = airport.getpos() + Vec3d(0., 0.0, 10000.);
 		e.destArrived = false;
 
 		while(!e.destArrived)
@@ -168,9 +168,9 @@ function reset(){
 	foreach(e in birds) if(e.alive){
 		ipaths[e] <- flyProc(e);
 		e.landingAirport = airport;
-		e.setpos(Vec3d(-0.1, 2.0, z));
+		e.setpos(Vec3d(-100., 2000., z));
 		e.setrot(Quatd(0,0,0,1));
-		e.setvelo(Vec3d(0, 0, -0.2));
+		e.setvelo(Vec3d(0, 0, -200.));
 		e.setomg(Vec3d(0, 0, 0));
 		e.health = e.maxhealth;
 		z -= 0.5;
@@ -201,22 +201,22 @@ function frameproc(dt){
 		local racec = [countents(cs, 0, "Tank"), countents(cs, 1, "Tank")];
 
 		if(false && racec[0] < 0){
-			local a = player.cs.addent("Tank", Vec3d(drand0() * 10.5, 0.0, drand0() * 10.5));
+			local a = player.cs.addent("Tank", Vec3d(drand0() * 1050., 0.0, drand0() * 1050.));
 			a.race = 0;
 		}
 		if(false && racec[1] < 0){
-			local a = player.cs.addent("Tank", Vec3d(drand0() * 10.5, 0.0, drand0() * 10.5));
+			local a = player.cs.addent("Tank", Vec3d(drand0() * 1050., 0.0, drand0() * 1050.));
 			a.race = 1;
 		}
 
 		local truck0 = countents(cs, 0, "M3Truck");
 		local truck1 = countents(cs, 1, "M3Truck");
 		if(false && truck0 < 0){
-			local a = player.cs.addent("M3Truck", Vec3d(drand0() * 10.5, 0.0, drand0() * 10.5));
+			local a = player.cs.addent("M3Truck", Vec3d(drand0() * 1050., 0.0, drand0() * 1050.));
 			a.race = 0;
 		}
 		if(false && truck1 < 0){
-			local a = player.cs.addent("M3Truck", Vec3d(drand0() * 10.5, 0.0, drand0() * 10.5));
+			local a = player.cs.addent("M3Truck", Vec3d(drand0() * 1050., 0.0, drand0() * 1050.));
 			a.race = 1;
 		}
 	}

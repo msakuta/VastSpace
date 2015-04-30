@@ -31,9 +31,9 @@ extern "C"{
 
 using namespace gltestp;
 
-double TorusStation::RAD = 0.13; ///< outer radius
-const double TorusStation::THICK = 0.1; ///< Thickness of the mirrors
-const double TorusStation::stackInterval = 0.050; ///< The distance between torus stacks.
+double TorusStation::RAD = 130.; ///< outer radius
+const double TorusStation::THICK = 100.; ///< Thickness of the mirrors
+const double TorusStation::stackInterval = 50.; ///< The distance between torus stacks.
 const int TorusStation::segmentCount = 8; ///< The count of station segments. This could be a non-static member to have stations with various sizes.
 double TorusStation::defaultMass = 1e8;
 
@@ -175,7 +175,7 @@ void TorusStation::anim(double dt){
 //		double phase = omg[1] * (!top || !top->toUniverse() ? 0. : top->toUniverse()->global_time);
 //		Quatd qrot = Quatd::direction(sunpos);
 //		Quatd qrot1 = qrot.rotate(-M_PI / 2., avec3_100);
-		double omg = sqrt(.0098 / RAD);
+		double omg = sqrt(9.8 / RAD);
 		Vec3d vomg = Vec3d(0, 0, omg);
 		this->rotation += omg * dt;
 		this->omg = this->rot.trans(vomg)/* + sunpos.norm().vp(rot.trans(Vec3d(0,0,1))) * .1*/;
@@ -235,11 +235,11 @@ void TorusStation::clientUpdate(double dt){
 
 Entity::EntityRegisterNC<TorusStationEntity> TorusStationEntity::entityRegister("TorusStationEntity");
 
-const double TorusStationEntity::hubRadius = 0.03; // Really should be derived from hub model
-const double TorusStationEntity::segmentOffset = 0.02; // Offset of model from TorusStation::RAD
-const double TorusStationEntity::segmentBaseHeight = 0.01; // Really should be derived from segment model
-double TorusStationEntity::modelScale = 0.0001;
-double TorusStationEntity::hitRadius = 0.13;
+const double TorusStationEntity::hubRadius = 30.; // Really should be derived from hub model
+const double TorusStationEntity::segmentOffset = 20.; // Offset of model from TorusStation::RAD
+const double TorusStationEntity::segmentBaseHeight = 10.; // Really should be derived from segment model
+double TorusStationEntity::modelScale = 0.1;
+double TorusStationEntity::hitRadius = 130.;
 double TorusStationEntity::maxHealthValue = 1e6;
 GLuint TorusStationEntity::overlayDisp = 0;
 
@@ -287,7 +287,7 @@ void TorusStationEntity::buildShape(){
 					btBoxShape *box = new btBoxShape(btvc(sc));
 					btTransform trans = btTransform(btqc(rot), btvc(tpos));
 					e->btshape->addChildShape(trans, box);
-					box->setMargin(0.04 * 0.01); // 1/100 of default margin
+					box->setMargin(0.04); // default margin
 
 					// Add a hitbox just like btBoxShape for bullet hit testing.
 					e->hitboxes.push_back(hitbox(tpos, rot, sc));
@@ -298,8 +298,8 @@ void TorusStationEntity::buildShape(){
 			btshape = new btCompoundShape();
 
 			// The hub's Bullet shape. Note that it's divided into 3 in form of hitcylinders.
-			const double radius = 0.030;
-			btvc hubsc = Vec3d(radius, radius, 0.036 + TorusStation::stackInterval * TorusStation::stackCount / 2.);
+			const double radius = 30.;
+			btvc hubsc = Vec3d(radius, radius, 36. + TorusStation::stackInterval * TorusStation::stackCount / 2.);
 //			btBoxShape *cyl = new btBoxShape(hubsc); // Test box shape for visualization
 			btCylinderShape *cyl = new btCylinderShapeZ(hubsc);
 			cyl->setMargin(0.04 * 0.01); // 1/100 of default margin
@@ -309,8 +309,8 @@ void TorusStationEntity::buildShape(){
 			hitcylinders.push_back(HitCylinder(Vec3d(0,0,0), Vec3d(0,0, TorusStation::stackInterval * TorusStation::stackCount / 2.), radius));
 
 			// The ports at both ends of the hub. Add to hitcylinders after the hub to make their hit part greater than portHitPartOffset.
-			hitcylinders.push_back(HitCylinder(Vec3d(0,0, 0.018 + TorusStation::stackInterval * TorusStation::stackCount / 2.), Vec3d(0,0, 0.018), radius));
-			hitcylinders.push_back(HitCylinder(Vec3d(0,0, -(0.018 + TorusStation::stackInterval * TorusStation::stackCount / 2.)), Vec3d(0,0, 0.018), radius));
+			hitcylinders.push_back(HitCylinder(Vec3d(0,0, 18. + TorusStation::stackInterval * TorusStation::stackCount / 2.), Vec3d(0,0, 18.), radius));
+			hitcylinders.push_back(HitCylinder(Vec3d(0,0, -(18. + TorusStation::stackInterval * TorusStation::stackCount / 2.)), Vec3d(0,0, 18.), radius));
 
 			const int stackCount = TorusStation::stackCount;
 			for(int n = 0; n < stackCount; n++){
@@ -318,16 +318,16 @@ void TorusStationEntity::buildShape(){
 				const int segmentCount = TorusStation::segmentCount;
 				for(int i = 0; i < segmentCount; i++){
 					// The residence segments
-					shapeProc.process(Vec3d(0.04, 0.01, 0.01), Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1),
+					shapeProc.process(Vec3d(40., 10., 10.), Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1),
 						Vec3d(0, -TorusStation::RAD + segmentOffset, zpos));
 
 					// The joints connecting residence segments
-					shapeProc.process(Vec3d(0.015, 0.008, 0.008),
+					shapeProc.process(Vec3d(15., 8., 8.),
 						Quatd::rotation((i * 2 + 1) * M_PI / segmentCount, 0, 0, 1),
-						Vec3d(0, (-TorusStation::RAD + segmentOffset + 0.005) / cos(M_PI / segmentCount), zpos));
+						Vec3d(0, (-TorusStation::RAD + segmentOffset + 5.) / cos(M_PI / segmentCount), zpos));
 
 					// The spokes
-					shapeProc.process(Vec3d(0.005, (TorusStation::RAD - hubRadius - segmentBaseHeight - segmentOffset) / 2., 0.005),
+					shapeProc.process(Vec3d(5., (TorusStation::RAD - hubRadius - segmentBaseHeight - segmentOffset) / 2., 5.),
 						Quatd::rotation(i * 2 * M_PI / segmentCount, 0, 0, 1),
 						Vec3d(0, (-TorusStation::RAD + hubRadius + segmentBaseHeight + segmentOffset) / 2. - hubRadius, zpos));
 				}
@@ -507,7 +507,7 @@ int TorusStationEntity::takedamage(double damage, int hitpart){
 #ifndef DEDICATED
 		WarSpace *ws = *w;
 		if(ws){
-			AddTeline3D(ws->tell, this->pos, vec3_000, 30., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
+			AddTeline3D(ws->tell, this->pos, vec3_000, 30000., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
 		}
 #endif
 		astro->flags |= CS_DELETE;
@@ -549,9 +549,9 @@ bool TorusStationEntity::command(EntityCommand *com){
 
 
 
-static const double cutheight = .2;
-static const double floorHeight = .00375;
-static const double floorStep = .0005;
+static const double cutheight = 200.;
+static const double floorHeight = 3.75;
+static const double floorStep = .5;
 
 
 
@@ -594,16 +594,16 @@ TorusStationWarSpace::TorusStationWarSpace(TorusStation *cs) : st(cs), bbody(NUL
 			shape = new btCompoundShape();
 
 			static const double radius[2][2] = {
-				{.2 + TorusStation::RAD / 2., .2 + TorusStation::RAD  / 2.},
-				{TorusStation::RAD  + .5 - .001, TorusStation::RAD  + .5 - .001},
+				{200. + TorusStation::RAD / 2., 200. + TorusStation::RAD  / 2.},
+				{TorusStation::RAD  + .5 - 1., TorusStation::RAD  + .5 - 1.},
 			};
 			static const double thickness[2] = {
-				TorusStation::RAD  / 2. + .009,
-				.5,
+				TorusStation::RAD  / 2. + 9.,
+				500.,
 			};
 			static const double widths[2] = {
-				.13 * 8,
-				.13,
+				130. * 8,
+				130.,
 			};
 			static const double lengths[2][2] = {
 				{-TorusStation::THICK  - TorusStation::RAD, -TorusStation::THICK},

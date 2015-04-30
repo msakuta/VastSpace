@@ -179,7 +179,7 @@ void TorusStationEntity::draw(WarDraw *wd){
 		// This is the "north" end, which means counterclockwise rotation seen from the pole.
 		glPushMatrix();
 		glRotatef(endPhase, 0, 0, 1);
-		glTranslated(0, 0., TorusStation::getZOffsetStack(0) - 0.025 - 0.018);
+		glTranslated(0, 0., TorusStation::getZOffsetStack(0) - 25. - 18.);
 		gldScaled(dscale);
 		glScalef(-1., 1., -1.);
 		glRotatef(90, 0, 1, 0);
@@ -189,7 +189,7 @@ void TorusStationEntity::draw(WarDraw *wd){
 		// This is the "south" end.
 		glPushMatrix();
 		glRotatef(endPhase, 0, 0, 1);
-		glTranslated(0, 0., TorusStation::getZOffsetStack(TorusStation::stackCount - 1) + 0.025 + 0.018);
+		glTranslated(0, 0., TorusStation::getZOffsetStack(TorusStation::stackCount - 1) + 25. + 18.);
 		gldScaled(dscale);
 		glRotatef(90, 0, 1, 0);
 		DrawMQOPose(models.hubEnd, NULL);
@@ -225,7 +225,7 @@ void TorusStationEntity::draw(WarDraw *wd){
 
 				glPushMatrix();
 				glRotatef(phase + (2 * i + 1) * 180 / segmentCount, 0, 0, 1);
-				glTranslated(0, (-TorusStation::RAD + segmentOffset + 0.005) / cos(M_PI / segmentCount), zpos);
+				glTranslated(0, (-TorusStation::RAD + segmentOffset + 5.) / cos(M_PI / segmentCount), zpos);
 				gldScaled(dscale);
 				glRotatef(90, 0, 1, 0);
 				DrawMQOPose(models.joint, NULL);

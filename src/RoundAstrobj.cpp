@@ -6,6 +6,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define NOMINMAX
 #include "RoundAstrobj.h"
+#include "astrodef.h"
 #include "serial_util.h"
 #include "sqadapt.h"
 #include "cmd.h"
@@ -441,14 +442,14 @@ void RoundAstrobj::updateAbsMag(double dt){
 		// from a distance of 1 parsec.
 
 		// First, obtain apparent solid angle seen from a distance of 1 parsec.
-		double appArea = rad * rad / 3.e14 / 3.e14;
+		double appArea = rad * rad / PARSEC / PARSEC;
 
 		// Second, calculate absolute brightness by multiplying the brightness of the other
 		// light source by albedo and radius.
 		double absBrightness = albedo * finder.brightness * appArea;
 
 		// Last, convert the brightness to absolute magnitude (logarithmic scale).
-		absmag = float(-log(absBrightness) / log(2.512) - 26.7);
+		brightness = absBrightness;
 	}
 }
 

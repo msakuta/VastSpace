@@ -99,8 +99,8 @@ extern "C"{
 static double g_fix_dt = 0.;
 static double gametimescale = 1.;
 static double g_background_near_clip = 1e-10, g_background_far_clip = 1e10; ///< For those that z buffering does not make sense
-static double g_space_near_clip = .5, g_space_far_clip = 1e10;
-static double g_warspace_near_clip = 0.001, g_warspace_far_clip = 1e3;
+static double g_space_near_clip = 500., g_space_far_clip = 1e13;
+static double g_warspace_near_clip = 1., g_warspace_far_clip = 1e6;
 
 // The HDR variables declared in HDR.h.
 double r_exposure = 1.;
@@ -111,7 +111,7 @@ static int r_orbit_axis = 0;
 static int r_shadows = 1;
 static int r_shadow_map_size = 1024;
 static double r_shadow_map_cells[3] = {
-	5., .75, .1
+	5.e3, 750., 100.
 };
 static double r_shadow_offset = 1.;
 static int r_shadow_cull_front = 0;

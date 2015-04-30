@@ -13,7 +13,7 @@ extern "C"{
 
 void Destroyer::draw(wardraw_t *wd){
 
-	draw_healthbar(this, wd, getHealth() / getMaxHealth(), .3, -1, capacitor / maxenergy());
+	draw_healthbar(this, wd, getHealth() / getMaxHealth(), 300., -1, capacitor / maxenergy());
 
 	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
@@ -99,7 +99,7 @@ void Destroyer::drawtra(wardraw_t *wd){
 		Vec3d(-28, -22, 180) * modelScale,
 	};
 	for(int i = 0; i < numof(engines); i++)
-		drawCapitalBlast(wd, engines[i], .02);
+		drawCapitalBlast(wd, engines[i], 20.);
 //	drawShield(wd);
 }
 
@@ -123,7 +123,7 @@ void WireDestroyer::draw(wardraw_t *wd){
 	static suftex_t *pst;
 	static bool init = false;
 
-	draw_healthbar(this, wd, health / getMaxHealth(), .3, -1, -1);
+	draw_healthbar(this, wd, health / getMaxHealth(), 300., -1, -1);
 
 	if(!init) do{
 		sufbase = CallLoadSUF("models/wiredestroyer0.bin");
@@ -145,7 +145,7 @@ void WireDestroyer::draw(wardraw_t *wd){
 
 	if(sufbase){
 		static const double normal[3] = {0., 1., 0.};
-		double scale = .001;
+		double scale = 1.;
 		static const GLdouble rotaxis[16] = {
 			-1,0,0,0,
 			0,1,0,0,
@@ -203,7 +203,7 @@ void WireDestroyer::drawtra(wardraw_t *wd){
 	for(int i = 0; i < 2; i++){
 		Mat4d rot = mat.rotz(wirephase);
 		glColor4f(1,.5,.5,1);
-		gldBeam(wd->vw->pos, rot.vp3(Vec3d(.07 * (i * 2 - 1), 0, 0)), rot.vp3(Vec3d(wirelength * (i * 2 - 1), 0, 0)), .01);
+		gldBeam(wd->vw->pos, rot.vp3(Vec3d(70. * (i * 2 - 1), 0, 0)), rot.vp3(Vec3d(wirelength * (i * 2 - 1), 0, 0)), .01);
 	}
 }
 

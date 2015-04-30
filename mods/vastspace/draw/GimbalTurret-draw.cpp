@@ -143,18 +143,18 @@ void GimbalTurret::deathEffect(){
 	for(int i = 0; i < 16; i++){
 		Vec3d pos;
 		COLOR32 col = 0;
-		pos[0] = .02 * (drseq(&w->rs) - .5);
-		pos[1] = .02 * (drseq(&w->rs) - .5);
-		pos[2] = .02 * (drseq(&w->rs) - .5);
+		pos[0] = 20. * (drseq(&w->rs) - .5);
+		pos[1] = 20. * (drseq(&w->rs) - .5);
+		pos[2] = 20. * (drseq(&w->rs) - .5);
 		col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
 		col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
 		col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 		col |= COLOR32RGBA(0,0,0,191);
-		AddTelineCallback3D(ws->getTeline3d(), pos + this->pos, pos / 1. + velo / 2., .02, quat_u, vec3_000, vec3_000, ::smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
+		AddTelineCallback3D(ws->getTeline3d(), pos + this->pos, pos / 1. + velo / 2., 20., quat_u, vec3_000, vec3_000, ::smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
 	}
 
 	// explode shockwave
-	AddTeline3D(ws->getTeline3d(), this->pos, vec3_000, .3, quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
+	AddTeline3D(ws->getTeline3d(), this->pos, vec3_000, 300., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
 
 	// Prevent multiple effects for a single object.
 	deathEffectDone = true;

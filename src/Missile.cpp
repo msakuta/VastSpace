@@ -11,8 +11,9 @@ extern "C"{
 #include <clib/mathdef.h>
 }
 
+const double Missile::modelScale = 1e-2;
 const float Missile::maxfuel = 120.;
-const double Missile::maxspeed = 1.;
+const double Missile::maxspeed = 1000.;
 
 /// Construct on first use idiom.
 Missile::TargetMap &Missile::targetmap(){
@@ -45,7 +46,7 @@ Missile::~Missile(){
 const unsigned Missile::classid = registerClass("Missile", Conster<Missile>);
 const char *Missile::classname()const{return "Missile";}
 
-#define SSM_ACCEL .10
+#define SSM_ACCEL 100.
 #define SSM_BLAST_FREQ 10.
 #define SSM_MAX_GIBS 10
 #define SSM_ROTSPEED (M_PI)
@@ -71,6 +72,7 @@ void Missile::steerHoming(double dt, const Vec3d &atarget, const Vec3d &targetve
 
 
 void Missile::anim(double dt){
+	static const double speedEpsilon = 1e-10;
 	WarField *oldw = w;
 	updateFpol();
 
@@ -99,7 +101,7 @@ void Missile::anim(double dt){
 			int flying = 0;
 
 			if(target){
-				static const double samspeed = .8;
+				static const double samspeed = 800.;
 				int i, n;
 				delta = target->pos - pos;
 
@@ -116,7 +118,10 @@ void Missile::anim(double dt){
 					speed = -velo.sp(zh);
 					speed = MAX(maxspeed * 2., speed);
 					dist = (target->pos - this->pos).len();
-					epos = target->pos + (target->velo - velo) * (dist / speed * 1.2);
+					if(speedEpsilon < speed)
+						epos = target->pos + (target->velo - velo) * (dist / speed * 1.2);
+					else
+						epos = target->pos;
 					dv = epos - this->pos;
 				}
 			}
@@ -140,7 +145,7 @@ void Missile::anim(double dt){
 		}
 #endif
 #if 1
-		if(target){
+		if(target && speedEpsilon < dv.slen()){
 			double f = exp(-1.*dt);
 			Vec3d lvelo = velo - target->velo; // Convert to target based velocity space
 			lvelo = lvelo * f + dv.norm() * (1. - f);
@@ -450,7 +455,7 @@ void Missile::postframe(){
 
 // proximity fuse
 double Missile::getHitRadius()const{
-	return .010;
+	return 10.;
 }
 
 void Missile::unlinkTarget(){

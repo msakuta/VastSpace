@@ -93,7 +93,7 @@ void MTurret::drawtra(wardraw_t *wd){
 		}
 		rot = mat;
 		rot.vec3(3).clear();
-		drawmuzzleflash4(pos, rot, .01, wd->vw->irot, &rs, wd->vw->pos);
+		drawmuzzleflash4(pos, rot, 10., wd->vw->irot, &rs, wd->vw->pos);
 
 		glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 		glCallList(muzzle_texture());
@@ -101,7 +101,7 @@ void MTurret::drawtra(wardraw_t *wd){
 		glBlendFunc(GL_ONE, GL_ONE); // Add blend
 		float f = mf / .1, fi = 1. - mf / .2;
 		glColor4f(f,f,f,1);
-		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * .075 * fi, .02 * fi);
+		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * 75. * fi, 20. * fi);
 		glPopAttrib();
 	}
 }

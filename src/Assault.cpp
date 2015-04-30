@@ -25,14 +25,14 @@ extern "C"{
 #include <BulletCollision/CollisionDispatch/btSphereSphereCollisionAlgorithm.h>
 #include <BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h>
 
-double Assault::modelScale = 0.0002;
-double Assault::hitRadius = 0.1;
+double Assault::modelScale = 0.2;
+double Assault::hitRadius = 100.;
 double Assault::defaultMass = 1e5;
 double Assault::maxHealthValue = 10000.;
 double Assault::maxShieldValue = 5000.;
 Warpable::ManeuverParams Assault::mn = {
-	.025, /* double accel; */
-	.1, /* double maxspeed; */
+	25., /* double accel; */
+	100., /* double maxspeed; */
 	100., /* double angleaccel; */
 	.4, /* double maxanglespeed; */
 	50000., /* double capacity; [MJ] */
@@ -272,11 +272,11 @@ const char *Assault::dispname()const{
 
 void Assault::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	static const Vec3d src[] = {
-		Vec3d(.002, .018, .022),
-		Vec3d(0., 0./*05*/, 0.150),
-		Vec3d(0., 0./*1*/, 0.300),
-		Vec3d(0., 0., 0.300),
-		Vec3d(0., 0., 1.000),
+		Vec3d(2., 18., 22.),
+		Vec3d(0., 0./*05*/, 150.),
+		Vec3d(0., 0./*1*/, 300.),
+		Vec3d(0., 0., 300.),
+		Vec3d(0., 0., 1000.),
 	};
 	static const Quatd rot0[] = {
 		quat_u,
@@ -332,7 +332,7 @@ void Assault::anim(double dt){
 	else if(!controller){
 		inputs.press = 0;
 		if(!enemy){ /* find target */
-			double best = 20. * 20.;
+			double best = 20.e3 * 20.e3;
 			Entity *t;
 			for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); it++) if(*it){
 				Entity *t = *it;
@@ -370,7 +370,7 @@ void Assault::anim(double dt){
 					this->rot = Quatd::slerp(this->rot, q1, 1. - exp(-dt));
 				}
 				else
-					steerArrival(dt, dest, leader->velo, 1., .001);
+					steerArrival(dt, dest, leader->velo, 1., 1.);
 			}
 		}
 		if(!enemy && task == sship_parade){
@@ -379,8 +379,8 @@ void Assault::anim(double dt){
 					paradec = mother->enumParadeC(mother->Frigate);
 				Vec3d target, target0(1.5, -1., -1.);
 				Quatd q2, q1;
-				target0[0] += paradec % 10 * .30;
-				target0[2] += paradec / 10 * -.30;
+				target0[0] += paradec % 10 * 300.;
+				target0[2] += paradec / 10 * -300.;
 				target = pm->rot.trans(target0);
 				target += pm->pos;
 				Vec3d dr = this->pos - target;
@@ -388,13 +388,13 @@ void Assault::anim(double dt){
 					q1 = pm->rot;
 //					inputs.press |= PL_W;
 //					parking = 1;
-					this->velo += dr * (-dt * .5);
+					this->velo += dr * (-dt * 500.);
 					q2 = Quatd::slerp(this->rot, q1, 1. - exp(-dt));
 					this->rot = q2;
 				}
 				else{
 	//							p->throttle = dr.slen() / 5. + .01;
-					steerArrival(dt, target, pm->velo, 1. / 10., .001);
+					steerArrival(dt, target, pm->velo, 1. / 10., 1.);
 				}
 			}
 			else
@@ -431,7 +431,7 @@ void Assault::anim(double dt){
 				this->inputs.press |= PL_ENTER;
 				if(5. * 5. < (this->enemy->pos - this->pos).slen())
 					this->inputs.press |= PL_W;
-				else if((this->enemy->pos, this->pos).slen() < 1. * 1.)
+				else if((this->enemy->pos, this->pos).slen() < 1000. * 1000.)
 					this->inputs.press |= PL_S;
 				else
 					this->inputs.press |= PL_A; /* strafe around */

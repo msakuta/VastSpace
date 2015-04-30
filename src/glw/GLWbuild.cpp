@@ -182,6 +182,10 @@ int GLWbuild::mouse(GLwindowState &ws, int mbutton, int state, int mx, int my){
 	if(st::mouse(ws, mbutton, state, mx, my))
 		return 1;
 
+	// Associated builder is destroyed!
+	if(!builder)
+		return 0;
+
 	Entity *ent = builder->toEntity();
 
 	// If the Entity is not owned by the client game's player, do not dare issuing an order.

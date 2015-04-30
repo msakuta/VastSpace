@@ -10,12 +10,12 @@ if(earthlo){
 }
 
 if(1){
-	redbase <- player.cs.addent("Shipyard", Vec3d(2.0, 0, 0));
+	redbase <- player.cs.addent("Shipyard", Vec3d(2.e3, 0, 0));
 //	redbase.race = 1;
-	local des = player.cs.addent("Destroyer", Vec3d(2.0, 0, 0.5));
+	local des = player.cs.addent("Destroyer", Vec3d(2.e3, 0, 500.));
 //	des.race = 1;
 	des.setrot(Quatd.rotation(PI/2., Vec3d(0,1,0)));
-	local attacker = player.cs.addent("Attacker", Vec3d(2.0, 0, 1.0));
+	local attacker = player.cs.addent("Attacker", Vec3d(2.e3, 0, 1.e3));
 	attacker.setrot(Quatd.rotation(3.0*PI/2.0, Vec3d(0,0,1)));
 /*	local assault = player.cs.addent("Assault", Vec3d(2.0, -0.30, 0.75));
 	assault.setrot(Quatd.rotation(2.0*PI/3.0, Vec3d(0,1,0)));
@@ -30,20 +30,20 @@ if(1){
 //	e.race = 1;
 
 	for(local i = 0; i < 0; i++){
-		local turret = player.cs.addent("GimbalTurret", Vec3d(0,0 + 0.05 * i,0.05));
+		local turret = player.cs.addent("GimbalTurret", Vec3d(0,0 + 50. * i,50.));
 		turret.race = 1;
 	}
 	for(local i = 0; i < 0; i++){
-		local mturret = player.cs.addent("MissileGimbalTurret", Vec3d(0,0 + i * 0.05,-0.05));
+		local mturret = player.cs.addent("MissileGimbalTurret", Vec3d(0,0 + i * 50.,-50.));
 		mturret.race = 1;
 	}
 	for(local i = 0; i < 0; i++){
-		local bturret = player.cs.addent("BeamGimbalTurret", Vec3d(0.05,0 + 0.05 * i, -0.10));
+		local bturret = player.cs.addent("BeamGimbalTurret", Vec3d(50.,0 + 50. * i, -100.));
 		bturret.race = 1;
 	}
 }
 if(1){
-	local e = player.cs.addent("Shipyard", Vec3d(-2.0, 0, 0));
+	local e = player.cs.addent("Shipyard", Vec3d(-2.e3, 0, 0));
 	bluebase <- e;
 	e.setrot(Quatd.rotation(-PI/2., Vec3d(0,1,0)));
 	e.race = 0;
@@ -106,9 +106,9 @@ function frameproc(dt){
 			checktime = currenttime;
 			switch(invokes){
 				case 0:
-					obj1 = player.cs.addent("Sceptor", Vec3d(0.1, 0., 0.));
+					obj1 = player.cs.addent("Sceptor", Vec3d(100., 0., 0.));
 					print("obj1 is " + obj1);
-					obj2 = player.cs.addent("Sceptor", Vec3d(-0.1, 0., 0.));
+					obj2 = player.cs.addent("Sceptor", Vec3d(-100., 0., 0.));
 					print("obj2 is " + obj2);
 					obj1.enemy = obj2;
 					print("obj1.enemy is " + obj1.enemy);
@@ -227,7 +227,7 @@ function frameproc(dt){
 			}
 		}
 		while(true && countents(cs, 0, "Soldier") < 1){
-			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + (drand() - 0.5) * 0.3, -0.2 + gaussRand() * 0.005, 0.4 + (drand() - 0.5) * 0.10));
+			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + (drand() - 0.5) * 300., -200. + gaussRand() * 5., 400. + (drand() - 0.5) * 100.));
 			soldier.setrot(Quatd(gaussRand(), gaussRand(), gaussRand(), gaussRand()).norm());
 			soldier.race = 0;
 			numsol0 = (numsol0 + 1) % 10;
@@ -235,7 +235,7 @@ function frameproc(dt){
 				player.chase = soldier;
 		}
 		while(false && countents(cs, 1, "Soldier") < 1){
-			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + (drand() - 0.5) * 0.3, -0.2 + gaussRand() * 0.005, 0.65 + (drand() - 0.5) * 0.10));
+			local soldier = player.cs.addent("Soldier", Vec3d(2.0 + (drand() - 0.5) * 300., -200. + gaussRand() * 5., 650. + (drand() - 0.5) * 100.));
 			soldier.setrot(Quatd(gaussRand(), gaussRand(), gaussRand(), gaussRand()).norm());
 			soldier.race = 1;
 			numsol = (numsol + 1) % 10;

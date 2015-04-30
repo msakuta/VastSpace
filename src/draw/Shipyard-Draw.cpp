@@ -95,7 +95,7 @@ void Shipyard::drawtra(wardraw_t *wd){
 	Shipyard *p = this;
 	Shipyard *pt = this;
 	Mat4d mat;
-	Vec3d pa, pb, pa0(.01, 0, 0), pb0(-.01, 0, 0);
+	Vec3d pa, pb, pa0(10., 0, 0), pb0(-10., 0, 0);
 	double scale;
 
 /*	if(scarry_cull(pt, wd))
@@ -139,7 +139,7 @@ void Shipyard::drawtra(wardraw_t *wd){
 					pos0[0] = 180 * modelScale;
 					pos0[1] = 60 * modelScale;
 					pos0[2] = (i * -460 + (10 - i) * -960) * modelScale / 10;
-					double rad = .005 * (1. - fmod(i / 10. + t / 2., 1.));
+					double rad = 5. * (1. - fmod(i / 10. + t / 2., 1.));
 					col[3] = 255/*rad * 255 / .01*/;
 					mat4vp3(pos, mat, pos0);
 					gldSpriteGlow(pos, rad, col, wd->vw->irot);
@@ -200,7 +200,7 @@ void Shipyard::dyingEffects(double dt){
 			for(int j = 0; j < 3; j++)
 				pos[j] *= halfLen[j] * 2.;
 			AddTelineCallback3D(tell, this->pos + this->rot.trans(pos),
-				this->velo + rs.nextVec3d(&RandomSequenceCRC::nextGauss) * 0.01,
+				this->velo + rs.nextVec3d(&RandomSequenceCRC::nextGauss) * 10.,
 				.2, quat_u, vec3_000, gravity, firesmokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 2.5 + rs.nextd() * 1.5);
 		}
 	}

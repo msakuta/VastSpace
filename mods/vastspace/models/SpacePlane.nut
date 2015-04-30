@@ -1,6 +1,6 @@
-modelScale <- 0.0004;
+modelScale <- 0.4;
 
-hitRadius <- 0.08;
+hitRadius <- 80.;
 
 mass <- 2.e7;
 

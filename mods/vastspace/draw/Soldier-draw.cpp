@@ -164,12 +164,12 @@ void Soldier::drawHookAndTether(WarDraw *wd){
 
 		Mat4d mat;
 		transform(mat);
-		Vec3d src = mat.vp3(Vec3d(-0.0001, -0.00005, 0.0));
+		Vec3d src = mat.vp3(Vec3d(-0.1, -0.05, 0.0));
 		Vec3d dest = getHookPos();
 		Quatd direcRot = Quatd::direction(dest - src);
 
 		// Draw hook head model
-		double scale = 5e-7;
+		double scale = 5e-4;
 		Mat4d hookMat = direcRot.tomat4();
 		hookMat.vec3(3) = dest;
 		glPushMatrix();
@@ -180,8 +180,8 @@ void Soldier::drawHookAndTether(WarDraw *wd){
 
 		// Offset 75mm
 		Vec3d delta = src - dest;
-		if(75e-6 * 75e-6 < delta.slen())
-			dest += delta.norm() * 75e-6;
+		if(75e-3 * 75e-3 < delta.slen())
+			dest += delta.norm() * 75e-3;
 
 		// Load texture for tether rope
 		glPushAttrib(GL_LIGHTING_BIT | GL_TEXTURE_BIT | GL_POLYGON_BIT);
@@ -192,9 +192,9 @@ void Soldier::drawHookAndTether(WarDraw *wd){
 		// Draw tether rope
 		glBegin(GL_QUAD_STRIP);
 		for(int i = 0; i <= 5; i++){
-			Vec3d circle = 0.00001 * Vec3d(sin(i * 2 * M_PI / 5), cos(i * 2 * M_PI / 5), 0);
+			Vec3d circle = 0.01 * Vec3d(sin(i * 2 * M_PI / 5), cos(i * 2 * M_PI / 5), 0);
 			glNormal3dv(direcRot.trans(circle));
-			glTexCoord2d((src - dest).len() / (0.0001 * M_PI), i / 5.);
+			glTexCoord2d((src - dest).len() / (0.1 * M_PI), i / 5.);
 			glVertex3dv(src + direcRot.trans(circle));
 			glTexCoord2d(0, i / 5.);
 			glVertex3dv(dest + direcRot.trans(circle));
@@ -333,7 +333,7 @@ void Soldier::drawtra(WarDraw *wd){
 	/* cull object */
 	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
-	double pixels = .002 * fabs(wd->vw->gc->scale(pos));
+	double pixels = 2. * fabs(wd->vw->gc->scale(pos));
 	if(pixels < 2)
 		return;
 
@@ -407,7 +407,7 @@ const double bloodSmokeLife = 1.;
 static void bloodsmoke(const Teline3CallbackData *pl, const Teline3DrawData *dd, void *pv){
 	if(dd->pgc->cullFrustum(pl->pos, pl->len))
 		return;
-	double pixels = .0002 * fabs(dd->pgc->scale(pl->pos));
+	double pixels = .2 * fabs(dd->pgc->scale(pl->pos));
 	if(pixels < 1)
 		return;
 
@@ -423,7 +423,7 @@ static void bloodsmoke(const Teline3CallbackData *pl, const Teline3DrawData *dd,
 	glPushMatrix();
 	gldTranslate3dv(pl->pos);
 	glMultMatrixd(dd->invrot);
-	double rad = (pl->len - .0005 * pl->life * pl->life);
+	double rad = (pl->len - .5 * pl->life * pl->life);
 	gldScaled(rad);
 	glBegin(GL_TRIANGLE_FAN);
 	glColor4ubv(col);
@@ -454,10 +454,10 @@ static void bloodsmoke(const Teline3CallbackData *pl, const Teline3DrawData *dd,
 	for(int i = 0; i < 8; i++){
 		Vec3d velo;
 		for(int j = 0; j < 3; j++)
-			velo[j] = (rs.nextd() - .5) * .0015;
+			velo[j] = (rs.nextd() - .5) * 1.5;
 		Vec3d v0;
 		for(int j = 0; j < 3; j++)
-			v0[j] = (rs.nextd() - .5) * .0015;
+			v0[j] = (rs.nextd() - .5) * 1.5;
 		Vec3d v1 = v0 + velo * (bloodSmokeLife - pl->life);
 		velo += pl->velo;
 		Vec3d v2 = v1 + velo * -.03;
@@ -476,8 +476,8 @@ void Soldier::onBulletHit(const Bullet *pb, int){
 		Vec3d pos = pb->pos;
 		Vec3d velo = pb->velo.norm() * 0.005 + this->velo;
 		for(int i = 0; i < 3; i++)
-			pos[i] += (drseq(&w->rs) - .5) * .0005;
-		AddTelineCallback3D(w->getTeline3d(), pos, velo, .0010, quat_u, vec3_000, w->accel(pos, velo), bloodsmoke, NULL, 0, 1.);
+			pos[i] += (drseq(&w->rs) - .5) * .5;
+		AddTelineCallback3D(w->getTeline3d(), pos, velo, 1.0, quat_u, vec3_000, w->accel(pos, velo), bloodsmoke, NULL, 0, 1.);
 	}
 }
 
@@ -722,7 +722,7 @@ void Soldier::drawHUD(WarDraw *wd){
 
 			// Print the current length in meters. Tweak printed width if you change hookRange's order of magnitude.
 			glRasterPos2d(-.5, y1 + 0.025);
-			gldprintf("%5.1lf/%5.1lf m", len * 1e3, hookRange * 1e3);
+			gldprintf("%5.1lf/%5.1lf m", len, hookRange);
 
 			// Hook left length
 			glBegin(GL_QUADS);
@@ -759,10 +759,10 @@ void Soldier::hookHitEffect(const otjEnumHitSphereParam &param){
 
 		// Add spark traces
 		for(int j = 0; j < n; j++){
-			Vec3d velo = -hookvelo.norm() * .015;
+			Vec3d velo = -hookvelo.norm() * 15.;
 			for(int k = 0; k < 3; k++)
-				velo[k] += .03 * (rs.nextd() - .5);
-			AddTelineCallback3D(ws->tell, *param.pos, velo, .000025 + n * .00001, quat_u, vec3_000, accel, sparkdraw, NULL, TEL3_HEADFORWARD | TEL3_REFLECT, .20 + rs.nextd() * .20);
+				velo[k] += 30. * (rs.nextd() - .5);
+			AddTelineCallback3D(ws->tell, *param.pos, velo, .025 + n * .01, quat_u, vec3_000, accel, sparkdraw, NULL, TEL3_HEADFORWARD | TEL3_REFLECT, .20 + rs.nextd() * .20);
 		}
 	}
 }
@@ -817,11 +817,11 @@ bool Soldier::getGunPos(GetGunPosCommand &ggp){
 		transform(mat);
 		srcpos *= modelScale;
 		if(ggp.gunId == 0){
-			srcpos += srcrot.trans(Vec3d(-0.00015, 0.00015, 0.0));
+			srcpos += srcrot.trans(Vec3d(-0.15, 0.15, 0.0));
 			srcrot = Quatd(0, 1, 0, 0) * srcrot.rotate(M_PI / 2., 0, 1, 0);
 		}
 		else{
-			srcpos += srcrot.trans(Vec3d(0, 0, -0.00025));
+			srcpos += srcrot.trans(Vec3d(0, 0, -0.25));
 			srcrot = Quatd(0, 1, 0, 0) * srcrot;
 			srcrot = srcrot.rotate(M_PI / 6., 0, 0, -1);
 			srcrot = srcrot.rotate(M_PI / 2., -1, 0, 0);
@@ -845,7 +845,7 @@ void Rifle::draw(WarDraw *wd){
 	double pixels;
 
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(pos, .003))
+	if(wd->vw->gc->cullFrustum(pos, 3.))
 		return;
 	wd->lightdraws++;
 

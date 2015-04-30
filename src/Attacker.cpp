@@ -25,11 +25,11 @@ extern "C"{
 
 
 
-double Attacker::modelScale = .001;
+double Attacker::modelScale = 1.;
 double Attacker::defaultMass = 2e8;
 Warpable::ManeuverParams Attacker::maneuverParams = {
-	.025, /* double accel; */
-	.1, /* double maxspeed; */
+	25., /* double accel; */
+	100., /* double maxspeed; */
 	5000000 * .1, /* double angleaccel; */
 	.2, /* double maxanglespeed; */
 	200000., /* double capacity; [MJ] */
@@ -126,7 +126,7 @@ void Attacker::clientUpdate(double dt){
 }
 
 void Attacker::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
-	static const Vec3d offsets[2] = {Vec3d(0, .065, .110), Vec3d(0, .165, .350)};
+	static const Vec3d offsets[2] = {Vec3d(0, 65., 110.), Vec3d(0, 165., 350.)};
 	rot = this->rot;
 	pos = rot.trans(offsets[seatid % 2]) + this->pos;
 }
@@ -139,7 +139,7 @@ bool Attacker::command(EntityCommand *com){
 		return st::command(com);
 }
 
-double Attacker::getHitRadius()const{return .3;}
+double Attacker::getHitRadius()const{return 300.;}
 double Attacker::getMaxHealth()const{return 100000.;}
 double Attacker::maxenergy()const{return maneuverParams.capacity;}
 
@@ -197,15 +197,15 @@ int Attacker::takedamage(double damage, int hitpart){
 				Vec3d pos;
 //				COLOR32 col = 0;
 				pos = this->pos
-					+ Vec3d(.3 * (w->rs.nextd() - .5),
-							.3 * (w->rs.nextd() - .5),
-							.3 * (w->rs.nextd() - .5));
+					+ Vec3d(300. * (w->rs.nextd() - .5),
+							300. * (w->rs.nextd() - .5),
+							300. * (w->rs.nextd() - .5));
 /*				col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
 				col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
 				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 				col |= COLOR32RGBA(0,0,0,191);*/
 				static smokedraw_swirl_data sdata = {COLOR32RGBA(127,127,127,191), false};
-				AddTelineCallback3D(ws->tell, pos, vec3_000, .07, quat_u, Vec3d(0., 0., .05 * M_PI * w->rs.nextGauss()),
+				AddTelineCallback3D(ws->tell, pos, vec3_000, 70., quat_u, Vec3d(0., 0., 50. * M_PI * w->rs.nextGauss()),
 					vec3_000, smokedraw_swirl, (void*)&sdata, TEL3_INVROTATE | TEL3_NOLINE, 20.);
 			}
 
@@ -235,7 +235,7 @@ int Attacker::takedamage(double damage, int hitpart){
 
 				AddTeline3D(tell, this->pos, vec3_000, 5., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 2.);
 #endif
-				AddTeline3D(tell, this->pos, vec3_000, 3., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
+				AddTeline3D(tell, this->pos, vec3_000, 3000., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
 			}
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);

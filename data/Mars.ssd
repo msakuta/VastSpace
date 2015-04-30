@@ -10,7 +10,7 @@ coordsys Orbit marss{
 	ascending_node 49.6198
 	showorbit
 
-	astro RoundAstrobj Mars
+	astro RoundAstrobj Mars \
 	{
 		define MarsDia 6794.4
 		diameter MarsDia

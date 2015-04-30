@@ -70,7 +70,7 @@ void hitbox_draw(const Entity *pt, const double sc[3], int hitflags){
 
 
 void draw_healthbar(Entity *pt, wardraw_t *wd, double v, double scale, double s, double g){
-	double x = v * 2. - 1., h = MIN(.1, .1 / (1. + scale)), hs = h / 2.;
+	double x = v * 2. - 1., h = MIN(5., 5. / (1. + scale)), hs = h / 2.;
 	if(!wd->r_healthbar || wd->shadowmapping)
 		return;
 	Player *player = pt->getGame()->player;
@@ -440,10 +440,10 @@ void ModelEntity::drawNavlights(WarDraw *wd, const NavlightList &navlights, cons
 		double luminance = nv.patternIntensity(wd->vw->viewtime + t0 + nv.phase);
 		double rad = (luminance + 1.) / 2.;
 		if(navlightList){
+			glPushAttrib(GL_TEXTURE_BIT | GL_PIXEL_MODE_BIT);
 			glCallList(navlightList);
 			Vec4<GLfloat> fcol = nv.color;
 			fcol[3] *= luminance;
-			glPushAttrib(GL_TEXTURE_BIT | GL_PIXEL_MODE_BIT);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
 			glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, fcol);
 			glPushMatrix();
@@ -469,9 +469,9 @@ void ModelEntity::drawNavlights(WarDraw *wd, const NavlightList &navlights, cons
 
 bool Frigate::cull(wardraw_t *wd){
 	double pixels;
-	if(wd->vw->gc->cullFrustum(this->pos, .6))
+	if(wd->vw->gc->cullFrustum(this->pos, getHitRadius()))
 		return true;
-	pixels = .8 * fabs(wd->vw->gc->scale(this->pos));
+	pixels = getHitRadius() * fabs(wd->vw->gc->scale(this->pos));
 	if(pixels < 2)
 		return true;
 	return false;

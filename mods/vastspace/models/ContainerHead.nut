@@ -1,4 +1,4 @@
-modelScale <- 0.0002;
+modelScale <- 0.2;
 
 baseHitRadius <- 300 * modelScale;
 

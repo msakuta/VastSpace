@@ -111,7 +111,7 @@ void Warpable::init(){
 			SqCallbackProcess(sqPopupMenu, _SC("popupMenu")));
 		initialized = true;
 	}
-	warpSpeed = /*1e6 * LIGHTYEAR_PER_KILOMETER */15000. * AU_PER_KILOMETER;
+	warpSpeed = /*1e6 * LIGHTYEAR */15000. * AU_PER_METER;
 	warping = 0;
 //	warp_next_warf = NULL;
 	capacitor = 0.;
@@ -652,7 +652,7 @@ double g_star_num = 1.;
 /// If you set it too high, you will get too many stars enumerated for display,
 /// causing frame rate drop.
 /// 15 ly is trade-off value and generate 2-3 stars per sector around Sol.
-const double StarEnum::sectorSize = 15 * LIGHTYEAR_PER_KILOMETER;
+const double StarEnum::sectorSize = 15 * LIGHTYEAR;
 
 StarEnum::StarEnum(const Vec3d &plpos, int numSectors, bool genCache) :
 	plpos(plpos),
@@ -1355,6 +1355,6 @@ double galaxy_get_star_density(Viewer *vw){
 
 Vec3d getGalaxyOffset(){
 	/// The Sol is located in 25000 ly offset from the center of Milky Way Galaxy
-	static const Vec3d solarsystempos(-0, -25000.0 * LIGHTYEAR_PER_KILOMETER, 0);
+	static const Vec3d solarsystempos(-0, -25000.0 * LIGHTYEAR, 0);
 	return solarsystempos;
 }

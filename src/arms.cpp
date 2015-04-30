@@ -137,8 +137,8 @@ void ArmBase::align(){
 
 
 
-double MTurret::modelScale = 0.00005;
-double MTurret::hitRadius = 0.005;
+double MTurret::modelScale = 0.05;
+double MTurret::hitRadius = 5.;
 double MTurret::turretVariance = .001 * M_PI;
 double MTurret::turretIntolerance = M_PI / 20.;
 double MTurret::rotateSpeed = 0.4 * M_PI;
@@ -202,10 +202,10 @@ Entity::EntityStatic &MTurret::getStatic()const{return entityRegister;}
 
 void MTurret::cockpitView(Vec3d &pos, Quatd &rot, int)const{
 	rot = this->rot * Quatd(0, sin(py[1]/2), 0, cos(py[1]/2)) * Quatd(sin(py[0]/2), 0, 0, cos(py[0]/2));
-	pos = this->pos + rot.trans(Vec3d(.0, .005, .015));
+	pos = this->pos + rot.trans(Vec3d(.0, 5., 15.));
 }
 
-static const double mturret_ofs[3] = {0., 0., -.001};
+static const double mturret_ofs[3] = {0., 0., -1.};
 static const double mturret_range[2][2] = {-M_PI / 16., M_PI / 2, -M_PI, M_PI};
 
 void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[], int nignore_list){
@@ -286,7 +286,7 @@ void MTurret::tryshoot(){
 	mat2.translatein(hp->pos);
 	Mat4d rot = hp->rot.tomat4();
 	Mat4d mat = mat2 * rot;
-	mat.translatein(0., .001, -0.002);
+	mat.translatein(0., 1., -2.);
 	mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance());
 	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance());
 	pz->pos = mat.vp3(mturret_ofs);
@@ -410,7 +410,7 @@ float MTurret::getShootInterval()const{
 }
 
 double MTurret::getBulletSpeed()const{
-	return 2.;
+	return 2000.;
 }
 
 float MTurret::getBulletLife()const{
@@ -458,8 +458,8 @@ void MTurret::drawtra(WarDraw *){}
 
 
 
-double GatlingTurret::modelScale = 0.00005;
-double GatlingTurret::hitRadius = 0.005;
+double GatlingTurret::modelScale = 0.05;
+double GatlingTurret::hitRadius = 5.;
 double GatlingTurret::turretVariance = .001 * M_PI;
 double GatlingTurret::turretIntolerance = M_PI / 20.;
 double GatlingTurret::rotateSpeed = 0.4 * M_PI;
@@ -467,7 +467,7 @@ double GatlingTurret::manualRotateSpeed = rotateSpeed * 0.5;
 double GatlingTurret::bulletDamage = 10.;
 double GatlingTurret::bulletLife = 10.;
 double GatlingTurret::shootInterval = 0.1;
-double GatlingTurret::bulletSpeed = 4.;
+double GatlingTurret::bulletSpeed = 4000.;
 int GatlingTurret::magazineSize = 50;
 double GatlingTurret::reloadTime = 5.;
 double GatlingTurret::muzzleFlashDuration = 0.075;

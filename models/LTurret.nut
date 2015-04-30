@@ -1,7 +1,7 @@
 
-modelScale <- 0.001;
+modelScale <- 1.;
 
-hitRadius <- 0.03;
+hitRadius <- 30.;
 
 turretVariance <- 0.001 * PI;
 turretIntolerance <- PI / 20.;

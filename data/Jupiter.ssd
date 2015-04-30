@@ -1,0 +1,62 @@
+coordsys Orbit jupiter{
+	fullname "Jupiter"
+	eisystem # extent isolated system
+	cs_radius 1e7
+	orbits Sol
+	orbit_radius (7.7834e8)
+	eccentricity 0.048775
+	inclination 1.3028
+	argument_of_periapsis 14.4602
+	ascending_node 100.5461
+	showorbit
+	astro RoundAstrobj "Jupiter"{
+		radius 71400.
+		mass 317.904*5.977e24
+		texture jup0vss1.jpg
+		omega 0 0 1 2*PI/(9*HOUR_SECONDS+55.5*MINUTE_SECONDS)
+		updirection 0 1 0
+		planet
+		spherehit
+		atmosphere_height 30
+		atmosphere_color 1 .8 .5
+		atmosphere_dawn 1. .51 .1
+	}
+	coordsys jupiterlo{
+		fullname "Jupiter Low Orbit"
+		pos -100000 100000 0
+		bookmark Jupiter 10 0 0
+		rstation
+	}
+	astro Satellite Io{
+		diameter 3660
+		mass 8.9e22
+		planet
+		spherehit
+		orbits Jupiter
+		orbit_radius 421700
+	}
+	astro Satellite Europa{
+		diameter 3121.6
+		mass 4.8e22
+		planet
+		spherehit
+		orbits Jupiter
+		orbit_radius 671034
+		orbit_axis 0 cos(PI*0.470/360) sin(PI*0.470/360)
+	}
+	new astro Ganymede{
+		radius 2631.2
+		planet
+		orbits Jupiter
+		orbit_radius 1070000
+		orbit_axis 0 cos(PI*0.20/360) sin(PI*0.20/360)
+	}
+	new astro Callisto{
+		radius 2410.3
+		planet
+		orbits Jupiter
+		orbit_radius 1882700
+		orbit_axis 0 cos(PI*0.20/360) sin(PI*0.20/360)
+		color a0a7b0
+	}
+}

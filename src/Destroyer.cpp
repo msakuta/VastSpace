@@ -26,12 +26,12 @@ const char *Destroyer::classname()const{return "Destroyer";}
 const char *Destroyer::dispname()const{return "Destroyer";}
 
 
-double Destroyer::modelScale = .001;
+double Destroyer::modelScale = 1.;
 double Destroyer::defaultMass = 1e8;
 double Destroyer::maxHealthValue = 100000./2;
 Warpable::ManeuverParams Destroyer::maneuverParams = {
-	.05, /* double accel; */
-	.1, /* double maxspeed; */
+	50., /* double accel; */
+	100., /* double maxspeed; */
 	10000. * .1, /* double angleaccel; */
 	.2, /* double maxanglespeed; */
 	150000., /* double capacity; [MJ] */
@@ -153,7 +153,7 @@ void Destroyer::unserialize(UnserializeContext &sc){
 	}
 }
 
-double Destroyer::getHitRadius()const{return .27;}
+double Destroyer::getHitRadius()const{return 270.;}
 
 void Destroyer::anim(double dt){
 	if(!w)
@@ -187,7 +187,7 @@ void Destroyer::clientUpdate(double dt){
 
 void Destroyer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	rot = this->rot;
-	pos = rot.trans(Vec3d(0, .08, .0)) + this->pos;
+	pos = rot.trans(Vec3d(0, 80., .0)) + this->pos;
 }
 
 int Destroyer::takedamage(double damage, int hitpart){
@@ -231,14 +231,14 @@ void Destroyer::deathEffects(){
 			double pos[3], velo[3] = {0}, omg[3];
 			/* gaussian spread is desired */
 			for(int j = 0; j < 6; j++)
-				velo[j / 2] += .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+				velo[j / 2] += 25. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 			omg[0] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 			omg[1] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 			omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 			VECCPY(pos, this->pos);
 			for(int j = 0; j < 3; j++)
 				pos[j] += getHitRadius() * (drseq(&w->rs) - .5);
-			AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
+			AddTelineCallback3D(ws->gibs, pos, velo, 10., quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 		}
 
 		/* smokes */
@@ -254,7 +254,7 @@ void Destroyer::deathEffects(){
 			col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 			col |= COLOR32RGBA(0,0,0,191);
 //			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
-			AddTelineCallback3D(ws->tell, pos, vec3_000, .07, quat_u, vec3_000,
+			AddTelineCallback3D(ws->tell, pos, vec3_000, 70., quat_u, vec3_000,
 				vec3_000, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 20.);
 		}
 
@@ -366,15 +366,15 @@ HitBoxList *Destroyer::getTraceHitBoxes()const{
 
 
 HitBox WireDestroyer::hitboxes[] = {
-	HitBox(Vec3d(0., 0., -.058), Quatd(0,0,0,1), Vec3d(.051, .032, .190)),
-	HitBox(Vec3d(0., 0., .193), Quatd(0,0,0,1), Vec3d(.051, .045, .063)),
-	HitBox(Vec3d(.0, -.06, .060), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
-	HitBox(Vec3d(.0, .06, .060), Quatd(0,0,0,1), Vec3d(.015, .030, .018)),
-	HitBox(Vec3d(.0, .0, .0), Quatd(0,0,0,1), Vec3d(.07, .070, .02)),
+	HitBox(Vec3d(0., 0., -58.), Quatd(0,0,0,1), Vec3d(51., 32., 190.)),
+	HitBox(Vec3d(0., 0., 193.), Quatd(0,0,0,1), Vec3d(51., 45., 63.)),
+	HitBox(Vec3d(.0, -60., 60.), Quatd(0,0,0,1), Vec3d(15., 30., 18.)),
+	HitBox(Vec3d(.0, 60., 60.), Quatd(0,0,0,1), Vec3d(15., 30., 18.)),
+	HitBox(Vec3d(.0, .0, .0), Quatd(0,0,0,1), Vec3d(7., 70., 20.)),
 };
 const int WireDestroyer::nhitboxes = numof(hitboxes);
 
-WireDestroyer::WireDestroyer(WarField *aw) : st(aw), wirephase(0), wireomega(0), wirelength(2.){
+WireDestroyer::WireDestroyer(WarField *aw) : st(aw), wirephase(0), wireomega(0), wirelength(2000.){
 	init();
 	mass = 1e6;
 }
@@ -393,7 +393,7 @@ void WireDestroyer::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 }
 
-double WireDestroyer::getHitRadius()const{return .3;}
+double WireDestroyer::getHitRadius()const{return 300.;}
 double WireDestroyer::getMaxHealth()const{return 100000.;}
 double WireDestroyer::maxenergy()const{return 10000.;}
 
@@ -522,7 +522,7 @@ int WireDestroyer::tracehit(const Vec3d &src, const Vec3d &dir, double rad, doub
 
 void WireDestroyer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	rot = this->rot;
-	pos = rot.trans(Vec3d(0, .08, .05)) + this->pos;
+	pos = rot.trans(Vec3d(0, 80., 50.)) + this->pos;
 }
 
 const Warpable::ManeuverParams &WireDestroyer::getManeuve()const{

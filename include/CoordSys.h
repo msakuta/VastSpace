@@ -116,6 +116,10 @@ public:
 	virtual bool readFile(StellarContext &, int argc, const char *argv[]); /// Interpret a line in stellar file
 	virtual bool readFileEnd(StellarContext &); ///< Exit block in a stellar file.
 
+	/// Length unit used in Stellar Structure Definition files.  A meter is too small for expressing
+	/// astronomical objects, so we use more large units (at least kilometers) in these files.
+	static const double lengthUnit;
+
 	/** Definition of appropriate rotation. some coordinate systems like space colonies have
 	 * odd rules to rotate the camera. Default is 'trackball' type rotation. */
 	virtual Quatd rotation(const Vec3d &pos, const Vec3d &pyr, const Quatd &srcq)const;
@@ -299,6 +303,14 @@ public:
 	typedef std::map<gltestp::dstring, PropertyEntry> PropertyMap;
 	virtual const PropertyMap &propertyMap()const;
 
+	/// @brief Evaluate an expression with Squirrel one-linear compiler
+	/// \param str The Squirrel expression to evaluate
+	/// \param context The context name for the compiled buffer, printed on error
+	///
+	/// It's only used by StellarContext which is a friend of this class, but its commands are not
+	/// necessarily declared as friends of this class.
+	static double sqcalc(StellarContext&, const char *str, const SQChar *context = _SC("sqcalc"));
+
 protected:
 	static bool sq_define(HSQUIRRELVM);
 	static unsigned registerClass(Static &st);
@@ -307,11 +319,6 @@ protected:
 
 	/// The default getter
 	static SQInteger sqf_get(HSQUIRRELVM v);
-
-	/// Evaluate an expression with Squirrel one-linear compiler
-	/// \param str The Squirrel expression to evaluate
-	/// \param context The context name for the compiled buffer, printed on error
-	static double sqcalc(StellarContext&, const char *str, const SQChar *context = _SC("sqcalc"));
 
 private:
 	template<typename T, typename Callback>
@@ -324,6 +331,7 @@ private:
 	int getpathint(cpplib::dstring &)const;
 
 	friend class Game;
+	friend struct StellarContext;
 };
 
 /// Template class to register derived classes to global class list.

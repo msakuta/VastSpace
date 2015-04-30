@@ -142,6 +142,7 @@ public:
 
 	virtual void beginLoadingSection(){}
 	virtual void endLoadingSection(){}
+
 protected:
 	IdMap idunmap;
 	SquirrelShare *sqshare;
@@ -149,8 +150,7 @@ protected:
 	DeleteQue deleteque;
 	bool clientDeleting;
 
-	int StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *prev_sc);
-	int stellar_coordsys(StellarContext &sc, CoordSys *cs);
+	friend struct StellarContext;
 
 	void adjustAutoExposure(Viewer &vw);
 };

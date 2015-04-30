@@ -13,7 +13,7 @@
 #define HFIELD (FIELD/2)
 #define FIELDZ 32
 #define HFIELDZ (FIELDZ/2)
-#define GALAXY_EXTENT (LIGHTYEAR_PER_KILOMETER*1.e5) // The galaxy has diameter of about one hundred kilolightyears
+#define GALAXY_EXTENT (LIGHTYEAR*1.e5) // The galaxy has diameter of about one hundred kilolightyears
 #define GALAXY_EPSILON 1e-3
 #define GALAXY_DR 1e-3 /* dynamic range of galaxy lights */
 

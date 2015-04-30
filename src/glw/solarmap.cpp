@@ -1151,7 +1151,7 @@ void GLWinfo::draw(GLwindowState &ws, double t){
 			else
 				glwprintf("Spectral Type: %s%g", Star::spectralToName(spect), star->subspect);
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);
-			glwprintf("Absolute Magnitude: %g", star->absmag);
+			glwprintf("Absolute Magnitude: %g", star->getAbsMag());
 		}
 		for(int i = 0; i < p->a->extranames.size(); i++){
 			glwpos2d(cr.x0, cr.y0 + (1 + iy++) * 12);

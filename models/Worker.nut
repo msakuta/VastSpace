@@ -1,5 +1,5 @@
 
-modelScale <- 2.e-5;
+modelScale <- 2.e-2;
 
 mass <- 2.e3;
 
@@ -8,7 +8,7 @@ maxhealth <- 100.; // We are not designed for combat
 maxfuel <- 120.; // seconds for full thrust
 
 hitbox <- [
-	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(0.003, 0.003, 0.004)],
+	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(3., 3., 4.)],
 ];
 
 enginePos <- [];

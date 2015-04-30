@@ -216,6 +216,11 @@ void WarSpace::drawtra(wardraw_t *wd){
 			virtual void	setDebugMode(int debugMode){}
 			virtual int		getDebugMode() const{return 1;}
 		}debugDrawer;
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_LIGHTING);
+		glDisable(GL_CULL_FACE);
+		glDepthMask(GL_FALSE);
+		glEnable(GL_BLEND);
 		bdw->getCollisionWorld()->setDebugDrawer(&debugDrawer);
 		bdw->debugDrawWorld();
 	}

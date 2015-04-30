@@ -1,0 +1,141 @@
+coordsys Orbit saturn{
+	eisystem
+	cs_radius 20000000
+	orbits Sol
+	orbit_radius 1433449370
+#	orbit_radius 14334493
+	eccentricity 0.055723219
+	orbit_axis 0 sin(2*PI*0.7733/360) cos(2*PI*0.7733/360)
+	inclination 2.4886
+	ascending_node 113.7357
+	argument_of_periapsis 93.2143
+	showorbit
+	fullname "Saturn"
+
+	define axis_angle 26.73*RAD_PER_DEG
+#	define axis_angle 40.73*RAD_PER_DEG
+#	define axis_angle 0
+
+	astro RoundAstrobj "Saturn"{
+		ringmin 74000/60268
+		ringmax 2.4
+		ringthick 1.
+		radius 60268
+		mass 5.6846e26
+		oblateness .09796
+		omega 0 sin(axis_angle) cos(axis_angle) 2*PI/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+#			updirection 0 1 0
+#			updirection 0 cos(26.73*RAD_PER_DEG) sin(26.73*RAD_PER_DEG)
+		updirection 0 sin(axis_angle) cos(axis_angle)
+#		omega 0 0 1 2*PI/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+		planet
+		gravity
+		spherehit
+		texture sat0fds2.jpg
+
+		vertexshader shaders/ringsphereshadow.vs
+		fragmentshader shaders/ringsphereshadow.fs
+
+		ringtexture saturn_ring_front.bmp
+		ringbacktexture saturn_ring_back.bmp
+	}
+	coordsys Orbit saturno1{
+		orbits Saturn
+		orbit_radius 110000
+#		orbit_axis 0 sin(axis_angle/2) cos(axis_angle/2) #2*PI/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+		inclination axis_angle/RAD_PER_DEG
+		ascending_node 180
+		fullname "Saturn Low Orbit"
+		pos -50000 50000 0
+		bookmark "Saturn Low Orbit" 0 0 0
+		showorbit
+#		addent Scarry 0 -1 0
+		updirection 0 cos(axis_angle) -sin(axis_angle)
+	}
+	coordsys Orbit saturno2{
+		define incline axis_angle-0.1*PI
+		orbits Saturn
+		orbit_radius 250000
+		orbit_axis 0 sin(incline/2) cos(incline/2) #2*PI/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
+		fullname "Saturn Low Orbit 2"
+		pos -50000 50000 0
+		bookmark "Saturn Low Orbit 2" 10 0 0
+		showorbit
+#		addent Scarry 0 -1 0
+		updirection 0 cos(incline) -sin(incline)
+#		astro Island3 sati3 {
+#			pos 10 0 10
+#			radius 32
+#			updirection 1 0 0
+#		}
+	}
+	astro Satellite "Mimas"{
+		radius 198.30
+		mass 3.7493e19
+		orbits Saturn
+		orbit_radius 185520
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+		showorbit
+	}
+	astro Satellite "Enceladus"{
+		radius 252.1
+		mass 1.08022e20
+		orbits Saturn
+		orbit_radius 237948
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Tethys"{
+		radius 533.00
+		mass 6.17449e20
+		orbits Saturn
+		orbit_radius 294619
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Dione"{
+		radius 561.70
+		mass 1.095452e20
+		orbits Saturn
+		orbit_radius 377396
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Rhea"{
+		radius 764.30
+		mass 2.306518e21
+		orbits Saturn
+		orbit_radius 527108
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Titan"{
+		radius 2576
+		mass 1.3452e23
+		orbits Saturn
+		orbit_radius 1221870
+		eccentricity 0.0288
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Iapetus"{
+		radius 735.60
+		mass 1.805635e21
+		orbits Saturn
+		orbit_radius 3560820
+		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		planet
+	}
+	astro Satellite "Phoebe"{
+		radius 230
+		mass 8.289e18
+		orbits Saturn
+		orbit_radius 12955759
+		eccentricity 0.1562415
+		inclination 173.04
+		ascending_node 34.
+		argument_of_periapsis 153
+		planet
+	}
+}

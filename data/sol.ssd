@@ -36,60 +36,10 @@ coordsys Orbit sunlo{
 	bookmark "Sun Low Orbit 1,2" 0 0 -10 "Quatd.rotation(PI, Vec3d(0,1,0))"
 }
 
-coordsys Orbit mercury{
-	fullname Mercury
-	cs_radius 1000000
-	orbits Sol
-	orbit_radius 57909100
-	inclination 7.0051
-	argument_of_periapsis 77.5806
-	ascending_node 48.4257
-	eccentricity 0.205630
-	showorbit
-	astro RoundAstrobj Mercury{
-		radius 2439.7
-		mass 3.3022e23
-		color afafaf
-		planet
-		spherehit
-		texture mer0muu2.jpg
-	}
-	coordsys Orbit mercuryo{
-		orbits Mercury
-		orbit_radius 10000
-		fullname "Mercury orbit"
-		bookmark
-	}
-}
+if {!debugBuild()} {
+	include Mercury.ssd
 
-coordsys Orbit venus{
-	fullname Venus
-	cs_radius 1000000
-	orbits Sol
-	orbit_radius 108208930
-	inclination 3.39471
-	argument_of_periapsis 131.6758
-	ascending_node 76.7520
-	showorbit
-	astro RoundAstrobj Venus{
-		diameter 12103.6
-		mass 3.3022e23
-		color afafaf
-		omega 0 0 1 -2/243.0187/DAY_SECONDS*PI   #rotation speed
-		texture ven0mss2.jpg
-		updirection 0 1 0
-		planet
-		spherehit
-		atmosphere_height 30.
-		atmosphere_color 1 .8 .5
-		atmosphere_dawn 1. .51 .1 
-	}
-	coordsys Orbit venuso{
-		orbits Venus
-		orbit_radius 10000
-		fullname "Venus orbit"
-		bookmark
-	}
+	include Venus.ssd
 }
 
 include Earth.ssd
@@ -98,212 +48,10 @@ include Mars.ssd
 
 include Ceres.ssd
 
-coordsys Orbit jupiter{
-	fullname "Jupiter"
-	eisystem # extent isolated system
-	cs_radius 1e7
-	orbits Sol
-	orbit_radius (7.7834e8)
-	eccentricity 0.048775
-	inclination 1.3028
-	argument_of_periapsis 14.4602
-	ascending_node 100.5461
-	showorbit
-	astro RoundAstrobj "Jupiter"{
-		radius 71400.
-		mass 317.904*5.977e24
-		texture jup0vss1.jpg
-		omega 0 0 1 2*PI/(9*HOUR_SECONDS+55.5*MINUTE_SECONDS)
-		updirection 0 1 0
-		planet
-		spherehit
-		atmosphere_height 30
-		atmosphere_color 1 .8 .5
-		atmosphere_dawn 1. .51 .1
-	}
-	coordsys jupiterlo{
-		fullname "Jupiter Low Orbit"
-		pos -100000 100000 0
-		bookmark Jupiter 10 0 0
-		rstation
-	}
-	astro Satellite Io{
-		diameter 3660
-		mass 8.9e22
-		planet
-		spherehit
-		orbits Jupiter
-		orbit_radius 421700
-	}
-	astro Satellite Europa{
-		diameter 3121.6
-		mass 4.8e22
-		planet
-		spherehit
-		orbits Jupiter
-		orbit_radius 671034
-		orbit_axis 0 cos(PI*0.470/360) sin(PI*0.470/360)
-	}
-	new astro Ganymede
-	{
-		radius 2631.2
-		planet
-		orbits Jupiter
-		orbit_radius 1070000
-		orbit_axis 0 cos(PI*0.20/360) sin(PI*0.20/360)
-	}
-	new astro Callisto
-	{
-		radius 2410.3
-		planet
-		orbits Jupiter
-		orbit_radius 1882700
-		orbit_axis 0 cos(PI*0.20/360) sin(PI*0.20/360)
-		color a0a7b0
-	}
-}
+if {!debugBuild()} {
+	include Jupiter.ssd
 
-coordsys Orbit saturn{
-	eisystem
-	cs_radius 20000000
-	orbits Sol
-	orbit_radius 1433449370
-#	orbit_radius 14334493
-	eccentricity 0.055723219
-	orbit_axis 0 sin(2*PI*0.7733/360) cos(2*PI*0.7733/360)
-	inclination 2.4886
-	ascending_node 113.7357
-	argument_of_periapsis 93.2143
-	showorbit
-	fullname "Saturn"
-
-	define axis_angle 26.73*RAD_PER_DEG
-#	define axis_angle 40.73*RAD_PER_DEG
-#	define axis_angle 0
-
-	astro RoundAstrobj "Saturn"{
-		ringmin 74000/60268
-		ringmax 2.4
-		ringthick 1.
-		radius 60268
-		mass 5.6846e26
-		oblateness .09796
-		omega 0 sin(axis_angle) cos(axis_angle) 2*PI/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
-#			updirection 0 1 0
-#			updirection 0 cos(26.73*RAD_PER_DEG) sin(26.73*RAD_PER_DEG)
-		updirection 0 sin(axis_angle) cos(axis_angle)
-#		omega 0 0 1 2*PI/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
-		planet
-		gravity
-		spherehit
-		texture sat0fds2.jpg
-
-		vertexshader shaders/ringsphereshadow.vs
-		fragmentshader shaders/ringsphereshadow.fs
-
-		ringtexture saturn_ring_front.bmp
-		ringbacktexture saturn_ring_back.bmp
-	}
-	coordsys Orbit saturno1{
-		orbits Saturn
-		orbit_radius 110000
-#		orbit_axis 0 sin(axis_angle/2) cos(axis_angle/2) #2*PI/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
-		inclination axis_angle/RAD_PER_DEG
-		ascending_node 180
-		fullname "Saturn Low Orbit"
-		pos -50000 50000 0
-		bookmark "Saturn Low Orbit" 0 0 0
-		showorbit
-#		addent Scarry 0 -1 0
-		updirection 0 cos(axis_angle) -sin(axis_angle)
-	}
-	coordsys Orbit saturno2{
-		define incline axis_angle-0.1*PI
-		orbits Saturn
-		orbit_radius 250000
-		orbit_axis 0 sin(incline/2) cos(incline/2) #2*PI/(10*HOUR_SECONDS+13*MINUTE_SECONDS+59)
-		fullname "Saturn Low Orbit 2"
-		pos -50000 50000 0
-		bookmark "Saturn Low Orbit 2" 10 0 0
-		showorbit
-#		addent Scarry 0 -1 0
-		updirection 0 cos(incline) -sin(incline)
-#		astro Island3 sati3 {
-#			pos 10 0 10
-#			radius 32
-#			updirection 1 0 0
-#		}
-	}
-	astro Satellite "Mimas"{
-		radius 198.30
-		mass 3.7493e19
-		orbits Saturn
-		orbit_radius 185520
-		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
-		planet
-		showorbit
-	}
-	astro Satellite "Enceladus"{
-		radius 252.1
-		mass 1.08022e20
-		orbits Saturn
-		orbit_radius 237948
-		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
-		planet
-	}
-	astro Satellite "Tethys"{
-		radius 533.00
-		mass 6.17449e20
-		orbits Saturn
-		orbit_radius 294619
-		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
-		planet
-	}
-	astro Satellite "Dione"{
-		radius 561.70
-		mass 1.095452e20
-		orbits Saturn
-		orbit_radius 377396
-		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
-		planet
-	}
-	astro Satellite "Rhea"{
-		radius 764.30
-		mass 2.306518e21
-		orbits Saturn
-		orbit_radius 527108
-		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
-		planet
-	}
-	astro Satellite "Titan"{
-		radius 2576
-		mass 1.3452e23
-		orbits Saturn
-		orbit_radius 1221870
-		eccentricity 0.0288
-		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
-		planet
-	}
-	astro Satellite "Iapetus"{
-		radius 735.60
-		mass 1.805635e21
-		orbits Saturn
-		orbit_radius 3560820
-		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
-		planet
-	}
-	astro Satellite "Phoebe"{
-		radius 230
-		mass 8.289e18
-		orbits Saturn
-		orbit_radius 12955759
-		eccentricity 0.1562415
-		inclination 173.04
-		ascending_node 34.
-		argument_of_periapsis 153
-		planet
-	}
-}
+	include Saturn.ssd
 
 coordsys Orbit uranus{
 	cs_radius 1000000
@@ -321,8 +69,7 @@ coordsys Orbit uranus{
 	showorbit
 	fullname "Uranus"
 
-	astro "Uranus"
-	{
+	astro "Uranus"{
 		radius 25559
 		mass 2.98e19
 		color afffff
@@ -331,8 +78,7 @@ coordsys Orbit uranus{
 		spherehit
 	}
 
-	astro "Miranda"
-	{
+	astro "Miranda"{
 		radius   235.8
 		mass 2.98e19
 		planet
@@ -359,8 +105,7 @@ coordsys Orbit neptune{
 		bookmark "Neptune Low Orbit" 10 0 0
 	}
 
-	astro RoundAstrobj "Neptune"
-	{
+	astro RoundAstrobj "Neptune"{
 		radius 24766 # equatorial
 		mass 2.98e19
 		color 7fafff
@@ -370,8 +115,7 @@ coordsys Orbit neptune{
 		texture nep0fds1.jpg
 	}
 
-	astro "Triton"
-	{
+	astro "Triton"{
 		radius 1353.4
 		mass 2.98e19
 		planet
@@ -440,4 +184,5 @@ astro "Eris"{
 	argument_of_periapsis 151.52
 	ascending_node 35.96
 	showorbit
+}
 }

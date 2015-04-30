@@ -26,7 +26,7 @@ static const struct color_sequence cs_orangeburn = DEFINE_COLSEQ(cnl_orangeburn,
 
 
 
-double ContainerHead::modelScale = .0002;
+double ContainerHead::modelScale = .2;
 double ContainerHead::baseHitRadius = 300 * modelScale; ///< Minimum hit radius
 double ContainerHead::defaultMass = 2e7;
 double ContainerHead::containerMass = 1e7;
@@ -213,25 +213,25 @@ void ContainerHead::anim(double dt){
 					WarpCommand com;
 					com.destcs = docksite->w->cs;
 					Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
-					com.destpos = docksite->pos + yhat * (-16. - 3.25 - 1.5 - 1.);
+					com.destpos = docksite->pos + yhat * (-16000. - 3250. - 1500. - 1000.);
 					Vec3d target = com.destpos;
 					Vec3d delta = target - com.destcs->tocs(pos, w->cs);
 					Vec3d parallel = yhat * delta.sp(yhat);
 					Vec3d lateral = delta - parallel;
 					if(task == sship_dockqueque && delta.sp(yhat) < 0)
-						com.destpos += lateral.normin() * -10.;
+						com.destpos += lateral.normin() * -10000.;
 					command(&com);
 				}
 				else{
 					Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
-					Vec3d target = yhat * (task == sship_dockque || task == sship_dockqueque ? -16. - 3.25 - 1.5 : -16. - 3.25) + docksite->pos;
+					Vec3d target = yhat * (task == sship_dockque || task == sship_dockqueque ? -16000. - 3250. - 1500. : -16000. - 3250.) + docksite->pos;
 					Vec3d delta = target - pos;
 					Vec3d parallel = yhat * delta.sp(yhat);
 					Vec3d lateral = delta - parallel;
 					if(task == sship_dockqueque && delta.sp(yhat) < 0)
 						target += lateral.normin() * -5.;
-					steerArrival(dt, target, docksite->velo, 1. / 10., .001);
-					if((target - pos).slen() < .2 * .2){
+					steerArrival(dt, target, docksite->velo, 1. / 10., 1.);
+					if((target - pos).slen() < 200. * 200.){
 						if(task == sship_dockqueque)
 							task = sship_dockque;
 						else if(task == sship_dockque)
@@ -255,12 +255,12 @@ void ContainerHead::anim(double dt){
 					paradec = mother->enumParadeC(mother->Frigate);
 				Vec3d target, target0(1.5, -1., -1.);
 				Quatd q2, q1;
-				target0[0] += paradec % 10 * .30;
-				target0[2] += paradec / 10 * -.30;
+				target0[0] += paradec % 10 * 300.;
+				target0[2] += paradec / 10 * -300.;
 				target = pm->rot.trans(target0);
 				target += pm->pos;
 				Vec3d dr = this->pos - target;
-				if(dr.slen() < .10 * .10){
+				if(dr.slen() < 100. * 100.){
 					q1 = pm->rot;
 					inputs.press &= ~PL_W;
 //					parking = 1;
@@ -270,7 +270,7 @@ void ContainerHead::anim(double dt){
 				}
 				else{
 	//							p->throttle = dr.slen() / 5. + .01;
-					steerArrival(dt, target, pm->velo, 1. / 10., .001);
+					steerArrival(dt, target, pm->velo, 1. / 10., 1.);
 				}
 			}
 			else
@@ -479,7 +479,7 @@ TransportResourceCommand::TransportResourceCommand(HSQUIRRELVM v, Entity &e){
 }
 
 
-TransportAI::TransportAI(Entity *ch, Entity *leavesite) : EntityAI(game), phase(Undock), docksite(NULL), leavesite(leavesite), dockAI(ch){
+TransportAI::TransportAI(Entity *ch, Entity *leavesite) : EntityAI(ch->getGame()), phase(Undock), docksite(NULL), leavesite(leavesite), dockAI(ch){
 	std::vector<Entity *> set;
 	findIsland3(ch->w->cs->findcspath("/"), set);
 	if(set.size()){
@@ -518,7 +518,7 @@ bool TransportAI::control(Entity *ch, double dt){
 			com.destpos = target;
 			ch->command(&com);
 //				ch->steerArrival(dt, target, Vec3d(0,0,0), 1. / 10., .001);
-			if((target - ch->pos).slen() < .2 * .2){
+			if((target - ch->pos).slen() < 200. * 200.){
 				phase = Avoid;
 //					ch->task = sship_idle;
 			}
@@ -529,7 +529,7 @@ bool TransportAI::control(Entity *ch, double dt){
 		{
 			CoordSys *destcs = docksite->w->cs;
 			Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
-			Vec3d destpos = docksite->pos + yhat * (-16. - 3.25 - 1.5 - 1.);
+			Vec3d destpos = docksite->pos + yhat * (-16000. - 3250. - 1500. - 1000.);
 			Vec3d delta = destpos - destcs->tocs(ch->pos, ch->w->cs);
 			Vec3d parallel = yhat * delta.sp(yhat);
 			Vec3d lateral = delta - parallel;
@@ -538,14 +538,14 @@ bool TransportAI::control(Entity *ch, double dt){
 			else{
 				yhat = leavesite->rot.trans(Vec3d(0,1,0));
 				Vec3d target = ch->w->cs->tocs(target, destcs);
-				Vec3d source = yhat * (-16. - 3.25 - 1.5) + leavesite->pos;
+				Vec3d source = yhat * (-16000. - 3250. - 1500.) + leavesite->pos;
 				delta = target - source;
 				parallel = yhat * delta.sp(yhat);
 				lateral = delta - parallel;
 				double fpos = ch->pos.sp(yhat);
 				double fsrc = source.sp(yhat);
 				Vec3d destination = (fpos < fsrc ? source + parallel.norm() * (fpos - fsrc) : source) + lateral.norm() * 5.;
-				if((destination - ch->pos).slen() < .2 * .2)
+				if((destination - ch->pos).slen() < 200. * 200.)
 					phase = Warp;
 				else{
 					MoveCommand com;
@@ -561,13 +561,13 @@ bool TransportAI::control(Entity *ch, double dt){
 			WarpCommand com;
 			com.destcs = docksite->w->cs;
 			Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
-			com.destpos = docksite->pos + yhat * (-16. - 3.25 - 1.5 - 1.);
+			com.destpos = docksite->pos + yhat * (-16000. - 3250. - 1500. - 1000.);
 			Vec3d target = com.destpos;
 			Vec3d delta = target - com.destcs->tocs(ch->pos, ch->w->cs);
 			Vec3d parallel = yhat * delta.sp(yhat);
 			Vec3d lateral = delta - parallel;
 			if(delta.sp(yhat) < 0)
-				com.destpos += lateral.normin() * -10.;
+				com.destpos += lateral.normin() * -10000.;
 			ch->command(&com);
 			phase = WarpWait;
 			break;
@@ -596,7 +596,7 @@ bool TransportAI::unlink(Entity *){
 
 Vec3d TransportAI::dest(Entity *ch){
 	Vec3d yhat = leavesite->rot.trans(Vec3d(0,1,0));
-	return yhat * (-16. - 3.25 - 1.5) + leavesite->pos;
+	return yhat * (-16000. - 3250. - 1500.) + leavesite->pos;
 }
 
 void TransportAI::findIsland3(CoordSys *root, std::vector<Entity *> &ret)const{
@@ -648,16 +648,16 @@ bool DockAI::control(Entity *ch, double dt){
 		case Dockque:
 		{
 			Vec3d yhat = docksite->rot.trans(Vec3d(0,1,0));
-			Vec3d target = yhat * (phase == Dockque2 || phase == Dockque ? -16. - 3.25 - 1.5 : -16. - 3.25) + docksite->pos;
+			Vec3d target = yhat * (phase == Dockque2 || phase == Dockque ? -16000. - 3250. - 15000. : -16000. - 3250.) + docksite->pos;
 			Vec3d delta = target - ch->pos;
 			Vec3d parallel = yhat * delta.sp(yhat);
 			Vec3d lateral = delta - parallel;
 			if(phase == Dockque2 && delta.sp(yhat) < 0 && sqrt(DBL_EPSILON) < lateral.slen())
-				target += lateral.normin() * -5.;
+				target += lateral.normin() * -5000.;
 			MoveCommand com;
 			com.destpos = target;
 			ch->command(&com);
-			if((target - ch->pos).slen() < .2 * .2){
+			if((target - ch->pos).slen() < 200. * 200.){
 				if(phase == Dockque2)
 					phase = Dockque;
 				else if(phase == Dockque)
@@ -679,7 +679,7 @@ bool DockAI::control(Entity *ch, double dt){
 			MoveCommand com;
 			com.destpos = target;
 			ch->command(&com);
-			if((target - ch->pos).slen() < .2 * .2){
+			if((target - ch->pos).slen() < 200. * 200.){
 				if(docker)
 					docker->dock(ch);
 				return true;

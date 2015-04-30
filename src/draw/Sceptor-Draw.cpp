@@ -37,7 +37,7 @@ extern "C"{
 #define SCEPTER_MAX_ANGLESPEED (M_PI * .5)
 #define SCEPTER_ANGLEACCEL (M_PI * .2)
 #define SCEPTER_MAX_GIBS 20
-#define BULLETSPEED 2.
+#define BULLETSPEED 2000.
 
 
 /* color sequences */
@@ -65,9 +65,9 @@ static int g_shader_enable = 0;
 
 bool Sceptor::cull(Viewer &vw)const{
 	double nf = nlipsFactor(vw);
-	if(task == Sceptor::Undockque || vw.gc->cullFrustum(pos, .012 * nf))
+	if(task == Sceptor::Undockque || vw.gc->cullFrustum(pos, 12. * nf))
 		return true;
-	double pixels = .008 * fabs(vw.gc->scale(pos)) * nf;
+	double pixels = 8. * fabs(vw.gc->scale(pos)) * nf;
 	if(pixels < 2)
 		return true;
 	return false;
@@ -75,7 +75,7 @@ bool Sceptor::cull(Viewer &vw)const{
 
 /* NLIPS: Non-Linear Inverse Perspective Scrolling */
 double Sceptor::nlipsFactor(Viewer &vw)const{
-	double f = vw.fov * g_nlips_factor * 500. / vw.vp.m * 4. * ::sqrt((this->pos - vw.pos).len());
+	double f = vw.fov * g_nlips_factor * .5 / vw.vp.m * 4. * ::sqrt((this->pos - vw.pos).len());
 	return MAX(1., f);
 }
 
@@ -101,9 +101,9 @@ void Sceptor::draw(wardraw_t *wd){
 		return;
 	wd->lightdraws++;
 
-	double pixels = .005 * fabs(wd->vw->gc->scale(pos)) * nf;
+	double pixels = 5. * fabs(wd->vw->gc->scale(pos)) * nf;
 
-	draw_healthbar(this, wd, health / getMaxHealth(), .01 * nf, fuel / maxfuel(), -1.);
+	draw_healthbar(this, wd, health / getMaxHealth(), 10. * nf, fuel / maxfuel(), -1.);
 
 	if(!init) do{
 		model = LoadMQOModel("models/interceptor.mqo");
@@ -348,7 +348,7 @@ void Sceptor::drawtra(wardraw_t *wd){
 		GLfloat f = GLfloat(muzzleFlash / .1 * 2.);
 		double fi = 1. - muzzleFlash / .1;
 		glColor4f(f,f,f,1);
-		gldTextureBeam(wd->vw->pos, pos, pos + rot.trans(-vec3_001) * .03 * fi, .01 * fi);
+		gldTextureBeam(wd->vw->pos, pos, pos + rot.trans(-vec3_001) * 30. * fi, 10. * fi);
 /*		glMatrixMode(GL_TEXTURE);
 		glPopMatrix();
 		glMatrixMode(GL_MODELVIEW);*/

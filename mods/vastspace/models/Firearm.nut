@@ -1,4 +1,4 @@
-local relpos = Vec3d(0.0002, -0.000, -0.0003);
+local relpos = Vec3d(0.2, -0., -0.3);
 local nh0 = Vec3d(0., 0., -1);
 
 function customShoot(weapon, shooter, dt, lthis, sound){
@@ -21,7 +21,7 @@ function customShoot(weapon, shooter, dt, lthis, sound){
 
 		// Generate variance vector from random number generator.
 		// It's not really isotropic distribution, I'm afraid.
-		local vecvar = Vec3d(w.rs.nextGauss(), w.rs.nextGauss(), w.rs.nextGauss()) * lthis.bulletVariance * lthis.bulletSpeed;
+		local vecvar = Vec3d(w.rs.nextGauss(), w.rs.nextGauss(), w.rs.nextGauss()) * lthis.bulletVariance;
 
 		// Remove component parallel to heading direction.
 		vecvar -= nh * nh.sp(vecvar);
@@ -33,7 +33,7 @@ function customShoot(weapon, shooter, dt, lthis, sound){
 		weapon.ammo--;
 
 		// Play the sound
-		playSound3D(sound(), weapon.pos, 1, 0.05 * 0.05);
+		playSound3D(sound(), weapon.pos, 1, 50. * 50.);
 	}
 }
 

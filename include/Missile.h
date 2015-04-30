@@ -21,6 +21,7 @@ protected:
 	void unlinkTarget();
 	void initFpol();
 	void updateFpol();
+	static const double modelScale;
 public:
 	typedef Bullet st;
 	Missile(Game *game) : st(game), pf(NULL), ft(0), fuel(maxfuel), throttle(0){}

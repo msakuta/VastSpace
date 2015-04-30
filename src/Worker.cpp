@@ -55,7 +55,7 @@ extern "C"{
 #define SIN15 0.25881904510252076234889883762405
 #define COS15 0.9659258262890682867497431997289
 
-#define SCEPTOR_SCALE 1./10000
+#define SCEPTOR_SCALE 1./10
 #define SCEPTOR_SMOKE_FREQ 20.
 #define SCEPTOR_COOLTIME .5
 #define SCEPTOR_ROLLSPEED (.2 * M_PI)
@@ -63,7 +63,7 @@ extern "C"{
 #define SCEPTOR_MAX_ANGLESPEED (M_PI * .5)
 #define SCEPTOR_ANGLEACCEL (M_PI * .2)
 #define SCEPTOR_MAX_GIBS 20
-#define BULLETSPEED 2.
+#define BULLETSPEED 2000.
 #define SCEPTOR_MAGAZINE 5
 #define SCEPTOR_RELOADTIME 2.
 
@@ -75,7 +75,7 @@ extern const struct color_sequence cs_orangeburn, cs_shortburn;
 
 
 HitBoxList Worker::hitboxes;
-double Worker::modelScale = 1./10000;
+double Worker::modelScale = 1./10;
 double Worker::defaultMass = 4e3;
 double Worker::maxHealthValue = 200.;
 double Worker::maxFuelValue = 120.;
@@ -247,7 +247,7 @@ void Worker::init(){
 void Worker::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Player *player = game->player;
 	Vec3d ofs;
-	static const Vec3d src[3] = {Vec3d(0., .001, .002) * 3, Vec3d(0., .008, 0.020), Vec3d(0., .008, .020)};
+	static const Vec3d src[3] = {Vec3d(0., 1., 2.) * 3, Vec3d(0., 8., 20.), Vec3d(0., 8., 20.)};
 	Mat4d mat;
 	seatid = (seatid + 3) % 3;
 	if(seatid == 2 && enemy && enemy->w == w){
@@ -354,7 +354,7 @@ bool Worker::findEnemy(){
 	if(forcedEnemy)
 		return !!enemy;
 	Entity *closest = NULL;
-	double best = 1e2 * 1e2;
+	double best = 1e5 * 1e5;
 	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
 		Entity *pt2 = *it;
 
@@ -406,7 +406,7 @@ void Worker::steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetve
 // Find mother if has none
 Entity *Worker::findMother(){
 	Entity *pm = NULL;
-	double best = 1e10 * 1e10, sl;
+	double best = 1e13 * 1e13, sl;
 	for(WarField::EntityList::iterator it = w->entlist().begin(); it != w->entlist().end(); it++) if(*it){
 		Entity *e = *it;
 		if(e->race == race && e->getDocker() && (sl = (e->pos - this->pos).slen()) < best){
@@ -733,7 +733,7 @@ void Worker::anim(double dt){
 				}
 				else if(p->task == Moveto){
 					Vec3d dr = pt->pos - p->dest;
-					if(dr.slen() < .01 * .01){
+					if(dr.slen() < 10. * 10.){
 						p->throttle = 0.;
 						parking = 1;
 						pt->velo += dr * -dt * .5;
@@ -756,10 +756,10 @@ void Worker::anim(double dt){
 
 					double dist = delta.len();
 					Vec3d dv = delta;
-					double awaybase = pt->enemy->getHitRadius() * 3. + .1;
-					if(.6 < awaybase)
-						awaybase = pt->enemy->getHitRadius() + 1.; // Constrain awaybase for large targets
-					double attackrad = awaybase < .6 ? awaybase * 5. : awaybase + 4.;
+					double awaybase = pt->enemy->getHitRadius() * 3. + 100.;
+					if(600. < awaybase)
+						awaybase = pt->enemy->getHitRadius() + 1000.; // Constrain awaybase for large targets
+					double attackrad = awaybase < 600. ? awaybase * 5. : awaybase + 4000.;
 					if(p->task == Attack && dist < awaybase){
 						p->task = Away;
 					}
@@ -843,12 +843,12 @@ void Worker::anim(double dt){
 							paradec = mother->enumParadeC(mother->Fighter);
 						Vec3d target, target0(-1., 0., -1.);
 						Quatd q2, q1;
-						target0[0] += p->paradec % 10 * -.05;
-						target0[2] += p->paradec / 10 * -.05;
+						target0[0] += p->paradec % 10 * -50.;
+						target0[2] += p->paradec / 10 * -50.;
 						target = pm->rot.trans(target0);
 						target += pm->pos;
 						Vec3d dr = pt->pos - target;
-						if(dr.slen() < .01 * .01){
+						if(dr.slen() < 10. * 10.){
 							q1 = pm->rot;
 							p->throttle = 0.;
 							parking = 1;
@@ -871,7 +871,7 @@ void Worker::anim(double dt){
 							bbody->applyCentralForce(btvc(-sidevelo * mass));
 
 //							p->throttle = dr.slen() / 5. + .01;
-							steerArrival(dt, target, pm->velo, 1. / 2., .001);
+							steerArrival(dt, target, pm->velo, 1. / 2., 1.);
 						}
 						if(1. < p->throttle)
 							p->throttle = 1.;
@@ -897,7 +897,7 @@ void Worker::anim(double dt){
 
 						// Runup length
 						if(p->task == Dockque)
-							target0 += pm->getDocker()->getPortRot(this).trans(Vec3d(0, 0, -.3));
+							target0 += pm->getDocker()->getPortRot(this).trans(Vec3d(0, 0, -300.));
 
 						// Suppress side slips
 						Vec3d sidevelo = velo - mat.vec3(2) * mat.vec3(2).sp(velo);
@@ -905,9 +905,9 @@ void Worker::anim(double dt){
 
 						Vec3d target = pm->rot.trans(target0);
 						target += pm->pos;
-						steerArrival(dt, target, pm->velo, p->task == Dockque ? 1. / 2. : -mat.vec3(2).sp(velo) < 0 ? 1. : .025, .01);
+						steerArrival(dt, target, pm->velo, p->task == Dockque ? 1. / 2. : -mat.vec3(2).sp(velo) < 0 ? 1. : .025, 10.);
 						double dist = (target - this->pos).len();
-						if(dist < .01){
+						if(dist < 10.){
 							if(p->task == Dockque)
 								p->task = Dock;
 							else{
@@ -1040,7 +1040,7 @@ void Worker::anim(double dt){
 		}
 
 		/* you're not allowed to accel further than certain velocity. */
-		const double maxvelo = .5, speed = std::max(0., -p->velo.sp(mat.vec3(2)));
+		const double maxvelo = 500., speed = std::max(0., -p->velo.sp(mat.vec3(2)));
 		if(maxvelo < speed)
 			p->throttle = 0.;
 		else{
@@ -1068,7 +1068,7 @@ void Worker::anim(double dt){
 			}
 			else
 				p->fuel -= consump;
-			double spd = pf->throttle * (p->task != Attack ? .01 : .005);
+			double spd = pf->throttle * (p->task != Attack ? 10. : 5.);
 			acc = pt->rot.trans(acc0);
 			bbody->applyCentralForce(btvc(acc * spd * 10. * mass));
 			pt->velo += acc * spd;
@@ -1140,15 +1140,15 @@ void Worker::anim(double dt){
 			for(int i = 0; i < 16; i++){
 				Vec3d pos;
 				COLOR32 col = 0;
-				pos[0] = .02 * (drseq(&w->rs) - .5);
-				pos[1] = .02 * (drseq(&w->rs) - .5);
-				pos[2] = .02 * (drseq(&w->rs) - .5);
+				pos[0] = 20. * (drseq(&w->rs) - .5);
+				pos[1] = 20. * (drseq(&w->rs) - .5);
+				pos[2] = 20. * (drseq(&w->rs) - .5);
 				col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
 				col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
 				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 				col |= COLOR32RGBA(0,0,0,191);
 	//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
-				AddTelineCallback3D(tell, pos + this->pos, pos / 1. + velo / 2., .02, quat_u, vec3_000, vec3_000, ::smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
+				AddTelineCallback3D(tell, pos + this->pos, pos / 1. + velo / 2., 20., quat_u, vec3_000, vec3_000, ::smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
 			}
 
 			{/* explode shockwave thingie */
@@ -1168,7 +1168,7 @@ void Worker::anim(double dt){
 
 				AddTeline3D(tell, this->pos, vec3_000, 1., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 1.);
 #endif
-				AddTeline3D(tell, this->pos, vec3_000, .3, quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
+				AddTeline3D(tell, this->pos, vec3_000, 300., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
 			}
 #endif
 			// Deleting an Entity in the client without permission from the server is prohibited,
@@ -1191,14 +1191,14 @@ void Worker::anim(double dt){
 				int i, n;
 				n = (int)(dt * SCEPTOR_SMOKE_FREQ + drseq(&w->rs));
 				for(i = 0; i < n; i++){
-					pos[0] = pt->pos[0] + (drseq(&w->rs) - .5) * .01;
-					pos[1] = pt->pos[1] + (drseq(&w->rs) - .5) * .01;
-					pos[2] = pt->pos[2] + (drseq(&w->rs) - .5) * .01;
-					dv[0] = .5 * pt->velo[0] + (drseq(&w->rs) - .5) * .01;
-					dv[1] = .5 * pt->velo[1] + (drseq(&w->rs) - .5) * .01;
-					dv[2] = .5 * pt->velo[2] + (drseq(&w->rs) - .5) * .01;
+					pos[0] = pt->pos[0] + (drseq(&w->rs) - .5) * 10.;
+					pos[1] = pt->pos[1] + (drseq(&w->rs) - .5) * 10.;
+					pos[2] = pt->pos[2] + (drseq(&w->rs) - .5) * 10.;
+					dv[0] = .5 * pt->velo[0] + (drseq(&w->rs) - .5) * 10.;
+					dv[1] = .5 * pt->velo[1] + (drseq(&w->rs) - .5) * 10.;
+					dv[2] = .5 * pt->velo[2] + (drseq(&w->rs) - .5) * 10.;
 //					AddTeline3D(w->tell, pos, dv, .01, NULL, NULL, gravity, COLOR32RGBA(127 + rseq(&w->rs) % 32,127,127,255), TEL3_SPRITE | TEL3_INVROTATE | TEL3_NOLINE | TEL3_REFLECT, 1.5 + drseq(&w->rs) * 1.5);
-					AddTelineCallback3D(tell, pos, dv, .02, quat_u, vec3_000, gravity, firesmokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
+					AddTelineCallback3D(tell, pos, dv, 20., quat_u, vec3_000, gravity, firesmokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, 1.5 + drseq(&w->rs) * 1.5);
 				}
 			}
 #endif
@@ -1221,7 +1221,7 @@ void Worker::anim(double dt){
 //	movesound3d(pf->hitsound, pt->pos);
 #ifndef DEDICATED
 	if(game->isClient() && this->pf)
-		this->pf->move(pos + rot.trans(Vec3d(0,0,.005)), vec3_000, cs_orangeburn.t, 0);
+		this->pf->move(pos + rot.trans(Vec3d(0,0,5.)), vec3_000, cs_orangeburn.t, 0);
 #endif
 }
 
@@ -1254,7 +1254,7 @@ int Worker::takedamage(double damage, int hitpart){
 			VECCPY(pos, this->pos);
 			VECSCALEIN(velo, .1);
 			VECSADD(pos, velo, .1);
-			AddTeline3D(tell, pos, velo, .005, quat_u, vec3_000, w->accel(this->pos, this->velo), COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
+			AddTeline3D(tell, pos, velo, 5., quat_u, vec3_000, w->accel(this->pos, this->velo), COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
 		}
 /*		((SCEPTOR_t*)pt)->pf = AddTefpolMovable3D(w->tepl, pt->pos, pt->velo, nullvec3, &cs_firetrail, TEP3_THICKER | TEP3_ROUGH, cs_firetrail.t);*/
 //		((SCEPTOR_t*)pt)->hitsound = playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
@@ -1273,7 +1273,7 @@ bool Worker::isTargettable()const{
 bool Worker::isSelectable()const{return true;}
 
 double Worker::getHitRadius()const{
-	return .01;
+	return 10.;
 }
 
 int Worker::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){

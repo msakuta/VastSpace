@@ -29,17 +29,18 @@ extern "C"{
 
 #define MAX_SHIELD_AMOUNT 5000.
 #define BEAMER_HEALTH 15000.
-#define BEAMER_MAX_SPEED .1
-#define BEAMER_ACCELERATE .05
+#define BEAMER_MAX_SPEED 100.
+#define BEAMER_ACCELERATE 50.
 #define BEAMER_MAX_ANGLESPEED .4
 #define BEAMER_ANGLEACCEL .2
 #define BEAMER_SHIELDRAD .09
 
-double Beamer::modelScale = 0.0002;
+double Beamer::modelScale = 0.2;
+double Beamer::hitRadius = 100.;
 double Beamer::defaultMass = 1e5;
 Warpable::ManeuverParams Beamer::mn = {
-	.025, /* double accel; */
-	.1, /* double maxspeed; */
+	25., /* double accel; */
+	100., /* double maxspeed; */
 	100., /* double angleaccel; */
 	.4, /* double maxanglespeed; */
 	50000., /* double capacity; [MJ] */
@@ -66,6 +67,7 @@ void Beamer::init(){
 	if(!initialized){
 		sq_init(_SC("models/Beamer.nut"),
 			ModelScaleProcess(modelScale) <<=
+			SingleDoubleProcess(hitRadius, "hitRadius", false) <<=
 			MassProcess(defaultMass) <<=
 			ManeuverParamsProcess(mn) <<=
 			HitboxProcess(hitboxes) <<=
@@ -193,11 +195,11 @@ void beamer_undock(beamer_t *p, scarry_t *pm){
 
 void Beamer::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	static const Vec3d src[] = {
-		Vec3d(.002, .018, .022),
-		Vec3d(0., 0./*05*/, 0.150),
-		Vec3d(0., 0./*1*/, 0.300),
-		Vec3d(0., 0., 0.300),
-		Vec3d(0., 0., 1.000),
+		Vec3d(2., 18., 22.),
+		Vec3d(0., 0./*05*/, 150.),
+		Vec3d(0., 0./*1*/, 300.),
+		Vec3d(0., 0., 300.),
+		Vec3d(0., 0., 100.),
 	};
 	static const Quatd rot0[] = {
 		quat_u,
@@ -251,12 +253,12 @@ void Beamer::anim(double dt){
 					paradec = mother->enumParadeC(mother->Frigate);
 				Vec3d target, target0(1.5, -1., -1.);
 				Quatd q2, q1;
-				target0[0] += paradec % 10 * .30;
-				target0[2] += paradec / 10 * -.30;
+				target0[0] += paradec % 10 * 300.;
+				target0[2] += paradec / 10 * -300.;
 				target = pm->rot.trans(target0);
 				target += pm->pos;
 				Vec3d dr = this->pos - target;
-				if(dr.slen() < .10 * .10){
+				if(dr.slen() < 100. * 100.){
 					q1 = pm->rot;
 					inputs.press &= ~PL_W;
 //					parking = 1;
@@ -266,7 +268,7 @@ void Beamer::anim(double dt){
 				}
 				else{
 	//							p->throttle = dr.slen() / 5. + .01;
-					steerArrival(dt, target, pm->velo, 1. / 10., .001);
+					steerArrival(dt, target, pm->velo, 1. / 10., 1.);
 				}
 			}
 			else
@@ -278,7 +280,7 @@ void Beamer::anim(double dt){
 			Vec3d opos;
 			inputs.press = 0;
 			if((task == sship_idle || task == sship_attack) && !enemy){ /* find target */
-				double best = 20. * 20.;
+				double best = 20000. * 20000.;
 				for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
 					Entity *t = *it;
 					if(t != this && t->race != -1 && t->race != race && 0. < t->getHealth()){
@@ -338,8 +340,8 @@ void Beamer::anim(double dt){
 							this->omg.normin();
 							this->omg *= frigate_mn.maxanglespeed;
 						}
-						if(.25 < len2)
-							diff *= .25 / len2;
+						if(250. < len2)
+							diff *= 250. / len2;
 						integral += diff * dt;
 						decay = exp(-.1 * dt);
 						integral *= decay;
@@ -350,7 +352,7 @@ void Beamer::anim(double dt){
 						inputs.press |= PL_ENTER;
 						if(5. * 5. < (enemy->pos - this->pos).slen())
 							inputs.press |= PL_W;
-						else if((enemy->pos - this->pos).slen() < 1. * 1.)
+						else if((enemy->pos - this->pos).slen() < 1000. * 1000.)
 							inputs.press |= PL_S;
 /*						else
 							inputs.press |= PL_A; *//* strafe around */
@@ -414,9 +416,9 @@ void Beamer::anim(double dt){
 
 					Vec3d target = pm->rot.trans(target0);
 					target += pm->pos;
-					steerArrival(dt, target, pm->velo, task == sship_dockque ? 1. / 2. : -mat.vec3(2).sp(velo) < 0 ? 1. : .025, .01);
+					steerArrival(dt, target, pm->velo, task == sship_dockque ? 1. / 2. : -mat.vec3(2).sp(velo) < 0 ? 1. : .025, 10.);
 					double dist = (target - this->pos).len();
-					if(dist < .01){
+					if(dist < 10.){
 						if(task == sship_dockque){
 							task = sship_dock;
 							mother->dockque(this); // Notify the mother that this Entity is queued for docking.
@@ -461,8 +463,8 @@ void Beamer::anim(double dt){
 
 	if(0. < charge && charge < 4.){
 		Entity *hit = NULL;
-		Vec3d start, dir, start0(0., 0., -.04), dir0(0., 0., -10.);
-		double best = 10., sdist;
+		Vec3d start, dir, start0(0., 0., -40.), dir0(0., 0., -10000.);
+		double best = 10000., sdist;
 		int besthitpart = 0, hitpart;
 		start = rot.trans(start0) + pos;
 		dir = rot.trans(dir0);
@@ -472,9 +474,9 @@ void Beamer::anim(double dt){
 			Vec3d delta = pt2->pos - pos;
 			if(pt2 == this)
 				continue;
-			if(!jHitSphere(pt2->pos, rad + .005, start, dir, 1.))
+			if(!jHitSphere(pt2->pos, rad + 5., start, dir, 1.))
 				continue;
-			if((hitpart = pt2->tracehit(start, dir, .005, 1., &sdist, NULL, NULL)) && (sdist *= -dir0[2], 1)){
+			if((hitpart = pt2->tracehit(start, dir, 5., 1., &sdist, NULL, NULL)) && (sdist *= -dir0[2], 1)){
 				hit = pt2;
 				best = sdist;
 				besthitpart = hitpart;
@@ -491,13 +493,13 @@ void Beamer::anim(double dt){
 				int i;
 				for(i = 0; i < 3; i++)
 					velo[i] = (drseq(&w->rs) - .5) * .1;
-				AddTeline3D(ws->tell, pos, velo, drseq(&w->rs) * .01 + .01, quat_u, vec3_000, vec3_000, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
+				AddTeline3D(ws->tell, pos, velo, drseq(&w->rs) * 10. + 10., quat_u, vec3_000, vec3_000, COLOR32RGBA(0,127,255,95), TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, .5);
 			}
-			AddTeline3D(ws->tell, pos, vec3_000, drseq(&w->rs) * .25 + .25, qrot, vec3_000, vec3_000, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
+			AddTeline3D(ws->tell, pos, vec3_000, drseq(&w->rs) * 250. + 250., qrot, vec3_000, vec3_000, COLOR32RGBA(0,255,255,255), TEL3_NOLINE | TEL3_CYLINDER | TEL3_QUAT, .1);
 #endif
 		}
 		else
-			beamlen = 10.;
+			beamlen = 10000.;
 	}
 	st::anim(dt);
 #if 0

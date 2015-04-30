@@ -18,7 +18,7 @@ const char *Battleship::classname()const{return "Battleship";}
 const char *Battleship::dispname()const{return "Battleship";}
 
 
-double Battleship::modelScale = .001;
+double Battleship::modelScale = 1.;
 std::vector<hardpoint_static*> Battleship::hardpoints;
 HitBoxList Battleship::hitboxes;
 GLuint Battleship::disp = 0;
@@ -123,7 +123,7 @@ void Battleship::unserialize(UnserializeContext &sc){
 		sc.i >> turrets[i];
 }
 
-double Battleship::getHitRadius()const{return .6;}
+double Battleship::getHitRadius()const{return 600.;}
 
 void Battleship::anim(double dt){
 	if(!w)
@@ -186,7 +186,7 @@ int Battleship::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double 
 
 void Battleship::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	rot = this->rot;
-	pos = rot.trans(Vec3d(0, .08, .0)) + this->pos;
+	pos = rot.trans(Vec3d(0, 80., .0)) + this->pos;
 }
 
 int Battleship::takedamage(double damage, int hitpart){
@@ -205,14 +205,14 @@ int Battleship::takedamage(double damage, int hitpart){
 				double pos[3], velo[3] = {0}, omg[3];
 				/* gaussian spread is desired */
 				for(int j = 0; j < 6; j++)
-					velo[j / 2] += .025 * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
+					velo[j / 2] += 25. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[0] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[1] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				omg[2] = M_PI * 2. * (drseq(&w->rs) - .5 + drseq(&w->rs) - .5);
 				VECCPY(pos, this->pos);
 				for(int j = 0; j < 3; j++)
 					pos[j] += getHitRadius() * (drseq(&w->rs) - .5);
-				AddTelineCallback3D(ws->gibs, pos, velo, .010, quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
+				AddTelineCallback3D(ws->gibs, pos, velo, 10., quat_u, omg, vec3_000, debrigib, NULL, TEL3_QUAT | TEL3_NOLINE, 15. + drseq(&w->rs) * 5.);
 			}
 
 			/* smokes */
@@ -228,7 +228,7 @@ int Battleship::takedamage(double damage, int hitpart){
 				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 				col |= COLOR32RGBA(0,0,0,191);
 	//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
-				AddTelineCallback3D(ws->tell, pos, vec3_000, .07, quat_u, vec3_000,
+				AddTelineCallback3D(ws->tell, pos, vec3_000, 70., quat_u, vec3_000,
 					vec3_000, smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 20.);
 			}
 
@@ -253,7 +253,7 @@ int Battleship::takedamage(double damage, int hitpart){
 
 				AddTeline3D(tell, this->pos, vec3_000, 5., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 2.);
 #endif
-				AddTeline3D(tell, this->pos, vec3_000, 3., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
+				AddTeline3D(tell, this->pos, vec3_000, 3000., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, 2.);
 			}
 		}
 //		playWave3D("blast.wav", pt->pos, w->pl->pos, w->pl->pyr, 1., .01, w->realtime);
@@ -283,8 +283,8 @@ double Battleship::maxenergy()const{return getManeuve().capacity;}
 
 const Warpable::ManeuverParams &Battleship::getManeuve()const{
 	static const ManeuverParams frigate_mn = {
-		.025, /* double accel; */
-		.075, /* double maxspeed; */
+		25., /* double accel; */
+		75., /* double maxspeed; */
 		2000000 * .1, /* double angleaccel; */
 		.2, /* double maxanglespeed; */
 		150000., /* double capacity; [MJ] */

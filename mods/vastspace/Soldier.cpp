@@ -63,26 +63,26 @@ const unsigned Soldier::classid = registerClass("Soldier", Conster<Soldier>);
 const char *Soldier::classname()const{return "Soldier";}
 
 HitBoxList Soldier::hitboxes;
-double Soldier::modelScale = 2e-6;
-double Soldier::hitRadius = 0.002;
+double Soldier::modelScale = 2e-3;
+double Soldier::hitRadius = 2.;
 double Soldier::defaultMass = 60; // kilograms
 double Soldier::maxHealthValue = 10.;
-double Soldier::hookSpeed = 0.2;
-double Soldier::hookRange = 0.2;
-double Soldier::hookPullAccel = 0.05;
-double Soldier::hookStopRange = 0.025;
-double standRange = 0.001; // One meter
+double Soldier::hookSpeed = 200.;
+double Soldier::hookRange = 200.;
+double Soldier::hookPullAccel = 50.;
+double Soldier::hookStopRange = 25.;
+double standRange = 1.; // One meter
 Autonomous::ManeuverParams Soldier::maneuverParams = {
-	0.01, // accel
-	0.01, // maxspeed
+	10., // accel
+	10., // maxspeed
 	M_PI * 0.1, // angleaccel
 	M_PI * 0.1, // maxanglespeed
 	1, // capacity
 	1, // capacitor_gen
 };
 GLuint Soldier::overlayDisp = 0;
-double Soldier::muzzleFlashRadius[2] = {.0004, .00025};
-Vec3d Soldier::muzzleFlashOffset[2] = {Vec3d(-0.00080, 0.00020, 0.0), Vec3d(-0.00110, 0.00020, 0.0)};
+double Soldier::muzzleFlashRadius[2] = {.4, .25};
+Vec3d Soldier::muzzleFlashOffset[2] = {Vec3d(-0.80, 0.20, 0.0), Vec3d(-1.10, 0.20, 0.0)};
 
 
 HardPointList soldierHP;
@@ -361,7 +361,7 @@ void Soldier::setPosition(const Vec3d *pos, const Quatd *rot, const Vec3d *velo,
 
 void Soldier::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	const Soldier *p = this;
-	static const Vec3d ofs[2] = {Vec3d(.003, .001, -.002), Vec3d(.00075, .002, .003),};
+	static const Vec3d ofs[2] = {Vec3d(3., 1., -2.), Vec3d(7.5, 2., 3.),};
 	Mat4d mat, mat2;
 	seatid = (seatid + 4) % 4;
 
@@ -376,7 +376,7 @@ void Soldier::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 		pos = mat.vp3(ofs[1]);
 	}
 	else{
-		mat4translate(mat, 0., p->state == STATE_STANDING ? 0.00055 : 0.0005, 0.); /* eye position */
+		mat4translate(mat, 0., p->state == STATE_STANDING ? 0.55 : 0.5, 0.); /* eye position */
 		pos = mat.vec3(3);
 		if(seatid == 3){
 			WarField::EntityList::iterator it;
@@ -467,7 +467,7 @@ void small_brass_draw(const Teline3CallbackData *pl, const Teline3DrawData *dd, 
 int Soldier::shoot_infgun(double phi0, double theta0, double v, double damage, double variance, double t, Mat4d &gunmat){
 	Soldier *p = this;
 	Bullet *pb;
-	static const avec3_t pos0 = {0., 0., -.0007}, nh0 = {0., 0., -1}, xh0 = {1., 0., 0.};
+	static const avec3_t pos0 = {0., 0., -0.7}, nh0 = {0., 0., -1}, xh0 = {1., 0., 0.};
 	avec3_t xh;
 	double phi, theta;
 	double hei = (p->state == STATE_PRONE ? .0005 / .0016 : 1.) * 220. * modelScale;
@@ -505,9 +505,9 @@ int Soldier::shoot_infgun(double phi0, double theta0, double v, double damage, d
 #endif
 	pb->velo += nh * v;
 	Vec3d zh(
-		- .0015 * sin(phi),
+		- 1.5 * sin(phi),
 		0.,
-		- .0015 * cos(phi)
+		- 1.5 * cos(phi)
 	);
 	VECADDIN(&gunmat[12], zh);
 	gunmat[13] += hei;
@@ -755,7 +755,7 @@ void Soldier::anim(double dt){
 //			double bulletspeed = p->arms[0].type == arms_mortar ? .05 : p->arms[0].type == arms_m40rifle ? .770 : p->arms[0].type == arms_shotgun ? BULLETSPEED * .75 : BULLETSPEED;
 			double bulletspeed = BULLETSPEED;
 			double desired[2];
-			static const Vec3d pos0(0, .0015, 0);
+			static const Vec3d pos0(0, 1.5, 0);
 			int shootable = 0;
 /*			if(((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy))
 				VECCPY(epos, pt->enemy->pos);
@@ -769,7 +769,7 @@ void Soldier::anim(double dt){
 //			double phi = atan2(epos[0] - this->pos[0], -(epos[2] - this->pos[2]));
 			Vec3d enemyDelta = epos - this->pos;
 			double sd = enemyDelta.slen();
-			z = sd < .01 * .01 ? 1 : -1;
+			z = sd < 10. * 10. ? 1 : -1;
 			Vec3d enemyDirection = enemyDelta.norm();
 			Vec3d forward;
 			if(bbody){
@@ -785,7 +785,7 @@ void Soldier::anim(double dt){
 
 			// It's no use approaching closer than 10 meters.
 			// Altering inputs member is necessary because Autonomous::maneuver() use it.
-			inputs.press = 0.01 * 0.01 < sd && 0.9 < forward.sp(enemyDirection);
+			inputs.press = 10. * 10. < sd && 0.9 < forward.sp(enemyDirection);
 
 //			pyr[1] = approach(pyr[1], phi, TURRETROTSPEED * dt, 2 * M_PI);
 //			pyr2quat(pt->rot, pt->pyr);
@@ -804,7 +804,7 @@ void Soldier::anim(double dt){
 					desired[0] - EPSILON <= p->pitch && p->pitch <= desired[0] + EPSILON &&
 					desired[1] - EPSILON <= pt->pyr[1] && pt->pyr[1] <= desired[1] + EPSILON &&*/
 					DBL_EPSILON < sd &&
-					(p->kick[0] + p->kick[0] + p->kick[1] * p->kick[1]) < 1. / (sd / .01 / .01) * M_PI / 8. * M_PI / 8.)
+					(p->kick[0] + p->kick[0] + p->kick[1] * p->kick[1]) < 1. / (sd / 10. / 10.) * M_PI / 8. * M_PI / 8.)
 					i |= PL_ENTER;
 			}
 
@@ -1004,7 +1004,7 @@ void Soldier::anim(double dt){
 
 	if(hookretract){
 		Vec3d delta = hookpos - this->pos;
-		if(delta.slen() < 0.005 * 0.005){
+		if(delta.slen() < 5. * 5.){
 			hookretract = false;
 		}
 		else
@@ -1475,7 +1475,7 @@ bool Soldier::findEnemy(){
 	if(forcedEnemy)
 		return !!enemy;
 	Entity *closest = NULL;
-	double best = 1e2 * 1e2;
+	double best = 1e5 * 1e5;
 	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
 		Entity *pt2 = *it;
 
@@ -1566,7 +1566,7 @@ bool Soldier::command(EntityCommand *com){
 			gfic.hitpart = standPart;
 			gfic.pos = this->pos;
 			if(standEntity->command(&gfic)){
-				this->velo += gfic.retNormal * 0.005;
+				this->velo += gfic.retNormal * 5.;
 			}
 			standEntity = NULL;
 		}
@@ -1943,7 +1943,7 @@ void Firearm::shoot(double dt){
 	pb->velo += (nh + vecvar) * v;
 
 	// Offset for hand (and to make the bullet easier to see from eyes)
-	Vec3d relpos(0.0002, -0.000, -0.0003);
+	Vec3d relpos(0.2, -0.0, -0.3);
 	pb->pos = this->pos + p->rot.trans(relpos);
 
 	// Impulse
@@ -1991,7 +1991,7 @@ FirearmStatic Rifle::defaultFS;
 FirearmStatic::FirearmStatic() :
 	maxAmmoValue(20),
 	shootCooldownValue(0.1),
-	bulletSpeedValue(0.7),
+	bulletSpeedValue(700.),
 	bulletDamageValue(1.0),
 	bulletVarianceValue(0.01),
 	aimFovValue(0.7),

@@ -205,7 +205,7 @@ void RoundAstrobj::draw(const Viewer *vw){
 	int ringdrawn = 8;
 	bool drawring = 0. < ringthick && !vw->gc->cullFrustum(calcPos(*vw), rad * ringmax * 1.1);
 
-	GLfloat brightness = GLfloat(sqrt(param.brightness));
+	double brightness = sqrt(param.brightness);
 
 	// Sun distance
 	double sundist = sun ? (parent->tocs(sun->pos, sun->parent) - pos).len() : 1e5;
@@ -2311,7 +2311,7 @@ void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 		Vec3d dv = vw->pos - spos;
 		Vec3d spos1 = vw->rot.dvp3(dv);
 		double sp = -spos1[2];
-		double brightness = pow(100, -a->absmag / 5.);
+		double brightness = a->brightness;
 		double dvslen = dv.slen();
 		if(dvslen < EPSILON)
 			return;

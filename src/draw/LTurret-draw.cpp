@@ -126,7 +126,7 @@ void LTurret::drawtra(wardraw_t *wd){
 		glBlendFunc(GL_ONE, GL_ONE); // Add blend
 		float f = mf / .3 * 2, fi = 1. - mf / .3;
 		glColor4f(f,f,f,1);
-		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * .200 * fi, .060 * fi);
+		gldTextureBeam(wd->vw->pos, pos, pos + rot.vp3(-vec3_001) * 200. * fi, 60. * fi);
 		glPopAttrib();
 	}
 }
@@ -136,29 +136,29 @@ void LTurret::shootEffect(const Vec3d &bulletpos, const Vec3d &direction){
 		if(WarSpace *ws = *w) for(int j = 0; j < 3; j++){
 			Vec3d pos;
 //			COLOR32 col = 0;
-			pos[0] = .02 * (drseq(&w->rs) - .5);
-			pos[1] = .02 * (drseq(&w->rs) - .5);
-			pos[2] = .02 * (drseq(&w->rs) - .5);
+			pos[0] = 20. * (drseq(&w->rs) - .5);
+			pos[1] = 20. * (drseq(&w->rs) - .5);
+			pos[2] = 20. * (drseq(&w->rs) - .5);
 /*			col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
 			col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 95,0,0);
 			col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 80,0);
 			col |= COLOR32RGBA(0,0,0,191);*/
-			Vec3d smokevelo = direction * .02 * (drseq(&w->rs) + .5) + this->velo;
-			smokevelo[0] += .02 * (drseq(&w->rs) - .5);
-			smokevelo[1] += .02 * (drseq(&w->rs) - .5);
-			smokevelo[2] += .02 * (drseq(&w->rs) - .5);
+			Vec3d smokevelo = direction * 20. * (drseq(&w->rs) + .5) + this->velo;
+			smokevelo[0] += 20. * (drseq(&w->rs) - .5);
+			smokevelo[1] += 20. * (drseq(&w->rs) - .5);
+			smokevelo[2] += 20. * (drseq(&w->rs) - .5);
 			static smokedraw_swirl_data sdata = {COLOR32RGBA(127,95,80,191), true};
-			AddTelineCallback3D(ws->tell, pos + bulletpos, smokevelo, .015, quat_u, Vec3d(0, 0, 2. * M_PI * (drseq(&w->rs) - .5)),
+			AddTelineCallback3D(ws->tell, pos + bulletpos, smokevelo, 15., quat_u, Vec3d(0, 0, 2. * M_PI * (drseq(&w->rs) - .5)),
 				vec3_000, smokedraw_swirl, (void*)&sdata, TEL3_INVROTATE | TEL3_NOLINE, 1.5);
 		}
 		if(WarSpace *ws = *w) for(int j = 0; j < 15; j++){
 			double triangle = drseq(&w->rs);
 			triangle += drseq(&w->rs); // Triangular distributed random value
-			Vec3d smokevelo = direction * .1 * triangle + this->velo;
-			smokevelo[0] += .05 * (drseq(&w->rs) - .5);
-			smokevelo[1] += .05 * (drseq(&w->rs) - .5);
-			smokevelo[2] += .05 * (drseq(&w->rs) - .5);
-			AddTelineCallback3D(ws->tell, bulletpos, smokevelo, .0004, quat_u, vec3_000,
+			Vec3d smokevelo = direction * 100. * triangle + this->velo;
+			smokevelo[0] += 50. * (drseq(&w->rs) - .5);
+			smokevelo[1] += 50. * (drseq(&w->rs) - .5);
+			smokevelo[2] += 50. * (drseq(&w->rs) - .5);
+			AddTelineCallback3D(ws->tell, bulletpos, smokevelo, 0.4, quat_u, vec3_000,
 				vec3_000, sparkdraw, NULL, TEL3_NOLINE, 0.5 + .25 * (drseq(&w->rs) - .5));
 		}
 }

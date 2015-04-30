@@ -2,6 +2,7 @@
  * \brief Implementation of Island3 class.
  */
 #include "island3.h"
+#include "vastspace.h"
 #include "EntityRegister.h"
 #include "ContainerHead.h"
 #include "SpacePlane.h"
@@ -45,15 +46,15 @@ extern "C"{
 
 using namespace gltestp;
 
-#define ISLAND3_RAD 3.25 ///< outer radius
-#define ISLAND3_INRAD 3.2 ///< inner radius
-#define ISLAND3_GRAD 3.24 ///< inner glass radius
-#define ISLAND3_HALFLEN 16.
-#define ISLAND3_MIRRORTHICK .1 ///< Thickness of the mirrors
-#define ISLAND3_FARMRAD 20.
+#define ISLAND3_RAD 3250. ///< outer radius
+#define ISLAND3_INRAD 3200. ///< inner radius
+#define ISLAND3_GRAD 3240. ///< inner glass radius
+#define ISLAND3_HALFLEN 16000.
+#define ISLAND3_MIRRORTHICK 100. ///< Thickness of the mirrors
+#define ISLAND3_FARMRAD 20000.
 #define MIRROR_LENGTH (ISLAND3_HALFLEN * 2.)
-#define BRIDGE_HALFWID .01
-#define BRIDGE_THICK .01
+#define BRIDGE_HALFWID 10.
+#define BRIDGE_THICK 10.
 
 
 static int spacecolony_rotation(const struct coordsys *, aquat_t retq, const avec3_t pos, const avec3_t pyr, const aquat_t srcq);
@@ -124,8 +125,8 @@ void Island3::init(){
 	sun_phase = 0.;
 	ent = NULL;
 	headToSun = false;
-	absmag = 30.;
-	rad = 100.;
+	setAbsMag(30.);
+	rad = 100000.;
 	orbit_home = NULL;
 	mass = 1e10;
 	basecolor = Vec4f(1., .5, .5, 1.);
@@ -173,7 +174,7 @@ bool Island3::belongs(const Vec3d &lpos)const{
 	return sdxy < ISLAND3_RAD * ISLAND3_RAD && -ISLAND3_HALFLEN - ISLAND3_INRAD < lpos[1] && lpos[1] < ISLAND3_HALFLEN;
 }
 
-static const Vec3d joint(3.25 * cos(M_PI * 3. / 6. + M_PI / 6.), 16., 3.25 * sin(M_PI * 3. / 6. + M_PI / 6.));
+static const Vec3d joint(3250. * cos(M_PI * 3. / 6. + M_PI / 6.), ISLAND3_HALFLEN, ISLAND3_RAD * sin(M_PI * 3. / 6. + M_PI / 6.));
 
 void Island3::calcWingTrans(int i, Quatd &rot, Vec3d &pos){
 	double brightness = (sin(sun_phase) + 1.) / 2.;
@@ -261,11 +262,11 @@ void Island3::anim(double dt){
 
 		// Randomly create container heads
 		// temporarily disabled until being accepted in the server-client model.
-		if(false && floor(ws->war_time()) < floor(ws->war_time() + dt) && rs.nextd() < 0.02){
+		if(true && floor(ws->war_time()) < floor(ws->war_time() + dt) && rs.nextd() < 0.02){
 			Entity *ch = rs.next() % 2 ? (Entity*)(new ContainerHead(this->ent)) : new SpacePlane(this->ent);
 			ch->race = race;
 			ws->addent(ch);
-			Vec3d rpos = this->rot.trans(Vec3d(0, -16. - 3.25, 0.));
+			Vec3d rpos = this->rot.trans(Vec3d(0, -ISLAND3_HALFLEN - ISLAND3_RAD, 0.));
 			ch->pos = rpos + this->pos + .1 * Vec3d(rs.nextGauss(), rs.nextGauss(), rs.nextGauss());
 			ch->rot = this->rot.rotate(-M_PI / 2., Vec3d(1,0,0));
 			ch->velo = this->velo + this->omg.vp(rpos);
@@ -743,7 +744,7 @@ static const avec3_t pos0[] = {
 
 int Island3::getCutnum(const Viewer *vw)const{
 	int cutnum = 48 * 4;
-	double pixels = fabs(vw->gc->scale(pos)) * 32.;
+	double pixels = fabs(vw->gc->scale(pos)) * ISLAND3_HALFLEN;
 
 	if(pixels < 1)
 		return cutnum;
@@ -790,7 +791,7 @@ void Island3::draw(const Viewer *vw){
 	bool farmap = !!vw->zslice;
 	GLcull *gc2 = vw->gclist[0];
 
-	if(vw->gc->cullFrustum(vw->cs->tocs(pos, parent), 50.))
+	if(vw->gc->cullFrustum(vw->cs->tocs(pos, parent), 50000.))
 		return;
 
 	if(vw->shadowmap)
@@ -798,7 +799,7 @@ void Island3::draw(const Viewer *vw){
 
 	// If any part of the colony has chance to go beyond far clipping plane of z slice of 0,
 	// it's enough to decide cullLevel to 1.
-	if(gc2->cullFar(vw->cs->tocs(pos, parent), -40.))
+	if(gc2->cullFar(vw->cs->tocs(pos, parent), -40000.))
 		cullLevel = 1;
 	else
 		cullLevel = 0;
@@ -860,11 +861,11 @@ void Island3::draw(const Viewer *vw){
 		{{1., 0., 0.}, {1., 0., 0.}},
 		{{0., -1., 0.}, {0., -1., 0.}},
 	};
-	const double sufrad = 3.25;
+	const double sufrad = ISLAND3_RAD;
 	int n, i;
 	int finecuts[48 * 4]; /* this buffer must be greater than cuts */
 
-	double pixels = fabs(vw->gc->scale(pos)) * 32.;
+	double pixels = fabs(vw->gc->scale(pos)) * ISLAND3_HALFLEN;
 	int cutnum = getCutnum(vw);
 
 	double (*cuts)[2] = CircleCuts(cutnum);
@@ -914,7 +915,7 @@ void Island3::draw(const Viewer *vw){
 			rot2[10] = cuts[i][1];
 //			Vec3d pos = trans.vp3(rot2.vp3(pos0[1]));
 			Vec3d pos = trans.vp3(rot2.vp3(Vec3d(ISLAND3_INRAD, 0, 0)));
-			if((vw->pos[0] - pos[0]) * (vw->pos[0] - pos[0]) + (vw->pos[2] - pos[2]) * (vw->pos[2] - pos[2]) < .3 * .3){
+			if((vw->pos[0] - pos[0]) * (vw->pos[0] - pos[0]) + (vw->pos[2] - pos[2]) * (vw->pos[2] - pos[2]) < 300. * 300.){
 				finecuts[i] = 1;
 			}
 			else
@@ -1098,10 +1099,10 @@ void Island3::draw(const Viewer *vw){
 			glPopAttrib();
 
 			static const Vec3d pos00[4][2] = {
-				{Vec3d(ISLAND3_INRAD, ISLAND3_HALFLEN, 0), Vec3d(.0, ISLAND3_HALFLEN + .2, 0)},
-				{Vec3d(ISLAND3_INRAD, -ISLAND3_HALFLEN, 0), Vec3d(.2, -ISLAND3_HALFLEN, 0)},
-				{Vec3d(.2, -ISLAND3_HALFLEN, 0), Vec3d(.2, -ISLAND3_HALFLEN - ISLAND3_RAD, 0)},
-				{Vec3d(.2, -ISLAND3_HALFLEN - ISLAND3_RAD, 0), Vec3d(.3, -ISLAND3_HALFLEN - ISLAND3_RAD, 0)},
+				{Vec3d(ISLAND3_INRAD, ISLAND3_HALFLEN, 0), Vec3d(.0, ISLAND3_HALFLEN + 200., 0)},
+				{Vec3d(ISLAND3_INRAD, -ISLAND3_HALFLEN, 0), Vec3d(200., -ISLAND3_HALFLEN, 0)},
+				{Vec3d(200., -ISLAND3_HALFLEN, 0), Vec3d(200., -ISLAND3_HALFLEN - ISLAND3_RAD, 0)},
+				{Vec3d(200., -ISLAND3_HALFLEN - ISLAND3_RAD, 0), Vec3d(300., -ISLAND3_HALFLEN - ISLAND3_RAD, 0)},
 			};
 			for(int h = 0; h < 2; h++){
 				glPushAttrib(GL_TEXTURE_BIT | GL_LIGHTING_BIT);
@@ -1265,7 +1266,7 @@ void Island3::draw(const Viewer *vw){
 		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
 		glPushMatrix();
-		glTranslated(0, -16. - 3.25, 0.);
+		glTranslated(0, -ISLAND3_HALFLEN - ISLAND3_RAD, 0.);
 		glScaled(scale, scale, scale);
 		glMultMatrixd(rotaxis);
 		id.drawModel(sufs[0], vbo[0], pst[0]);
@@ -1364,7 +1365,7 @@ void Island3::draw(const Viewer *vw){
 					Vec3d(ISLAND3_INRAD,
 						pos0[j][1] + (n * 2 - 1) * BRIDGE_HALFWID,
 						0.),
-					Vec3d(ISLAND3_INRAD + .001/*BRIDGE_THICK*/,
+					Vec3d(ISLAND3_INRAD + 1./*BRIDGE_THICK*/,
 						pos0[j][1] + (n * 2 - 1) * BRIDGE_HALFWID,
 						0.)
 				};
@@ -1527,9 +1528,9 @@ void Island3::draw(const Viewer *vw){
 							int i1 = (i + m * cutnum / 3 + cutnum / 6) % cutnum;
 							int i2 = (i + ((i1 % defleap || finecuts[i1]) ? (leap = defleap / 2) : (leap = defleap)) + m * cutnum / 3 + cutnum / 6) % cutnum;
 							double di1, di2;
-							di1 = i * ISLAND3_RAD / cutnum * M_PI / (BRIDGE_THICK - .001);
+							di1 = i * ISLAND3_RAD / cutnum * M_PI / (BRIDGE_THICK - 1.);
 							di1 -= floor(di1);
-							di2 = di1 + leap * ISLAND3_RAD / cutnum * M_PI / (BRIDGE_THICK - .001);
+							di2 = di1 + leap * ISLAND3_RAD / cutnum * M_PI / (BRIDGE_THICK - 1.);
 							for(k = 0; k < 2; k++){
 								glNormal3d(0, 1 - n * 2, 0);
 								rot2[0] = cuts[i1][1];
@@ -1758,10 +1759,10 @@ void Island3::draw(const Viewer *vw){
 	glEnable(GL_TEXTURE_2D);
 	if(vw->zslice == 0){
 		int i, c = 0;
-		double rad_0 = ISLAND3_FARMRAD - .2, rad_1 = ISLAND3_FARMRAD, rad_2 = ISLAND3_FARMRAD + .2; /* silly that "rad1" is used by windows. */
+		double rad_0 = ISLAND3_FARMRAD - 200., rad_1 = ISLAND3_FARMRAD, rad_2 = ISLAND3_FARMRAD + 200.; /* silly that "rad1" is used by windows. */
 
 		double phase = rotation;
-		const double suby = -(ISLAND3_HALFLEN + ISLAND3_RAD + .2);
+		const double suby = -(ISLAND3_HALFLEN + ISLAND3_RAD + 200.);
 
 		Mat4d rotmat = Quatd::rotation(-phase, 0, 1, 0).tomat4();
 
@@ -1780,7 +1781,7 @@ void Island3::draw(const Viewer *vw){
 //				continue;
 
 //			viewpos = qrot2.trans(org) + pos;
-			if(vw->gc->cullFrustum(vw->cs->tocs(viewpos, this), 2.))
+			if(vw->gc->cullFrustum(vw->cs->tocs(viewpos, this), 2000.))
 				continue;
 
 			glBegin(GL_QUAD_STRIP);
@@ -1812,58 +1813,59 @@ void Island3::draw(const Viewer *vw){
 			glEnd();
 			c++;
 		}
-		const double subfarmrad = .75 - ISLAND3_FARMRAD;
+		const double subfarmrad = 750. - ISLAND3_FARMRAD;
+		const double rr = 200.; // Ring Radius
 		for(i = 0; i < 3; i++){
 			int j, leaps = 12;
 			glPushMatrix();
 			glRotated(i * 120., 0., 1., 0.);
-			glTranslated(ISLAND3_FARMRAD, -(ISLAND3_HALFLEN + ISLAND3_RAD + .2), 0.);
+			glTranslated(ISLAND3_FARMRAD, -(ISLAND3_HALFLEN + ISLAND3_RAD + 200.), 0.);
 			glEnable(GL_TEXTURE_2D);
 			glBegin(GL_QUAD_STRIP);
 			glNormal3d(0., 1., 0.);
 			glTexCoord2d(0., .2);
-			glVertex3d(0., .2, 0.);
+			glVertex3d(0., rr, 0.);
 			glTexCoord2d(subfarmrad, .2);
-			glVertex3d(subfarmrad, .2, 0.);
+			glVertex3d(subfarmrad, rr, 0.);
 			glNormal3d(0., 0., 1.);
 			glTexCoord2d(0., .0);
-			glVertex3d(0., .0, .2);
+			glVertex3d(0., .0, rr);
 			glTexCoord2d(subfarmrad, .0);
-			glVertex3d(subfarmrad, .0, .2);
+			glVertex3d(subfarmrad, .0, rr);
 			glNormal3d(0., -1., 0.);
 			glTexCoord2d(0., -.2);
-			glVertex3d(0., -.2, 0.);
+			glVertex3d(0., -rr, 0.);
 			glTexCoord2d(subfarmrad, -.2);
-			glVertex3d(subfarmrad, -.2, 0.);
+			glVertex3d(subfarmrad, -rr, 0.);
 			glNormal3d(0., 0., -1.);
 			glTexCoord2d(0., 0.);
-			glVertex3d(0., .0, -.2);
+			glVertex3d(0., .0, -rr);
 			glTexCoord2d(subfarmrad, .0);
-			glVertex3d(subfarmrad, .0, -.2);
+			glVertex3d(subfarmrad, .0, -rr);
 			glNormal3d(0., 1., 0.);
 			glTexCoord2d(0., .2);
-			glVertex3d(0., .2, 0.);
+			glVertex3d(0., rr, 0.);
 			glTexCoord2d(subfarmrad, .2);
-			glVertex3d(subfarmrad, .2, 0.);
+			glVertex3d(subfarmrad, rr, 0.);
 			glEnd();
 			glDisable(GL_TEXTURE_2D);
 			glBegin(GL_QUAD_STRIP);
 			for(j = 0; j <= cutnum; j += leaps){
 				int jj = (j) % (cutnum);
-				glVertex3d(cuts[jj][0], .5, cuts[jj][1]);
-				glVertex3d(cuts[jj][0], -.5, cuts[jj][1]);
+				glVertex3d(cuts[jj][0], 500., cuts[jj][1]);
+				glVertex3d(cuts[jj][0], -500., cuts[jj][1]);
 			}
 			glEnd();
 			glBegin(GL_POLYGON);
 			glNormal3d(0., -1., 0.);
 			for(j = 0; j < cutnum; j += leaps){
-				glVertex3d(-cuts[j][0], -.5, cuts[j][1]);
+				glVertex3d(-cuts[j][0], -500., cuts[j][1]);
 			}
 			glEnd();
 			glBegin(GL_POLYGON);
 			glNormal3d(0., 1., 0.);
 			for(j = 0; j < cutnum; j += leaps){
-				glVertex3d(cuts[j][0], .5, cuts[j][1]);
+				glVertex3d(cuts[j][0], 500., cuts[j][1]);
 			}
 			glEnd();
 			glPopMatrix();
@@ -1920,9 +1922,9 @@ void Island3::drawtra(const Viewer *vw){
 	if(!csint || !csint->w)
 		return;*/
 	Vec3d pos = vw->cs->tocs(avec3_000, this);
-	if(gc->cullFrustum(pos, 50.))
+	if(gc->cullFrustum(pos, 50000.))
 		return;
-	pixels = fabs(gc->scale(pos)) * 32.;
+	pixels = fabs(gc->scale(pos)) * ISLAND3_RAD;
 	if(pixels < 1)
 		return;
 
@@ -2028,7 +2030,7 @@ void Island3::drawtra(const Viewer *vw){
 				int i1, j;
 				if(2 <= defleap){
 					Vec3d pos = rot.vp3(pos0[1]);
-					if(i % defleap == 0 && (vw->pos[0] - pos[0]) * (vw->pos[0] - pos[0]) + (vw->pos[2] - pos[2]) * (vw->pos[2] - pos[2]) < .3 * .3){
+					if(i % defleap == 0 && (vw->pos[0] - pos[0]) * (vw->pos[0] - pos[0]) + (vw->pos[2] - pos[2]) * (vw->pos[2] - pos[2]) < 300. * 300.){
 						leap = defleap / 2;
 					}
 					else if(leap != defleap && (i) % defleap == 0)
@@ -2093,7 +2095,7 @@ void Island3::drawtra(const Viewer *vw){
 	Quatd vrot = rot.rotate(-rotation, /*rot.trans*/(Vec3d(0,1,0)));
 	for(int n = 0; n < 2; n++){
 		for(int i = 0; i < 16; i++){
-			gldSpriteGlow(vrot.trans(Vec3d((n * 2 - 1) * -.05, -ISLAND3_HALFLEN - ISLAND3_RAD - i * .1, 0)) + pos, .01, Vec4<GLubyte>(255,127,127, 255 * (1. - fmod(vw->viewtime + (16 - i) * .1, 1.))), vw->irot);
+			gldSpriteGlow(vrot.trans(Vec3d((n * 2 - 1) * -50., -ISLAND3_HALFLEN - ISLAND3_RAD - i * 100., 0)) + pos, 10., Vec4<GLubyte>(255,127,127, 255 * (1. - fmod(vw->viewtime + (16 - i) * .1, 1.))), vw->irot);
 		}
 	}
 
@@ -2144,8 +2146,9 @@ void Island3::drawtra(const Viewer *vw){
 
 
 
-unsigned Island3Entity::classid = registerClass("Island3Entity", Conster<Island3Entity>);
+Entity::EntityRegisterNC<Island3Entity> Island3Entity::entityRegister("Island3Entity");
 
+Model *Island3Entity::dockModel = NULL;
 
 void Island3Entity::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -2205,7 +2208,6 @@ void Island3Entity::buildShape(){
 	WarSpace *ws = *w;
 	if(ws){
 		if(!btshape){
-			suf_t *suf = loadModel(NULL, NULL, NULL);
 			btshape = new btCompoundShape();
 			for(int i = 0; i < 3; i++){
 				Vec3d sc = Vec3d(ISLAND3_RAD / sqrt(3.), ISLAND3_HALFLEN, ISLAND3_MIRRORTHICK / 2.);
@@ -2218,10 +2220,11 @@ void Island3Entity::buildShape(){
 				wingtrans[i] = trans;
 				btshape->addChildShape(trans, box);
 			}
-			btCylinderShape *cyl = new btCylinderShape(btVector3(ISLAND3_RAD + .01, ISLAND3_HALFLEN, ISLAND3_RAD + .01));
+			btCylinderShape *cyl = new btCylinderShape(btVector3(ISLAND3_RAD + 10., ISLAND3_HALFLEN, ISLAND3_RAD + 10.));
 			btshape->addChildShape(btTransform(btqc(Quatd(0,0,0,1)), btvc(Vec3d(0,0,0))), cyl);
 
 			// Adding surface model (mesh) itself as collision model, but it doesn't seem to work.
+#if 0
 			if(suf){
 				static std::vector<Vec3i> tris;
 				if(!tris.size()) for(int i = 0; i < suf->np; i++) for(int j = 2; j < suf->p[i]->p.n; j++){
@@ -2237,9 +2240,10 @@ void Island3Entity::buildShape(){
 				}
 				btTriangleIndexVertexArray *mesh = new btTriangleIndexVertexArray(tris.size(), &tris[0][0], sizeof(tris[0]), suf->nv, suf->v[0], sizeof *suf->v);
 				btBvhTriangleMeshShape *meshShape = new btBvhTriangleMeshShape(mesh, true);
-				mesh->setScaling(btVector3(.01, .01, .01));
-				btshape->addChildShape(btTransform(btqc(Quatd(sqrt(2.)/2.,0,0,sqrt(2.)/2.)), btVector3(0, -16. - 3.25,0)), meshShape);
+				mesh->setScaling(btVector3(10., 10., 10.));
+				btshape->addChildShape(btTransform(btqc(Quatd(sqrt(2.)/2.,0,0,sqrt(2.)/2.)), btVector3(0, -ISLAND3_HALFLEN - ISLAND3_RAD,0)), meshShape);
 			}
+#endif
 		}
 		btTransform startTransform;
 		startTransform.setIdentity();
@@ -2653,7 +2657,7 @@ int Island3Entity::tracehit(const Vec3d &src, const Vec3d &dir, double rad, doub
 		btVector3 btnormal, btpos;
 		btVector3 from = btvc(src);
 		btVector3 to = btvc(src + (dir - velo) * dt);
-		if((from - to).length() < 1e-10);
+		if((from - to).length() < 1e-13);
 		else if(WarSpace *ws = *w){
 			btCollisionWorld::ClosestRayResultCallback callback(from, to);
 			ws->bdw->rayTest(from, to, callback);
@@ -2689,59 +2693,28 @@ int Island3Entity::takedamage(double damage, int hitpart){
 	return ret;
 }
 
-suf_t *Island3Entity::loadModel(suf_t *(*psufs)[3], VBO *(*pvbo)[3], suftex_t* (*ppst)[3]){
+Model *Island3Entity::loadModel(){
 	static OpenGLState::weak_ptr<bool> init;
-	static suf_t *sufs[3] = {NULL};
-	static VBO *vbo[3] = {NULL};
-	static suftex_t *pst[3] = {NULL};
 	if(!init){
-		static const char *names[1] = {"models/island3dock.bin"};
-		for(int i = 0; i < 1; i++){
-			sufs[i] = CallLoadSUF(names[i]);
-			vbo[i] = CacheVBO(sufs[i]);
-			CacheSUFMaterials(sufs[i]);
-			pst[i] = gltestp::AllocSUFTex(sufs[i]);
-		}
+		dockModel = LoadMQOModel(modPath() + "models/island3dock.mqo");
 		init.create(*openGLState);
 	}
-	if(psufs)
-		memcpy(*psufs, sufs, sizeof sufs);
-	if(pvbo)
-		memcpy(*pvbo, vbo, sizeof vbo);
-	if(ppst)
-		memcpy(*ppst, pst, sizeof pst);
-	return sufs[0];
+	return dockModel;
 }
 
 // Docking bays
 void Island3Entity::draw(WarDraw *wd){
 #if 1
-	{
-		suf_t *sufs[3] = {NULL};
-		VBO *vbo[3] = {NULL};
-		suftex_t *pst[3] = {NULL};
-		loadModel(&sufs, &vbo, &pst);
+	Model *model = loadModel();
+	if(model){
 		static const double normal[3] = {0., 1., 0.};
-		static const double dscale = .01;
+		static const double dscale = 10.;
 		static const GLdouble rotaxis[16] = {
 			-1,0,0,0,
 			0,0,-1,0,
 			0,-1,0,0,
 			0,0,0,1,
 		};
-
-		class IntDraw{
-		public:
-			void drawModel(suf_t *suf, VBO *vbo, suftex_t *tex){
-				if(vbo)
-					DrawVBO(vbo, SUF_ATR /*& ~SUF_TEX/*/| SUF_TEX, tex);
-				else if(suf)
-					DecalDrawSUF(suf, SUF_ATR | SUF_TEX, NULL, tex, NULL, NULL);
-			}
-			void glTranslated(double x, double y, double z){
-				::glTranslated(x, y, z);
-			}
-		} id;
 
 		glPushMatrix();
 		gldTranslate3dv(pos);
@@ -2750,11 +2723,11 @@ void Island3Entity::draw(WarDraw *wd){
 		GLattrib gla(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
 		glPushMatrix();
-		glTranslated(0, -16. - 3.25, 0.);
+		glTranslated(0, -ISLAND3_HALFLEN - ISLAND3_RAD, 0.);
 		gldScaled(dscale);
 		glRotatef(-astro->rotation * deg_per_rad, 0, 1, 0);
 		glMultMatrixd(rotaxis);
-		id.drawModel(sufs[0], vbo[0], pst[0]);
+		DrawMQOPose(model, NULL);
 		glPopMatrix();
 
 		glPopMatrix();
@@ -2769,9 +2742,9 @@ Docker *Island3Entity::getDockerInt(){
 }
 
 
-static const double cutheight = .2;
-static const double floorHeight = .00375;
-static const double floorStep = .0005;
+static const double cutheight = 200.;
+static const double floorHeight = 3.75;
+static const double floorStep = 0.5;
 
 static const GLdouble vertex[][3] = {
   { -1.0, 0.0, -1.0 },
@@ -2846,10 +2819,10 @@ Island3Building::Island3Building(WarField *w, Island3 *host) : st(w), host(host)
 	pos[1] = 2. * ISLAND3_HALFLEN * (rs.nextd() - .5);
 	pos[2] = cos(phase) * ISLAND3_INRAD;
 	rot = Quatd::rotation(phase, 0, 1, 0).rotate(M_PI / 2., -1, 0, 0);
-	halfsize[0] = rs.nextd() * .10 + .010;
-	halfsize[1] = rs.nextd() * .30 + .010;
+	halfsize[0] = rs.nextd() * .10 + 10.;
+	halfsize[1] = rs.nextd() * .30 + 10.;
 	halfsize[1] -= fmod(halfsize[1], floorHeight);
-	halfsize[2] = rs.nextd() * .10 + .010;
+	halfsize[2] = rs.nextd() * .10 + 10.;
 }
 
 
@@ -3082,16 +3055,16 @@ Island3WarSpace::Island3WarSpace(Island3 *cs) : st(cs), bbody(NULL){
 			shape = new btCompoundShape();
 
 			static const double radius[2][2] = {
-				{.2 + ISLAND3_RAD / 2., .2 + ISLAND3_RAD / 2.},
-				{ISLAND3_GRAD + .5 - .001, ISLAND3_INRAD + .5 - .001},
+				{200. + ISLAND3_RAD / 2., 200. + ISLAND3_RAD / 2.},
+				{ISLAND3_GRAD + 500. - 1., ISLAND3_INRAD + 500. - 1.},
 			};
 			static const double thickness[2] = {
-				ISLAND3_RAD / 2. + .009,
-				.5,
+				ISLAND3_RAD / 2. + 9.,
+				500.,
 			};
 			static const double widths[2] = {
-				.13 * 8,
-				.13,
+				130. * 8,
+				130.,
 			};
 			static const double lengths[2][2] = {
 				{-ISLAND3_HALFLEN - ISLAND3_RAD, -ISLAND3_HALFLEN},

@@ -24,9 +24,11 @@ extern "C"{
 #include <string.h>
 #include <ctype.h>
 
+#include <fstream>
+#include <sstream>
+#include <deque>
+
 extern double gravityfactor;
-
-
 
 /// \brief The scanner class to interpret a Stellar Structure Definition file.
 ///
@@ -34,43 +36,61 @@ extern double gravityfactor;
 /// It would be even possible to suspend scanning per-character basis.
 class StellarStructureScanner{
 public:
-	StellarStructureScanner(FILE *fp);
-	cpplib::dstring nextLine(std::vector<cpplib::dstring>* = NULL);
-	bool eof()const{return 0 != feof(fp);}
-	long long getLine()const{return line;} /// Returns line number.
+	StellarStructureScanner(std::istream *fp, linenum_t line = 0);
+	gltestp::dstring nextLine(TokenList* = NULL);
+	bool eof()const{return 0 != fp->eof();}
+	linenum_t getLine()const{return line;} /// Returns line number.
 protected:
-	FILE *fp;
-	long long line;
-	enum{Normal, LineComment, BlockComment, Quotes} state;
-	cpplib::dstring buf;
-	cpplib::dstring currentToken;
-	std::vector<cpplib::dstring> tokens;
+	std::istream *fp;
+	linenum_t line;
+	enum{Normal, LineComment, BlockComment, Quotes, Braces} state;
+	gltestp::dstring buf;
+	gltestp::dstring currentToken;
+	TokenList tokens;
 };
 
-StellarStructureScanner::StellarStructureScanner(FILE *fp) : fp(fp), line(0), state(Normal){
+StellarStructureScanner::StellarStructureScanner(std::istream *fp, linenum_t line) : fp(fp), line(line), state(Normal){
 }
 
 /// Scan and interpret input stream, separate them into tokens, returns on end of line.
-cpplib::dstring StellarStructureScanner::nextLine(std::vector<cpplib::dstring> *argv){
+gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 	buf = "";
 	tokens.clear();
 	currentToken = "";
 	int c, lc = EOF;
-	while((c = getc(fp)) != EOF){
+	bool escaped = false; // We never yield scanning in escaped state, so it don't need to be a member of StellarStructureScanner.
+	int braceNests = 0; // We never yield in the middle of braces.
+	while((c = fp->get()) != EOF){
 
-		// Return the line
+		// Return the line unless it's escaped by a backslash.
 		if(c == '\n'){
-			if(0 < currentToken.len()){
-				tokens.push_back(currentToken);
-				currentToken = "";
-			}
-			if(argv){
-				*argv = tokens;
-			}
-			if(state == LineComment)
-				state = Normal;
+			// Increment the line number regardless of whether escaped or not, because the line number is used by
+			// the users who use ordinary editors to examine contents of Stellar Structure Definition files.
 			line++;
-			return buf;
+
+			// Substitute the newline with a whitespace if escaped.
+			if(escaped)
+				c = ' ';
+			else if(state == Braces)
+				; // Do nothing
+			else{
+				if(0 < currentToken.len()){
+					tokens.push_back(currentToken);
+					currentToken = "";
+				}
+				if(argv){
+					*argv = tokens;
+				}
+				if(state == LineComment)
+					state = Normal;
+				return buf;
+			}
+		}
+
+		// If we have a backslash without escaping by backslash itself, skip it.
+		if(!escaped && c == '\\'){
+			escaped = true;
+			continue;
 		}
 
 		switch(state){
@@ -95,15 +115,14 @@ cpplib::dstring StellarStructureScanner::nextLine(std::vector<cpplib::dstring> *
 				continue;
 			}
 
-			if(c == '{' || c == '}'){
+			if(c == '{'){
 				if(0 < currentToken.len()){
 					tokens.push_back(currentToken);
 					currentToken = "";
 				}
-				tokens.push_back(char(c));
-				if(argv)
-					*argv = tokens;
-				return buf;
+				braceNests = 1;
+				state = Braces;
+				continue;
 			}
 
 			if(c == '"'){
@@ -114,6 +133,15 @@ cpplib::dstring StellarStructureScanner::nextLine(std::vector<cpplib::dstring> *
 					tokens.push_back(currentToken);
 					currentToken = "";
 				}
+			}
+			else if(c == ';'){
+				if(0 < currentToken.len()){
+					tokens.push_back(currentToken);
+					currentToken = "";
+				}
+				if(argv)
+					*argv = tokens;
+				return buf;
 			}
 			else
 				currentToken << char(c);
@@ -147,11 +175,36 @@ cpplib::dstring StellarStructureScanner::nextLine(std::vector<cpplib::dstring> *
 
 			buf << char(c);
 			break;
+
+		case Braces:
+			// Read the whole string (including newlines!) until matching closing brace is found.
+			if(c == '}' && --braceNests <= 0){
+				tokens.push_back(currentToken);
+				currentToken = "";
+				state = Normal;
+			}
+			else{
+				// Store the character into string verbatim
+				currentToken << char(c);
+				buf << char(c);
+
+				// Count up braces to properly parse nested structure.
+				if(c == '{')
+					braceNests++;
+			}
+			break;
 		}
 		lc = c;
+		escaped = false;
 	}
-				if(argv)
-					*argv = tokens;
+
+	// Write out tokens when the input stream is exhausted.
+	if(argv){
+		// This makes difference if the input stream has no whitespaces after the last token.
+		if(0 < currentToken.len())
+			tokens.push_back(currentToken);
+		*argv = tokens;
+	}
 	return buf;
 }
 
@@ -163,173 +216,305 @@ cpplib::dstring StellarStructureScanner::nextLine(std::vector<cpplib::dstring> *
 
 
 
-#define MAX_LINE_LENGTH 512
 
-/* stack state machine */
-static int StellarFileLoadInt(const char *fname, CoordSys *root, struct varlist *vl);
-static int stellar_astro(StellarContext *sc, Astrobj *a);
+int StellarContext::parseCommand(TokenList &argv){
 
-int Game::stellar_coordsys(StellarContext &sc, CoordSys *cs){
-	typedef CoordSys *(Game::*CC)(const char *name, CoordSys *cs);
+	try{
 
-	const char *fname = sc.fname;
-	const CoordSys *root = sc.root;
-	int mode = 1;
-	int enable = 0;
-	HSQUIRRELVM v = sqvm;
-	cs->readFileStart(sc);
-	sqa::StackReserver sr(v);
+		CommandMap::iterator it = commands->find(argv[0]);
+		if(it != commands->end()){
+			it->second(*this, argv);
+		}
+		else{
 
-	// Create a temporary table for Squirrel to save CoordSys-local defines.
-	// Defined variables in parent CoordSys's can be referenced by delegation.
-	sq_newtable(v);
-	sq_pushobject(v, sc.vars);
-	sq_setdelegate(v, -2);
+			std::vector<const char *> cargs(argv.size());
+			for(int i = 0; i < argv.size(); i++)
+				cargs[i] = argv[i];
+			if(cs->readFile(*this, argv.size(), &cargs[0]));
+			else
+				printf("%s(%ld): Unknown parameter for %s: %s\n", this->fname, this->line, cs->classname(), argv[0].c_str());
+		}
+	}
+	catch(StellarError &e){
+		printf("%s(%ld): Error %s: %s\n", this->fname, this->line, cs->classname(), e.what());
+	}
+	return 0;
+}
 
-	// Replace StellarContext's current variables table with the temporary table.
-	HSQOBJECT vars;
-	sq_getstackobj(v, -1, &vars);
-	HSQOBJECT old_vars = sc.vars;
-	sc.vars = vars;
+int StellarContext::parseBlock(){
+	StellarContext &sc = *this;
 
-/*	sq_pushstring(v, _SC("CoordSys"), -1);
-	sq_get(v, 1);
-	sq_createinstance(v, -1);
-	sqa::sqa_newobj(v, cs);*/
-	while(mode && !sc.scanner->eof()){
-		std::vector<cpplib::dstring> argv;
+	while(!sc.scanner->eof()){
+		TokenList argv;
 		sc.buf = sc.scanner->nextLine(&argv);
-		int c = 0;
+		sc.lastLine = sc.line;
 		sc.line = long(sc.scanner->getLine());
 		if(argv.size() == 0)
 			continue;
 
-		bool enterBrace = false;
-
-		if(!strcmp("}", argv.back())){
-			argv.pop_back();
-			mode = 0;
-			if(argv.size() == 0)
-				break;
-		}
-		if(!strcmp("{", argv.back())){
-			argv.pop_back();
-			enterBrace = true;
-			if(argv.size() == 0)
-				continue;
-		}
-		cpplib::dstring s = argv[0];
-		cpplib::dstring ps = 1 < argv.size() ? argv[1] : "";
-		if(!strcmp(s, "define")){
-			sq_pushstring(sc.v, ps, -1);
-			sq_pushfloat(sc.v, SQFloat(CoordSys::sqcalc(sc, argv[2], s)));
-			sq_createslot(sc.v, -3);
-			continue;
-		}
-		else if(!strcmp(s, "include")){
-			// Concatenate current file's path and given file name to obtain a relative path.
-			// Assume ASCII transparent encoding. (Note that it may not be the case if it's Shift-JIS or something,
-			// but for the moment, just do not use multibyte characters for data file names.)
-			const char *slash = strrchr(sc.fname, '\\');
-			const char *backslash = strrchr(sc.fname, '/');
-			const char *pathDelimit = slash ? slash : backslash;
-			gltestp::dstring path;
-			// Assume string before a slash or backslash a path
-			if(pathDelimit)
-				path.strncat(sc.fname, pathDelimit - sc.fname + 1);
-			path.strcat(ps);
-			StellarFileLoadInt(path, cs, &sc);
-			// TODO: Avoid recursive includes
-			continue;
-		}
-		if(!strcmp(argv[0], "new"))
-			s = argv[1], ps = argv[2], c++;
-		if(!strcmp(s, "astro") || !strcmp(s, "coordsys") || enterBrace){
-			CoordSys *a = NULL;
-			CoordSys *(*ctor)(const char *path, CoordSys *root) = CoordSys::classRegister.construct;
-			if(argv.size() == 1){
-				// If the block begins with keyword "astro", make Astrobj's constructor to default,
-				// otherwise use CoordSys.
-				if(!strcmp(s, "astro"))
-					ctor = Astrobj::classRegister.construct;
-				else
-					ctor = CoordSys::classRegister.construct;
-				ps = s;
-			}
-			else{
-				const CoordSys::CtorMap &cm = CoordSys::ctormap();
-				for(CoordSys::CtorMap::const_reverse_iterator it = cm.rbegin(); it != cm.rend(); it++){
-					ClassId id = it->first;
-					if(!strcmp(id, ps)){
-						ctor = it->second->construct;
-						c++;
-						s = argv[c];
-						ps = argv[c+1];
-						break;
-					}
-				}
-			}
-			if(ps){
-				if((a = cs->findastrobj(ps)) && a->parent == cs)
-					stellar_coordsys(sc, a);
-				else
-					a = NULL;
-			}
-			if(!a){
-				a = ctor(ps, cs);
-				if(a){
-					if(ctor){
-						CoordSys *eis = a->findeisystem();
-						if(eis)
-							eis->addToDrawList(a);
-					}
-					stellar_coordsys(sc, a);
-				}
-			}
-		}
-		else{
-			std::vector<const char *> cargs(argv.size());
-			for(int i = 0; i < argv.size(); i++)
-				cargs[i] = argv[i];
-			try{
-				if(cs->readFile(sc, argv.size(), &cargs[0]));
-				else{
-		//			CmdPrintf("%s(%ld): Unknown parameter for CoordSys: %s", sc.fname, sc.line, s);
-					printf("%s(%ld): Unknown parameter for %s: %s\n", sc.fname, sc.line, cs->classname(), s.operator const char *());
-				}
-			}
-			catch(StellarError &e){
-				printf("%s(%ld): Error %s: %s\n", sc.fname, sc.line, cs->classname(), e.what());
-			}
-		}
+		sc.parseCommand(argv);
 	}
-//	sq_poptop(v);
-	cs->readFileEnd(sc);
-	sc.vars = old_vars; // Restore original variables table before returning
-	return mode;
+	return 0;
 }
 
-int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *prev_sc){
+int StellarContext::parseString(const char *s, CoordSys *cs, linenum_t linenum){
+	StellarContext sc2 = *this;
+	std::stringstream sstr = std::stringstream(std::string(s));
+	StellarStructureScanner ssc(&sstr, linenum);
+	sc2.scanner = &ssc;
+	if(cs)
+		return sc2.parseCoordSys(cs);
+	else
+		return sc2.parseBlock();
+}
+
+int StellarContext::parseCoordSys(CoordSys *cs){
+	StellarContext &sc = *this;
+	typedef CoordSys *(Game::*CC)(const char *name, CoordSys *cs);
+
+	const char *fname = sc.fname;
+	const CoordSys *root = sc.root;
+	int enable = 0;
+	HSQUIRRELVM v = sc.game->sqvm;
+	cs->readFileStart(sc);
+	sqa::StackReserver sr(v);
+
+	CoordSys *prevcs = sc.cs;
+	sc.cs = cs;
+	try{
+
+		// Create a temporary table for Squirrel to save CoordSys-local defines.
+		// Defined variables in parent CoordSys's can be referenced by delegation.
+		sq_newtable(v);
+		sq_pushobject(v, sc.vars);
+		sq_setdelegate(v, -2);
+
+		// Replace StellarContext's current variables table with the temporary table.
+		HSQOBJECT vars;
+		sq_getstackobj(v, -1, &vars);
+		HSQOBJECT old_vars = sc.vars;
+		sc.vars = vars;
+
+		sc.parseBlock();
+
+		cs->readFileEnd(sc);
+		sc.vars = old_vars; // Restore original variables table before returning
+	}
+	catch(StellarError &e){
+		printf("%s(%ld): Error %s: %s\n", this->fname, this->line, cs->classname(), e.what());
+	}
+
+	// Pop CoordSys from the stack regardless of whether an exception is occured or not.
+	sc.cs = prevcs;
+
+	return 0;
+}
+
+void StellarContext::scmd_define(StellarContext &sc, TokenList &argv){
+	sq_pushstring(sc.v, argv[1], -1);
+	sq_pushfloat(sc.v, SQFloat(CoordSys::sqcalc(sc, argv[2], argv[1])));
+	sq_createslot(sc.v, -3);
+}
+
+static void scmd_include(StellarContext &sc, TokenList &argv){
+	// Concatenate current file's path and given file name to obtain a relative path.
+	// Assume ASCII transparent encoding. (Note that it may not be the case if it's Shift-JIS or something,
+	// but for the moment, just do not use multibyte characters for data file names.)
+	const char *slash = strrchr(sc.fname, '\\');
+	const char *backslash = strrchr(sc.fname, '/');
+	const char *pathDelimit = slash ? slash : backslash;
+	gltestp::dstring path;
+	// Assume string before a slash or backslash a path
+	if(pathDelimit)
+		path.strncat(sc.fname, pathDelimit - sc.fname + 1);
+	path.strcat(argv[1]);
+	StellarContext::parseFile(path, sc.cs, &sc);
+	// TODO: Avoid recursive includes
+}
+
+static void scmd_if(StellarContext &sc, TokenList &argv){
+	if(argv.size() < 3){
+		printf("%s(%ld): Insufficient number of arguments to if command\n", sc.fname, sc.line);
+		return;
+	}
+	else if(0 != stellar_util::sqcalcb(sc, argv[1], "if"))
+		sc.parseString(argv[2], false, sc.scanner->getLine());
+	else if(5 <= argv.size() && argv[3] == "else") // With "else" keyword (which is ignored)
+		sc.parseString(argv[4], false, sc.scanner->getLine());
+	else if(4 <= argv.size())
+		sc.parseString(argv[3], false, sc.scanner->getLine());
+}
+
+static void scmd_while(StellarContext &sc, TokenList &argv){
+	if(argv.size() < 3){
+		printf("%s(%ld): Insufficient number of arguments to while command\n", sc.fname, sc.line);
+		return;
+	}
+	else while(0 != stellar_util::sqcalcb(sc, argv[1], "while"))
+		sc.parseString(argv[2], NULL, sc.scanner->getLine());
+}
+
+static void scmd_expr(StellarContext &sc, TokenList &argv){
+	gltestp::dstring catstr;
+	for(TokenList::iterator it = argv.begin() + 1; it != argv.end(); ++it)
+		catstr += *it;
+	CoordSys::sqcalc(sc, catstr, "expr");
+}
+
+static void scmd_proc(StellarContext &sc, TokenList &argv){
+	if(argv.size() < 4){
+		printf("%s(%ld): Insufficient number of arguments to proc command\n", sc.fname, sc.line);
+		return;
+	}
+	TokenList params;
+	{
+		std::stringstream sstr = std::stringstream(std::string(argv[2]));
+		StellarStructureScanner ssc(&sstr, sc.line);
+		ssc.nextLine(&params);
+	}
+	gltestp::dstring body = argv[3];
+	(*sc.commands)[argv[1]] = [params, body](StellarContext &sc, TokenList &argv){
+		HSQUIRRELVM v = sc.game->sqvm;
+		sqa::StackReserver sr(v);
+
+		try{
+
+			// Create a temporary table for Squirrel to save CoordSys-local defines.
+			// Defined variables in parent CoordSys's can be referenced by delegation.
+			sq_newtable(v);
+			sq_pushobject(v, sc.vars);
+			sq_setdelegate(v, -2);
+
+			int i = 1;
+			for(TokenList::const_iterator it = params.begin(); it != params.end(); ++it){
+				sq_pushstring(v, *it, it->len());
+				sq_pushstring(v, argv[i], argv[i].len());
+				sq_newslot(v, -3, SQFalse);
+				i++;
+			}
+
+			// Replace StellarContext's current variables table with the temporary table.
+			HSQOBJECT vars;
+			sq_getstackobj(v, -1, &vars);
+			HSQOBJECT old_vars = sc.vars;
+			sc.vars = vars;
+
+			sc.parseString(body, NULL, sc.lastLine);
+
+			sc.vars = old_vars; // Restore original variables table before returning
+		}
+		catch(StellarError &e){
+			printf("%s(%ld): Error %s: %s\n", sc.fname, sc.line, sc.cs->classname(), e.what());
+		}
+	};
+}
+
+void StellarContext::scmd_new(StellarContext &sc, TokenList &argv){
+	argv.pop_front();
+	scmd_coordsys(sc, argv);
+}
+
+void StellarContext::scmd_coordsys(StellarContext &sc, TokenList &argv){
+	if(argv.size() < 3){
+		printf("%s(%ld): Lacking body block for %s %s\n", sc.fname, sc.line, argv[0].c_str(), argv[1].c_str());
+		return;
+	}
+	CoordSys *cs = sc.cs;
+	CoordSys *(*ctor)(const char *path, CoordSys *root) = CoordSys::classRegister.construct;
+	gltestp::dstring csname, csblock;
+	// If the arguments are only (astro|coordsys) "SomeName" {Block}, then there can be no class name
+	// just after (astro|coordsys).
+	if(argv.size() == 3){
+		// If the block begins with keyword "astro", make Astrobj's constructor to default,
+		// otherwise use CoordSys.
+		if(!strcmp(argv[0], "astro"))
+			ctor = Astrobj::classRegister.construct;
+		else
+			ctor = CoordSys::classRegister.construct;
+		csname = argv[1];
+		csblock = argv[2];
+	}
+	else{
+		const CoordSys::CtorMap &cm = CoordSys::ctormap();
+		for(CoordSys::CtorMap::const_reverse_iterator it = cm.rbegin(); it != cm.rend(); it++){
+			ClassId id = it->first;
+			if(!strcmp(id, argv[1])){
+				ctor = it->second->construct;
+				break;
+			}
+		}
+		csname = argv[2];
+		csblock = argv[3];
+	}
+
+	CoordSys *a = cs->findastrobj(csname);
+	if(a && a->parent == cs)
+		sc.parseString(csblock, a, sc.lastLine);
+	if(!a){
+		a = ctor(csname, cs);
+		if(a){
+			CoordSys *eis = a->findeisystem();
+			if(eis)
+				eis->addToDrawList(a);
+			sc.parseString(csblock, a, sc.lastLine);
+		}
+	}
+}
+
+
+/// Borrowed code from Squirrel library (squirrel3/squirrel/sqstring.h) which in turn borrowed
+/// from Lua code.  The header file is Squirrel's internal header, so we cannot just include it
+/// from this file without confronting dependency hell (which could be much worse when we update
+/// Squirrel library).  Originally we considered using CRC32, but this code would be more efficient
+/// for long strings.
+inline SQHash _hashstr (const SQChar *s, size_t l)
+{
+		SQHash h = (SQHash)l;  /* seed */
+		size_t step = (l>>5)|1;  /* if string is too long, don't hash all its chars */
+		for (; l>=step; l-=step)
+			h = h ^ ((h<<5)+(h>>2)+(unsigned short)*(s++));
+		return h;
+}
+
+/// Return a hash for unordered_map of dstring.
+static size_t hash_dstr(const gltestp::dstring &s){
+	return _hashstr(s.c_str(), s.len());
+}
+
+int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext *prev_sc){
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 	{
-		FILE *fp;
+		std::ifstream fp(fname);
+		if(!fp)
+			return -1;
 		int mode = 0;
 		int inquote = 0;
+		CommandMap commandMap(0, hash_dstr);
+		commandMap["define"] = scmd_define;
+		commandMap["include"] = scmd_include;
+		commandMap["if"] = scmd_if;
+		commandMap["while"] = scmd_while;
+		commandMap["expr"] = scmd_expr;
+		commandMap["new"] = scmd_new;
+		commandMap["astro"] = scmd_coordsys;
+		commandMap["coordsys"] = scmd_coordsys;
+		commandMap["proc"] = scmd_proc;
 		StellarContext sc;
 		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;
 		Astrobj *a = NULL;
+		sc.game = root->getGame();
 		sc.fname = fname;
 		sc.root = root;
+		sc.cs = cs;
 		sc.line = 0;
-		sc.fp = fp = fopen(fname, "r");
-		sc.scanner = new StellarStructureScanner(fp);
-		if(!fp)
-			return -1;
+		sc.fp = &fp;
+		sc.scanner = new StellarStructureScanner(&fp);
+		sc.commands = &commandMap;
 //		sqa_init(&sc.v);
 
-		HSQUIRRELVM v = sqvm;
+		HSQUIRRELVM v = sc.game->sqvm;
 		sc.v = v;
 
 		if(prev_sc)
@@ -339,10 +524,10 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *
 			sq_getstackobj(v, -1, &sc.vars);
 		}
 
-		stellar_coordsys(sc, root);
+		sc.parseCoordSys(root);
 
 /*		CmdPrint("space.dat loaded.");*/
-		fclose(fp);
+		fp.close();
 		delete sc.scanner;
 //		sq_close(sc.v);
 //		CmdPrintf("%s loaded time %lg", fname, TimeMeasLap(&tm));
@@ -352,7 +537,7 @@ int Game::StellarFileLoadInt(const char *fname, CoordSys *root, StellarContext *
 }
 
 int Game::StellarFileLoad(const char *fname){
-	return StellarFileLoadInt(fname, universe, nullptr);
+	return StellarContext::parseFile(fname, universe, nullptr);
 }
 
 double stellar_util::sqcalcd(StellarContext &sc, const char *str, const SQChar *context){

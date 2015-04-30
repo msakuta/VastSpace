@@ -15,7 +15,7 @@ void Battleship::draw(wardraw_t *wd){
 	static Model *model = NULL;
 	static OpenGLState::weak_ptr<bool> init;
 
-	draw_healthbar(this, wd, health / getMaxHealth(), .3, -1, capacitor / maxenergy());
+	draw_healthbar(this, wd, health / getMaxHealth(), 300., -1, capacitor / maxenergy());
 
 	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
@@ -96,7 +96,7 @@ void Battleship::drawtra(wardraw_t *wd){
 	};
 	for(int n = 0; n < 2; n++){
 		for(int i = 0; i < numof(engines); i++){
-			drawCapitalBlast(wd, engines[i] + Vec3d((2 * n - 1) * 0.145, 0, 240 * modelScale), .02 * 1.25);
+			drawCapitalBlast(wd, engines[i] + Vec3d((2 * n - 1) * 145., 0, 240 * modelScale), 20. * 1.25);
 		}
 	}
 //	drawShield(wd);

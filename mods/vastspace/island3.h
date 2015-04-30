@@ -99,7 +99,7 @@ class Island3Entity : public Entity{
 public:
 	typedef Entity st;
 	friend Island3;
-	static unsigned classid;
+	static EntityRegisterNC<Island3Entity> entityRegister;
 	Island3 *astro;
 	Island3Entity(Game *game);
 	Island3Entity(WarField *w, Island3 &astro);
@@ -108,7 +108,7 @@ public:
 	virtual void serialize(SerializeContext &sc);
 	virtual void unserialize(UnserializeContext &sc);
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));
-	virtual double getHitRadius()const{return 20.;}
+	virtual double getHitRadius()const{return 20000.;}
 	virtual void enterField(WarField *);
 	virtual bool isTargettable()const{return true;}
 	virtual bool isSelectable()const{return true;}
@@ -125,10 +125,10 @@ protected:
 	btBoxShape *wings[3];
 	btTransform wingtrans[3];
 	Island3Docker *docker;
-	static suf_t *sufdock;
+	static Model *dockModel;
 	virtual Docker *getDockerInt();
 	void buildShape();
-	static suf_t *loadModel(suf_t *(*sufs)[3], VBO *(*vbo)[3], suftex_t *(*pst)[3]);
+	static Model *loadModel();
 };
 
 class Island3Docker : public Docker{

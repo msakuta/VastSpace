@@ -38,12 +38,14 @@ public:
 	virtual Props props()const;
 	virtual bool undock(Docker*);
 	virtual ManeuverParams &getManeuve()const;
+	double getHitRadius()const override{return hitRadius;}
 	static void cache_bridge(void);
 	static Entity *create(WarField *w, Builder *);
 //	static const Builder::BuildStatic builds;
 protected:
 	static GLuint disp;
 	static double modelScale;
+	static double hitRadius;
 	static double defaultMass;
 	static ManeuverParams mn;
 	static HitBoxList hitboxes;

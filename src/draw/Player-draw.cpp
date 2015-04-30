@@ -6,6 +6,7 @@
 #include "war.h"
 #include "glstack.h"
 #include "Universe.h"
+#include "astrodef.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -264,10 +265,14 @@ void Player::drawindics(Viewer *vw){
 //		int x = vw->vp.w * spos[0] / spos[3] / 2, y = vw->vp.h * spos[1] / spos[3] / 2;
 		int x = vw->mousex, y = vw->mousey;
 		double destdist = (mpos + move_z * vec3_001).len();
-		if(destdist < 1)
-			diprint(cpplib::dstring() << destdist * 1000. << "m ", x, y);
+		if(destdist < 1000.)
+			diprint(cpplib::dstring() << destdist << "m ", x, y);
+		else if(destdist < AU_PER_METER)
+			diprint(cpplib::dstring() << destdist / 1000. << "km ", x, y);
+		else if(destdist < LIGHTYEAR)
+			diprint(cpplib::dstring() << destdist / AU_PER_METER << "AU ", x, y);
 		else
-			diprint(cpplib::dstring() << destdist << "km ", x, y);
+			diprint(cpplib::dstring() << destdist / LIGHTYEAR << "LY ", x, y);
 //		diprint(cpplib::dstring() << spos[0] << "," << spos[1] << "," << spos[3], x, y + 12);
 //		diprint(cpplib::dstring() << mpos.len() << "km", 0, 0);
 		glPopMatrix();

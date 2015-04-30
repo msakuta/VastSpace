@@ -1,8 +1,8 @@
 
 
-modelScale <- 0.0001;
+modelScale <- 0.1;
 
-hitRadius <- 0.01;
+hitRadius <- 10.;
 
 mass <- 10000.;
 

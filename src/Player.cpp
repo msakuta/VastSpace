@@ -294,8 +294,8 @@ void TacticalMover::rotateLook(double dx, double dy){
 /// \brief Constructor of Player class.
 /// \param game The Game object the new object belongs to. It should match org->game if org is not NULL.
 /// \param org The original Player object in the universe that new Players will be copied from. It can be NULL.
-Player::Player(Game *game, const Player *org) : st(game), pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), accel(0,0,0), rot(quat_u), rad(0.001), lastchase(NULL),
-	chasecamera(0), detail(0), mousex(0), mousey(0), race(0), fov(1.), viewdist(1.), aviewdist(1.),
+Player::Player(Game *game, const Player *org) : st(game), pos(Vec3d(0,0,0)), velo(Vec3d(0,0,0)), accel(0,0,0), rot(quat_u), rad(1.), lastchase(NULL),
+	chasecamera(0), detail(0), mousex(0), mousey(0), race(0), fov(1.), viewdist(1000.), aviewdist(1000.),
 	gametime(0), velolen(0),
 	nextmover(NULL), blendmover(0), attackorder(0), forceattackorder(0),
 	cpos(0,0,0),

@@ -89,15 +89,24 @@ void BeamProjectile::leaveField(WarField *w){
 }
 
 void BeamProjectile::anim(double dt){
+	// clientUpdateInt() must called before st::anim() because anim() can delete this pointer
+	// which leaves this pointer invalid.  Probably we should throw an exception or perform a
+	// longjump to prevent any code in derived class from being executed after deletion.
+	clientUpdateInt(dt);
 	st::anim(dt);
 }
 
 void BeamProjectile::clientUpdate(double dt){
+	clientUpdateInt(dt);
+	st::clientUpdate(dt);
+}
+
+void BeamProjectile::clientUpdateInt(double dt){
 #ifndef DEDICATED
 	if(!active)
 		return;
 	double velolen = velo.len();
-	double bandScale = 0.1 / velolen;
+	double bandScale = 100. / velolen;
 	double bandTime = 0.;
 	while(0 < bands && bandTime < dt){
 		double deltaBands = bands - (ceil(bands) - 1);
@@ -112,10 +121,9 @@ void BeamProjectile::clientUpdate(double dt){
 		if(floor(bands) < floor(bands + deltaBands) && (tell = w->getTeline3d())){
 			Vec3d bpos = pos + velo * bandTime;
 			int alpha = 255 * (1 + floor(bands)) / maxBands;
-			AddTeline3D(tell, bpos, vec3_000, .02, Quatd::direction(velo), vec3_000, vec3_000, COLOR32RGBA(255 - alpha,255,191,alpha), TEL3_EXPANDISK | TEL3_NOLINE, 0.5);
+			AddTeline3D(tell, bpos, vec3_000, 20., Quatd::direction(velo), vec3_000, vec3_000, COLOR32RGBA(255 - alpha,255,191,alpha), TEL3_EXPANDISK | TEL3_NOLINE, 0.5);
 		}
 	}
-	st::clientUpdate(dt);
 	if(this->pf){
 		this->pf->move(pos, avec3_000, cs->t, 0);
 	}

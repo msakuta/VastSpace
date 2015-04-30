@@ -119,7 +119,7 @@ public:
 //	Vec3d bodyomg; // Object's spin
 	double rad;
 	double mass;
-	float absmag; /* Absolute Magnitude */
+	double brightness; ///< Intrinsic brightness of this celestial body in ratio to the Sun.
 	Vec4f basecolor; /* rough approximation of apparent color */
 
 	Astrobj(Game *game) : st(game){}
@@ -150,6 +150,14 @@ public:
 	/// The sun in this context is the brightest local Star.
 	virtual double getAmbientBrightness(const Viewer &vw)const{ return 0.; }
 
+	/// @brief Returns absolute magnitude of this celestial body
+	double getAbsMag()const;
+
+	/// @brief Sets absolute magnitude (which is converted to and saved as brightness internally)
+	void setAbsMag(double v);
+
+	/// @brief Reference value for Sol's (our sun's) brightness
+	static const double sol_absmag;
 };
 
 
@@ -164,6 +172,18 @@ inline void OrbitCS::setShowOrbit(bool b){
 		flags2 &= ~OCS_SHOWORBIT;
 	else
 		flags2 |= OCS_SHOWORBIT;
+}
+
+inline double Astrobj::getAbsMag()const{
+	// Avoid domain error
+	if(brightness == 0.)
+		return 50.;
+	else
+		return -log(brightness) / log(100) * 5. + sol_absmag;
+}
+
+inline void Astrobj::setAbsMag(double v){
+	brightness = pow(100, -(v - sol_absmag) / 5.);
 }
 
 #endif

@@ -21,5 +21,5 @@ player.setmover("tactical");
 
 local lookrot = Quatd(0., 1., 0., 0.) * Quatd(-sin(PI/8.), 0, 0, cos(PI/8.)) * Quatd(0, sin(PI/8.), 0, cos(PI/8.));
 player.setrot(lookrot);
-player.viewdist = 0.25;
+player.viewdist = 250.;
 

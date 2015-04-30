@@ -18,9 +18,9 @@ extern "C"{
 }
 
 
-double RStation::modelScale = 0.1;
+double RStation::modelScale = 100.;
 gltestp::dstring RStation::modelFile = "models/rstation.mqo";
-double RStation::hitRadius = 4.;
+double RStation::hitRadius = 4000.;
 double RStation::defaultMass = 1e10; ///< An object with this mass probably should be kinematic.
 double RStation::maxHealthValue = 1500000.;
 HitBoxList RStation::hitboxes;
@@ -83,7 +83,7 @@ double RStation::getHitRadius()const{
 void RStation::cockpitview(Vec3d &pos, Quatd &rot, int seatid)const{
 	Player *player = game->player;
 	double g_viewdist = 1.;
-	Vec3d ofs, src[3] = {Vec3d(0., .001, -.002), Vec3d(0., 0., 10.)};
+	Vec3d ofs, src[3] = {Vec3d(0., 1., -2.), Vec3d(0., 0., 10000.)};
 	Mat4d mat;
 	Quatd q;
 	seatid = (seatid + 3) % 3;
@@ -91,7 +91,7 @@ void RStation::cockpitview(Vec3d &pos, Quatd &rot, int seatid)const{
 		double f;
 		q = this->rot * player->getrot();
 		src[2][2] = .1 * g_viewdist;
-		f = src[2][2] * .001 < .001 ? src[2][2] * .001 : .001;
+		f = src[2][2] < 1. ? src[2][2] : 1.;
 		src[2][2] += f * sin(player->gametime * M_PI / 2. + M_PI / 2.);
 		src[2][0] = f * sin(player->gametime * M_PI / 2.);
 		src[2][1] = f * cos(player->gametime * M_PI / 2.);
@@ -118,7 +118,7 @@ void RStation::anim(double dt){
 		if(*it){
 			Entity *e = *it;
 			if(this != e && w == e->w && 0 <= e->race &&
-				(this->pos - e->pos).slen() < 8. * 8.)
+				(this->pos - e->pos).slen() < 8000. * 8000.)
 			{
 				if(orace < 0)
 					orace = e->race;
@@ -169,15 +169,16 @@ int RStation::takedamage(double damage, int hitpart){
 		ret = 0;
 #ifndef DEDICATED
 		Vec3d accel = w->accel(pos, velo);
+		double speed = 1000.;
 /*		effectDeath(w, pt);*/
 		if(tell) for(i = 0; i < 32; i++){
 			Vec3d pos, velo;
-			velo[0] = drseq(&w->rs) - .5;
-			velo[1] = drseq(&w->rs) - .5;
-			velo[2] = drseq(&w->rs) - .5;
+			velo[0] = speed * (drseq(&w->rs) - .5);
+			velo[1] = speed * (drseq(&w->rs) - .5);
+			velo[2] = speed * (drseq(&w->rs) - .5);
 			velo.normin();
 			pos = this->pos + velo * .1 * .1;
-			AddTeline3D(tell, pos, velo, .005, quat_u, vec3_000, accel, COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
+			AddTeline3D(tell, pos, velo, 5., quat_u, vec3_000, accel, COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
 		}
 #endif
 		health = -2.;

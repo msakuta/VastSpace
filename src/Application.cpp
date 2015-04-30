@@ -61,13 +61,19 @@ int cmd_move(int argc, char *argv[], void *pv){
 	com.destpos = comdst;
 	Quatd headrot;
 	int n = 0;
-	for(Player::SelectSet::iterator it = pl->selected.begin(); it != pl->selected.end(); it++){
+	for(Player::SelectSet::iterator it = pl->selected.begin(); it != pl->selected.end(); ++it){
 		Entity *pt = *it;
 		if(pt->w == pl->cs->w){
+			double offset = pt->getHitRadius();
+			Player::SelectSet::iterator next = it;
+			++next;
+			if(next != pl->selected.end())
+				offset += (*next)->getHitRadius();
+			offset *= 2.4;
 			if(n == 0 && DBL_EPSILON < (comdst - pt->pos).slen())
 				headrot = Quatd::direction(-(comdst - pt->pos));
 			n++;
-			Vec3d dp((n % 2 * 2 - 1) * (n / 2 * .05), 0., n / 2 * .05);
+			Vec3d dp((n % 2 * 2 - 1) * (n / 2 * offset), 0., n / 2 * offset);
 			com.destpos = comdst + headrot.trans(dp);
 			pt->command(&com);
 

@@ -55,7 +55,7 @@ extern "C"{
 
 const float Defender::rotateTime = 2.f;
 HitBoxList Defender::hitboxes;
-double Defender::modelScale = 1./10000;
+double Defender::modelScale = 1./10;
 double Defender::defaultMass = 4e3;
 GLuint Defender::overlayDisp = 0;
 Vec3d Defender::gunPos(0., -16.95 * modelScale, -200. * modelScale);
@@ -220,7 +220,7 @@ void Defender::init(){
 void Defender::cockpitView(Vec3d &pos, Quatd &q, int seatid)const{
 	Player *ppl = game->player;
 	Vec3d ofs;
-	static const Vec3d src[3] = {Vec3d(0., .001, -.002), Vec3d(0., .010, 0.030), Vec3d(0., .010, .030)};
+	static const Vec3d src[3] = {Vec3d(0., 1., -2.), Vec3d(0., 10., 30.), Vec3d(0., 10., 30.)};
 	Mat4d mat;
 	seatid = (seatid + 3) % 3;
 	if(seatid == 2 && enemy && enemy->w == w){
@@ -298,7 +298,7 @@ bool Defender::findEnemy(){
 	if(forcedEnemy)
 		return !!enemy;
 	Entity *pt2, *closest = NULL;
-	double best = 1e2 * 1e2;
+	double best = 1e5 * 1e5;
 	for(WarField::EntityList::iterator it = w->el.begin(); it != w->el.end(); it++) if(*it){
 		Entity *pt2 = *it;
 
@@ -712,7 +712,7 @@ void Defender::anim(double dt){
 				}
 				else if(p->task == Moveto){
 					Vec3d dr = pt->pos - p->dest;
-					if(dr.slen() < .015 * .015){
+					if(dr.slen() < 15. * 15.){
 						p->throttle = 0.;
 						parking = 1;
 						pt->velo += dr * -dt * .5;
@@ -760,8 +760,8 @@ void Defender::anim(double dt){
 						Vec3d randomvec;
 						for(int i = 0; i < 3; i++)
 							randomvec[i] = rs.nextd() - .5;
-						pt->velo += randomvec * dt * .05;
-						bbody->applyCentralForce(btvc(randomvec * mass * .05));
+						pt->velo += randomvec * dt * 50.;
+						bbody->applyCentralForce(btvc(randomvec * mass * 50.));
 					}
 
 					if(p->task == Attack || forward.sp(dv) < -.5){
@@ -792,7 +792,7 @@ void Defender::anim(double dt){
 					}
 					else{
 						fdodge -= float(dt);
-						bbody->applyCentralForce(btvc((fdodge < 0.5 ? 1 : -1) * this->rot.trans(SQRT2P2 * Vec3d(i%2*2-1,i/2*2-1,0)) * .3 * mass));
+						bbody->applyCentralForce(btvc((fdodge < 0.5 ? 1 : -1) * this->rot.trans(SQRT2P2 * Vec3d(i%2*2-1,i/2*2-1,0)) * 300. * mass));
 					}
 				}
 				else if(isDeployed() && enemy){
@@ -820,12 +820,12 @@ void Defender::anim(double dt){
 							paradec = mother->enumParadeC(mother->Fighter);
 						Vec3d target, target0(-1., 0., -1.);
 						Quatd q2, q1;
-						target0[0] += p->paradec % 10 * -.05;
-						target0[2] += p->paradec / 10 * -.05;
+						target0[0] += p->paradec % 10 * -50.;
+						target0[2] += p->paradec / 10 * -50.;
 						target = pm->rot.trans(target0);
 						target += pm->pos;
 						Vec3d dr = pt->pos - target;
-						if(dr.slen() < .015 * .015){
+						if(dr.slen() < 15. * 15.){
 							q1 = pm->rot;
 							p->throttle = 0.;
 							parking = 1;
@@ -848,7 +848,7 @@ void Defender::anim(double dt){
 							bbody->applyCentralForce(btvc(-sidevelo * mass));
 
 //							p->throttle = dr.slen() / 5. + .01;
-							steerArrival(dt, target, pm->velo, 1. / 2., .001);
+							steerArrival(dt, target, pm->velo, 1. / 2., 1.);
 						}
 						if(1. < p->throttle)
 							p->throttle = 1.;
@@ -905,9 +905,9 @@ void Defender::anim(double dt){
 
 						Vec3d target = pm->rot.trans(target0);
 						target += pm->pos;
-						steerArrival(dt, target, pm->velo, 1. / 2., .001);
+						steerArrival(dt, target, pm->velo, 1. / 2., 1);
 						double dist = (target - this->pos).len();
-						if(dist < (task == Dockque ? .02 : .05)){
+						if(dist < (task == Dockque ? 20. : 50.)){
 							if(p->task == Dockque)
 								p->task = Dock;
 							else{
@@ -1052,7 +1052,7 @@ void Defender::anim(double dt){
 		}
 
 		/* you're not allowed to accel further than certain velocity. */
-		const double maxvelo = .5, speed = -p->velo.sp(mat.vec3(2));
+		const double maxvelo = 500., speed = -p->velo.sp(mat.vec3(2));
 		if(maxvelo < speed)
 			p->throttle = 0.;
 		else{
@@ -1080,7 +1080,7 @@ void Defender::anim(double dt){
 			}
 			else
 				p->fuel -= consump;
-			double spd = pf->throttle * (p->task != Attack ? .01 : .005);
+			double spd = pf->throttle * (p->task != Attack ? 10. : 5.);
 			acc = pt->rot.trans(acc0);
 			bbody->applyCentralForce(btvc(acc * spd * 5. * mass));
 			pt->velo += acc * spd;
@@ -1152,15 +1152,15 @@ void Defender::anim(double dt){
 			for(int i = 0; i < 16; i++){
 				Vec3d pos;
 				COLOR32 col = 0;
-				pos[0] = .02 * (drseq(&w->rs) - .5);
-				pos[1] = .02 * (drseq(&w->rs) - .5);
-				pos[2] = .02 * (drseq(&w->rs) - .5);
+				pos[0] = 20. * (drseq(&w->rs) - .5);
+				pos[1] = 20. * (drseq(&w->rs) - .5);
+				pos[2] = 20. * (drseq(&w->rs) - .5);
 				col |= COLOR32RGBA(rseq(&w->rs) % 32 + 127,0,0,0);
 				col |= COLOR32RGBA(0,rseq(&w->rs) % 32 + 127,0,0);
 				col |= COLOR32RGBA(0,0,rseq(&w->rs) % 32 + 127,0);
 				col |= COLOR32RGBA(0,0,0,191);
 	//			AddTeline3D(w->tell, pos, NULL, .035, NULL, NULL, NULL, col, TEL3_NOLINE | TEL3_GLOW | TEL3_INVROTATE, 60.);
-				AddTelineCallback3D(tell, pos + this->pos, pos / 1. + velo / 2., .02, quat_u, vec3_000, vec3_000, ::smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
+				AddTelineCallback3D(tell, pos + this->pos, pos / 1. + velo / 2., 20., quat_u, vec3_000, vec3_000, ::smokedraw, (void*)col, TEL3_INVROTATE | TEL3_NOLINE, 5.);
 			}
 
 			{/* explode shockwave thingie */
@@ -1180,7 +1180,7 @@ void Defender::anim(double dt){
 
 				AddTeline3D(tell, this->pos, vec3_000, 1., q, vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_QUAT, 1.);
 #endif
-				AddTeline3D(tell, this->pos, vec3_000, .3, quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
+				AddTeline3D(tell, this->pos, vec3_000, 300., quat_u, vec3_000, vec3_000, COLOR32RGBA(255,255,255,127), TEL3_EXPANDISK | TEL3_NOLINE | TEL3_INVROTATE, .5);
 			}
 #endif
 			if(game->isServer()){
@@ -1197,14 +1197,14 @@ void Defender::anim(double dt){
 				int i, n;
 				n = (int)(dt * DEFENDER_SMOKE_FREQ + drseq(&w->rs));
 				for(i = 0; i < n; i++){
-					pos[0] = pt->pos[0] + (drseq(&w->rs) - .5) * .01;
-					pos[1] = pt->pos[1] + (drseq(&w->rs) - .5) * .01;
-					pos[2] = pt->pos[2] + (drseq(&w->rs) - .5) * .01;
-					dv[0] = .5 * pt->velo[0] + (drseq(&w->rs) - .5) * .01;
-					dv[1] = .5 * pt->velo[1] + (drseq(&w->rs) - .5) * .01;
-					dv[2] = .5 * pt->velo[2] + (drseq(&w->rs) - .5) * .01;
+					pos[0] = pt->pos[0] + (drseq(&w->rs) - .5) * 10.;
+					pos[1] = pt->pos[1] + (drseq(&w->rs) - .5) * 10.;
+					pos[2] = pt->pos[2] + (drseq(&w->rs) - .5) * 10.;
+					dv[0] = .5 * pt->velo[0] + (drseq(&w->rs) - .5) * 10.;
+					dv[1] = .5 * pt->velo[1] + (drseq(&w->rs) - .5) * 10.;
+					dv[2] = .5 * pt->velo[2] + (drseq(&w->rs) - .5) * 10.;
 //					AddTeline3D(w->tell, pos, dv, .01, NULL, NULL, gravity, COLOR32RGBA(127 + rseq(&w->rs) % 32,127,127,255), TEL3_SPRITE | TEL3_INVROTATE | TEL3_NOLINE | TEL3_REFLECT, 1.5 + drseq(&w->rs) * 1.5);
-					AddTelineCallback3D(tell, pos, dv, .02, quat_u, vec3_000, gravity, firesmokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, float(1.5 + drseq(&w->rs) * 1.5));
+					AddTelineCallback3D(tell, pos, dv, 20., quat_u, vec3_000, gravity, firesmokedraw, NULL, TEL3_INVROTATE | TEL3_NOLINE, float(1.5 + drseq(&w->rs) * 1.5));
 				}
 			}
 #endif
@@ -1255,9 +1255,9 @@ int Defender::takedamage(double damage, int hitpart){
 		Teline3List *tell = w->getTeline3d();
 		if(tell) for(i = 0; i < 32; i++){
 			Vec3d velo(w->rs.nextd() - .5, w->rs.nextd() - .5, w->rs.nextd() - .5);
-			velo.normin().scalein(.1);
-			Vec3d pos = this->pos + velo * .1;
-			AddTeline3D(tell, pos, velo, .005, quat_u, vec3_000, w->accel(this->pos, this->velo), COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, float(1.5 + drseq(&w->rs)));
+			velo.normin().scalein(100.);
+			Vec3d pos = this->pos + velo * 100.;
+			AddTeline3D(tell, pos, velo, 5., quat_u, vec3_000, w->accel(this->pos, this->velo), COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, float(1.5 + drseq(&w->rs)));
 		}
 #endif
 		health = -2.;
@@ -1286,7 +1286,7 @@ bool Defender::isTargettable()const{return true;}
 bool Defender::isSelectable()const{return true;}
 
 double Defender::getHitRadius()const{
-	return .02;
+	return 20.;
 }
 
 int Defender::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retn){

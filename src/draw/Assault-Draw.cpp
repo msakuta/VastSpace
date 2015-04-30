@@ -31,7 +31,7 @@ void Assault::draw(wardraw_t *wd){
 		return;
 //	wd->lightdraws++;
 
-	draw_healthbar(this, wd, health / getMaxHealth(), .1, shieldAmount / maxshield(), capacitor / maxenergy());
+	draw_healthbar(this, wd, health / getMaxHealth(), 100., shieldAmount / maxshield(), capacitor / maxenergy());
 
 	struct TextureParams{
 		Assault *p;
@@ -120,7 +120,7 @@ void Assault::drawtra(wardraw_t *wd){
 	if(cull(wd))
 		return;
 	drawNavlights(wd, navlights);
-	drawCapitalBlast(wd, Vec3d(0,-0.003,.06), .01);
+	drawCapitalBlast(wd, Vec3d(0,-3.,60.), 10.);
 	drawShield(wd);
 }
 

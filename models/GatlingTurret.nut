@@ -1,7 +1,7 @@
 
-modelScale <- 0.00005;
+modelScale <- 0.05;
 
-hitRadius <- 0.005;
+hitRadius <- 5.;
 
 turretVariance <- 0.001 * PI;
 turretIntolerance <- PI / 20.;
@@ -11,7 +11,7 @@ manualRotateSpeed <- rotateSpeed * 0.5;
 bulletDamage <- 10;
 bulletLife <- 3.;
 shootInterval <- 0.1;
-bulletSpeed <- 4.;
+bulletSpeed <- 4000.;
 magazineSize <- 50;
 reloadTime <- 5.;
 barrelRotSpeed <- 2. * PI / shootInterval / 3.;

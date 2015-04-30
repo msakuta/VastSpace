@@ -224,7 +224,7 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 	}
 	else if(!strcmp(s, "orbit_radius") || !strcmp(s, "semimajor_axis")){
 //		if(s = strtok(ps, " \t\r\n"))
-			orbit_rad = sqcalc(sc, ps, s);
+			orbit_rad = sqcalc(sc, ps, s) * lengthUnit;
 		return true;
 	}
 	else if(!strcmp(s, "eccentricity")){
@@ -534,7 +534,7 @@ void Barycenter::updateInt(double dt){
 
 
 
-Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), absmag(30), basecolor(.5f,.5f,.5f,1.){
+Astrobj::Astrobj(const char *name, CoordSys *cs) : st(name, cs), mass(1e10), brightness(0.), basecolor(.5f,.5f,.5f,1.){
 }
 
 const ClassRegister<Astrobj> Astrobj::classRegister("Astrobj", sq_define);
@@ -550,7 +550,7 @@ void Astrobj::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << " " << rad;
 	sc.o << " " << mass;
-	sc.o << " " << absmag;
+	sc.o << " " << brightness;
 	sc.o << " " << basecolor;
 }
 
@@ -558,7 +558,7 @@ void Astrobj::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> " " >> rad;
 	sc.i >> " " >> mass;
-	sc.i >> " " >> absmag;
+	sc.i >> " " >> brightness;
 	sc.i >> " " >> basecolor;
 }
 
@@ -567,13 +567,13 @@ bool Astrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	if(0);
 	else if(!strcmp(s, "radius")){
 		if(argv[1]){
-			rad = sqcalc(sc, argv[1], s);
+			rad = sqcalc(sc, argv[1], s) * lengthUnit;
 		}
 		return true;
 	}
 	else if(!strcmp(s, "diameter")){
 		if(argv[1])
-			rad = .5 * sqcalc(sc, argv[1], s);
+			rad = .5 * sqcalc(sc, argv[1], s) * lengthUnit;
 		return true;
 	}
 	else if(!strcmp(s, "mass")){
@@ -629,7 +629,7 @@ bool Astrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 		return true;
 	}
 	else if(!strcmp(s, "absolute_magnitude") || !strcmp(s, "absmag")){
-		absmag = float(sqcalc(sc, ps, s));
+		setAbsMag(sqcalc(sc, ps, s));
 	}
 	else
 		return st::readFile(sc, argc, argv);
@@ -649,6 +649,8 @@ bool Astrobj::readFileEnd(StellarContext &sc){
 	}
 	return true;
 }
+
+const double Astrobj::sol_absmag = 4.83;
 
 #if 0
 	const char *texname;
@@ -754,7 +756,7 @@ double checkEclipse(const Astrobj *a, const CoordSys *retcs, const Vec3d &src, c
 
 bool FindBrightestAstrobj::invoke(const CoordSys *cs2){
 	const Astrobj *a = cs2->toAstrobj()/*dynamic_cast<Astrobj*>(cs2)*/;
-	if(!a || a == ignorecs ||  30 <= a->absmag)
+	if(!a || a == ignorecs ||  30 <= a->getAbsMag())
 		return true;
 
 	// I don't understand why, but this function seems to be occasionally called twice for the same
@@ -771,7 +773,7 @@ bool FindBrightestAstrobj::invoke(const CoordSys *cs2){
 		return true;
 
 	// Obtain brightness in ratio to Sun looked from earth
-	double rawval = pow(2.512, -(a->absmag + 26.7)) * 3.e14 * 3.e14 / sd;
+	double rawval = a->brightness * AU_PER_METER * AU_PER_METER / sd;
 
 	// Omit further investigation if the raw brightness is below the threshold.
 	if(rawval < threshold)
@@ -875,7 +877,7 @@ const CoordSys::PropertyMap &Astrobj::propertyMap()const{
 		});
 		pmap["absmag"] = PropertyEntry([](HSQUIRRELVM v, const CoordSys *cs){
 			const Astrobj *a = static_cast<const Astrobj*>(cs);
-			sq_pushfloat(v, a->absmag);
+			sq_pushfloat(v, a->getAbsMag());
 			return SQInteger(1);
 		},
 		[](HSQUIRRELVM v, CoordSys *cs){
@@ -883,7 +885,7 @@ const CoordSys::PropertyMap &Astrobj::propertyMap()const{
 			SQFloat f;
 			if(SQ_FAILED(sq_getfloat(v, 3, &f)))
 				return sq_throwerror(v, _SC("Astrobj.absmag set fail"));
-			a->absmag = float(f);
+			a->setAbsMag(f);
 			return SQInteger(0);
 		});
 	}
@@ -891,7 +893,7 @@ const CoordSys::PropertyMap &Astrobj::propertyMap()const{
 }
 
 
-Star::Star(const char *name, CoordSys *cs) : Astrobj(name, cs), spect(Unknown), subspect(0){ absmag = 0; }
+Star::Star(const char *name, CoordSys *cs) : Astrobj(name, cs), spect(Unknown), subspect(0){ brightness = 1.; }
 
 void Star::serialize(SerializeContext &sc){
 	st::serialize(sc);
@@ -999,7 +1001,7 @@ const CoordSys::PropertyMap &Star::propertyMap()const{
 double Star::appmag(const Vec3d &pos, const CoordSys &cs)const{
 	double dist = tocs(pos, &cs).len();
 	double parsecs = dist / 30.857e12;
-	return absmag + 5 * (log10(parsecs) - 1);
+	return getAbsMag() + 5 * (log10(parsecs) - 1);
 }
 
 Star::SpectralType Star::nameToSpectral(const char *name, float *subspect){

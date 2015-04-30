@@ -14,8 +14,8 @@ extern "C"{
 #include <clib/cfloat.h>
 }
 
-double LTurret::modelScale = 0.001;
-double LTurret::hitRadius = 0.03;
+double LTurret::modelScale = 1.;
+double LTurret::hitRadius = 30.;
 double LTurret::turretVariance = 0.001 * M_PI;
 double LTurret::turretIntolerance = M_PI / 20.;
 double LTurret::rotateSpeed = 0.4 * M_PI;
@@ -67,7 +67,7 @@ void LTurret::unserialize(UnserializeContext &sc){
 		Mat4d mat;
 		shootTransform(mat);
 		for(int i = 0; i < 2; i++){
-			Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, -0.030);
+			Vec3d lturret_ofs(5. * (i * 2 - 1), 0, -30.);
 			Vec3d direction = -mat.vec3(2);
 			shootEffect(mat.vp3(lturret_ofs), direction);
 		}
@@ -80,7 +80,7 @@ double LTurret::getHitRadius()const{return hitRadius;}
 void LTurret::anim(double dt){
 	st::anim(dt);
 	blowback += blowbackspeed * dt;
-	if(.010 < blowback)
+	if(10. < blowback)
 		blowbackspeed = 0;
 	blowbackspeed *= exp(-dt);
 	blowback *= exp(-dt);
@@ -104,7 +104,7 @@ void LTurret::shootTransform(Mat4d &mat, Quatd *qrot)const{
 	mat2.translatein(hp->pos);
 	Mat4d rot = hp->rot.tomat4();
 	mat = mat2 * rot;
-	mat.translatein(0., .005, -0.0025);
+	mat.translatein(0., 5., -2.5);
 	double yaw = this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance();
 	double pitch = this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance();
 	mat2 = mat.roty(yaw);
@@ -128,7 +128,7 @@ void LTurret::tryshoot(){
 	Quatd qrot;
 	shootTransform(mat, &qrot);
 	for(int i = 0; i < 2; i++){
-		Vec3d lturret_ofs(.005 * (i * 2 - 1), 0, -0.030);
+		Vec3d lturret_ofs(5. * (i * 2 - 1), 0, -30.);
 		Vec3d direction = -mat.vec3(2);
 		Bullet *pz;
 		pz = new Bullet(base, getBulletLife(), 800.);
@@ -140,7 +140,7 @@ void LTurret::tryshoot(){
 	}
 	this->cooldown += getShootInterval();
 	this->mf += .3;
-	blowbackspeed += .05;
+	blowbackspeed += 50.;
 	ammo -= 2;
 }
 
@@ -164,8 +164,8 @@ void LTurret::shootEffect(const Vec3d&, const Vec3d&){}
 
 
 
-double LMissileTurret::modelScale = 0.0001 / 2.;
-double LMissileTurret::hitRadius = 0.03;
+double LMissileTurret::modelScale = 0.1 / 2.;
+double LMissileTurret::hitRadius = 30.;
 double LMissileTurret::turretVariance = 0.001 * M_PI;
 double LMissileTurret::turretIntolerance = M_PI / 20.;
 double LMissileTurret::rotateSpeed = 0.4 * M_PI;
@@ -226,7 +226,7 @@ void LMissileTurret::clientUpdate(double dt){
 	anim(dt);
 }
 
-double LMissileTurret::getBulletSpeed()const{return 1.;}
+double LMissileTurret::getBulletSpeed()const{return 1000.;}
 float LMissileTurret::getShootInterval()const{return .5;}
 
 void LMissileTurret::tryshoot(){
@@ -238,7 +238,7 @@ void LMissileTurret::tryshoot(){
 	mat2.translatein(hp->pos);
 	Mat4d rot = hp->rot.tomat4();
 	Mat4d mat = mat2 * rot;
-	mat.translatein(0., .01, 0.);
+	mat.translatein(0., 10., 0.);
 	double yaw = this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance();
 	double pitch = this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance();
 	const Vec3d barrelpos = modelScale * Vec3d(0, 200, 0) * deploy;
@@ -247,7 +247,7 @@ void LMissileTurret::tryshoot(){
 	mat2.translatein(joint + barrelpos);
 	mat = mat2.rotx(pitch);
 	mat.translatein(-joint);
-	mat.translatein(0., -.01, 0.);
+	mat.translatein(0., -10., 0.);
 	Quatd qrot = base->rot * hp->rot * Quatd(0, sin(yaw / 2.), 0, cos(yaw / 2.)) * Quatd(sin(pitch / 2.), 0, 0, cos(pitch / 2.));
 	ammo--;
 	{

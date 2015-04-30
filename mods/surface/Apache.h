@@ -62,6 +62,8 @@ protected:
 	static double maxHealthValue;
 	static double rotorAxisSpeed;
 	static double mainRotorLiftFactor; ///< How strong the main rotor's lift is
+	static double mainRotorTorqueFactor; ///< The main rotor's torque factor is independently adjastable from lift.
+	static double mainRotorDragFactor; ///< Degree of strength of main rotor damping caused by air drag.
 	static double tailRotorLiftFactor; ///< How strong the tail rotor's lift is
 	static double featherSpeed; ///< Speed of feathering angle change
 	static double tailRotorSpeed; ///< Speed factor of the tail rotor relative to the main rotor.

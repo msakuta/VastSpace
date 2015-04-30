@@ -9,8 +9,10 @@ maxhealth <- 100.;
 
 rotorAxisSpeed <- 0.1 * PI;
 
-mainRotorLiftFactor <- 1.1;
-tailRotorLiftFactor <- 0.1;
+mainRotorLiftFactor <- 23;
+mainRotorTorqueFactor <- 1.0;
+mainRotorDragFactor <- 0.05;
+tailRotorLiftFactor <- 1.0;
 
 featherSpeed <- 1.0;
 

@@ -43,8 +43,10 @@ double Apache::modelScale = 0.01;
 double Apache::defaultMass = 5000.;
 double Apache::maxHealthValue = 100.;
 double Apache::rotorAxisSpeed = 0.1 * M_PI;
-double Apache::mainRotorLiftFactor = 0.023;
-double Apache::tailRotorLiftFactor = 0.003;
+double Apache::mainRotorLiftFactor = 23;
+double Apache::mainRotorTorqueFactor = 1.;
+double Apache::mainRotorDragFactor = 0.05;
+double Apache::tailRotorLiftFactor = 1.0;
 double Apache::featherSpeed = 1.;
 double Apache::tailRotorSpeed = 3.;
 double Apache::chainGunCooldown = 60. / 625.; ///< Defaults 625 rpm
@@ -74,6 +76,8 @@ void Apache::init(){
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			SingleDoubleProcess(rotorAxisSpeed, "rotorAxisSpeed", false) <<=
 			SingleDoubleProcess(mainRotorLiftFactor, "mainRotorLiftFactor", false) <<=
+			SingleDoubleProcess(mainRotorTorqueFactor, "mainRotorTorqueFactor", false) <<=
+			SingleDoubleProcess(mainRotorDragFactor, "mainRotorDragFactor", false) <<=
 			SingleDoubleProcess(tailRotorLiftFactor, "tailRotorLiftFactor", false) <<=
 			SingleDoubleProcess(featherSpeed, "featherSpeed") <<=
 			SingleDoubleProcess(tailRotorSpeed, "tailRotorSpeed") <<=
@@ -450,30 +454,44 @@ void Apache::anim(double dt){
 		/* momentum of the air flows into rotor's plane. downwards positive because we refer vehicle's velocity. */
 		{
 			Vec3d localvelo = this->velo;
-			airflux = rot2.vec3(1).sp(localvelo) * air / .1;
+			airflux = rot2.vec3(1).sp(localvelo) * air;
 		}
 
-		/* rotor thrust */
+		// Main rotor receives energy from engine */
 		{
-			double dest = throttle;
-			double v = (throttle - (rotoromega < 0. ? -1. : 1.) * (rotoromega * rotoromega * (5. * !!inwater + .7 + air * (.15 + .15 * feather * feather)) + .02) - (1 * feather * airflux)) * .3 * dt;
+			double v = throttle * dt;
 			rotoromega = rangein(rotoromega + v, -1., 5.);
-	/*		p->rotoromega = approach(p->rotoromega, dest, v, 1e10);*/
 		}
 		rotor = fmod(rotor + rotoromega * 10. * M_PI * dt, M_PI * 2.);
-	/*	rotor = fmod(rotor + throttle * 8. * M_PI * dt, M_PI * 2.);*/
+
 		tailrotor = fmod(tailrotor + (rotoromega/* + p->tail*/) * 6. * M_PI * dt, M_PI * 2.);
 		{
-			Vec3d org(0., 0.2, 0.), tail(0.5, .00, 8.8);
-			Vec3d pos = mat.dvp3(org);
-			double mag = air * mainRotorLiftFactor * rotoromega * (feather - airflux) * mass * dt;
+			double thrustForce = air * mainRotorLiftFactor * rotoromega * feather;
+			double mag = thrustForce * mass;
 			Vec3d thrust = rot2.vec3(1) * mag;
+			// The main rotor's hub is above the center of gravity of the fuselage, so it could
+			// generate torque by pure thrust, but it will complicate the simulation, so we ignore it for now.
 			if(bbody)
-				bbody->applyForce(btvc(thrust), btvc(pos));
+				bbody->applyCentralForce(btvc(thrust));
 //			else
 //				RigidAddMomentum(pt, pos, thrust);
-			pos = mat.dvp3(tail);
-			mag = air * tailRotorLiftFactor * rotoromega * this->tail * mass * dt;
+
+			// Rotor looses energy by thrusting
+			double drag = fabs(thrustForce) * mainRotorDragFactor;
+			rotoromega *= exp(-drag * dt);
+
+			if(bbody){
+				double invInertia = bbody->getInvInertiaDiagLocal().length();
+				if(0 < invInertia){
+					// The main rotor's torque is induced by cyclic pitch change, not by the rotor plane's angle.
+					double torque = air * mainRotorTorqueFactor * rotoromega / invInertia;
+					bbody->applyTorque(btvc(mat.dvp3(Vec3d(rotoraxis[0], 0, rotoraxis[1])) * torque));
+				}
+			}
+
+			Vec3d tail(.5, .00, 8.8); // Relative position of tail rotor from center of gravity
+			Vec3d pos = mat.dvp3(tail);
+			mag = air * tailRotorLiftFactor * rotoromega * this->tail * mass;
 			thrust = mat.vec3(0) * mag;
 			if(bbody)
 				bbody->applyForce(btvc(thrust), btvc(pos));

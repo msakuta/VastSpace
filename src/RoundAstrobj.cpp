@@ -52,7 +52,7 @@ RoundAstrobj::RoundAstrobj(const char *name, CoordSys *cs) : st(name, cs),
 #endif
 	cloudPhase(0.),
 	noisePos(0,0,0),
-	terrainNoiseHeight(1.),
+	terrainNoiseHeight(1000.),
 	terrainNoisePersistence(0.65),
 	terrainNoiseLODRange(3.),
 	terrainNoiseLODs(3),
@@ -262,7 +262,7 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	}
 	else if(!strcmp(s, "cloudheight")){
 		if(1 < argc){
-			this->cloudHeight = sqcalc(sc, argv[1], s);
+			this->cloudHeight = sqcalc(sc, argv[1], s) * lengthUnit;
 		}
 		return true;
 	}
@@ -286,7 +286,7 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	}
 	else if(!strcmp(s, "atmosphere_height")){
 		if(1 < argc){
-			atmodensity = sqcalc(sc, ps, s);
+			atmodensity = sqcalc(sc, ps, s) * lengthUnit;
 			flags |= AO_ATMOSPHERE;
 		}
 		return true;
@@ -336,7 +336,7 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 		return true;
 	}
 	else if(!scstrcmp(s, "terrainNoiseHeight")){
-		terrainNoiseHeight = sqcalc(sc, ps, s);
+		terrainNoiseHeight = sqcalc(sc, ps, s) * lengthUnit;
 		return true;
 	}
 	else if(!scstrcmp(s, "terrainNoisePersistence")){

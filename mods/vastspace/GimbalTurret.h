@@ -90,7 +90,7 @@ public:
 protected:
 	Model *initModel();
 	float reloadtime()const{return 2.;}
-	double bulletspeed()const{return 0.4;}
+	double bulletspeed()const{return 400.;}
 	float bulletlife()const{return 10.;}
 	double bulletDamage()const{return 100.;}
 	Bullet *createBullet(const Vec3d &gunPos);
@@ -109,7 +109,7 @@ public:
 	static EntityRegister<BeamGimbalTurret> entityRegister;
 protected:
 	float reloadtime()const{return 2.;}
-	double bulletspeed()const{return 5.;}
+	double bulletspeed()const{return 5000.;}
 	float bulletlife()const{return 1.5;}
 	double bulletDamage()const{return 100.;}
 	double shootPatience()const{return 0.03;}

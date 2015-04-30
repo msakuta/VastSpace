@@ -222,9 +222,9 @@ void GimbalTurret::leaveField(WarField *w){
 }
 
 
-double GimbalTurret::modelScale = 0.0001;
+double GimbalTurret::modelScale = 0.1;
 double GimbalTurret::defaultMass = 10000.;
-double GimbalTurret::hitRadius = 0.01;
+double GimbalTurret::hitRadius = 10.;
 double GimbalTurret::maxHealthValue = 1500.;
 GLuint GimbalTurret::overlayDisp = 0;
 
@@ -255,8 +255,8 @@ double GimbalTurret::getMaxHealth()const{return maxHealthValue;}
 
 const Autonomous::ManeuverParams &GimbalTurret::getManeuve()const{
 	static const ManeuverParams mn = {
-		.005, /* double accel; */
-		.01, /* double maxspeed; */
+		5., /* double accel; */
+		10., /* double maxspeed; */
 		50., /* double angleaccel; */
 		.4, /* double maxanglespeed; */
 		50000., /* double capacity; [MJ] */
@@ -271,7 +271,7 @@ float GimbalTurret::reloadtime()const{
 }
 
 double GimbalTurret::bulletspeed()const{
-	return 3.;
+	return 3000.;
 }
 
 float GimbalTurret::bulletlife()const{

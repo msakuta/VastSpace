@@ -22,7 +22,7 @@ double checkEclipse(const Astrobj *illuminator, const CoordSys *retcs, const Vec
 ///          1 means there's no eclipse, while 0 means total eclipse.
 ///          It can be somewhere in between if you're in penumbra or antumbra.
 inline double checkEclipse(const Astrobj *illuminator, const CoordSys *retcs, const Vec3d &src, const Astrobj **rethit = NULL){
-	if(illuminator && illuminator->absmag < 30){
+	if(illuminator && illuminator->getAbsMag() < 30){
 		Vec3d lightSource = retcs->tocs(vec3_000, illuminator);
 		Vec3d ray = src - lightSource;
 		double sd = ray.slen();

@@ -125,7 +125,7 @@ void Island3::init(){
 	sun_phase = 0.;
 	ent = NULL;
 	headToSun = false;
-	absmag = 30.;
+	setAbsMag(30.);
 	rad = 100000.;
 	orbit_home = NULL;
 	mass = 1e10;

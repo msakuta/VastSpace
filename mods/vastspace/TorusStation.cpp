@@ -89,7 +89,7 @@ void TorusStation::init(){
 	sun_phase = 0.;
 	ent = NULL;
 	headToSun = false;
-	absmag = 30.;
+	setAbsMag(30.);
 	rad = RAD;
 	orbit_home = NULL;
 	mass = defaultMass;

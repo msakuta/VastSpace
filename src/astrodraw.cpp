@@ -2311,7 +2311,7 @@ void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 		Vec3d dv = vw->pos - spos;
 		Vec3d spos1 = vw->rot.dvp3(dv);
 		double sp = -spos1[2];
-		double brightness = pow(100, -a->absmag / 5.);
+		double brightness = a->brightness;
 		double dvslen = dv.slen();
 		if(dvslen < EPSILON)
 			return;

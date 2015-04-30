@@ -449,7 +449,7 @@ void RoundAstrobj::updateAbsMag(double dt){
 		double absBrightness = albedo * finder.brightness * appArea;
 
 		// Last, convert the brightness to absolute magnitude (logarithmic scale).
-		absmag = float(-log(absBrightness) / log(2.512) - 26.7);
+		brightness = absBrightness;
 	}
 }
 

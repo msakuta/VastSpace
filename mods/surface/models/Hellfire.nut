@@ -1,5 +1,5 @@
 
-modelScale <- 0.00001;
+modelScale <- 0.01;
 
 mass <- 6.;
 

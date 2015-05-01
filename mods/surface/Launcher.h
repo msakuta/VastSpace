@@ -44,10 +44,10 @@ class HydraRocket : public Bullet{
 public:
 	typedef Bullet st;
 	static EntityRegister<HydraRocket> entityRegister;
-	HydraRocket(Game *game) : st(game), pf(NULL), fuel(3.){}
+	HydraRocket(Game *game) : st(game), pf(NULL), fuel(3000.){}
 	HydraRocket(WarField *w);
 	HydraRocket(Entity *owner, float life, double damage) :
-		st(owner, life, damage), pf(NULL), fuel(3.){init();}
+		st(owner, life, damage), pf(NULL), fuel(3000.){init();}
 	void init();
 	const char *classname()const override{return "HydraRocket";}
 	void anim(double dt)override;
@@ -94,10 +94,10 @@ class Hellfire : public Bullet{
 public:
 	typedef Bullet st;
 	static EntityRegister<Hellfire> entityRegister;
-	Hellfire(Game *game) : st(game), pf(NULL), fuel(3.), target(NULL), centered(false){init();}
+	Hellfire(Game *game) : st(game), pf(NULL), fuel(3000.), target(NULL), centered(false){init();}
 	Hellfire(WarField *w);
 	Hellfire(Entity *owner, float life, double damage) :
-		st(owner, life, damage), pf(NULL), fuel(3.), target(NULL), centered(false){init();}
+		st(owner, life, damage), pf(NULL), fuel(3000.), target(NULL), centered(false){init();}
 	~Hellfire();
 	void init();
 	const char *classname()const override{return "Hellfire";}

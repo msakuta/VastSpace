@@ -28,9 +28,9 @@ extern "C"{
 
 void HydraRocket::draw(WarDraw *wd){
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(this->pos, .003))
+	if(wd->vw->gc->cullFrustum(this->pos, 3.))
 		return;
-	double pixels = .015 * fabs(wd->vw->gc->scale(this->pos));
+	double pixels = 15. * fabs(wd->vw->gc->scale(this->pos));
 	if(pixels < 2)
 		return;
 	wd->lightdraws++;
@@ -61,8 +61,8 @@ void HydraRocket::draw(WarDraw *wd){
 }
 
 void HydraRocket::drawtra(WarDraw *wd){
-	double length = (this->velo.slen() * 5 * 5 + 20) * 0.0015;
-	double width = 0.001;
+	double length = (this->velo.slen() * 5 * 5 + 20) * 1.5;
+	double width = 1.;
 
 	double f = 2. * this->velo.len() * length;
 	double span = std::min(f, .1);
@@ -93,9 +93,9 @@ void HydraRocket::bulletDeathEffect(int hitground, const struct contact_info *ci
 
 void HydraRocketLauncher::draw(WarDraw *wd){
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(this->pos, .003))
+	if(wd->vw->gc->cullFrustum(this->pos, 3.))
 		return;
-	double pixels = .015 * fabs(wd->vw->gc->scale(this->pos));
+	double pixels = 15. * fabs(wd->vw->gc->scale(this->pos));
 	if(pixels < 2)
 		return;
 	wd->lightdraws++;
@@ -134,9 +134,9 @@ void HydraRocketLauncher::draw(WarDraw *wd){
 
 void Hellfire::draw(WarDraw *wd){
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(this->pos, .003))
+	if(wd->vw->gc->cullFrustum(this->pos, 3.))
 		return;
-	double pixels = .015 * fabs(wd->vw->gc->scale(this->pos));
+	double pixels = 15. * fabs(wd->vw->gc->scale(this->pos));
 	if(pixels < 2)
 		return;
 	wd->lightdraws++;
@@ -167,8 +167,8 @@ void Hellfire::draw(WarDraw *wd){
 }
 
 void Hellfire::drawtra(WarDraw *wd){
-	double length = (this->velo.slen() * 5 * 5 + 20) * 0.0015;
-	double width = 0.001;
+	double length = (this->velo.slen() * 5 * 5 + 20) * 1.5;
+	double width = 1.;
 
 	double f = 2. * this->velo.len() * length;
 	double span = std::min(f, .1);
@@ -199,9 +199,9 @@ void Hellfire::bulletDeathEffect(int hitground, const struct contact_info *ci){
 
 void HellfireLauncher::draw(WarDraw *wd){
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(this->pos, .003))
+	if(wd->vw->gc->cullFrustum(this->pos, 3.))
 		return;
-	double pixels = .015 * fabs(wd->vw->gc->scale(this->pos));
+	double pixels = 15. * fabs(wd->vw->gc->scale(this->pos));
 	if(pixels < 2)
 		return;
 	wd->lightdraws++;
@@ -246,13 +246,13 @@ void HellfireLauncher::draw(WarDraw *wd){
 //	Sidewinder implementation
 //-----------------------------------------------------------------------------
 
-const double Sidewinder::modelScale = 1e-5;
+const double Sidewinder::modelScale = 1e-2;
 
 void Sidewinder::draw(WarDraw *wd){
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(this->pos, .003))
+	if(wd->vw->gc->cullFrustum(this->pos, 3.))
 		return;
-	double pixels = .015 * fabs(wd->vw->gc->scale(this->pos));
+	double pixels = 15. * fabs(wd->vw->gc->scale(this->pos));
 	if(pixels < 2)
 		return;
 	wd->lightdraws++;
@@ -296,9 +296,9 @@ void SidewinderLauncher::draw(WarDraw *wd){
 		return;
 
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(this->pos, .003))
+	if(wd->vw->gc->cullFrustum(this->pos, 3.))
 		return;
-	double pixels = .015 * fabs(wd->vw->gc->scale(this->pos));
+	double pixels = 15. * fabs(wd->vw->gc->scale(this->pos));
 	if(pixels < 2)
 		return;
 	wd->lightdraws++;

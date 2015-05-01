@@ -105,10 +105,10 @@ const struct color_sequence cs_firetrail = DEFINE_COLSEQ(cnl_firetrail, (COLOR32
 
 Entity::EntityRegister<HydraRocket> HydraRocket::entityRegister("HydraRocket");
 
-double HydraRocket::modelScale = 1e-6;
+double HydraRocket::modelScale = 1e-3;
 double HydraRocket::defaultMass = 6.2;
 
-HydraRocket::HydraRocket(WarField *w) : st(w), pf(NULL), fuel(3.){
+HydraRocket::HydraRocket(WarField *w) : st(w), pf(NULL), fuel(3000.){
 	init();
 }
 
@@ -126,14 +126,14 @@ void HydraRocket::init(){
 
 void HydraRocket::anim(double dt){
 	if(0. < fuel){
-		static const double accel = .20;
+		static const double accel = 200.;
 		double delta[3], dist;
 		int flying = 0;
 
 		Vec3d forward = -rot.trans(vec3_001);
 
 		double burnt = dt * accel * 300. / damage/** (flying ? 3 : 1)*/;
-		double thrust = mass / 10. * burnt / (1. + fuel / 20.)/* / dist*/;
+		double thrust = mass / 10. * burnt / (1. + fuel / 20000.)/* / dist*/;
 		velo += forward * thrust;
 		fuel -= burnt;
 	}
@@ -201,7 +201,7 @@ Bullet *HydraRocketLauncher::fire(double dt){
 	while(0 <= ammo && cooldown < dt){
 		HydraRocket *pb = new HydraRocket(base, 10., 300);
 		w->addent(pb);
-		Vec3d velo = this->velo + this->rot.trans(Vec3d(0,0,-0.01));
+		Vec3d velo = this->velo + this->rot.trans(Vec3d(0,0,-10.));
 		pb->setPosition(&this->pos, &this->rot, &velo, &this->omg);
 		cooldown += getCooldownTime();
 		ammo--;
@@ -217,10 +217,10 @@ Bullet *HydraRocketLauncher::fire(double dt){
 
 Entity::EntityRegister<Hellfire> Hellfire::entityRegister("Hellfire");
 
-double Hellfire::modelScale = 1e-5;
+double Hellfire::modelScale = 1e-2;
 double Hellfire::defaultMass = 6.2;
 
-Hellfire::Hellfire(WarField *w) : st(w), pf(NULL), fuel(3.){
+Hellfire::Hellfire(WarField *w) : st(w), pf(NULL), fuel(3000.){
 	init();
 }
 
@@ -450,7 +450,7 @@ Bullet *HellfireLauncher::fire(double dt){
 	while(0 <= ammo && cooldown < dt){
 		Hellfire *pb = new Hellfire(base, 10., 300);
 		w->addent(pb);
-		Vec3d velo = this->velo + this->rot.trans(Vec3d(0,0,-0.01));
+		Vec3d velo = this->velo + this->rot.trans(Vec3d(0,0,-10.));
 		pb->setPosition(&this->pos, &this->rot, &velo, &this->omg);
 		if(base)
 			pb->target = base->enemy;
@@ -493,7 +493,7 @@ Bullet *SidewinderLauncher::fire(double dt){
 	while(0 <= ammo && cooldown < dt){
 		Sidewinder *pb = new Sidewinder(base, 10., 300);
 		w->addent(pb);
-		Vec3d velo = this->velo + this->rot.trans(Vec3d(0,0,-0.01));
+		Vec3d velo = this->velo + this->rot.trans(Vec3d(0,0,-10.));
 		pb->setPosition(&this->pos, &this->rot, &velo, &this->omg);
 		if(base)
 			pb->target = base->enemy;

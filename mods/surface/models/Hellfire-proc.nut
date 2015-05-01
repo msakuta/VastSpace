@@ -15,7 +15,7 @@ local function fmod(v,f){
 	return v - f * floor(v / f);
 }
 
-local SSM_ACCEL = 0.20;
+local SSM_ACCEL = 200.;
 
 function HellfireProc(e,dt){
 	local forward = -e.rot.trans(Vec3d(0,0,1));
@@ -33,7 +33,6 @@ function HellfireProc(e,dt){
 	local dv2 = Vec3d(0,0,0);
 
 	local function run(){
-		local samspeed = 0.8;
 		local delta = e.target.pos - e.pos;
 		if(delta.slen() == 0)
 			return;
@@ -79,7 +78,7 @@ function HellfireProc(e,dt){
 
 		local deltavelo = e.target.velo - e.velo;
 		deltavelo -= zh * deltavelo.sp(zh);
-		local speed = max(0.5, e.velo.sp(zh));
+		local speed = max(500., e.velo.sp(zh));
 		local dist = (e.target.pos - e.pos).len();
 		local t = min(1., dist / speed);
 		if(dist == 0)

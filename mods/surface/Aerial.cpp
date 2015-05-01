@@ -913,7 +913,7 @@ void Aerial::animAI(double dt, bool onfeet){
 		}
 		else{
 			double velolen = velo.len();
-			throttle = approach(throttle, std::max(0., 0.2 - velolen * 20. + (fabs(phi) < 0.05 * M_PI ? 0.1 : 0.)), dt, 0);
+			throttle = approach(throttle, std::max(0., 0.2 - velolen * 20000. + (fabs(phi) < 0.05 * M_PI ? 0.1 : 0.)), dt, 0);
 			rudder = rangein(approach(rudder, phi, 1. * M_PI * dt, 0.), -M_PI / 6., M_PI / 6.);
 			brake = false;
 			spoiler = false;
@@ -964,7 +964,7 @@ void Aerial::animAI(double dt, bool onfeet){
 		estimate_pos(estPos, deltaPos, enemy ? enemy->velo - this->velo : -this->velo, vec3_000, vec3_000, estimateSpeed, nullptr);
 		double rudderTarget = 0;
 		double trim;
-		std::function<double()> throttler = [&](){return (0.5 - velo.len()) * 2.;};
+		std::function<double()> throttler = [&](){return (500. - velo.len()) * 0.002;};
 		if(crashing){
 			// If we are going to crash, do not turn around to approach the target; you can do that later.
 			// Instead just fly up to clear the obstacles.
@@ -1016,7 +1016,7 @@ void Aerial::animAI(double dt, bool onfeet){
 			double targetClimb = targetClimber();
 
 			// You cannot control altitude and yaw at the same time efficiently. Let's do one at a time.
-			trim = mat.vec3(2)[1] + velo[1] + (1. - turning) * targetClimb + turning * turnClimb; // P + D
+			trim = mat.vec3(2)[1] + velo[1] * 1e-3 + (1. - turning) * targetClimb + turning * turnClimb; // P + D
 		}
 
 		Vec3d x_along_y = Vec3d(mat.vec3(0)[0], 0, mat.vec3(0)[2]).normin();

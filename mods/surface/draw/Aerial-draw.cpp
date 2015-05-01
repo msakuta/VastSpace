@@ -439,7 +439,7 @@ void Aerial::drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &se
 		// ILS indicator
 		if(showILS){
 			GetILSCommand gisBest;
-			double sdistBest = 1e6;
+			double sdistBest = 1e3 * 1e3;
 			for(auto it : w->entlist()){
 				GetILSCommand gis;
 				if(it->command(&gis)){

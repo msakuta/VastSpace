@@ -1,9 +1,9 @@
 
 dofile("mods/surface/models/Aerial.nut");
 
-modelScale <- 0.01626 / 650.0;
+modelScale <- 16.26 / 650.0;
 
-hitRadius <- 0.010;
+hitRadius <- 10.;
 
 mass <- 13.e3;
 
@@ -17,13 +17,13 @@ hitbox <- [
 ];
 
 navlights <- [
-	{pos = Vec3d(0, -17, 4) * modelScale, radius = 0.001, period = 2, color = [1,1,1,1], pattern = "Step"}, // Pulse light
-	{pos = Vec3d(-328, 12, -10) * modelScale, radius = 0.001, color = [1,0,0,1], pattern = "Constant"}, // Port
-	{pos = Vec3d( 328, 12, -10) * modelScale, radius = 0.001, color = [0,1,0,1], pattern = "Constant"}, // Starboard
+	{pos = Vec3d(0, -17, 4) * modelScale, radius = 1., period = 2, color = [1,1,1,1], pattern = "Step"}, // Pulse light
+	{pos = Vec3d(-328, 12, -10) * modelScale, radius = 1., color = [1,0,0,1], pattern = "Constant"}, // Port
+	{pos = Vec3d( 328, 12, -10) * modelScale, radius = 1., color = [0,1,0,1], pattern = "Constant"}, // Starboard
 ]
 
 // Thrust power
-thrust <- 0.01
+thrust <- 10.;
 
 // Aerodynamic tensors, referred to by wings.
 local tensor1 = [
@@ -45,17 +45,17 @@ local tensor3 = [
 ]
 
 wings <- [
-	{name = "MainRight", pos = Vec3d( 0.004, 0.001, 0.0), aero = tensor1,
+	{name = "MainRight", pos = Vec3d( 4., 1., 0.0), aero = tensor1,
 		control = "aileron", sensitivity = -0.05 * PI},
-	{name = "MainLeft", pos = Vec3d(-0.004, 0.001, 0.0), aero = tensor1,
+	{name = "MainLeft", pos = Vec3d(-4., 1., 0.0), aero = tensor1,
 		control = "aileron", sensitivity = 0.05 * PI},
-	{name = "TailRight", pos = Vec3d( 0.003, 0.0, 0.008), aero = tensor2,
+	{name = "TailRight", pos = Vec3d( 3., 0.0, 8.), aero = tensor2,
 		control = "elevator", sensitivity = -0.1 * PI},
-	{name = "TailLeft", pos = Vec3d(-0.003, 0.0, 0.008), aero = tensor2,
+	{name = "TailLeft", pos = Vec3d(-3., 0.0, 8.), aero = tensor2,
 		control = "elevator", sensitivity = -0.1 * PI},
-	{name = "VerticalLeft", pos = Vec3d( 0.0020, 0.002, 0.007), aero = tensor3,
+	{name = "VerticalLeft", pos = Vec3d( 2., 2., 7.), aero = tensor3,
 		control = "rudder", sensitivity = -0.15 * PI, axis = Vec3d(0,1,0)},
-	{name = "VerticalRight", pos = Vec3d(-0.0020, 0.002, 0.007), aero = tensor3,
+	{name = "VerticalRight", pos = Vec3d(-2., 2., 7.), aero = tensor3,
 		control = "rudder", sensitivity = -0.15 * PI, axis = Vec3d(0,1,0)},
 ]
 
@@ -73,17 +73,17 @@ gunPositions <- [
 /// not by the length of this parameter.
 gunDirection <- Vec3d(0, 0, -1);
 
-bulletSpeed <- 1.0;
+bulletSpeed <- 1000.0;
 
 shootCooldown <- 60.0 / 2100;
 
 cameraPositions <- [
 	{pos = Vec3d(0., 50, -200) * modelScale, type = "cockpit"},
-	{pos = Vec3d(0., 0.0075, 0.025)},
-	{pos = Vec3d(0.020, 0.007, 0.050)},
-	{pos = Vec3d(0.004, -0.0008, 0.010)},
+	{pos = Vec3d(0., 7.5, 25.)},
+	{pos = Vec3d(20., 7., 50.)},
+	{pos = Vec3d(4., -0.8, 10.)},
 	{pos = Vec3d(0., 50, -200) * modelScale, type = "missiletrack"},
-	{pos = Vec3d(0., 0.0100, 0.030), type = "viewtrack"},
+	{pos = Vec3d(0., 10., 30.), type = "viewtrack"},
 ]
 
 hudPos <- cameraPositions[0].pos + Vec3d(0, 0, -20) * modelScale;
@@ -157,7 +157,7 @@ function fire(e,dt){
 				local newvelo = rot.trans(v0) + e.getvelo();
 				local rs = e.cs.rs; // Obtain random sequence
 				for(local j = 0; j < 3; j++)
-					newvelo[j] += (rs.nextd() - 0.5) * 0.02;
+					newvelo[j] += (rs.nextd() - 0.5) * 20.;
 				pb.setvelo(newvelo);
 				pb.update(dt - e.cooldown);
 				e.gunFireEffect();

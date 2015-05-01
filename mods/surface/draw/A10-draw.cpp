@@ -257,9 +257,9 @@ SQInteger A10::sqf_gunFireEffect(HSQUIRRELVM v){
 	if(Teline3List *tell = ws->tell){
 		if(w->rs.nextd() < 0.3){
 			Teline3ConstructInfo ci = {
-				e->pos + e->rot.trans(gunPositions.front()) + Vec3d(w->rs.nextGauss(), w->rs.nextGauss(), w->rs.nextGauss()) * 1.5e-3, // pos
+				e->pos + e->rot.trans(gunPositions.front()) + Vec3d(w->rs.nextGauss(), w->rs.nextGauss(), w->rs.nextGauss()) * 1.5, // pos
 				e->velo, // velo
-				3e-3, // len
+				3, // len
 				quat_u, // rot
 				vec3_000, // omg
 				1.0 + w->rs.nextd(),

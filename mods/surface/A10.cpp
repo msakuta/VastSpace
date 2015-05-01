@@ -55,20 +55,20 @@ template<> void Entity::EntityRegister<A10>::sq_defineInt(HSQUIRRELVM v){
 Entity::EntityRegister<A10> A10::entityRegister("A10");
 
 // Global constants loaded from A10.nut.
-double A10::modelScale = 0.001 / 30.0;
-double A10::hitRadius = 0.012;
+double A10::modelScale = 1. / 30.0;
+double A10::hitRadius = 12.;
 double A10::defaultMass = 12000.;
 double A10::maxHealthValue = 500.;
 HSQOBJECT A10::sqFire = sq_nullobj();
 HSQOBJECT A10::sqQueryAmmo = sq_nullobj();
 HitBoxList A10::hitboxes;
 ModelEntity::NavlightList A10::navlights;
-double A10::thrustStrength = .010;
+double A10::thrustStrength = 10.;
 A10::WingList A10::wings0;
 std::vector<Vec3d> A10::wingTips;
 std::vector<Vec3d> A10::gunPositions;
 Vec3d A10::gunDirection(0,0,-1);
-double A10::bulletSpeed = .78;
+double A10::bulletSpeed = 780.;
 double A10::shootCooldown = .07;
 A10::CameraPosList A10::cameraPositions;
 Vec3d A10::hudPos;
@@ -193,14 +193,14 @@ void A10::anim(double dt){
 	transform(mat);
 
 	{
-		bool skip = !(.1 < -this->velo.sp(mat.vec3(2)));
+		bool skip = !(100. < -this->velo.sp(mat.vec3(2)));
 		for(int i = 0; i < wingTips.size(); i++) if(vapor[i]){
 			Vec3d pos = mat.vp3(wingTips[i]);
 			vapor[i]->move(pos, vec3_000, cs_vapor.t, skip);
 		}
 	}
 	if(this->pf){
-		Vec3d pos = mat.vp3(Vec3d(0., .001, .0065));
+		Vec3d pos = mat.vp3(Vec3d(0., 1., 6.5));
 		this->pf->move(pos, vec3_000, cs_blueburn.t, 0);
 //		MoveTefpol3D(((fly_t *)pt)->pf, pos, avec3_000, cs_blueburn.t, 0);
 	}
@@ -237,14 +237,14 @@ void A10::shoot(double dt){
 	else while(this->cooldown < dt){
 		int i = 0;
 		for(auto &it : gunPositions){
-			Bullet *pb = new ExplosiveBullet(this, 2., 50., 0.020, false);
+			Bullet *pb = new ExplosiveBullet(this, 2., 50., 20., false);
 			w->addent(pb);
 
 			pb->mass = .010;
 			pb->pos = mat.vp3(it);
 			pb->velo = mat.dvp3(velo0) + this->velo;
 			for(int j = 0; j < 3; j++)
-				pb->velo[j] += (drseq(&w->rs) - .5) * .005;
+				pb->velo[j] += (drseq(&w->rs) - .5) * 5.;
 			pb->anim(dt - this->cooldown);
 		};
 		this->cooldown += shootCooldown;
@@ -287,7 +287,7 @@ int A10::takedamage(double damage, int hitpart){
 				velo[j] = drseq(&w->rs) - .5;
 			velo.normin() *= 0.1;
 			pos += velo, 0.1;
-			AddTeline3D(w->getTeline3d(), pos, velo, .005, quat_u, vec3_000, w->accel(pos, velo),
+			AddTeline3D(w->getTeline3d(), pos, velo, 5., quat_u, vec3_000, w->accel(pos, velo),
 				COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
 		}
 		TefpolList *tepl = w->getTefpol3d();

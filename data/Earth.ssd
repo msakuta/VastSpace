@@ -29,10 +29,10 @@ coordsys Orbit earth{
 		terrainNoisePersistence 0.75
 		terrainNoiseOctaves 8
 		terrainNoiseBaseLevel 5
-		vertexshader "shaders/flatplanet.vs"
-		fragmentshader "shaders/flatplanet.fs"
-#		fragmentshader shaders/earth.fs
-#		vertexshader shaders/earth.vs
+#		vertexshader "shaders/flatplanet.vs"
+#		fragmentshader "shaders/flatplanet.fs"
+		fragmentshader shaders/earth.fs
+		vertexshader shaders/earth.vs
 #		fragmentshader shaders/ringsphereshadow.fs
 #		vertexshader shaders/ringsphereshadow.vs
 #		ringmin 74000/60268

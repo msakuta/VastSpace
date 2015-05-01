@@ -13,6 +13,7 @@ uniform vec3 ringnorm;
 uniform vec3 noisePos;
 uniform int lightCount;
 uniform mat3 rotation;
+// uniform float height; // Defined in earth_cloud_noise.fs
 
 varying vec3 view;
 varying vec3 nrm;
@@ -34,12 +35,18 @@ vec4 ocean(vec3 v){
 	// as large as possible.
 	vec3 v2 = vec3(v.x * cos(1) + v.y * sin(1), v.x * -sin(1) + v.y * cos(1), v.z);
 
+	// Diminishing details when the viewpoint is far from surface.
+	// It should use pixel-wise distance from viewpoint, but gl_FragCoord.z seems not to scale,
+	// so we settle for given uniform variable.
+	// The uniform variable height is measured in meters, so we convert the value to reasonable dynamic range.
+	float rheight = height / 1000.;
+
 	// Accumulate multiple noises to reduce artifacts caused by finite texture size.
 	return 0.2 * (
 		(1.0 * f2 * (texture3D(noise3D, 128. * v) - vec4(.5)) + // Fine noise
-		1.0 * f2 * (texture3D(noise3D, 128. * v2) - vec4(.5))) / (1. - 2. * view.z) + // Fine rotated noise
-		(texture3D(noise3D, 32. * v) - vec4(0.5)) / (1. - 1. * view.z) + // High octave noise
-		(texture3D(noise3D, 8. * v) - vec4(0.5)) / (1. - 0.2 * view.z) // Very high octave noise
+		1.0 * f2 * (texture3D(noise3D, 128. * v2) - vec4(.5))) / (1. + 2. * rheight) + // Fine rotated noise
+		(texture3D(noise3D, 32. * v) - vec4(0.5)) / (1. + 1. * rheight) + // High octave noise
+		(texture3D(noise3D, 8. * v) - vec4(0.5)) / (1. + 0.2 * rheight) // Very high octave noise
 		);
 }
 
@@ -55,7 +62,7 @@ void main (void)
 	if(texColor[2] > texColor[0] + texColor[1])
 		specular = 3.5, shininess = 50., waving = true;
 	else
-		specular = 1.25, shininess = 5., waving = false;
+		specular = 0.25, shininess = 2., waving = false;
 	float sundot = dot(flight, normal);
 	float dawness = sundot * 8.;
 	dawness = 1. - exp(-dawness * dawness);
@@ -65,14 +72,19 @@ void main (void)
 	// Obtain ocean noise to add to normal vector.
 	// The noise position moves over time, so it would be a random source.
 	// But do not add in case of rendering land.
-	vec3 noiseInput = texCoord;
+	vec3 noiseInput = normalize(texCoord);
 	if(waving)
 		noiseInput += 2e-6 * noisePos;
 	vec4 noise = ocean(noiseInput);
 
-	vec3 texsample = textureCube(bumptexture, texCoord);
-	vec3 texnorm0 = texsample - vec3(0.5, 0.5, 0.5) + noise.xyz;
-	vec3 fnormal = normalize(rotation * texnorm0);
+
+	// Disable bump map texture since new inflated cube algorithm incorpolates terrain
+	// geometry which affects normal vector.  Probably we could use bump maps in lower LODs,
+	// but it would be another story.
+//	vec3 texsample = textureCube(bumptexture, texCoord);
+//	vec3 texnorm0 = texsample - vec3(0.5, 0.5, 0.5) + noise.xyz;
+//	vec3 fnormal = normalize(normal + rotation * texnorm0);
+	vec3 fnormal = normalize(normal + noise.xyz);
 
 	vec3 fview = normalize(view);
 
@@ -85,7 +97,7 @@ void main (void)
 	float innerShininess = shininess * 50.;
 	innerShininess /= min(50., 1. - 0.2 * view.z);
 
-	vec3 reflectDirection = reflect(invEyeRot3x3 * fview, fnormal);
+	vec3 reflectDirection = reflect(fview, fnormal);
 
 	vec3 diffuse = 0;
 	vec3 ambient = 0;

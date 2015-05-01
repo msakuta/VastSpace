@@ -595,8 +595,10 @@ void DrawTextureSphere::useShader(){
 			RoundAstrobj *ts = dynamic_cast<RoundAstrobj*>(a);
 			Mat4d src = (vw->cs->tocsq(a->parent).cnj() * a->rot).tomat4();
 			// When drawing oblate sphere, we need to rotate normal map texture manually.
-			if(ts && ts->oblateness != 0.)
-				src = vw->rot * src;
+//			if(ts && ts->oblateness != 0.)
+//				src = vw->rot * src;
+			// We always perform rotation since DrawTextureCubeEx is used by default.
+			src = vw->rot * src;
 			Mat3<float> rot3 = src.tomat3().cast<float>();
 			glUniformMatrix3fv(locs.rotationLoc, 1, GL_FALSE, rot3);
 		}

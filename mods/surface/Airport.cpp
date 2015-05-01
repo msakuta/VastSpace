@@ -12,8 +12,8 @@
 Entity::EntityRegister<Airport> Airport::entityRegister("Airport");
 
 Model *Airport::model = NULL;
-double Airport::modelScale = 0.01;
-double Airport::hitRadius = 0.1;
+double Airport::modelScale = 10.;
+double Airport::hitRadius = 100.;
 double Airport::maxHealthValue;
 Vec3d Airport::landOffset = Vec3d(0,0,0);
 Vec3d Airport::landingSite = Vec3d(0,0,0);

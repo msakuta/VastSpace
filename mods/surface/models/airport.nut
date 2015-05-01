@@ -1,14 +1,14 @@
 
-modelScale <- 0.01;
+modelScale <- 10.;
 
-hitRadius <- 2.;
+hitRadius <- 2000.;
 
 maxhealth <- 1.e5;
 
 landOffset <- Vec3d(0,0.2,0);
 
 local function localCoord(v){
-	v = v / 128. - Vec3d(0.5,0,1);
+	v = v / 128. * 1000. - Vec3d(500.,0,1000.);
 	v[2] *= -1;
 	return v;
 }
@@ -16,14 +16,14 @@ local function localCoord(v){
 landingSite <- localCoord(Vec3d(24, 0, 0));
 
 hitbox <- [
-	[Vec3d(0,-1,0), Quatd(0,0,0,1), Vec3d(0.5, 1., 1.)],
+	[Vec3d(0,-1000,0), Quatd(0,0,0,1), Vec3d(500., 1000., 1000.)],
 ];
 
 navlights <- [];
 
 for(local i = 0; i < 16; i++){
-	navlights.append({pos = localCoord(Vec3d(21, 0.1, i * 12 + 32)), radius = 0.002, pattern = "Constant"});
-	navlights.append({pos = localCoord(Vec3d(27, 0.1, i * 12 + 32)), radius = 0.002, pattern = "Constant"});
+	navlights.append({pos = localCoord(Vec3d(21, 0.1, i * 12 + 32)), radius = 2., pattern = "Constant"});
+	navlights.append({pos = localCoord(Vec3d(27, 0.1, i * 12 + 32)), radius = 2., pattern = "Constant"});
 }
 
 local lmodelScale = modelScale;

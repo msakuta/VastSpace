@@ -55,20 +55,20 @@ template<> void Entity::EntityRegister<F15>::sq_defineInt(HSQUIRRELVM v){
 Entity::EntityRegister<F15> F15::entityRegister("F15");
 
 // Global constants loaded from F15.nut.
-double F15::modelScale = 0.001 / 30.0;
-double F15::hitRadius = 0.012;
+double F15::modelScale = 1. / 30.0;
+double F15::hitRadius = 12.;
 double F15::defaultMass = 12000.;
 double F15::maxHealthValue = 500.;
 HSQOBJECT F15::sqSidewinderFire = sq_nullobj();
 HSQOBJECT F15::sqQueryAmmo = sq_nullobj();
 HitBoxList F15::hitboxes;
 ModelEntity::NavlightList F15::navlights;
-double F15::thrustStrength = .010;
+double F15::thrustStrength = 15.;
 F15::WingList F15::wings0;
 std::vector<Vec3d> F15::wingTips;
 std::vector<Vec3d> F15::gunPositions;
 Vec3d F15::gunDirection = Vec3d(0, sin(2. / deg_per_rad), -cos(2. / deg_per_rad));
-double F15::bulletSpeed = .78;
+double F15::bulletSpeed = 780.;
 double F15::shootCooldown = .07;
 F15::CameraPosList F15::cameraPositions;
 Vec3d F15::hudPos;
@@ -187,14 +187,14 @@ void F15::anim(double dt){
 	transform(mat);
 
 	{
-		bool skip = !(.1 < -this->velo.sp(mat.vec3(2)));
+		bool skip = !(100. < -this->velo.sp(mat.vec3(2)));
 		for(int i = 0; i < wingTips.size(); i++) if(vapor[i]){
 			Vec3d pos = mat.vp3(wingTips[i]);
 			vapor[i]->move(pos, vec3_000, cs_vapor.t, skip);
 		}
 	}
 	if(this->pf){
-		Vec3d pos = mat.vp3(Vec3d(0., .001, .0065));
+		Vec3d pos = mat.vp3(Vec3d(0., 1., 6.5));
 		this->pf->move(pos, vec3_000, cs_blueburn.t, 0);
 //		MoveTefpol3D(((fly_t *)pt)->pf, pos, avec3_000, cs_blueburn.t, 0);
 	}
@@ -217,7 +217,7 @@ void F15::shoot(double dt){
 	Mat4d mat;
 	transform(mat);
 	if(this->weapon){
-		static const Vec3d fly_hardpoint[2] = {Vec3d(.005, .0005, -.000), Vec3d(-.005, .0005, -.000)};
+		static const Vec3d fly_hardpoint[2] = {Vec3d(5., 0.5, 0.), Vec3d(-5., 0.5, 0.)};
 		// Missiles are so precious that semi-automatic triggering is more desirable.
 		// Also, do not try to shoot if there's no enemy locked on.
 		HSQUIRRELVM v = game->sqvm;
@@ -238,7 +238,7 @@ void F15::shoot(double dt){
 			pb->pos = mat.vp3(it);
 			pb->velo = mat.dvp3(gunDirection * bulletSpeed) + this->velo;
 			for(int j = 0; j < 3; j++)
-				pb->velo[j] += (drseq(&w->rs) - .5) * .005;
+				pb->velo[j] += (drseq(&w->rs) - .5) * 5.;
 			pb->anim(dt - this->cooldown);
 		};
 		this->cooldown += shootCooldown;
@@ -279,9 +279,9 @@ int F15::takedamage(double damage, int hitpart){
 			Vec3d velo = this->velo;
 			for(int j = 0; j < 3; j++)
 				velo[j] = drseq(&w->rs) - .5;
-			velo.normin() *= 0.1;
+			velo.normin() *= 100.;
 			pos += velo, 0.1;
-			AddTeline3D(w->getTeline3d(), pos, velo, .005, quat_u, vec3_000, w->accel(pos, velo),
+			AddTeline3D(w->getTeline3d(), pos, velo, 5., quat_u, vec3_000, w->accel(pos, velo),
 				COLOR32RGBA(255, 31, 0, 255), TEL3_HEADFORWARD | TEL3_THICK | TEL3_FADEEND | TEL3_REFLECT, 1.5 + drseq(&w->rs));
 		}
 		TefpolList *tepl = w->getTefpol3d();

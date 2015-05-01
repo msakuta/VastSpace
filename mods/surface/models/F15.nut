@@ -1,9 +1,9 @@
 
 dofile("mods/surface/models/Aerial.nut");
 
-modelScale <- 0.001 / 30.0;
+modelScale <- 1. / 30.0;
 
-hitRadius <- 0.012;
+hitRadius <- 12.;
 
 mass <- 12.e3;
 
@@ -12,18 +12,18 @@ maxhealth <- 500.;
 maxfuel <- 120.; // seconds for full thrust
 
 hitbox <- [
-	[Vec3d(0,1,0) * 0.5e-3, Quatd(0,0,0,1), Vec3d(13.05, 3., 19.43) * 0.5e-3],
+	[Vec3d(0,1,0) * 0.5, Quatd(0,0,0,1), Vec3d(13.05, 3., 19.43) * 0.5],
 	[Vec3d(0,-30,-50) * modelScale, Quatd(0,0,0,1), Vec3d(60., 25., 100.) * modelScale],
 ];
 
 navlights <- [
-	{pos = Vec3d(0, -17, 34) * modelScale, radius = 0.001, period = 2, color = [1,1,1,1], pattern = "Step"}, // Pulse light
-	{pos = Vec3d(-218, 10, 127) * modelScale, radius = 0.001, color = [1,0,0,1], pattern = "Constant"}, // Port
-	{pos = Vec3d( 218, 10, 127) * modelScale, radius = 0.001, color = [0,1,0,1], pattern = "Constant"}, // Starboard
+	{pos = Vec3d(0, -17, 34) * modelScale, radius = 1., period = 2, color = [1,1,1,1], pattern = "Step"}, // Pulse light
+	{pos = Vec3d(-218, 10, 127) * modelScale, radius = 1., color = [1,0,0,1], pattern = "Constant"}, // Port
+	{pos = Vec3d( 218, 10, 127) * modelScale, radius = 1., color = [0,1,0,1], pattern = "Constant"}, // Starboard
 ]
 
 // Thrust power
-thrust <- 0.015;
+thrust <- 15.;
 
 // Aerodynamic tensors, referred to by wings.
 local tensor1 = [
@@ -45,17 +45,17 @@ local tensor3 = [
 ]
 
 wings <- [
-	{name = "MainRight", pos = Vec3d( 0.004, 0.001, 0.0), aero = tensor1,
+	{name = "MainRight", pos = Vec3d( 4., 1., 0.0), aero = tensor1,
 		control = "aileron", sensitivity = -0.05 * PI},
-	{name = "MainLeft", pos = Vec3d(-0.004, 0.001, 0.0), aero = tensor1,
+	{name = "MainLeft", pos = Vec3d(-4., 1., 0.0), aero = tensor1,
 		control = "aileron", sensitivity = 0.05 * PI},
-	{name = "TailRight", pos = Vec3d( 0.003, 0.0, 0.008), aero = tensor2,
+	{name = "TailRight", pos = Vec3d( 3., 0.0, 8.), aero = tensor2,
 		control = "elevator", sensitivity = -0.1 * PI},
-	{name = "TailLeft", pos = Vec3d(-0.003, 0.0, 0.008), aero = tensor2,
+	{name = "TailLeft", pos = Vec3d(-3., 0.0, 8.), aero = tensor2,
 		control = "elevator", sensitivity = -0.1 * PI},
-	{name = "VerticalLeft", pos = Vec3d( 0.0020, 0.002, 0.007), aero = tensor3,
+	{name = "VerticalLeft", pos = Vec3d( 2., 2., 7.), aero = tensor3,
 		control = "rudder", sensitivity = -0.15 * PI, axis = Vec3d(0,1,0)},
-	{name = "VerticalRight", pos = Vec3d(-0.0020, 0.002, 0.007), aero = tensor3,
+	{name = "VerticalRight", pos = Vec3d(-2., 2., 7.), aero = tensor3,
 		control = "rudder", sensitivity = -0.15 * PI, axis = Vec3d(0,1,0)},
 ]
 
@@ -75,17 +75,17 @@ local deg_per_rad = 180. / PI;
 /// not by the length of this parameter.
 gunDirection <- Vec3d(0, sin(2.0 / deg_per_rad), -cos(2.0 / deg_per_rad));
 
-bulletSpeed <- 0.78;
+bulletSpeed <- 780.;
 
 shootCooldown <- 0.07;
 
 cameraPositions <- [
 	{pos = Vec3d(0., 30 * modelScale, -150 * modelScale), type = "cockpit"},
-	{pos = Vec3d(0., 0.0075, 0.025)},
-	{pos = Vec3d(0.020, 0.007, 0.050)},
-	{pos = Vec3d(0.004, -0.0015, 0.010)},
+	{pos = Vec3d(0., 7.5, 25.)},
+	{pos = Vec3d(20., 7., 50.)},
+	{pos = Vec3d(4., -1.5, 10.)},
 	{pos = Vec3d(0., 30 * modelScale, -150 * modelScale), type = "missiletrack"},
-	{pos = Vec3d(0., 0.010, 0.030), type = "viewtrack"},
+	{pos = Vec3d(0., 10., 30.), type = "viewtrack"},
 ]
 
 hudPos <- Vec3d(0., 30.0, -170.0) * modelScale

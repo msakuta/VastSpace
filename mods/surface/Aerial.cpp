@@ -494,7 +494,7 @@ void Aerial::anim(double dt){
 	if(air){
 		const double f = 1.;
 
-		double velolen = velo.slen();
+		double velolen = velo.len();
 
 		force.clear();
 		// Acquire wing positions
@@ -562,8 +562,8 @@ void Aerial::anim(double dt){
 		// Clamp throttle value for calculating sound attributes in order to exaggerate sound with little throttle.
 		// Practically, throttle is rarely full, but often very little.
 		double speed = this->velo.len();
-		double pitch = std::max(1., speed / 0.2);
-		double capSpeed = std::min(1., speed / 0.2);
+		double pitch = std::max(1., speed / 200.);
+		double capSpeed = std::min(1., speed / 200.);
 
 		if(flyingSoundFile){
 			// If throttle is low, make low frequency sound be dominant.

@@ -107,7 +107,7 @@ void F15::drawtra(WarDraw *wd){
 			glPushMatrix();
 			glMultMatrixd(mat);
 			gldTranslate3dv(it);
-			glScaled(.0005, .0005, .005);
+			glScaled(.5, .5, 5.);
 			glBegin(GL_TRIANGLE_FAN);
 			glColor4ub(255,127,0, rs.next() % 64 + 128);
 			double x = (rs.nextd() - .5) * .25;

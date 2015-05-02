@@ -36,9 +36,9 @@ void Tank::draw(WarDraw *wd){
 		return;
 
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(pos, .007))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
-	double pixels = .005 * fabs(wd->vw->gc->scale(pos));
+	double pixels = getHitRadius() * fabs(wd->vw->gc->scale(pos));
 	if(pixels < 2)
 		return;
 	wd->lightdraws++;
@@ -86,7 +86,7 @@ void Tank::drawtra(wardraw_t *wd){
 
 	if(muzzle & 1){
 		Vec3d mpos = tankMuzzlePos();
-		drawmuzzleflasha(mpos, wd->vw->pos, .007, wd->vw->irot);
+		drawmuzzleflasha(mpos, wd->vw->pos, 7., wd->vw->irot);
 		muzzle = 0;
 	}
 
@@ -188,9 +188,9 @@ void Tank::deathEffects(){
 		int j;
 		for(j = 0; j < 20; j++){
 			Vec3d velo(
-				.15 * (w->rs.nextd() - .5),
-				.15 * (w->rs.nextd() - .5),
-				.15 * (w->rs.nextd() - .5));
+				150. * (w->rs.nextd() - .5),
+				150. * (w->rs.nextd() - .5),
+				150. * (w->rs.nextd() - .5));
 			AddTeline3D(tell, this->pos, velo, .0025, quat_u, vec3_000, gravity,
 				j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255), TEL3_HEADFORWARD | TEL3_FADEEND | TEL3_REFLECT, 1. + .5 * w->rs.nextd());
 		}
@@ -204,7 +204,7 @@ void Tank::deathEffects(){
 		}*/
 
 		{/* explode shockwave thingie */
-			AddTeline3D(tell, this->pos, vec3_000, .1, Quatd::rotation(M_PI * 0.5, 1, 0, 0), vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK/*/TEL3_EXPANDTORUS*/ | TEL3_NOLINE, 1.);
+			AddTeline3D(tell, this->pos, vec3_000, 100., Quatd::rotation(M_PI * 0.5, 1, 0, 0), vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK/*/TEL3_EXPANDTORUS*/ | TEL3_NOLINE, 1.);
 #if 0 // Scorch mark should be rendered in ground's rendering pass.
 			if(pt->pos[1] <= 0.) /* no scorch in midair */
 				AddTeline3D(tell, pt->pos, NULL, .01, pyr, NULL, NULL, COLOR32RGBA(0,0,0,255), TEL3_STATICDISK | TEL3_NOLINE, 20.);
@@ -219,14 +219,14 @@ void Tank::deathEffects(){
 			for(int i = 0; i < n; i++){
 				j = (base + i) % m;
 				Vec3d velo(
-					this->velo[0] + (w->rs.nextd() - .5) * .1,
-					this->velo[1] + (w->rs.nextd() - .5) * .1,
-					this->velo[2] + (w->rs.nextd() - .5) * .1);
+					this->velo[0] + (w->rs.nextd() - .5) * 100.,
+					this->velo[1] + (w->rs.nextd() - .5) * 100.,
+					this->velo[2] + (w->rs.nextd() - .5) * 100.);
 				Vec3d omg(
 					3. * 2 * M_PI * (w->rs.nextd() - .5),
 					3. * 2 * M_PI * (w->rs.nextd() - .5),
 					3. * 2 * M_PI * (w->rs.nextd() - .5));
-				AddTelineCallback3D(ws->gibs, this->pos, velo, 0.01, quat_u, omg, gravity, gib_draw, (void*)j, TEL3_NOLINE | TEL3_REFLECT, 1.5 + w->rs.nextd());
+				AddTelineCallback3D(ws->gibs, this->pos, velo, 10., quat_u, omg, gravity, gib_draw, (void*)j, TEL3_NOLINE | TEL3_REFLECT, 1.5 + w->rs.nextd());
 			}
 		}
 	}
@@ -237,9 +237,9 @@ void APFSDS::draw(WarDraw *wd){
 	static Model *model = NULL;
 
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(pos, 0.005))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
-	double pixels = 2. * 0.005 * fabs(wd->vw->gc->scale(pos));
+	double pixels = getHitRadius() * fabs(wd->vw->gc->scale(pos));
 	if(pixels < .1)
 		return;
 	wd->lightdraws++;
@@ -273,9 +273,9 @@ void APFSDS::draw(WarDraw *wd){
 
 void APFSDS::drawtra(WarDraw *wd){
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(pos, 0.005))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
-	double pixels = 2. * 0.005 * fabs(wd->vw->gc->scale(pos));
+	double pixels = getHitRadius() * fabs(wd->vw->gc->scale(pos));
 	if(pixels < .1)
 		return;
 
@@ -288,7 +288,7 @@ void APFSDS::drawtra(WarDraw *wd){
 			glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT);
 			glDisable(GL_LIGHTING);
 			glDepthMask(0);
-			gldSpriteGlow(pos, .010, a, wd->vw->irot);
+			gldSpriteGlow(pos, 10., a, wd->vw->irot);
 			glPopAttrib();
 		}
 	}
@@ -312,9 +312,9 @@ void M3Truck::draw(WarDraw *wd){
 		return;
 
 	/* cull object */
-	if(wd->vw->gc->cullFrustum(pos, .007))
+	if(wd->vw->gc->cullFrustum(pos, getHitRadius()))
 		return;
-	double pixels = .005 * fabs(wd->vw->gc->scale(pos));
+	double pixels = getHitRadius() * fabs(wd->vw->gc->scale(pos));
 	if(pixels < 2)
 		return;
 	wd->lightdraws++;
@@ -414,14 +414,14 @@ void M3Truck::deathEffects(){
 		int j;
 		for(j = 0; j < 20; j++){
 			Vec3d velo(
-				.15 * (w->rs.nextd() - .5),
-				.15 * (w->rs.nextd() - .5),
-				.15 * (w->rs.nextd() - .5));
-			AddTeline3D(tell, this->pos, velo, .0025, quat_u, vec3_000, gravity,
+				150. * (w->rs.nextd() - .5),
+				150. * (w->rs.nextd() - .5),
+				150. * (w->rs.nextd() - .5));
+			AddTeline3D(tell, this->pos, velo, 2.5, quat_u, vec3_000, gravity,
 				j % 2 ? COLOR32RGBA(255,255,255,255) : COLOR32RGBA(255,191,63,255), TEL3_HEADFORWARD | TEL3_FADEEND | TEL3_REFLECT, 1. + .5 * w->rs.nextd());
 		}
 
 		/* explode shockwave thingie */
-		AddTeline3D(tell, this->pos, vec3_000, .1, Quatd::rotation(M_PI * 0.5, 1, 0, 0), vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK/*/TEL3_EXPANDTORUS*/ | TEL3_NOLINE, 1.);
+		AddTeline3D(tell, this->pos, vec3_000, 100., Quatd::rotation(M_PI * 0.5, 1, 0, 0), vec3_000, vec3_000, COLOR32RGBA(255,191,63,255), TEL3_EXPANDISK/*/TEL3_EXPANDTORUS*/ | TEL3_NOLINE, 1.);
 	}
 }

@@ -29,14 +29,14 @@ extern "C"{
 
 
 Model *Tank::model = NULL;
-double Tank::modelScale = 3.33 / 200 * 1e-3;
-double Tank::landOffset = 0.0007;
+double Tank::modelScale = 3.33 / 200;
+double Tank::landOffset = 0.7;
 double Tank::defaultMass = 50000.; ///< Mass defaults 50 tons
 double Tank::maxHealthValue = 800.;
 double Tank::topSpeed = 70. / 3.600; /// < Default 70 km/h
 double Tank::backSpeed = 35. / 3.600; /// < Default half a topSpeed
 double Tank::mainGunCooldown = 3.;
-double Tank::mainGunMuzzleSpeed = 1.7;
+double Tank::mainGunMuzzleSpeed = 1700.;
 double Tank::mainGunDamage = 500.;
 double Tank::turretYawSpeed = 0.1 * M_PI;
 double Tank::barrelPitchSpeed = 0.05 * M_PI;
@@ -146,10 +146,10 @@ void LandVehicle::addRigidBody(WarSpace *ws){
 	}
 }
 
-static const avec3_t tank_cog = {0., .0007, 0.};
+static const avec3_t tank_cog = {0., .7, 0.};
 
 Vec3d Tank::tankMuzzlePos(Vec3d *nh)const{
-	static const Vec3d velo0(0., 0., -1.), pos0(0., 0/*.0025*/, -.005);
+	static const Vec3d velo0(0., 0., -1000.), pos0(0., 0/*.0025*/, -5.);
 /*	const double *cog = tank_cog;*/
 	Mat4d mat, rot;
 
@@ -179,7 +179,7 @@ int Tank::shootcannon(double dt){
 		pb->pos = gunPos;
 		pb->velo = dir * v + this->velo;
 		for(int j = 0; j < 3; j++)
-			pb->velo[j] += (drseq(&w->rs) - .5) * .005;
+			pb->velo[j] += (drseq(&w->rs) - .5) * 5.;
 		pb->anim(dt - this->cooldown);
 
 #if 1
@@ -251,19 +251,19 @@ int Tank::shootcannon(double dt){
 #endif
 #if 1
 		if(WarSpace *ws = *w){
-			const Vec3d velo0 = dir * .005 + this->velo;
+			const Vec3d velo0 = dir * 5. + this->velo;
 			for(int i = 0; i < 8; i++){
 				Vec3d velo, pos;
 				for(int j = 0; j < 3; j++)
-					velo[j] = velo0[j] + (drseq(&w->rs) - .5) * .005;
+					velo[j] = velo0[j] + (drseq(&w->rs) - .5) * 5.;
 				for(int j = 0; j < 3; j++)
-					pos[j] = gunPos[j] + (drseq(&w->rs) - .5) * .005;
+					pos[j] = gunPos[j] + (drseq(&w->rs) - .5) * 5.;
 				COLOR32 col;
 				if(i < 4)
 					col = COLOR32RGBA(255, 191 + rseq(&w->rs) % 32, 127,255);
 				else
 					col = COLOR32RGBA(191 + rseq(&w->rs) % 64, 191, 191, 127);
-				AddTeline3D(ws->tell, pos, velo, 0.005, quat_u, vec3_000, vec3_000, col, TEL3_SPRITE | TEL3_NOLINE | TEL3_INVROTATE, i < 4 ? .2 : 1.5);
+				AddTeline3D(ws->tell, pos, velo, 5., quat_u, vec3_000, vec3_000, col, TEL3_SPRITE | TEL3_NOLINE | TEL3_INVROTATE, i < 4 ? .2 : 1.5);
 			}
 		}
 //		pt->shoots++;
@@ -346,7 +346,7 @@ int Tank::tryshoot(double dt){
 }
 
 void LandVehicle::find_enemy_logic(){
-	double best = 100. * 100.; /* sense range */
+	double best = 100.e3 * 100.e3; /* sense range */
 	double sdist;
 	Entity *closest = NULL;
 /*			pt->enemy = &head[(i+1)%n];*/
@@ -414,7 +414,7 @@ void LandVehicle::anim(double dt){
 		const btvc btPos = bbody->getWorldTransform().getOrigin() - offset;
 		const btvc btVelo = bbody->getLinearVelocity();
 		GLWchart::addSampleToCharts("tankvelo", btVelo.len());
-		const Vec3d delta(0, -0.02 - btVelo[1] * dt, 0);
+		const Vec3d delta(0, -20. - btVelo[1] * dt, 0);
 		const Vec3d start(btPos - delta);
 
 		// If the CoordSys is a SurfaceCS, we can expect ground in negative y direction.
@@ -565,10 +565,10 @@ void LandVehicle::anim(double dt){
 		// Notably, backward steering direction is opposite.
 		if(isTracked()){
 			if(inputs.press & PL_A){
-				bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * 0.5 * 1e-5));
+				bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * 0.5 * 1e-2));
 			}
 			if(inputs.press & PL_D){
-				bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * -0.5 * 1e-5));
+				bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * -0.5 * 1e-2));
 			}
 		}
 		else{
@@ -755,7 +755,7 @@ int Tank::getrot(double (*ret)[16]){
 
 
 void LandVehicle::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
-	static  const Vec3d ofs[2] = {Vec3d(-.0006, .0010, -.0005), Vec3d(0., .010, .025)};
+	static  const Vec3d ofs[2] = {Vec3d(-.6, 1.0, -.5), Vec3d(0., 10., 25.)};
 	Mat4d mat, mat2;
 	int camera = seatid;
 	transform(mat);
@@ -786,7 +786,7 @@ void LandVehicle::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 }
 
 double Tank::getHitRadius()const{
-	return 0.007;
+	return 7.;
 }
 
 static double fpmod(double a, double d){
@@ -980,7 +980,7 @@ void Tank::aiControl(double dt, const Vec3d &normal){
 			bool subweapon = !ammo[0] /*|| ((struct entity_private_static*)pt->enemy->vft)->flying(pt->enemy)*/
 				|| normal.sp(mdir) < -.2
 				|| enemy->getHealth() < 50. && (pos - enemy->pos).slen() < .1 * .1;
-			double bulletspeed = subweapon ? .8 : mainGunMuzzleSpeed;
+			double bulletspeed = subweapon ? 800. : mainGunMuzzleSpeed;
 
 			/* calculate tr(pb->pos) * pb->pyr * pt->pos to get global coords */
 			Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
@@ -1012,7 +1012,7 @@ void Tank::aiControl(double dt, const Vec3d &normal){
 				if(&w->cs->getStatic() == &SurfaceCS::classRegister){
 					SurfaceCS *s = static_cast<SurfaceCS*>(w->cs);
 					if(sightCheckTime < dt){
-						if(!s->traceHit(this->pos, (enemy->pos - this->pos).norm(), 0, 100., NULL, NULL, NULL)){
+						if(!s->traceHit(this->pos, (enemy->pos - this->pos).norm(), 0, 100.e3, NULL, NULL, NULL)){
 							inputs.press |= PL_ENTER;
 							sightCheck = true; // Remember for the next frames
 						}
@@ -1110,14 +1110,14 @@ void APFSDS::drawtra(WarDraw*){}
 //-----------------------------------------------------------------------------
 
 Model *M3Truck::model = NULL;
-double M3Truck::modelScale = 3.4 / 200. * 1e-3;
-double M3Truck::landOffset = 0.0007;
+double M3Truck::modelScale = 3.4 / 200.;
+double M3Truck::landOffset = 0.7;
 double M3Truck::defaultMass = 9000.; ///< Mass defaults 9 tons
 double M3Truck::maxHealthValue = 150.;
 double M3Truck::topSpeed = 100. / 3.600; ///< Default 100 km/h
 double M3Truck::backSpeed = 40. / 3.600; ///< Default half a topSpeed
 double M3Truck::turretCooldown = 0.2;
-double M3Truck::turretMuzzleSpeed = 0.7;
+double M3Truck::turretMuzzleSpeed = 700.;
 double M3Truck::turretDamage = 10;
 double M3Truck::turretYawSpeed = 0.3 * M_PI;
 double M3Truck::barrelPitchSpeed = 0.2 * M_PI;
@@ -1247,7 +1247,7 @@ void M3Truck::aiControl(double dt, const Vec3d &normal){
 		barrelp = rangein(approach(barrelp + M_PI, theta + M_PI, dt * barrelPitchSpeed, 2 * M_PI) - M_PI, barrelPitchMin, barrelPitchMax);
 
 		// If you're too close to the enemy, do not dare enclosing further.  This threshold is hard-coded for now.
-		if(epos.slen() < .05 * .05)
+		if(epos.slen() < 50. * 50.)
 			; // Do nothing
 		else{
 			if(phi < -.1 * M_PI)
@@ -1264,7 +1264,7 @@ void M3Truck::aiControl(double dt, const Vec3d &normal){
 			if(&w->cs->getStatic() == &SurfaceCS::classRegister){
 				SurfaceCS *s = static_cast<SurfaceCS*>(w->cs);
 				if(sightCheckTime < dt){
-					if(!s->traceHit(this->pos, (enemy->pos - this->pos).norm(), 0, 100., NULL, NULL, NULL)){
+					if(!s->traceHit(this->pos, (enemy->pos - this->pos).norm(), 0, 100.e3, NULL, NULL, NULL)){
 						inputs.press |= PL_ENTER;
 						sightCheck = true; // Remember for the next frames
 					}
@@ -1303,12 +1303,12 @@ bool M3Truck::tryshoot(double dt){
 		pb->pos = gunPos;
 		pb->velo = dir * v + this->velo;
 		for(int j = 0; j < 3; j++)
-			pb->velo[j] += (drseq(&w->rs) - .5) * .005;
+			pb->velo[j] += (drseq(&w->rs) - .5) * 5.;
 		pb->anim(dt - this->cooldown);
 
 		/* M2 */
 		static const double scale = modelScale;
-		avec3_t pos, pos0 = {0,0.002,0}, velo, velo0 = {0, 0, -.88};
+		avec3_t pos, pos0 = {0,2.,0}, velo, velo0 = {0, 0, -880.};
 		aquat_t qp = {0}, qy = {0}, q, q1, qr;
 		double dev[2];
 

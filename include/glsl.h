@@ -45,7 +45,7 @@ EXPORT extern PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
 #define glGetAttribLocation(a,b) (pglGetAttribLocation ? pglGetAttribLocation(a,b) : -1)
 #define glVertexAttrib3dv(a,b) (pglVertexAttrib3dv ? pglVertexAttrib3dv(a,b) : 0)
 
-EXPORT int glsl_register_shader(GLuint shader, const char *src);
+EXPORT int glsl_register_shader(GLuint shader, const char *src, const char *fileName);
 EXPORT int glsl_load_shader(GLuint shader, const char *fname);
 EXPORT GLuint glsl_register_program(const GLuint *shaders, int nshaders);
 EXPORT void glsl_register();

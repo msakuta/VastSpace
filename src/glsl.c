@@ -2,6 +2,7 @@
 #include <clib/zip/UnZip.h>
 #include <stdio.h>
 #include <assert.h>
+#include <time.h>
 
 PFNGLCREATESHADERPROC pglCreateShader;
 PFNGLDELETEPROGRAMPROC glDeleteProgram;
@@ -29,8 +30,11 @@ PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
 int g_shader_enable = 1;
 
 
-/* compile a shader with directly giving source text. */
-int glsl_register_shader(GLuint shader, const char *src){
+/// @brief compile a shader with directly giving source text.
+/// @param shader Allocated shader unit to bind the shader.
+/// @param src Source text
+/// @param fname File name for outputting debug log (in logs/shader.log)
+int glsl_register_shader(GLuint shader, const char *src, const char *fname){
 	GLint compiled;
 	GLint logSize;
 	if(shader == 0)
@@ -40,18 +44,52 @@ int glsl_register_shader(GLuint shader, const char *src){
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH , &logSize);
 	
-	// AMD Radeon HD 6870 outputs log messages when the compilation succeeds.
-	// This information is not much informative and takes much of console space
-	// especially if there are many shaders.
-	if (!compiled && logSize > 1)
-	{
+	if(logSize > 1){
+		static int fileCleared = 0;
+		FILE *fp;
 		GLsizei length;
 		char *buf;
-		buf = malloc(logSize);
+		buf = (char*)malloc(logSize);
+		if(!buf)
+			return compiled;
 		glGetShaderInfoLog(shader, logSize, &length, buf);
-		fprintf(stderr, "Shader Info Log\n%s\n", buf);
+
+		// AMD Radeon HD 6870 and Intel HD graphics 4000 are confirmed but not necessarily the only
+		// graphic processors that output log messages even if there are no errors or warnings.
+		// This information is not much informative and takes much of console space
+		// especially if there are many shaders, so output to console only if the compilation
+		// itself failed.
+		if(!compiled)
+			fprintf(stderr, "Shader Info Log for %s\n%s\n", fname, buf);
+
+		// Output to a log file regardless of whether the compilation succeeds or not.
+		// It's useful for removing warnings if there are no errors.
+		if(!fileCleared){
+			// Clear the contents of the log file in the first invocation of this function
+			// in an execution session in order to prevent the file from bloating endlessly.
+			fp = fopen("logs/shader.log", "w");
+			if(fp)
+				fileCleared = 1;
+		}
+		else{
+			// Append to the log file after the first output.
+			fp = fopen("logs/shader.log", "a");
+			fprintf(fp, "\n\n"); // Make some spaces from previous file entry
+		}
+		if(fp){
+			time_t timer;
+			timer = time(NULL);
+			fprintf(fp,
+				"------------------------------------------\n"
+				"  Shader compile info log\n"
+				"  File: %s\n"
+				"  Time: %s" // ctime() appends \n to the end of returned string
+				"------------------------------------------\n"
+				"%s", fname, ctime(&timer), buf);
+			fclose(fp);
+		}
 		free(buf);
-    }
+	}
 	return compiled;
 }
 
@@ -208,7 +246,7 @@ int glsl_load_shader(GLuint shader, const char *fname){
 			fprintf(stderr, "GLSL preprocessing error in \"%s\".\n", fname);
 		}
 		else{
-			ret = glsl_register_shader(shader, buf);
+			ret = glsl_register_shader(shader, buf, fname);
 			if(!ret && osize != size){
 				fp = fopen("preprocessed.txt", "w");
 				if(fp){

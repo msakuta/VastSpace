@@ -99,9 +99,9 @@ void main (void)
 
 	vec3 reflectDirection = reflect(fview, fnormal);
 
-	vec3 diffuse = 0;
-	vec3 ambient = 0;
-	vec3 specAccum = 0;
+	vec3 diffuse = vec3(0,0,0);
+	vec3 ambient = vec3(0,0,0);
+	vec3 specAccum = vec3(0,0,0);
 	for(int i = 0; i < lightCount; i++){
 		vec3 flight = normalize(gl_LightSource[i].position.xyz);
 
@@ -118,9 +118,9 @@ void main (void)
 		float reflection = 1. - dot(flight, reflectDirection);
 
 		// Outer specular highlight
-		vec3 lspecular = pow(shininess * reflection + 1., -2.);
+		vec3 lspecular = vec3(pow(shininess * reflection + 1., -2.));
 		// Another specular for the light source's direct ray
-		lspecular += pow(innerShininess * reflection + 1., -2.);
+		lspecular += vec3(pow(innerShininess * reflection + 1., -2.));
 
 		// Specular reflection won't reach the night side of the Earth.
 		specAccum += gl_LightSource[i].diffuse.xyz * ambf * cloudBlock * specular * max(.1, min(1., dtn))

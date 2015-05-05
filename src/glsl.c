@@ -33,8 +33,17 @@ int g_shader_enable = 1;
 /// @brief compile a shader with directly giving source text.
 /// @param shader Allocated shader unit to bind the shader.
 /// @param src Source text
-/// @param fname File name for outputting debug log (in logs/shader.log)
-int glsl_register_shader(GLuint shader, const char *src, const char *fname){
+/// @param srcFileNames A list of file names for outputting debug log (in logs/shader.log).
+///        Since GLSL has no concept of file names, warning and error log messages are printed
+///        with just the source string numbers.  A source string number is just a plain integer
+///        that distinguishes sources, which is difficult to utilize for debugging by itself.
+///        This function outputs a source file name table that maps the source string number
+///        to the file name, which is given by this parameter.
+///        Note that replacing source string numbers with file names in log messages is not
+///        technically impossible but extremely difficult since different OpenGL driver vendors
+///        have different message formats.  It's not worth trying.
+/// @param numSrcFileNames Number of elements in srcFileNames array.
+int glsl_register_shader(GLuint shader, const char *src, const char **srcFileNames, int numSrcFileNames){
 	GLint compiled;
 	GLint logSize;
 	if(shader == 0)
@@ -60,7 +69,7 @@ int glsl_register_shader(GLuint shader, const char *src, const char *fname){
 		// especially if there are many shaders, so output to console only if the compilation
 		// itself failed.
 		if(!compiled)
-			fprintf(stderr, "Shader Info Log for %s\n%s\n", fname, buf);
+			fprintf(stderr, "Shader Info Log for %s\n%s\n", srcFileNames[0], buf);
 
 		// Output to a log file regardless of whether the compilation succeeds or not.
 		// It's useful for removing warnings if there are no errors.
@@ -77,15 +86,19 @@ int glsl_register_shader(GLuint shader, const char *src, const char *fname){
 			fprintf(fp, "\n\n"); // Make some spaces from previous file entry
 		}
 		if(fp){
+			int i;
 			time_t timer;
 			timer = time(NULL);
 			fprintf(fp,
 				"------------------------------------------\n"
-				"  Shader compile info log\n"
-				"  File: %s\n"
+				"  Shader compile info log\n");
+			// Output the source file name table
+			for(i = 0; i < numSrcFileNames; i++)
+				fprintf(fp, "  File(%d): %s\n", i, srcFileNames[i]);
+			fprintf(fp,
 				"  Time: %s" // ctime() appends \n to the end of returned string
 				"------------------------------------------\n"
-				"%s", fname, ctime(&timer), buf);
+				"%s", ctime(&timer), buf);
 			fclose(fp);
 		}
 		free(buf);
@@ -93,18 +106,39 @@ int glsl_register_shader(GLuint shader, const char *src, const char *fname){
 	return compiled;
 }
 
-/** Preprocess a file to include #include directives.
- * Currently the sharp in a string cannot be correctly ignored. */
-static int preprocess_file(GLchar **buf, long *size){
+/** @brief Preprocess a file to include #include directives.
+ * @param buf A pointer to the pointer that holds source string as preprocessed output.  It can be realloc()-ed when
+ *        there's a #include directive.
+ * @param size A pointer to the variable that holds size of buf.  It can also be updated by #include interpretation.
+ * @param scanStart Position in buf to start preprocessing.  The first invocation should pass 0 to this argument.
+ *        It can be other values in recursive calls (which is triggered by #include interpretation).
+ * @param scanEnd Position in buf to finish preprocessing.  The first invocation should pass *size to this argument.
+ *        It can be other values in recursive calls (which is triggered by #include interpretation).
+ * @param srcFileNames A pointer to the array of strings that holds source file names.  It can be realloc()-ed when
+ *        #include directive is encountered.  Appended file names are malloc()-ed, so free()-ing them is responsibility
+ *        of the caller.
+ * @param numSrcFileNames A pointer to the variable that holds number of elements in srcFileNames array.
+ *        It can also be updated by #include interpretation.
+ *
+ * The GLSL language specification omits #include because it have to support embedded processors
+ * which could have no file system, but we want it for managing multiple shaders and split compiling.
+ * Currently the sharp in a string cannot be correctly ignored.
+ *
+ * It is probably not worth noting that scanStart and scanEnd parameters are given as offset in buf instead of
+ * pointers because buf can move around in memory address by realloc().
+ */
+static int preprocess_file(GLchar **buf, long *size, int scanStart, int scanEnd, char ***srcFileNames, int *numSrcFileNames){
 	static const char *directive = "include";
-	GLchar *scan = *buf;
+	GLchar *scan = *buf + scanStart;
 	int direcpos = 0;
 	GLchar *direcStart = NULL;
 	int lineComment = 0;
 	GLchar *commentStart = NULL;
+	int linenum = 0;
+	int srcFileIdx = *numSrcFileNames - 1; // Remember this file's source file index before #include modifies numSrcFileNames
 	int ret = 0;
 
-	for(; *scan; ++scan){
+	for(; *scan && scan - *buf < scanEnd; ++scan){
 		// Ignore line comment
 		if(*scan == '/'){
 			++lineComment;
@@ -118,6 +152,9 @@ static int preprocess_file(GLchar **buf, long *size){
 		else
 			lineComment = 0;
 
+		if(*scan == '\n')
+			++linenum;
+
 		// Find the sharp indicating the beginning of a directive.
 		// TODO: Ignore strings and block comments
 		if(!direcStart){
@@ -125,6 +162,10 @@ static int preprocess_file(GLchar **buf, long *size){
 				direcStart = scan;
 				direcpos = 0;
 			}
+		}
+		// Whitespaces between "#" and "include" are ignored.
+		else if(*scan != '\n' && isspace(*scan) && direcpos == 0){
+			// Do nothing
 		}
 		else if(*scan == directive[direcpos]){
 			// Scan the directive name
@@ -147,9 +188,9 @@ static int preprocess_file(GLchar **buf, long *size){
 				while(*scan != '"' && *scan != '>')
 					++scan;
 				// Null terminate the string to interpret the file name as a C string.
-				*scan = '\0';
+				*scan++ = '\0';
 				// Even after the directive is processed, we must consume the stream until newline.
-				while(*scan != '\n')
+				while(*scan && *scan != '\n')
 					++scan;
 				// Calculate size of directive line.
 				direcSize = scan - direcStart;
@@ -160,7 +201,7 @@ static int preprocess_file(GLchar **buf, long *size){
 					fseek(fp, 0, SEEK_END);
 					incSize = ftell(fp);
 					fseek(fp, 0, SEEK_SET);
-					buf2 = malloc(incSize);
+					buf2 = (GLchar*)malloc(incSize);
 					if(!buf2)
 						ret = -1;
 					else if(1 != fread(buf2, incSize, 1, fp))
@@ -180,13 +221,34 @@ static int preprocess_file(GLchar **buf, long *size){
 					long direcOffset = direcStart - *buf;
 					long scanOffset = scan - *buf;
 					long newSize = *size + incSize - (scanOffset - direcOffset);
+					GLchar linesDirective[256];
+					long sizeLinesDirective;
+					GLchar linesAfterDirective[256];
+					long sizeLinesAfterDirective;
+
+					// Append the file name to the source file name table
+					*srcFileNames = (char**)realloc(*srcFileNames, ++*numSrcFileNames * sizeof *srcFileNames);
+					(*srcFileNames)[*numSrcFileNames - 1] = (char *)malloc((strlen(fname) + 1) * sizeof(char));
+					strcpy((*srcFileNames)[*numSrcFileNames - 1], fname);
+
+					// Construct #line directives to make line numbers in log messages readable.
+					// Unlike C or C++, the second argument of #line directive must be an integer (called source string number).
+					// For details, see https://www.opengl.org/wiki/Core_Language_%28GLSL%29#.23line_directive
+					sprintf(linesDirective, "#line %d %d\n", 0, *numSrcFileNames - 1);
+					newSize += sizeLinesDirective = strlen(linesDirective);
+					sprintf(linesAfterDirective, "#line %d %d\n", linenum, srcFileIdx);
+					newSize += sizeLinesAfterDirective = strlen(linesAfterDirective);
 
 					// Reallocate and possibly move the buffer.
-					*buf = realloc(*buf, newSize);
+					*buf = (GLchar*)realloc(*buf, newSize);
 					// Move the later section of the original file to end of the included file.
-					memmove(&(*buf)[direcOffset + incSize], &(*buf)[scanOffset], *size - scanOffset);
-					// Ember the included file in the place of the directive.
-					memcpy(&(*buf)[direcOffset], buf2, incSize);
+					memmove(&(*buf)[direcOffset + sizeLinesDirective + incSize + sizeLinesAfterDirective], &(*buf)[scanOffset], *size - scanOffset);
+					// Insert a #line directive before included file.
+					memcpy(&(*buf)[direcOffset], linesDirective, sizeLinesDirective);
+					// Embed the included file in the place of the directive.
+					memcpy(&(*buf)[direcOffset + sizeLinesDirective], buf2, incSize);
+					// Insert a #line directive after included file to restore original file name and line number.
+					memcpy(&(*buf)[direcOffset + sizeLinesDirective + incSize], linesAfterDirective, sizeLinesAfterDirective);
 					// Update the size.
 					*size = newSize;
 					// Free the appropriate buffer.
@@ -194,20 +256,25 @@ static int preprocess_file(GLchar **buf, long *size){
 						free(buf2);
 					else
 						ZipFree(buf2);
+
+					// Recursively preprocess the included file. Since we need to restore line numbers and source string numbers of original file, we must have a stack
+					// somewhere to remember line numbers in nested includes. The call stack is intuitive way to do this (although
+					// number of parameters increases).
+					preprocess_file(buf, size, direcOffset, direcOffset + sizeLinesDirective + incSize + sizeLinesAfterDirective, srcFileNames, numSrcFileNames);
+
 					// Scan pointer should point to the reallocated buffer.
-					scan = &(*buf)[direcOffset];
+					scan = &(*buf)[direcOffset + sizeLinesDirective + incSize + sizeLinesAfterDirective];
+
+					scanEnd += incSize - (scanOffset - direcOffset);
+
 				}
+				// Increment line number because the next iteration will consume the newline (\n) without counting.
+				++linenum;
 				// Reset the state.
 				direcStart = NULL;
 			}
 		}
-		else if(direcpos != 0){
-			// Non-matched directive name; shouldn't happen
-			// TODO: Helpful error messages.
-			assert(0);
-			direcStart = NULL;
-		}
-		else if(*scan == '\n')
+		else // Non-matched directive name can happen and should be ignored.
 			direcStart = NULL;
 	}
 	return ret;
@@ -238,22 +305,37 @@ int glsl_load_shader(GLuint shader, const char *fname){
 	else
 		return 0;
 	if(buf){
+		char **srcFileNames;
+		int numSrcFileNames = 1, i;
 		int prepResult;
 		long osize = size;
-		prepResult = preprocess_file(&buf, &size);
+
+		srcFileNames = (char**)malloc(sizeof(*srcFileNames));
+		srcFileNames[0] = (char*)fname;
+
+		prepResult = preprocess_file(&buf, &size, 0, size, &srcFileNames, &numSrcFileNames);
 		if(prepResult < 0){
 			ret = 0;
 			fprintf(stderr, "GLSL preprocessing error in \"%s\".\n", fname);
 		}
 		else{
-			ret = glsl_register_shader(shader, buf, fname);
+			ret = glsl_register_shader(shader, buf, srcFileNames, numSrcFileNames);
 			if(!ret && osize != size){
-				fp = fopen("preprocessed.txt", "w");
-				if(fp){
-					fprintf(fp, "%s\n", buf);
+				FILE *pfp;
+				pfp = fopen("preprocessed.txt", "wb");
+				if(pfp){
+					fprintf(pfp, "%.*s\n", size, buf);
+					fclose(pfp);
 				}
 			}
 		}
+
+		// Note that i starts with 1; the first element in the array is a const pointer to given
+		// string which cannot be freed by this function.
+		for(i = 1; i < numSrcFileNames; i++)
+			free(srcFileNames[i]);
+		free(srcFileNames);
+
 		if(fp)
 			free(buf);
 		else

@@ -6,7 +6,7 @@ uniform mat3 rotation;
 
 void main (void)
 {
-	vec3 texsample = textureCube(bumptexture, gl_TexCoord[0].xyz);
+	vec3 texsample = textureCube(bumptexture, gl_TexCoord[0].xyz).xyz;
 	vec3 texnorm0 = texsample - vec3(0.5, .5, .5);
 	vec3 fnormal = normalize(rotation * texnorm0);
 	vec3 flight = normalize(gl_LightSource[0].position.xyz);

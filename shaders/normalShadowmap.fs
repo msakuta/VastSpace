@@ -36,13 +36,13 @@ void main (void)
 			+ gl_FrontLightProduct[1].diffuse.xyz * diffuse[1] + gl_FrontLightProduct[1].ambient.xyz
 			+ gl_FrontLightModelProduct.sceneColor.xyz;
 
-	if(0. < shadow && 0. < gl_FrontLightProduct[0].specular.length()){
+	if(0. < shadow && 0. < length(gl_FrontLightProduct[0].specular)){
 		vec3 lightVec = normalize((gl_LightSource[0].position * view.w - gl_LightSource[0].position.w * view).xyz);
 		float attenuation = shadow;
 		vec3 viewVec = normalize(-view.xyz);
 		vec3 halfway = normalize(lightVec + viewVec);
 		float specular = pow(max(dot(fnormal, halfway), 0.0), gl_FrontMaterial.shininess);
-		lightProduct += gl_FrontLightProduct[0].specular * specular * attenuation;
+		lightProduct += gl_FrontLightProduct[0].specular.xyz * specular * attenuation;
 	}
 
 //	vec4 texColor = shadow;

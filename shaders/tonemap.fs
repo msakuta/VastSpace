@@ -28,7 +28,7 @@ vec4 toneMappingAlpha(vec4 texColor)
 	}
 	float saturated = 0.;
 	for(int i = 0; i < 3; i++)
-		saturated += max(0, texColor[i] - 1.);
+		saturated += max(0., texColor[i] - 1.);
 	// Too bright color saturates the image sensor so that it hides things behind.
 	if(1. < saturated){
 		texColor.a *= saturated;

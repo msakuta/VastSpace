@@ -28,12 +28,12 @@ bool waving;
 vec4 ocean(vec3 v){
 	// height and noise3D uniform variables are defined in earth_cloud_noise.fs.
 	float f2 = 1./*min(1., 20. / height)*/;
-	v *= 50 * 16.;
+	v *= 50. * 16.;
 
 	// Rotated input vector for combination to enhance period of the noise.
 	// The period of cells formed by v and v2 vectors is desired to be
 	// as large as possible.
-	vec3 v2 = vec3(v.x * cos(1) + v.y * sin(1), v.x * -sin(1) + v.y * cos(1), v.z);
+	vec3 v2 = vec3(v.x * cos(1.) + v.y * sin(1.), v.x * -sin(1.) + v.y * cos(1.), v.z);
 
 	// Diminishing details when the viewpoint is far from surface.
 	// It should use pixel-wise distance from viewpoint, but gl_FragCoord.z seems not to scale,

@@ -28,6 +28,7 @@ PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
 
 
 int g_shader_enable = 1;
+int g_shader_preprocess_out = 0;
 
 
 /// @brief compile a shader with directly giving source text.
@@ -320,9 +321,9 @@ int glsl_load_shader(GLuint shader, const char *fname){
 		}
 		else{
 			ret = glsl_register_shader(shader, buf, srcFileNames, numSrcFileNames);
-			if(!ret && osize != size){
+			if(g_shader_preprocess_out && !ret && osize != size){
 				FILE *pfp;
-				pfp = fopen("preprocessed.txt", "wb");
+				pfp = fopen("logs/preprocessed.txt", "wb");
 				if(pfp){
 					fprintf(pfp, "%.*s\n", size, buf);
 					fclose(pfp);

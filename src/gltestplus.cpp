@@ -2621,6 +2621,7 @@ int main(int argc, char *argv[])
 	CvarAdd("g_warspace_near_clip", &g_warspace_near_clip, cvar_double);
 	CvarAdd("g_warspace_far_clip", &g_warspace_far_clip, cvar_double);
 	CvarAddVRC("g_shader_enable", &g_shader_enable, cvar_int, (int(*)(void*))vrc_shader_enable);
+	CvarAdd("g_shader_preprocess_out", &g_shader_preprocess_out, cvar_int);
 	CvarAdd("r_auto_exposure", &r_auto_exposure, cvar_int);
 	CvarAdd("r_exposure", &r_exposure, cvar_double);
 	CvarAdd("r_tonemap", &r_tonemap, cvar_int);

@@ -52,6 +52,7 @@ EXPORT void glsl_register();
 
 EXPORT int vrc_shader_enable(int *);
 EXPORT extern int g_shader_enable;
+EXPORT extern int g_shader_preprocess_out;
 
 #ifdef __cplusplus
 }

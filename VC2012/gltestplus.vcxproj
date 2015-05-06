@@ -214,6 +214,7 @@
     <ClCompile Include="..\src\draw\MTurret-draw.cpp" />
     <ClCompile Include="..\src\draw\Player-draw.cpp" />
     <ClCompile Include="..\src\draw\ring-draw.cpp" />
+    <ClCompile Include="..\src\draw\RoundAstrobj-draw.cpp" />
     <ClCompile Include="..\src\draw\RStation-draw.cpp" />
     <ClCompile Include="..\src\draw\Scarry-Draw.cpp" />
     <ClCompile Include="..\src\draw\Sceptor-Draw.cpp" />

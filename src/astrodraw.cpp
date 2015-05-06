@@ -387,6 +387,68 @@ void RoundAstrobj::draw(const Viewer *vw){
 		astroRing.ring_draw(*vw, this, sunpos, 0, ringdrawn, ringrot, ringthick, ringmin, ringmax, 0., oblateness, NULL, NULL, sunar, brightness);
 }
 
+void RoundAstrobj::drawSolid(const Viewer *vw){
+	Vec3d apparentPos = tocs(vw->pos, vw->cs);
+
+	GLint maxLights = 1;
+	glGetIntegerv(GL_MAX_LIGHTS, &maxLights);
+	FindBrightestAstrobj param(vw->cs, apparentPos, maxLights, this);
+	param.threshold = 1e-6;
+	param.eclipseThreshold = 1e-5;
+
+	find(param);
+	Astrobj *sun = param.results.size() ? const_cast<Astrobj*>(param.results[0].cs) : NULL;
+	Vec3d sunpos = sun ? vw->cs->tocs(sun->pos, sun->parent) : vec3_000;
+	if(oblateness != 0.){
+		bool ret = DrawTextureSpheroid(this, vw, sunpos)
+			.oblateness(oblateness)
+			.flags(DTS_LIGHTING)
+			.mat_diffuse(basecolor * brightness)
+			.mat_ambient(basecolor * brightness / 10.)
+			.texlist(&texlist)
+			.texmat(mat4_u)
+			.textures(textures)
+			.shader(shader)
+			.texname(texname)
+			.rad(rad)
+			.ring(&astroRing)
+			.ringRange(ringmin, ringmax)
+			.cloudRotation(cloudRotation())
+			.noisePos(noisePos.cast<float>())
+			.lightingStar(param.results)
+			.draw();
+		if(!ret && *texname){
+			texname = "";
+		}
+	}
+	else{
+		auto proc = [&](DrawTextureSphere &ds){
+			return ds
+			.flags(DTS_LIGHTING)
+			.mat_diffuse(basecolor)
+			.mat_ambient(basecolor / 2.f)
+			.texlist(&texlist).texmat(rot.cnj().tomat4()).texname(texname).shader(shader)
+			.textures(textures)
+			.ncuts(g_tscuts)
+			.ring(&astroRing)
+			.cloudRotation(cloudRotation())
+			.noisePos(noisePos.cast<float>())
+			.lightingStar(param.results)
+			.draw();
+		};
+		bool ret = terrainNoiseEnable ?
+			proc(DrawTextureCubeEx(this, vw, sunpos)
+			.noiseLODRange(terrainNoiseLODRange)
+			.noiseLODs(terrainNoiseLODs)
+			.noiseHeight(terrainNoiseHeight)
+			.noisePersistence(terrainNoisePersistence)
+			.noiseOctaves(terrainNoiseOctaves)
+			.noiseBaseLevel(terrainNoiseBaseLevel)
+			.zbufmode(true))
+			: proc(DrawTextureSphere(this, vw, sunpos));
+	}
+}
+
 inline double atmo_sp2brightness(double sp);
 
 

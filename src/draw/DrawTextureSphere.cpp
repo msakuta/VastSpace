@@ -1064,17 +1064,17 @@ bool DrawTextureCubeEx::draw(){
 
 	qrot = a->tocsq(vw->cs);
 
-	glPushMatrix();
-
 	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT | GL_POLYGON_BIT | GL_LIGHTING_BIT);
 
 	useShader();
 
 	setupLight();
 
-	gldTranslate3dv(this->apos - vw->pos);
-	glScaled(m_rad, m_rad, m_rad);
-	gldMultQuat(qrot);
+	// Pre-calculate transformation matrix instead of glPushMatrix() and successive transformation
+	// for improving precision by double precision floating numbers.
+	Mat4d translate = mat4_u.translate(this->apos - (vw->zslice == 2 ? vw->pos : vec3_000));
+	Mat4d scale = translate.scalein(m_rad, m_rad, m_rad);
+	this->trans = scale * qrot.tomat4();
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -1093,18 +1093,20 @@ bool DrawTextureCubeEx::draw(){
 	else
 		glDisable(GL_TEXTURE_2D);
 
-	double height = m_rad;
-	if(&a->getStatic() == &RoundAstrobj::classRegister)
-		height *= static_cast<RoundAstrobj*>(a)->getTerrainHeight(a->tocs(vw->pos, vw->cs).norm());
-	// Can get close as one meter
-	double nearest = std::max(1e-3, ((apos - vw->pos).len() - (height + 0.1)) / 2.);
-	double farthest = (apos - vw->pos).len() + (1.5 * m_rad + 2. * m_noiseHeight);
+	if(!m_zbufmode){
+		double height = m_rad;
+		if(&a->getStatic() == &RoundAstrobj::classRegister)
+			height *= static_cast<RoundAstrobj*>(a)->getTerrainHeight(a->tocs(vw->pos, vw->cs).norm());
+		// Can get close as one meter
+		double nearest = std::max(1e-3, ((apos - vw->pos).len() - (height + 0.1)) / 2.);
+		double farthest = (apos - vw->pos).len() + (1.5 * m_rad + 2. * m_noiseHeight);
 
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	const_cast<Viewer*>(vw)->frustum(nearest, farthest);
-	glMatrixMode(GL_MODELVIEW);
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glLoadIdentity();
+		const_cast<Viewer*>(vw)->frustum(nearest, farthest);
+		glMatrixMode(GL_MODELVIEW);
+	}
 
 	glEnable(GL_CULL_FACE);
 
@@ -1143,20 +1145,16 @@ bool DrawTextureCubeEx::draw(){
 							// It looks terrible, but better than a hole.
 							int bx = ix;
 							int by = iy;
-							if(bx < lodPatchSize && by < lodPatchSize){
+							if(bx < lodPatchSize && by < lodPatchSize && !m_zbufmode){
 								int idx = ix * lodPatchSize + iy;
-								enableBuffer(bufs);
-								glDrawElements(GL_QUADS, bufs.getPatchCount(i, idx),
-									GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(i, idx)]);
+								drawPatchElements(bufs, bufs.getPatchCount(i, idx), bufs.getBase(i, idx));
 							}
 						}
 					}
 				}
 			}
-			else{
-				enableBuffer(bufs);
-				glDrawElements(GL_QUADS, bufs.getCount(i),
-					GL_UNSIGNED_INT, &((GLuint*)nullptr)[bufs.getBase(i)]);
+			else if(!m_zbufmode){
+				drawPatchElements(bufs, bufs.getCount(i), bufs.getBase(i));
 #if PROFILE_CUBEEX
 				lodCounts[0]++;
 #endif
@@ -1181,13 +1179,14 @@ bool DrawTextureCubeEx::draw(){
 
 	glPopAttrib();
 
-	glClear(GL_DEPTH_BUFFER_BIT);
+	if(!m_zbufmode){
+		glClear(GL_DEPTH_BUFFER_BIT);
 
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+	}
 
-	glPopMatrix();
 	return true;
 }
 
@@ -1262,23 +1261,23 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 					for(int iy = iyBegin; iy < iyEnd; iy++){
 						int basex = ix - ixBegin;
 						int basey = iy - iyBegin;
-						if(!patchDetail(ix, iy) && basex < maxPatchRatio && basey < maxPatchRatio){
-							glDrawElements(GL_QUADS, it2->second.subPatchCount[basex][basey],
-								GL_UNSIGNED_INT, &((GLuint*)nullptr)[it2->second.subPatchIdx[basex][basey]]);
+						if(!patchDetail(ix, iy) && basex < maxPatchRatio && basey < maxPatchRatio && !m_zbufmode){
+							drawPatchElements(it2->second, it2->second.subPatchCount[basex][basey],
+								it2->second.subPatchIdx[basex][basey], false);
 						}
 					}
 				}
 			}
 		}
 
-		// If no higher level of detail patches are drawn, render the coarse patch at once
-		if(!drawn){
+		// If no higher level of detail patches are drawn, render the coarse patch at once.
+		// Only draw the highest LOD patch when m_zbufmode is true.
+		if(!drawn && (!m_zbufmode || m_lods <= lod+1)){
 #if PROFILE_CUBEEX
 			timemeas_t tms;
 			TimeMeasStart(&tms);
 #endif
-			enableBuffer(it2->second);
-			glDrawElements(GL_QUADS, it2->second.count, GL_UNSIGNED_INT, 0);
+			drawPatchElements(it2->second, it2->second.count);
 #if PROFILE_CUBEEX
 			GLWchart::addSampleToCharts(gltestp::dstring("dtstime") << lod, TimeMeasLap(&tms));
 			lodCounts[1]++;
@@ -1290,11 +1289,23 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 	return it2 != bufs.subbufs[lod].end();
 }
 
+/// An internal function that actually draws elements in vertex buffer objects.
+void DrawTextureCubeEx::drawPatchElements(SubBufferSetBase &bufs, GLint count, GLint base, bool enable){
+	if(enable)
+		enableBuffer(bufs);
+	glPushMatrix();
+	Mat4d heremat = trans.translate(bufs.org);
+	glMultMatrixd(heremat);
+	glDrawElements(GL_QUADS, count, GL_UNSIGNED_INT, &((GLuint*)nullptr)[base]);
+	glPopMatrix();
+}
+
 typedef std::vector<Vec3d> VecList;
 typedef std::vector<GLuint> IndList;
 
 /// Set of data buffers that should be inserted during VBO compilation.
 struct DrawTextureCubeEx::BufferData{
+	Vec3d org;
 	VertexIndMap mapVertices;
 	VecList plainVertices;
 	VecList plainNormals;
@@ -1348,9 +1359,15 @@ struct DrawTextureCubeEx::TempVertex{
 		if(it != bd.mapVertices.end())
 			bd.indices.push_back(it->second);
 		else{
+			// Store all position vectors as relative position from the first vertex.
+			// This way, vertices are expressed in proximity of zero vector, which will improve
+			// precision greatly, especially in finer patches.
+			// But we have to remember the base position (origin) somewhere in order to render them.
+			if(bd.plainVertices.size() == 0)
+				bd.org = pos;
 			bd.mapVertices[tv] = bd.plainVertices.size();
 			bd.indices.push_back(bd.plainVertices.size());
-			bd.plainVertices.push_back(tv.pos);
+			bd.plainVertices.push_back(tv.pos - bd.org);
 			bd.plainNormals.push_back(tv.nrm);
 			bd.plainTextures.push_back(tv.tex);
 		}
@@ -1683,6 +1700,8 @@ void DrawTextureCubeEx::setVertexBuffers(const BufferData &bd, SubBufferSetBase 
 	bufs.tex = bs[2];
 	bufs.ind = bs[3];
 	bufs.count = bd.indices.size();
+
+	bufs.org = bd.org;
 
 	/* Vertex array */
 	glBindBuffer(GL_ARRAY_BUFFER, bufs.pos);

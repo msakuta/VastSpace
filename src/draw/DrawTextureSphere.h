@@ -126,7 +126,7 @@ public:
 	typedef DrawTextureCubeEx tt;
 
 	tt(RoundAstrobj *a, const Viewer *vw, const Vec3d &sunpos) : st(a, vw, sunpos),
-		m_lods(3), m_noiseHeight(1.), m_noisePersistence(0.65), m_noiseOctaves(6){}
+		m_lods(3), m_noiseHeight(1.), m_noisePersistence(0.65), m_noiseOctaves(6), m_zbufmode(false){}
 	bool draw()override;
 	tt &noiseLODRange(double v){m_noiseLODRange = v; return *this;}
 	tt &noiseLODs(int v){m_lods = MIN(maxLods, v); return *this;}
@@ -134,6 +134,8 @@ public:
 	tt &noisePersistence(double v){m_noisePersistence = v; return *this;}
 	tt &noiseOctaves(int v){m_noiseOctaves = v; return *this;}
 	tt &noiseBaseLevel(int v){m_noiseBaseLevel = v; return *this;}
+	/// Sets Z buffering mode
+	tt &zbufmode(bool v){m_zbufmode = v; return *this;}
 
 	static const int maxLods = 5;
 	static const int lodPatchSize = 4;
@@ -159,6 +161,7 @@ protected:
 	typedef std::map<DrawTextureCubeEx::TempVertex, GLuint> VertexIndMap;
 
 	struct SubBufferSetBase{
+		Vec3d org; ///< Origin
 		GLuint pos; ///< Position vector buffer.
 		GLuint nrm; ///< Normal vector buffer.
 		GLuint tex; ///< Texture coordinates buffer.
@@ -221,6 +224,7 @@ protected:
 
 	bool drawPatch(BufferSet &bufs, int direction, int lod, int px, int py);
 	void enableBuffer(SubBufferSetBase &);
+	void drawPatchElements(SubBufferSetBase &bufs, GLint count, GLint base = 0, bool enableBuffer = true);
 
 	static double height(const Vec3d &basepos, int octaves, double persistence, double aheight);
 	static void point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height);
@@ -237,8 +241,10 @@ protected:
 	double m_noiseLODRange;
 	int m_noiseOctaves;
 	int m_noiseBaseLevel;
+	bool m_zbufmode;
 
 	Quatd qrot;
+	Mat4d trans; ///< Transformation matrix for patches
 };
 
 #endif

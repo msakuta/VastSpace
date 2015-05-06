@@ -107,6 +107,7 @@ public:
 	virtual bool readFile(StellarContext &, int argc, const char *argv[]);
 	void anim(double dt)override;
 	void draw(const Viewer *);
+	void drawSolid(const Viewer *);
 	virtual double atmoScatter(const Viewer &vw)const;
 	virtual double getAtmosphericScaleHeight()const{return atmodensity;}
 	virtual bool sunAtmosphere(const Viewer &vw)const;

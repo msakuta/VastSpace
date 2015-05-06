@@ -14,6 +14,11 @@
 #include "cmd.h"
 #include "stellar_file.h"
 #include "astrodef.h"
+#ifndef DEDICATED
+#include "draw/WarDraw.h"
+#include "draw/ShadowMap.h"
+#include "draw/ShaderBind.h"
+#endif
 extern "C"{
 #include <clib/timemeas.h>
 #include <clib/gl/gldraw.h>
@@ -44,6 +49,7 @@ public:
 	SurfaceWar(SurfaceCS *);
 	~SurfaceWar();
 	Vec3d accel(const Vec3d &pos, const Vec3d &velo)const override;
+	void draw(WarDraw*)override;
 	double atmosphericPressure(const Vec3d &pos)const override;
 	bool sendMessage(Message &)override;
 protected:
@@ -397,6 +403,49 @@ SurfaceWar::SurfaceWar(SurfaceCS *cs) : st(cs), entity(new SurfaceEntity(this)){
 	// Don't forget to add the body to the dynamics world
 	bdw->addRigidBody(groundBody);
 #endif
+}
+
+void SurfaceWar::draw(WarDraw *wd){
+#ifndef DEDICATED
+	// Draw planets or asteroids in this z-slice.
+	// Search RoundAstrobjs from ancestors and direct children of
+	// ancestors.
+	Astrobj *a = nullptr;
+	for(CoordSys *cs = this->cs; cs; cs = cs->parent){
+		if(cs->toAstrobj()){
+			a = cs->toAstrobj();
+			break;
+		}
+		for(CoordSys *cs2 = cs->children; cs2; cs2 = cs2->next){
+			if(cs2->toAstrobj()){
+				a = cs2->toAstrobj();
+				break;
+			}
+		}
+		if(a)
+			break;
+	}
+
+	if(a){
+		RoundAstrobj *ra = dynamic_cast<RoundAstrobj*>(a);
+		if(ra){
+			ra->drawSolid(wd->vw);
+		}
+	}
+
+	// This re-establishment for shadow mapping and shaders is necessary because RoundAstrobj::drawSolid()
+	// overwrites current shadow mapping and shader state.
+	if(!wd->shadowmapping){
+		if(wd->shadowMap)
+			wd->shadowMap->enableShadows();
+		if(const ShaderBind *sb = wd->getShaderBind()){
+			sb->use();
+			sb->enableTextures(true, false);
+		}
+	}
+#endif
+
+	st::draw(wd);
 }
 
 Vec3d SurfaceWar::accel(const Vec3d &pos, const Vec3d &velo)const{

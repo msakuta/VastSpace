@@ -118,14 +118,38 @@ public:
 	Quatd cloudRotation()const{return rot.rotate(cloudPhase, 0, 1, 0);}
 	static bool sq_define(HSQUIRRELVM v);
 	double getTerrainHeight(const Vec3d &basepos)const;
+
+	/// Terrain modifier that artificially affect randomly generated terrain.
+	/// Currently, only circular flat area can be specified, but it could be various shapes.
+	struct TerrainMod{
+		Vec3d pos;
+		double radius;
+		double falloff;
+	};
+
+	/// A set of TerrainMods.  All modifications are applied to the same RoundAstrobj instance.
+	typedef std::vector<TerrainMod> TerrainMods;
+
+	/// A map type that can get TerrainMods from corresponding RoundAstrobj's SerializableId without RoundAstrobj instance.
+	typedef std::map<SerializableId, TerrainMods> TerrainModMap;
+
+	/// Global storage for storing TerrainMods for all RoundAstrobjs.  This is required for
+	/// parallelize terrain generation by threads and prevent access to deleted RoundAstrobjs from these threads.
+	/// If RoundAstrobjs are created and destroyed regularly, TerrainMods will leak memory.  Probably we could use
+	/// reference counter scheme to delete finished objects.
+	static TerrainModMap terrainModMap;
+
 protected:
 	virtual void updateAbsMag(double dt); ///< Update absolute magnitude of this celestial body by other light sources
-	static double getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight);
+	static double getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight, const TerrainMods &tmods);
 private:
 	std::vector<Texture> textures;
 #ifndef DEDICATED
 	BITMAPINFO *heightmap[6];
 #endif
+	/// Member reference to global TerrainMods object.  The object is not deleted even if this RoundAstrobj is destroyed.
+	TerrainMods &tmods;
+
 	const PropertyMap &propertyMap()const;
 	friend class DrawTextureSphere;
 	friend class DrawTextureSpheroid;

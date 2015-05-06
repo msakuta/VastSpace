@@ -51,10 +51,11 @@ coordsys Orbit earth{
 		atmosphere_color .2 .7 1.
 		atmosphere_dawn 1 .2 .1
 
+		define theta .19*PI
+		define phi 1.0*PI
+		define rad 6375+0.2
+
 		coordsys Surface earths{
-			define theta .19*PI
-			define phi 1.0*PI
-			define rad 6375+0.2
 			pos rad*sin(phi) rad*cos(theta)*cos(phi) rad*sin(theta)*cos(phi)
 #			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
 			rotation Quatd.rotation(theta,Vec3d(1,0,0))*Quatd.rotation(-phi,Vec3d(0,0,1))
@@ -65,6 +66,13 @@ coordsys Orbit earth{
 				pos 0 0 0
 				rotation Quatd.rotation(0.3*PI,Vec3d(1,0,0))
 			}
+		}
+
+		# Flat area for the airport
+		terrainMod{
+			pos sin(phi) cos(theta)*cos(phi) sin(theta)*cos(phi)
+			radius 0.0005
+			falloff 0.001
 		}
 	}
 

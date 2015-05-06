@@ -15,6 +15,9 @@
 #include "CoordSys-sq.h"
 #include "CoordSys-find.h"
 #include "noises/simplexnoise1234d.h"
+extern "C"{
+#include <clib/mathdef.h>
+}
 
 #include <stdlib.h>
 
@@ -31,7 +34,8 @@ RoundAstrobj::RoundAstrobj(Game *game) :
 	cloudShaderGiveup(false),
 #endif
 	cloudPhase(0.),
-	noisePos(0,0,0)
+	noisePos(0,0,0),
+	tmods(terrainModMap[id])
 {
 #ifndef DEDICATED
 	for(int i = 0; i < 6; i++)
@@ -58,7 +62,8 @@ RoundAstrobj::RoundAstrobj(const char *name, CoordSys *cs) : st(name, cs),
 	terrainNoiseLODs(3),
 	terrainNoiseOctaves(7),
 	terrainNoiseBaseLevel(0),
-	terrainNoiseEnable(false)
+	terrainNoiseEnable(false),
+	tmods(terrainModMap[id])
 {
 	texlist = cloudtexlist = 0;
 	ringmin = ringmax = ringthick = 0;
@@ -70,6 +75,7 @@ RoundAstrobj::RoundAstrobj(const char *name, CoordSys *cs) : st(name, cs),
 }
 
 const ClassRegister<RoundAstrobj> RoundAstrobj::classRegister("RoundAstrobj", sq_define);
+RoundAstrobj::TerrainModMap RoundAstrobj::terrainModMap;
 
 RoundAstrobj::~RoundAstrobj(){
 	// Should I delete here?
@@ -351,6 +357,40 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 		terrainNoiseBaseLevel = sqcalci(sc, ps, s);
 		return true;
 	}
+	else if(!scstrcmp(s, _SC("terrainMod"))){
+		// TerrainMod that is being added with default values
+		TerrainMod tmod = {Vec3d(1,0,0), 0.001, 0.001};
+
+		// Temporary command map that accept local commands for terrainMod
+		StellarContext::CommandMap cmap = *sc.commands;
+		cmap[_SC("pos")] = [&](StellarContext &sc, TokenList &argv){
+			if(argv.size() < 4)
+				throw StellarError("terrainMod.pos command requires 3 arguments");
+			Vec3d value = Vec3d(sqcalcd(sc, argv[1], _SC("terrainMod.pos")),
+				sqcalcd(sc, argv[2], _SC("terrainMod.pos")),
+				sqcalcd(sc, argv[3], _SC("terrainMod.pos")));
+			if(value.slen() == 0.)
+				throw StellarError("terrainMod.pos cannot be zero vector");
+			tmod.pos = value.norm();
+		};
+		cmap[_SC("radius")] = [&](StellarContext &sc, TokenList &argv){
+			if(argv.size() < 2)
+				throw StellarError("terrainMod.radius command requires an argument");
+			tmod.radius = sqcalcd(sc, argv[1], _SC("terrainMod.radius"));
+		};
+		cmap[_SC("falloff")] = [&](StellarContext &sc, TokenList &argv){
+			if(argv.size() < 2)
+				throw StellarError("terrainMod.falloff command requires an argument");
+			tmod.falloff = sqcalcd(sc, argv[1], _SC("terrainMod.falloff"));
+		};
+
+		// Parse subcommands
+		sc.parseString(ps, nullptr, sc.lastLine, &cmap);
+
+		// Add interpreted TerrainMod object to the list of TerrainMods for this RoundAstrobj.
+		tmods.push_back(tmod);
+		return true;
+	}
 	else
 		return st::readFile(sc, argc, argv);
 }
@@ -409,7 +449,7 @@ double RoundAstrobj::getTerrainHeight(const Vec3d &basepos)const{
 		height = accum;
 	}
 
-	return getTerrainHeightInt(basepos * (1 << terrainNoiseBaseLevel), terrainNoiseOctaves, terrainNoisePersistence, height / rad);
+	return getTerrainHeightInt(basepos * (1 << terrainNoiseBaseLevel), terrainNoiseOctaves, terrainNoisePersistence, height / rad, tmods);
 }
 
 /// Simplex Fractal Noise in 3D
@@ -427,7 +467,17 @@ static double sfnoise3(const Vec3d &basepos, int octaves, double persistence){
 	return ret / fsum;
 }
 
-double RoundAstrobj::getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight){
+double RoundAstrobj::getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight, const TerrainMods &tmods){
+
+	// Apply TerrainMods
+	for(auto it : tmods){
+		double dist = (it.pos - basepos.norm()).len();
+		if(it.radius < dist)
+			aheight /= 1. + it.falloff / (dist - it.radius);
+		else
+			aheight = 0.;
+	}
+
 	return ((sfnoise3(basepos, octaves, persistence) + 0.1) * aheight + 1.);
 }
 

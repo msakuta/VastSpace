@@ -1374,8 +1374,8 @@ struct DrawTextureCubeEx::TempVertex{
 	}
 };
 
-double DrawTextureCubeEx::height(const Vec3d &basepos, int octaves, double persistence, double aheight){
-	return RoundAstrobj::getTerrainHeightInt(basepos, octaves, persistence, aheight);
+double DrawTextureCubeEx::height(const Vec3d &basepos, int octaves, double persistence, double aheight, const RoundAstrobj::TerrainMods &tmods){
+	return RoundAstrobj::getTerrainHeightInt(basepos, octaves, persistence, aheight, tmods);
 }
 
 void DrawTextureCubeEx::point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height){
@@ -1404,7 +1404,8 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 
 	// This function is synchronized, so using this object's members is valid.
 	HeightGetter lheight = [this](const Vec3d &v, int, int){
-		return height(v, m_noiseOctaves, m_noisePersistence, m_noiseHeight / m_rad);
+		// At this point, DrawTextureCubeEx object is alive, which means RoundAstrobj is alive, too.
+		return height(v, m_noiseOctaves, m_noisePersistence, m_noiseHeight / m_rad, RoundAstrobj::terrainModMap[this->a->getid()]);
 	};
 
 	// Least detailed LOD's division per cube face
@@ -1561,6 +1562,8 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 				int octaves = m_noiseOctaves;
 				double baseLevel = (1 << m_noiseBaseLevel);
 
+				RoundAstrobj::TerrainMods &tmods = RoundAstrobj::terrainModMap[ra->getid()];
+
 				bufs.t = &it;
 				it.startJob([=, &bufs](){
 
@@ -1592,7 +1595,7 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 								for(int jx = 0; jx < 2; jx++)
 									for(int jy = 0; jy < 2; jy++)
 										accum += aheights.a[jx][jy] * (jx ? fx : 1. - fx) * (jy ? fy : 1. - fy);
-								return height(v * baseLevel, octaves, persistence, accum);
+								return height(v * baseLevel, octaves, persistence, accum, tmods);
 							};
 							HeightGetter bheight = [=](const Vec3d &v, int ix, int iy){
 								return lheight(v, ix, iy)

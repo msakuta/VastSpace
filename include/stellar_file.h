@@ -43,7 +43,9 @@ struct StellarContext{
 	/// @param cs If non-NULL, grow the stack frame for the new CoordSys, otherwise the string is executed
 	///           in the same frame as the caller's.
 	/// @param linenum Starting line number in the file.
-	int parseString(const char *commands, CoordSys *cs, linenum_t linenum = 0);
+	/// @param newCommandMap Temporarily override command map for parsing given commands. Can be nullptr
+	//            to not to override.
+	int parseString(const char *commands, CoordSys *cs, linenum_t linenum = 0, CommandMap *newCommandMap = nullptr);
 
 	/// @brief Parse a CoordSys, almost equivalent to parseBlock with growing stack
 	int parseCoordSys(CoordSys *cs);

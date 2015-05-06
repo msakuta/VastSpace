@@ -226,7 +226,7 @@ protected:
 	void enableBuffer(SubBufferSetBase &);
 	void drawPatchElements(SubBufferSetBase &bufs, GLint count, GLint base = 0, bool enableBuffer = true);
 
-	static double height(const Vec3d &basepos, int octaves, double persistence, double aheight);
+	static double height(const Vec3d &basepos, int octaves, double persistence, double aheight, const RoundAstrobj::TerrainMods &mods);
 	static void point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height);
 
 	void compileVertexBuffers()const;

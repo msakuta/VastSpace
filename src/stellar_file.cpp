@@ -257,8 +257,10 @@ int StellarContext::parseBlock(){
 	return 0;
 }
 
-int StellarContext::parseString(const char *s, CoordSys *cs, linenum_t linenum){
+int StellarContext::parseString(const char *s, CoordSys *cs, linenum_t linenum, CommandMap *newCommandMap){
 	StellarContext sc2 = *this;
+	if(newCommandMap)
+		sc2.commands = newCommandMap;
 	std::stringstream sstr = std::stringstream(std::string(s));
 	StellarStructureScanner ssc(&sstr, linenum);
 	sc2.scanner = &ssc;

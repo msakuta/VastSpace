@@ -9,14 +9,14 @@ if(earthlo != null)
 
 local birds = [];
 
-/*
+
 local f15 = player.cs.addent("F15", Vec3d(0 + 0.2, 0.72, 5. - 0.35));
 f15.setrot(Quatd(0,sqrt(2.)/2.,0,sqrt(2.)/2.));
 f15.gear = true;
-//player.chase = f15;
+player.chase = f15;
 f15.destArrived = true;
 birds.append(f15);
-*/
+
 
 //local f15_2 = player.cs.addent("F15", Vec3d(0, 4., -1));
 //f15_2.race = 1;
@@ -47,7 +47,7 @@ bldg.modelFile = "mods/surface/models/bigsight.mqo";
 bldg.modelScale = 0.001;
 bldg.hitRadius = 0.15;
 
-local airport = player.cs.addent("Airport", Vec3d(0, 0, 5000.0));
+local airport = player.cs.addent("Airport", Vec3d(0, 0, 0));
 airport.setrot(Quatd(0,1,0,0));
 
 local function localCoord(v){
@@ -61,11 +61,11 @@ local function globalCoord(v){
 }
 
 
-
+/*
 local apache = player.cs.addent("Apache", Vec3d(0, 2710., 5000. - 200.));
 player.chase = apache;
 apache.enemy = tank;
-
+*/
 universe.paused = false;
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook
 player.setmover("tactical");

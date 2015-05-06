@@ -11,6 +11,7 @@
 #include "draw/HDR.h"
 #include "glw/GLWchart.h"
 #include "draw/VBO.h"
+#include "draw/ShadowMap.h"
 #undef exit
 extern "C"{
 #include <clib/timemeas.h>
@@ -537,6 +538,10 @@ void DrawTextureSphere::useShader(){
 			GLint tonemapLoc;
 			GLint lightCountLoc;
 			GLint rotationLoc;
+			GLint shadowmapLoc;
+			GLint shadowmap2Loc;
+			GLint shadowmap3Loc;
+			GLint shadowSlopeScaledBiasLoc;
 			void getLocs(GLuint shader){
 				textureLoc = glGetUniformLocation(shader, "texture");
 				noise3DLoc = glGetUniformLocation(shader, "noise3D");
@@ -548,6 +553,10 @@ void DrawTextureSphere::useShader(){
 				tonemapLoc = glGetUniformLocation(shader, "tonemap");
 				lightCountLoc = glGetUniformLocation(shader, "lightCount");
 				rotationLoc = glGetUniformLocation(shader, "rotation");
+				shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
+				shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
+				shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
+				shadowSlopeScaledBiasLoc = glGetUniformLocation(shader, "shadowSlopeScaledBias");
 			}
 		};
 		static std::map<GLuint, Locs> locmap;
@@ -601,6 +610,18 @@ void DrawTextureSphere::useShader(){
 			src = vw->rot * src;
 			Mat3<float> rot3 = src.tomat3().cast<float>();
 			glUniformMatrix3fv(locs.rotationLoc, 1, GL_FALSE, rot3);
+		}
+		if(0 <= locs.shadowmapLoc)
+			glUniform1i(locs.shadowmapLoc, 3);
+		if(0 <= locs.shadowmap2Loc)
+			glUniform1i(locs.shadowmap2Loc, 4);
+		if(0 <= locs.shadowmap3Loc)
+			glUniform1i(locs.shadowmap3Loc, 5);
+		if(0 <= locs.shadowSlopeScaledBiasLoc){
+			GLfloat shadowSlopeScaledBias = 0.;
+			if(vw->shadowmap)
+				shadowSlopeScaledBias = vw->shadowmap->getSlopeScaledBias();
+			glUniform1f(locs.shadowSlopeScaledBiasLoc, shadowSlopeScaledBias);
 		}
 
 		RoundAstrobj::TextureIterator it;
@@ -991,6 +1012,7 @@ bool DrawTextureSpheroid::draw(){
 	Quatd qrot = vw->cs->tocsq(a->parent).cnj() * a->rot;
 	Vec3d pos(vw->cs->tocs(a->pos, a->parent));
 
+	if(vw->zslice == 2)
 	setupLight();
 
 	glEnable(GL_CULL_FACE);

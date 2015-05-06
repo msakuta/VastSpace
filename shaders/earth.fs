@@ -1,5 +1,6 @@
 #include "shaders/tonemap.fs"
 #include "shaders/earth_cloud_noise.fs"
+#include "shaders/shadowmap.fs"
 
 uniform samplerCube texture;
 uniform mat3 invEyeRot3x3;
@@ -56,10 +57,16 @@ void main (void)
 	vec3 flight = (gl_LightSource[0].position.xyz);
 	vec3 texCoord = vec3(gl_TexCoord[0]);
 
+	float fdiffuse = max(0.001, dot(flight, normal));
+
+	float shadow = shadowMapIntensity(1. / fdiffuse);
+
 	vec4 texColor = textureCube(texture, texCoord);
 	float specular;
 	float shininess;
-	if(texColor[2] > texColor[0] + texColor[1])
+	if(shadow == 0.)
+		shininess = 0.;
+	else if(texColor[2] > texColor[0] + texColor[1])
 		specular = 3.5, shininess = 50., waving = true;
 	else
 		specular = 0.25, shininess = 2., waving = false;
@@ -126,7 +133,10 @@ void main (void)
 		specAccum += gl_LightSource[i].diffuse.xyz * ambf * cloudBlock * specular * max(.1, min(1., dtn))
 			* lspecular;
 
-		diffuse += ldiffuse;
+		if(i == 0)
+			diffuse += (shadow * .8 + .2) * ldiffuse;
+		else
+			diffuse += ldiffuse;
 		ambient += gl_LightSource[i].ambient.xyz + gl_LightSource[i].diffuse.xyz * (0.15 * ambf * (1. - 0.5 * cloud));
 	}
 

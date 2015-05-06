@@ -168,9 +168,9 @@ void ShadowMapShaderBind::getUniformLocations(){
 
 void ShadowMapShaderBind::useInt()const{
 	ShaderBind::useInt();
-	glUniform1i(shadowmapLoc, 2);
-	glUniform1i(shadowmap2Loc, 3);
-	glUniform1i(shadowmap3Loc, 4);
+	glUniform1i(shadowmapLoc, 3);
+	glUniform1i(shadowmap2Loc, 4);
+	glUniform1i(shadowmap3Loc, 5);
 	glUniform1f(shadowSlopeScaledBiasLoc, shadowSlopeScaledBias);
 }
 
@@ -431,9 +431,12 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			if(g_shader_enable)
 				numShadowTextures += 2;
 
+			GLint maxTextures;
+			glGetIntegerv(GL_MAX_TEXTURE_UNITS, &maxTextures);
+
 			glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			for(int i = 0; i < numShadowTextures; i++){
-				glActiveTextureARB(GL_TEXTURE2_ARB + i);
+				glActiveTextureARB(GL_TEXTURE3_ARB + i);
 				glEnable(GL_TEXTURE_2D);
 				glBindTexture(GL_TEXTURE_2D, depthTextures[i]);
 				texturemat(glPushMatrix());
@@ -474,8 +477,8 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 					Mat4d itrans = vw.irot;
 					itrans.vec3(3) = vw.pos;
 					texturemat(glLoadMatrixd(textureMatrix * itrans));
-					shaderBind->shadowSlopeScaledBias = shadowSlopeScaledBias * 0.5 / shadowMapSize / 50.;
-					additiveShadowMapShaderBind->shadowSlopeScaledBias = shadowSlopeScaledBias * 0.5 / shadowMapSize / 50.;
+					shaderBind->shadowSlopeScaledBias = getSlopeScaledBias();
+					additiveShadowMapShaderBind->shadowSlopeScaledBias = getSlopeScaledBias();
 					shaderBind->use();
 					glDisable(GL_ALPHA_TEST);
 				}
@@ -496,7 +499,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 
 			// Disable texture units for shadow map to eliminate the inappropriate influence to the following drawings.
 			for(int i = 0; i < numShadowTextures; i++){
-				glActiveTextureARB(GL_TEXTURE2_ARB + i);
+				glActiveTextureARB(GL_TEXTURE3_ARB + i);
 				texturemat(glPopMatrix());
 				glBindTexture(GL_TEXTURE_2D, 0);
 				glDisable(GL_TEXTURE_2D);
@@ -534,7 +537,7 @@ const AdditiveShaderBind *ShadowMap::getAdditive()const{
 /// Explicitly enable shadows when drawing real objects and shadowing is temporalily disabled.
 void ShadowMap::enableShadows(){
 	for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++){
-		glActiveTextureARB(GL_TEXTURE2_ARB + i);
+		glActiveTextureARB(GL_TEXTURE3_ARB + i);
 //		glBindTexture(GL_TEXTURE_2D, 0);
 		glEnable(GL_TEXTURE_2D);
 	}
@@ -544,11 +547,15 @@ void ShadowMap::enableShadows(){
 /// Explicitly disable shadows when drawing real objects and shadowing is enabled.
 void ShadowMap::disableShadows(){
 	for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++){
-		glActiveTextureARB(GL_TEXTURE2_ARB + i);
+		glActiveTextureARB(GL_TEXTURE3_ARB + i);
 //		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_TEXTURE_2D);
 	}
 	glActiveTextureARB(GL_TEXTURE0_ARB);
+}
+
+GLfloat ShadowMap::getSlopeScaledBias()const{
+	return shadowSlopeScaledBias * 0.5 / shadowMapSize / 50.;
 }
 
 

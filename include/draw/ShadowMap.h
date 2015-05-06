@@ -53,6 +53,7 @@ public:
 	const AdditiveShaderBind *getAdditive()const;
 	void enableShadows();
 	void disableShadows();
+	GLfloat getSlopeScaledBias()const;
 };
 
 EXPORT extern OpenGLState::weak_ptr<ShadowMap*> g_currentShadowMap;

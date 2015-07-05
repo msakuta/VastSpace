@@ -321,9 +321,27 @@ int glsl_load_shader(GLuint shader, const char *fname){
 		}
 		else{
 			ret = glsl_register_shader(shader, buf, srcFileNames, numSrcFileNames);
-			if(g_shader_preprocess_out && !ret && osize != size){
+			if(g_shader_preprocess_out && osize != size){
 				FILE *pfp;
-				pfp = fopen("logs/preprocessed.txt", "wb");
+				char fname[256];
+				char *p, *pend;
+
+				// Generate a filename with the shader file name for preprocessed output
+				// to save each shader's result into separate files.
+				// Tampering with strings by manipulating pointers wouldn't be necessary
+				// if we once migrated to C++.  Unfortunately, the C way is the fastest.
+				sprintf(fname, "logs/%s_preprocessed.txt", srcFileNames[0]);
+				// Prevent the extension's period from being converted to an underscore
+				// by setting the end of scanning before the period.
+				pend = fname + strlen(fname) - (sizeof ".txt"-1);
+				for(p = fname + sizeof "logs/"-1; p < pend; ++p){
+					// Replace non-filename characters with underscores in the string.
+					// Otherwise, we would have to create directories through the shader file.
+					if(!isalnum(*p))
+						*p = '_';
+				}
+
+				pfp = fopen(fname, "wb");
 				if(pfp){
 					fprintf(pfp, "%.*s\n", size, buf);
 					fclose(pfp);

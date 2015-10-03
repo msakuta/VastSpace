@@ -5,6 +5,7 @@
 #define AUTONOMOUS_H
 
 #include "ModelEntity.h"
+#include "Inventory-forward.h"
 #ifndef DEDICATED
 #ifdef _WIN32
 #include <windows.h>
@@ -119,7 +120,8 @@ protected:
 		virtual void process(HSQUIRRELVM)const;
 	};
 
-
+	/// Items in this object's inventory
+	InventoryItemList inventory;
 
 private:
 	static const ManeuverParams mymn;

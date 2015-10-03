@@ -2,6 +2,7 @@
  * \brief Implementation of Autonomous class.
  */
 #include "Autonomous.h"
+#include "Inventory.h"
 #include "Player.h"
 #include "Bullet.h"
 #include "CoordSys.h"
@@ -73,7 +74,49 @@ extern "C"{
 #define DEBUG_ENTERFIELD 1
 
 
+InventoryItemClassMap inventoryItemDef;
 
+/// Register an event handler for loading item definitions from a file.
+Initializer siInv("items", [](HSQUIRRELVM v){
+	register_closure(v, _SC("registerItem"), [](HSQUIRRELVM v){
+		SQInteger argc = sq_gettop(v);
+		if(argc <= 1){
+			return SQInteger(0);
+		}
+		sq_pushstring(v, _SC("type"), -1);
+		const SQChar *sqTypeString;
+		if(SQ_FAILED(sq_get(v, 2)) || SQ_FAILED(sq_getstring(v, 3, &sqTypeString)))
+			return sq_throwerror(v, _SC("Argument does not contain type string"));
+		gltestp::dstring typeString = sqTypeString;
+		InventoryItemClass &ic = inventoryItemDef[typeString];
+		ic.typeString = typeString;
+		sq_poptop(v);
+
+		sq_pushstring(v, _SC("stackable"), -1);
+		SQBool boolVal;
+		if(SQ_SUCCEEDED(sq_get(v, 2)) && SQ_SUCCEEDED(sq_getbool(v, 3, &boolVal))){
+			ic.stackable = boolVal != SQFalse;
+			sq_poptop(v);
+		}
+
+		sq_pushstring(v, _SC("countable"), -1);
+		if(SQ_SUCCEEDED(sq_get(v, 2)) && SQ_SUCCEEDED(sq_getbool(v, 3, &boolVal))){
+			ic.countable = boolVal != SQFalse;
+			sq_poptop(v);
+		}
+
+		sq_pushstring(v, _SC("specificWeight"), -1);
+		SQFloat f;
+		if(SQ_SUCCEEDED(sq_get(v, 2)) && SQ_SUCCEEDED(sq_getfloat(v, 3, &f))){
+			ic.specificWeight = double(f);
+			sq_poptop(v);
+		}
+
+		return SQInteger(0);
+	});
+	sqa_dofile(v, "scripts/items.nut");
+	return true;
+});
 
 
 #ifndef _WIN32

@@ -698,6 +698,12 @@
     <ClInclude Include="..\include\draw\VBO.h">
       <Filter>Exported Headers\draw</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Inventory-forward.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Inventory.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\VastSpace.rc" />

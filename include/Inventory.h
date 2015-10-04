@@ -39,6 +39,7 @@ public:
 	}
 	bool isCountable()const{return type.countable;}
 	bool isStackable()const{return type.stackable;}
+	void addAmount(double v){amount += v;}
 protected:
 	const InventoryItemClass &type; // We won't modify the type descriptor from item, hence const
 	double amount;

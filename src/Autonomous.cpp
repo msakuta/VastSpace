@@ -145,8 +145,20 @@ template<> void Entity::EntityRegisterNC<Autonomous>::sq_defineInt(HSQUIRRELVM v
 
 		auto it = inventoryItemDef.find(typeString);
 		if(it != inventoryItemDef.end()){
-			InventoryItem *item = new InventoryItem(it->second, f);
-			a->getInventory().push_back(item);
+			bool added = false;
+			if(it->second.stackable){
+				for(auto it2 : a->getInventory()){
+					if(it2->typeString() == typeString){
+						it2->addAmount(f);
+						added = true;
+						break;
+					}
+				}
+			}
+			if(!added){
+				InventoryItem *item = new InventoryItem(it->second, f);
+				a->getInventory().push_back(item);
+			}
 		}
 
 		return SQInteger(0);

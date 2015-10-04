@@ -235,6 +235,7 @@
     <ClCompile Include="..\src\glw\GLWchat.cpp" />
     <ClCompile Include="..\src\glw\GLWentlist.cpp" />
     <ClCompile Include="..\src\glw\glwindow.cpp" />
+    <ClCompile Include="..\src\glw\GLWinventory.cpp" />
     <ClCompile Include="..\src\glw\GLWmenu.cpp" />
     <ClCompile Include="..\src\glw\GLWtaskBar.cpp" />
     <ClCompile Include="..\src\glw\message.cpp" />

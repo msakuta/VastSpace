@@ -23,18 +23,22 @@ extern InventoryItemClassMap inventoryItemDef;
 
 class InventoryItem{
 public:
-	gltestp::dstring typeString()const{return type->typeString;}
+	InventoryItem(InventoryItemClass &type, double amount) : type(type), amount(amount){}
+	gltestp::dstring typeString()const{return type.typeString;}
+	double getAmount()const{return amount;}
 	virtual double getVolume()const{return amount;}
-	virtual double getMass()const{return amount * type->specificWeight;}
+	virtual double getMass()const{return amount * type.specificWeight;}
 	virtual bool stack(const InventoryItem &o){
-		if(type->stackable && type == o.type){
+		if(type.stackable && &type == &o.type){
 			amount += o.amount;
 			return true;
 		}
 		return false;
 	}
+	bool isCountable()const{return type.countable;}
+	bool isStackable()const{return type.stackable;}
 protected:
-	const InventoryItemClass *type; // We won't modify the type descriptor from item, hence const
+	const InventoryItemClass &type; // We won't modify the type descriptor from item, hence const
 	double amount;
 };
 

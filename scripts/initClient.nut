@@ -944,6 +944,23 @@ function control(...){
 
 register_console_command("control", control);
 
+register_console_command("inventory", function(){
+	local sels = player.selected;
+	if(sels.len() == 0)
+		return;
+	local sel = sels[0];
+	local w = GLWinventory(sel);
+	w.closable = true;
+	w.pinnable = true;
+	w.width = 250;
+	w.height = 150;
+
+	// Test codes for initial goods
+	sel.addItem("hydrogen", 12.);
+	sel.addItem("oxygen", 3.);
+	sel.addItem("water", 5.);
+});
+
 mainmenu <- GLWbigMenu();
 
 /// Sends a client message of a given name.

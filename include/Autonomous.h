@@ -5,6 +5,7 @@
 #define AUTONOMOUS_H
 
 #include "ModelEntity.h"
+#include "EntityRegister.h"
 #include "Inventory-forward.h"
 #ifndef DEDICATED
 #ifdef _WIN32
@@ -35,11 +36,20 @@ enum sship_task{
 	num_sship_task
 };
 
+class Autonomous;
+
+// Template instantiation to prevent EntityRegisterNC from trying to create a abstract class instance.
+// The default EntityRegisterNC::stcreate() returns new object even if it's not creatable from Squirrel codes,
+// because an Entity creation can be invoked from server messages.
+// In this case, Autonomous is a abstract class, which means even the server never creates one,
+// so we can safely ignore the case.
+template<> Entity *Entity::EntityRegisterNC<Autonomous>::stcreate(Game *game){ return NULL; }
 
 /// \brief An autonomous object, which means it can move around by itself, but not remote control like Missiles.
 class EXPORT Autonomous : public ModelEntity{
 public:
 	typedef ModelEntity st;
+	static EntityRegisterNC<Autonomous> entityRegister;
 	Vec3d dest; // Move order destination
 	enum sship_task task;
 	int direction;
@@ -74,6 +84,8 @@ public:
 	void maneuver(const Mat4d &mat, double dt, const ManeuverParams *mn);
 	void steerArrival(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed);
 	void drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double scale);
+	const InventoryItemList &getInventory()const{return inventory;}
+	InventoryItemList &getInventory(){return inventory;}
 
 	/// \brief A set of fields that defines maneuverability of the ship.
 	struct ManeuverParams{

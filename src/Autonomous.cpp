@@ -119,6 +119,37 @@ Initializer siInv("items", [](HSQUIRRELVM v){
 });
 
 
+
+template<> void Entity::EntityRegisterNC<Autonomous>::sq_defineInt(HSQUIRRELVM v){
+	register_closure(v, _SC("addItem"), [](HSQUIRRELVM v){
+		Autonomous *a = dynamic_cast<Autonomous*>(Entity::sq_refobj(v, 1));
+		if(!a)
+			return sq_throwerror(v, _SC("This pointer is not an Autnomous Entity"));
+
+		const SQChar *sqTypeString;
+		if(SQ_FAILED(sq_getstring(v, 2, &sqTypeString)))
+			return sq_throwerror(v, _SC("Argument does not contain type string"));
+		gltestp::dstring typeString = sqTypeString;
+
+		// The third amount argument is optional, which defaults 1
+		SQFloat f;
+		if(SQ_FAILED(sq_getfloat(v, 3, &f)))
+			f = 1.;
+
+		auto it = inventoryItemDef.find(typeString);
+		if(it != inventoryItemDef.end()){
+			InventoryItem *item = new InventoryItem(it->second, f);
+			a->getInventory().push_back(item);
+		}
+
+		return SQInteger(0);
+	});
+}
+
+
+Entity::EntityRegisterNC<Autonomous> Autonomous::entityRegister("Autonomous");
+
+
 #ifndef _WIN32
 void Autonomous::drawtra(wardraw_t *wd){}
 void Autonomous::drawHUD(wardraw_t *wd){}

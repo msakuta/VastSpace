@@ -360,6 +360,9 @@
     <ClCompile Include="..\src\draw\RoundAstrobj-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\glw\GLWinventory.cpp">
+      <Filter>Sources\glw</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\draw\effects.h">

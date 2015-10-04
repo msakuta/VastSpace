@@ -108,7 +108,7 @@ Initializer siInv("items", [](HSQUIRRELVM v){
 		sq_pushstring(v, _SC("specificWeight"), -1);
 		SQFloat f;
 		if(SQ_SUCCEEDED(sq_get(v, 2)) && SQ_SUCCEEDED(sq_getfloat(v, 3, &f))){
-			ic.specificWeight = double(f);
+			ic.specificWeight = double(f) * 1e3; // Convert from g/cm^3 to tonnes/m^3
 			sq_poptop(v);
 		}
 

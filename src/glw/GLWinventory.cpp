@@ -23,6 +23,7 @@ public:
 	typedef GLwindowSizeable st;
 
 	bool icons;
+	bool summary;
 	int scrollpos; ///< Current scroll position in the vertical scroll bar.
 	GLWinventory(Game *game, Autonomous *container);
 	virtual void draw(GLwindowState &ws, double);
@@ -39,6 +40,7 @@ GLWinventory::GLWinventory(Game *game, Autonomous *container) :
 	st(game, "Inventory"),
 	container(container),
 	icons(false),
+	summary(true),
 	scrollpos(0)
 {
 	setCollapsable(true);
@@ -108,12 +110,35 @@ void GLWinventory::draw(GLwindowState &ws, double){
 		return;
 
 	std::vector<const InventoryItem*> items;
+	double totalVolume = 0.;
+	double totalMass = 0.;
 
-	for(auto it : container->getInventory())
+	for(auto it : container->getInventory()){
 		items.push_back(it);
+		totalVolume += it->getVolume();
+		totalMass += it->getMass();
+	}
 
 	GLWrect r = clientRect();
 	int wid = int((r.width() - 10) / getFontWidth()) -  6;
+
+	// Offset pixels at the top of the window for showing summary
+	double offset = 0;
+	if(summary){
+		static const GLfloat color[4] = {1,1,1,1};
+		glColor4fv(color);
+		glwpos2d(r.x0, r.y0 + getFontHeight());
+		glwprintf("Volume: %g m^3", totalVolume);
+		glwpos2d(r.x0, r.y0 + 2 * getFontHeight());
+		glwprintf("Mass: %g tons", totalMass);
+
+		offset = 2 * getFontHeight();
+
+		glBegin(GL_LINES);
+		glVertex2d(r.x0, r.y0 + offset);
+		glVertex2d(r.x1, r.y0 + offset);
+		glEnd();
+	}
 
 #if PROFILE_SORT
 	timemeas_t tm;
@@ -138,16 +163,16 @@ void GLWinventory::draw(GLwindowState &ws, double){
 
 	int fontheight = int(getFontHeight());
 	glPushAttrib(GL_SCISSOR_BIT);
-	glScissor(r.x0, ws.h - r.y1, r.width(), r.height());
+	glScissor(r.x0, ws.h - r.y1, r.width(), r.height() - offset);
 	glEnable(GL_SCISSOR_TEST);
 
-	int x = 0, y = 0;
+	int x = 0, y = offset;
 	glPushMatrix();
-	glTranslated(0, -scrollpos, 0);
+	glTranslated(0, -scrollpos + offset, 0);
 	for(auto it : items){
 		GLWrect iconRect = il.nextRect();
 			
-		if(iconRect.include(ws.mx, ws.my + scrollpos)){
+		if(iconRect.include(ws.mx, ws.my + scrollpos - offset)){
 			glColor4f(0,0,1.,.5);
 			glBegin(GL_QUADS);
 			glVertex2i(iconRect.x0, iconRect.y0);

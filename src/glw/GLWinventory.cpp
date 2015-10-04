@@ -1,7 +1,10 @@
 #include "glw/glwindow.h"
+#include "GLWmenu.h"
+#include "glw/PopupMenu.h"
 #include "sqadapt.h"
 #include "Autonomous.h"
 #include "Inventory.h"
+#include "antiglut.h"
 
 #include <algorithm>
 
@@ -27,7 +30,7 @@ public:
 	int scrollpos; ///< Current scroll position in the vertical scroll bar.
 	GLWinventory(Game *game, Autonomous *container);
 	virtual void draw(GLwindowState &ws, double);
-//	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
+	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
 //	virtual void mouseLeave(GLwindowState &ws);
 
 	static SQInteger sqf_constructor(HSQUIRRELVM v);
@@ -215,6 +218,53 @@ void GLWinventory::draw(GLwindowState &ws, double){
 		glwVScrollBarDraw(this, r.x1 - 10, r.y0, 10, r.height(), il.allHeight() - r.height(), scrollpos);
 	glPopAttrib();
 }
+
+int GLWinventory::mouse(GLwindowState &ws, int button, int state, int mx, int my){
+	// Ensure the container is present because it can be destroyed anytime.
+	if(!container)
+		return 0;
+	Autonomous *pl = container;
+	GLWrect r = clientRect();
+	int itemCount = pl->getInventory().size();
+
+	InventoryListItemLocator lil(this, itemCount);
+	InventoryIconItemLocator eil(this, itemCount);
+	InventoryItemLocator &il = icons ? (InventoryItemLocator&)eil : (InventoryItemLocator&)lil;
+
+	if(r.width() - 10 < mx && button == GLUT_LEFT_BUTTON && (state == GLUT_DOWN || state == GLUT_KEEP_DOWN || state == GLUT_UP) && r.height() < il.allHeight()){
+		int iy = glwVScrollBarMouse(this, mx, my, r.width() - 10, 0, 10, r.height(), il.allHeight() - r.height(), scrollpos);
+		if(0 <= iy)
+			scrollpos = iy;
+		return 1;
+	}
+	if(button == GLUT_RIGHT_BUTTON && state == GLUT_UP){
+		// Menu items to toggle options in this GLWinventory instance.
+		// It could be done by almost std::functions only, but it cannot have a weak reference.
+		// Weak referencing matters when this window is destroyed before the popup menu.
+		class PopupMenuItemFunction : public PopupMenuItem{
+		public:
+			typedef PopupMenuItem st;
+			WeakPtr<GLWinventory> p;
+			void (*func)(GLWinventory *);
+			PopupMenuItemFunction(gltestp::dstring title, GLWinventory *p, void (*func)(GLWinventory*)) : st(title), p(p), func(func){}
+			PopupMenuItemFunction(const PopupMenuItemFunction &o) : st(o.title), p(o.p), func(o.func){next = NULL;}
+			void execute()override{
+				if(p)
+					func(p);
+			}
+			PopupMenuItem *clone(void)const override{return new PopupMenuItemFunction(*this);}
+		};
+
+#define APPENDER(a,s) ((a) ? "* " s : "  " s)
+
+		glwPopupMenu(game, ws, PopupMenu()
+			.append(new PopupMenuItemFunction(APPENDER(icons, "Show icons"), this, [](GLWinventory *p){p->menu_icons();}))
+			.append(new PopupMenuItemFunction(APPENDER(summary, "Show summary"), this, [](GLWinventory *p){p->summary = !p->summary;})));
+	}
+
+	return st::mouse(ws, button, state, mx, my);
+}
+
 
 // ------------------------------
 // Squirrel Initializer Implementation

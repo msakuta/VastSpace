@@ -112,6 +112,13 @@ Initializer siInv("items", [](HSQUIRRELVM v){
 			sq_poptop(v);
 		}
 
+		const SQChar *texture;
+		sq_pushstring(v, _SC("texture"), -1);
+		if(SQ_SUCCEEDED(sq_get(v, 2)) && SQ_SUCCEEDED(sq_getstring(v, 3, &texture))){
+			ic.textureFile = texture;
+			sq_poptop(v);
+		}
+
 		return SQInteger(0);
 	});
 	sqa_dofile(v, "scripts/items.nut");

@@ -5,6 +5,7 @@
 #include "Autonomous.h"
 #include "Inventory.h"
 #include "antiglut.h"
+#include "draw/material.h"
 
 #include <algorithm>
 
@@ -89,7 +90,7 @@ public:
 	int count;
 	int i;
 	int iconSize;
-	InventoryIconItemLocator(GLWinventory *p, int count, int iconSize = 32) : p(p), count(count), i(0), iconSize(iconSize){}
+	InventoryIconItemLocator(GLWinventory *p, int count, int iconSize = 64) : p(p), count(count), i(0), iconSize(iconSize){}
 	int allHeight()override{
 		return (count + (p->clientRect().width() - 10) / iconSize - 1)
 			/ max(1, (p->clientRect().width() - 10) / iconSize) * iconSize;
@@ -193,6 +194,25 @@ void GLWinventory::draw(GLwindowState &ws, double){
 			glVertex2i(borderRect.x1, borderRect.y1);
 			glVertex2i(borderRect.x0, borderRect.y1);
 			glEnd();
+			const InventoryItemClass *ic = it->getType();
+			if(ic->textureFile != "" && ic->texture == 0){
+				suftexparam_t stp;
+				stp.flags = STP_MAGFIL | STP_ALPHA | STP_ALPHA_TEST;
+				stp.magfil = GL_LINEAR;
+				ic->texture = CallCacheBitmap(ic->typeString, ic->textureFile, &stp, NULL);
+			}
+			if(ic->texture){
+				glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
+				glCallList(ic->texture);
+				// Texture Y-axis coordinate is upside down
+				glBegin(GL_QUADS);
+				glTexCoord2d(0, 1); glVertex2i(borderRect.x0, borderRect.y0);
+				glTexCoord2d(1, 1); glVertex2i(borderRect.x1, borderRect.y0);
+				glTexCoord2d(1, 0); glVertex2i(borderRect.x1, borderRect.y1);
+				glTexCoord2d(0, 0); glVertex2i(borderRect.x0, borderRect.y1);
+				glEnd();
+				glPopAttrib();
+			}
 			if(it->isCountable()){
 				glColor4f(1,1,1,1);
 				glwpos2d(iconRect.x1 - 24, iconRect.y1);

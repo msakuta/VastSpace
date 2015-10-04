@@ -12,9 +12,10 @@ public:
 	bool countable;
 	bool stackable;
 	double specificWeight;
-	GLuint texture;
+	gltestp::dstring textureFile;
+	mutable GLuint texture;
 	InventoryItemClass(bool countable = false, bool stackable = false, double specificWeight = 1.) :
-		countable(countable), stackable(stackable), specificWeight(specificWeight) {}
+		countable(countable), stackable(stackable), specificWeight(specificWeight), texture(0) {}
 };
 
 typedef std::map<gltestp::dstring, InventoryItemClass> InventoryItemClassMap;
@@ -25,6 +26,7 @@ class InventoryItem{
 public:
 	InventoryItem(InventoryItemClass &type, double amount) : type(type), amount(amount){}
 	gltestp::dstring typeString()const{return type.typeString;}
+	const InventoryItemClass *getType()const{return &type;}
 	double getAmount()const{return amount;}
 	virtual double getVolume()const{return amount;}
 	virtual double getMass()const{return amount * type.specificWeight;}

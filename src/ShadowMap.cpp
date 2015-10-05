@@ -486,7 +486,10 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 			glDepthFunc(GL_LEQUAL);
 
 			shadowing = false; // Notify the callback implicitly that it's the real scene pass.
-			drawcallback.draw(vw, shaderBind->shader, shaderBind->textureLoc, shaderBind->shadowmapLoc);
+			if(shaderBind)
+				drawcallback.draw(vw, shaderBind->shader, shaderBind->textureLoc, shaderBind->shadowmapLoc);
+			else
+				drawcallback.draw(vw, 0, -1, -1);
 
 			if(g_shader_enable)
 				glUseProgram(0);

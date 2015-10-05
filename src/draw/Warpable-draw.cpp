@@ -348,7 +348,7 @@ void Warpable::drawCapitalBlast(wardraw_t *wd, const Vec3d &nozzlepos, double sc
 			v.normin() *= (4. / 5.);
 
 			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-			glTexGendv(GL_S, GL_OBJECT_PLANE, Vec4d(v));
+			glTexGendv(GL_S, GL_OBJECT_PLANE, Vec4d(v, 0));
 			glEnable(GL_TEXTURE_GEN_S);
 		}
 		glDisable(GL_TEXTURE_2D);

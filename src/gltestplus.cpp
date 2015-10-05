@@ -245,7 +245,7 @@ void Game::lightOn(Viewer &vw){
 	}
 	else
 		g_light = vec3_010;
-	glLightfv(GL_LIGHT0, GL_POSITION, sun ? Vec4<GLfloat>(g_light.cast<GLfloat>()) : light_pos);
+	glLightfv(GL_LIGHT0, GL_POSITION, sun ? Vec4f(g_light.cast<GLfloat>(), 0) : light_pos);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vec3f(val, val, val));
 	GLfloat dif[4];
 	glGetLightfv(GL_LIGHT0, GL_DIFFUSE, dif);

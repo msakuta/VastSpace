@@ -297,10 +297,10 @@ void Player::mousemove(HWND hWnd, int deltax, int deltay, WPARAM wParam, LPARAM 
 		// The local up vector.
 		Vec3d up = rotmat.dvp3(-vec3_001);
 
-		Vec3d normal = (pl.move_trans.vp(Vec4d(lpos) + vec4_0001()) - pl.move_trans.vp(Vec4d(lpos + up) + vec4_0001())).norm();
+		Vec3d normal = (pl.move_trans.vp(Vec4d(lpos, 1)) - pl.move_trans.vp(Vec4d(lpos + up, 1))).norm();
 		double sp = normal.sp(delta);
 		pl.move_z += sp * (rotmat.dvp3(pl.move_hitpos) + move_src - pl.move_viewpos).len() / maxpix;
-		Vec4d worlddest = Vec4d(rotmat.dvp3(pl.move_hitpos + pl.move_z * -vec3_001) + move_src) + vec4_0001();
+		Vec4d worlddest = Vec4d(rotmat.dvp3(pl.move_hitpos + pl.move_z * -vec3_001) + move_src, 1);
 		Vec4d redelta = pl.move_trans.vp(worlddest);
 		POINT p, p0;
 		p.x = LONG((redelta[0] / redelta[3] + 1.) * crect.right / 2);

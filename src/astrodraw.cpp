@@ -1739,8 +1739,7 @@ void Star::drawsuncorona(Astrobj *a, const Viewer *vw){
 		white[1] = float(white[1] * 1. - (1. - f) * .5);
 		white[2] = float(white[2] * f);
 		if(a->classname() == Star::classRegister.id){
-			col = Vec4f(Star::spectralRGB(((Star*)a)->spect));
-			col[3] = 1.;
+			col = Vec4f(Star::spectralRGB(((Star*)a)->spect), 1);
 		}
 		else
 			col = white;

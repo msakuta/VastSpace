@@ -1,6 +1,7 @@
 #include "glw/glwindow.h"
 #include "GLWmenu.h"
 #include "glw/PopupMenu.h"
+#include "GLWtip.h"
 #include "sqadapt.h"
 #include "Autonomous.h"
 #include "Inventory.h"
@@ -23,6 +24,7 @@ protected:
 	void menu_icons(){icons = !icons;}
 
 	WeakPtr<Autonomous> container;
+	std::vector<const InventoryItem*> items;
 public:
 	typedef GLwindowSizeable st;
 
@@ -32,7 +34,7 @@ public:
 	GLWinventory(Game *game, Autonomous *container);
 	virtual void draw(GLwindowState &ws, double);
 	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
-//	virtual void mouseLeave(GLwindowState &ws);
+	virtual void mouseLeave(GLwindowState &ws);
 
 	static SQInteger sqf_constructor(HSQUIRRELVM v);
 	static bool sq_define(HSQUIRRELVM v);
@@ -113,7 +115,7 @@ void GLWinventory::draw(GLwindowState &ws, double){
 	if(!container)
 		return;
 
-	std::vector<const InventoryItem*> items;
+	items.clear();
 	double totalVolume = 0.;
 	double totalMass = 0.;
 
@@ -281,9 +283,65 @@ int GLWinventory::mouse(GLwindowState &ws, int button, int state, int mx, int my
 			.append(new PopupMenuItemFunction(APPENDER(icons, "Show icons"), this, [](GLWinventory *p){p->menu_icons();}))
 			.append(new PopupMenuItemFunction(APPENDER(summary, "Show summary"), this, [](GLWinventory *p){p->summary = !p->summary;})));
 	}
+	if(button == GLUT_LEFT_BUTTON && (state == GLUT_KEEP_UP || state == GLUT_UP)){
+		int i;
+		bool set = false;
+		double offset = summary ? 2 * getFontHeight() : 0;
+
+		if(r.include(mx + r.x0, my + r.y0) && mx < r.width() - 10){
+			il.begin();
+			for(auto it : items){
+				GLWrect itemRect = il.nextRect().rmove(0, -scrollpos + offset);
+				if(itemRect.include(mx + r.x0, my + r.y0)){
+					if(it){
+						int xs, ys;
+						const long margin = 4;
+						gltestp::dstring str = it->typeString() + "\n"
+							+ "amount: " + it->getAmount() + "\n"
+							+ "volume: " + it->getVolume() + " m^3\n"
+							+ "mass: " + it->getMass() + " tons";
+						glwGetSizeStringML(str, GLwindow::glwfontheight, &xs, &ys);
+						GLWrect localrect = GLWrect(itemRect.x0, itemRect.y0 - ys - 3 * margin, itemRect.x0 + xs + 3 * margin, itemRect.y0);
+
+						// Adjust rect to fit in the screen. No care is taken if tips window is larger than the screen.
+						if(ws.w < localrect.x1)
+							localrect.rmove(ws.w - localrect.x1, 0);
+						if(ws.h < localrect.y1)
+							localrect.rmove(0, ws.h - localrect.y1);
+
+						glwtip->setExtent(localrect);
+						glwtip->tips = str.c_str();
+						glwtip->parent = this;
+						glwtip->setVisible(true);
+						glwActivate(glwFindPP(glwtip));
+						set = true;
+					}
+					break;
+				}
+			}
+		}
+		else
+			mouseLeave(ws);
+		if(!set){
+			if(glwtip->parent == this){
+				glwtip->tips = NULL;
+				glwtip->parent = NULL;
+				glwtip->setVisible(false);
+			}
+		}
+	}
 
 	return st::mouse(ws, button, state, mx, my);
 }
+
+void GLWinventory::mouseLeave(GLwindowState &ws) {
+	if (glwtip->parent == this) {
+		glwtip->tips = NULL;
+		glwtip->parent = NULL;
+		glwtip->setExtent(GLWrect(-10, -10, -10, -10));
+	}
+}
+
 
 
 // ------------------------------

@@ -1650,7 +1650,58 @@ bool register_code_func(HSQUIRRELVM v, const SQChar *fname, const SQChar *code, 
 }
 
 
+// ================== Utility functions to obtain values in a table =============================== //
 
+bool sqTableGetBool(HSQUIRRELVM v, const SQChar *fieldName, bool def, bool raiseOnError, SQInteger idx){
+	sq_pushstring(v, fieldName, -1);
+	SQBool boolVal;
+	if(SQ_SUCCEEDED(sq_get(v, idx))){
+		if(SQ_SUCCEEDED(sq_getbool(v, -1, &boolVal))){
+			sq_poptop(v);
+			return boolVal != SQFalse;
+		}
+		else if (raiseOnError)
+			throw sqa::SQFError(gltestp::dstring() + "Field " + fieldName + " is not convertible to bool");
+		sq_poptop(v);
+	}
+	else if(raiseOnError)
+		throw sqa::SQFError(gltestp::dstring() + "Field " + fieldName + " is not found in table");
+	return def;
+}
+
+double sqTableGetFloat(HSQUIRRELVM v, const SQChar *fieldName, double def, bool raiseOnError, SQInteger idx){
+	sq_pushstring(v, fieldName, -1);
+	SQFloat val;
+	if(SQ_SUCCEEDED(sq_get(v, idx))){
+		if(SQ_SUCCEEDED(sq_getfloat(v, -1, &val))){
+			sq_poptop(v);
+			return val;
+		}
+		else if (raiseOnError)
+			throw sqa::SQFError(gltestp::dstring() + "Field " + fieldName + " is not convertible to float");
+		sq_poptop(v);
+	}
+	else if (raiseOnError)
+		throw sqa::SQFError(gltestp::dstring() + "Field " + fieldName + " is not found in table");
+	return def;
+}
+
+gltestp::dstring sqTableGetString(HSQUIRRELVM v, const SQChar *fieldName, const SQChar *def, bool raiseOnError, SQInteger idx) {
+	sq_pushstring(v, fieldName, -1);
+	const SQChar *s;
+	if (SQ_SUCCEEDED(sq_get(v, idx))) {
+		if (SQ_SUCCEEDED(sq_getstring(v, -1, &s))) {
+			sq_poptop(v);
+			return s;
+		}
+		else if (raiseOnError)
+			throw sqa::SQFError(gltestp::dstring() + "Field " + fieldName + " is not convertible to string");
+		sq_poptop(v);
+	}
+	else if (raiseOnError)
+		throw sqa::SQFError(gltestp::dstring() + "Field " + fieldName + " is not found in table");
+	return def;
+}
 
 
 /// \brief ClientMessage to notify something from the client's Squirrel VM to the server's one.

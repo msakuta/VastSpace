@@ -76,6 +76,7 @@ extern "C"{
 
 InventoryItemClassMap inventoryItemDef;
 
+
 /// Register an event handler for loading item definitions from a file.
 Initializer siInv("items", [](HSQUIRRELVM v){
 	register_closure(v, _SC("registerItem"), [](HSQUIRRELVM v){
@@ -83,41 +84,13 @@ Initializer siInv("items", [](HSQUIRRELVM v){
 		if(argc <= 1){
 			return SQInteger(0);
 		}
-		sq_pushstring(v, _SC("type"), -1);
-		const SQChar *sqTypeString;
-		if(SQ_FAILED(sq_get(v, 2)) || SQ_FAILED(sq_getstring(v, 3, &sqTypeString)))
-			return sq_throwerror(v, _SC("Argument does not contain type string"));
-		gltestp::dstring typeString = sqTypeString;
+		gltestp::dstring typeString = sqTableGetString(v, _SC("type"));
 		InventoryItemClass &ic = inventoryItemDef[typeString];
 		ic.typeString = typeString;
-		sq_poptop(v);
-
-		sq_pushstring(v, _SC("stackable"), -1);
-		SQBool boolVal;
-		if(SQ_SUCCEEDED(sq_get(v, 2)) && SQ_SUCCEEDED(sq_getbool(v, 3, &boolVal))){
-			ic.stackable = boolVal != SQFalse;
-			sq_poptop(v);
-		}
-
-		sq_pushstring(v, _SC("countable"), -1);
-		if(SQ_SUCCEEDED(sq_get(v, 2)) && SQ_SUCCEEDED(sq_getbool(v, 3, &boolVal))){
-			ic.countable = boolVal != SQFalse;
-			sq_poptop(v);
-		}
-
-		sq_pushstring(v, _SC("specificWeight"), -1);
-		SQFloat f;
-		if(SQ_SUCCEEDED(sq_get(v, 2)) && SQ_SUCCEEDED(sq_getfloat(v, 3, &f))){
-			ic.specificWeight = double(f) * 1e3; // Convert from g/cm^3 to tonnes/m^3
-			sq_poptop(v);
-		}
-
-		const SQChar *texture;
-		sq_pushstring(v, _SC("texture"), -1);
-		if(SQ_SUCCEEDED(sq_get(v, 2)) && SQ_SUCCEEDED(sq_getstring(v, 3, &texture))){
-			ic.textureFile = texture;
-			sq_poptop(v);
-		}
+		ic.stackable = sqTableGetBool(v, _SC("stackable"), ic.stackable);
+		ic.countable = sqTableGetBool(v, _SC("countable"), ic.countable);
+		ic.specificWeight = sqTableGetFloat(v, _SC("specificWeight"), 1.) * 1e3; // Convert from g/cm^3 to tonnes/m^3
+		ic.textureFile = sqTableGetString(v, _SC("texture"));
 
 		return SQInteger(0);
 	});

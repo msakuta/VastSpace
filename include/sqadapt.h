@@ -256,6 +256,11 @@ public:
 };
 
 
+
+extern bool sqTableGetBool(HSQUIRRELVM v, const SQChar *fieldName, bool def = false, bool raiseOnError = false, SQInteger idx = -2);
+extern double sqTableGetFloat(HSQUIRRELVM v, const SQChar *fieldName, double def = 0., bool raiseOnError = false, SQInteger idx = -2);
+extern gltestp::dstring sqTableGetString(HSQUIRRELVM v, const SQChar *fieldName, const SQChar *def = "", bool raiseOnError = false, SQInteger idx = -2);
+
 }
 
 using namespace sqa;

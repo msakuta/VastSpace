@@ -91,6 +91,7 @@ Initializer siInv("items", [](HSQUIRRELVM v){
 		ic.countable = sqTableGetBool(v, _SC("countable"), ic.countable);
 		ic.specificWeight = sqTableGetFloat(v, _SC("specificWeight"), 1.) * 1e3; // Convert from g/cm^3 to tonnes/m^3
 		ic.textureFile = sqTableGetString(v, _SC("texture"));
+		ic.desc = sqTableGetString(v, _SC("desc")); // Description
 
 		return SQInteger(0);
 	});

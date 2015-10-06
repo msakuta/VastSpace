@@ -12,6 +12,7 @@ public:
 	bool countable;
 	bool stackable;
 	double specificWeight;
+	gltestp::dstring desc;
 	gltestp::dstring textureFile;
 	mutable GLuint texture;
 	InventoryItemClass(bool countable = false, bool stackable = false, double specificWeight = 1.) :
@@ -37,6 +38,7 @@ public:
 		}
 		return false;
 	}
+	gltestp::dstring getDesc()const{return type.desc;}
 	bool isCountable()const{return type.countable;}
 	bool isStackable()const{return type.stackable;}
 	void addAmount(double v){amount += v;}

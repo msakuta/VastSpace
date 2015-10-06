@@ -241,6 +241,57 @@ void GLWinventory::draw(GLwindowState &ws, double){
 	glPopAttrib();
 }
 
+/// @brief Wraps words in a string by inserting newlines (\n)
+/// @param str The string to be processed
+/// @param lineWidth Desired linew width in bytes (multibyte characters are assumed 2 bytes wide).
+/// @returns String with newlines inserted
+static gltestp::dstring wordWrap(const gltestp::dstring &str, int lineWidth){
+	if(str.len() < lineWidth)
+		return str;
+	int lastspace = -1;
+	int lastoutput = 0;
+	int curLineWidth = 0;
+	gltestp::dstring ret;
+	for(int i = 0; i < str.len(); i++){
+		// We have encoded strings in UTF-8, and isspace() may be screwed up with multibyte
+		// string because it can have one of many character encodings.
+		// We opt out multi-byte character from the check (always assume non-alnum) to avoid this.
+		// Char type can be either signed or unsigned, so we cast to unsigned.
+		unsigned char c = (unsigned)str[i];
+		if(c < 128 && isspace(c))
+			lastspace = i;
+
+		// Read out multi-byte character without breaking
+		if(128 <= c){
+			// Count 1 bits from the most significant bits, which is the number of bytes
+			// in this UTF-8 multibyte character sequence.  See:
+			// https://ja.wikipedia.org/wiki/UTF-8
+			for(int bit = 1; (c >> (7 - bit)) & 1; bit++)
+				++i;
+			// Whether multibyte character's width larger than singlebyte
+			// depends on character systems and we cannot be certain without actually
+			// measuring output string.  Here we assume it's 2 characters wide.
+			curLineWidth++; 
+		}
+
+		curLineWidth++;
+		if(lineWidth <= curLineWidth){
+			if(lastoutput <= lastspace){
+				ret.strncat(str.c_str() + lastoutput, lastspace - lastoutput);
+				lastoutput = lastspace + 1;
+			}
+			else{
+				ret.strncat(str.c_str() + lastoutput, i + 1 - lastoutput);
+				lastoutput = i + 1;
+			}
+			ret << "\n";
+			curLineWidth = 0;
+		}
+	}
+	ret << (str.c_str() + lastoutput);
+	return ret;
+}
+
 int GLWinventory::mouse(GLwindowState &ws, int button, int state, int mx, int my){
 	// Ensure the container is present because it can be destroyed anytime.
 	if(!container)
@@ -300,6 +351,8 @@ int GLWinventory::mouse(GLwindowState &ws, int button, int state, int mx, int my
 							+ "amount: " + it->getAmount() + "\n"
 							+ "volume: " + it->getVolume() + " m^3\n"
 							+ "mass: " + it->getMass() + " tons";
+						if(it->getDesc())
+							str << "\n\n" << wordWrap(it->getDesc(), 40);
 						glwGetSizeStringML(str, GLwindow::glwfontheight, &xs, &ys);
 						GLWrect localrect = GLWrect(itemRect.x0, itemRect.y0 - ys - 3 * margin, itemRect.x0 + xs + 3 * margin, itemRect.y0);
 

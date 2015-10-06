@@ -55,49 +55,10 @@ void BuildRecipeProcess::process(HSQUIRRELVM v)const{
 			continue;
 		Builder::BuildRecipe &br = value[i];
 
-		sq_pushstring(v, _SC("name"), -1); // root obj obj[i] "name"
-		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].name
-			const SQChar *sqstr;
-			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr)))
-				br.name = sqstr;
-			else // Throw an error because there's no such thing like default name.
-				throw SQFError("Build recipe name is not a string");
-			sq_poptop(v); // root obj obj[i]
-		}
-		else
-			throw SQFError(_SC("Build recipe missing name"));
-
-		sq_pushstring(v, _SC("className"), -1); // root obj obj[i] "className"
-		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].className
-			const SQChar *sqstr;
-			if(SQ_SUCCEEDED(sq_getstring(v, -1, &sqstr)))
-				br.className = sqstr;
-			else
-				throw SQFError("Build recipe className is not a string");
-			sq_poptop(v); // root obj obj[i]
-		}
-		else
-			throw SQFError(_SC("Build recipe missing className"));
-
-		sq_pushstring(v, _SC("buildtime"), -1); // root obj obj[i] "buildtime"
-		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].buildtime
-			SQFloat f;
-			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
-				br.buildtime = f;
-			sq_poptop(v); // root obj obj[i]
-		}
-		else
-			throw SQFError(_SC("Build recipe missing buildtime"));
-
-		sq_pushstring(v, _SC("cost"), -1); // root obj obj[i] "cost"
-		if(SQ_SUCCEEDED(sq_get(v, -2))){ // root obj obj[i] obj[i].cost
-			SQFloat f;
-			if(SQ_SUCCEEDED(sq_getfloat(v, -1, &f)))
-				br.cost = f;
-			sq_poptop(v); // root obj obj[i]
-		}
-		else
-			throw SQFError(_SC("Build recipe missing cost"));
+		br.name = sqTableGetString(v, _SC("name"), "", true);
+		br.className = sqTableGetString(v, _SC("className"), "", true);
+		br.buildtime = sqTableGetFloat(v, _SC("buildtime"), 0., true);
+		br.cost = sqTableGetFloat(v, _SC("cost"), 0, true);
 
 		sq_poptop(v); // root obj
 	}

@@ -11,7 +11,7 @@
 #include <algorithm>
 
 
-class GLWinventory;
+const int ItemIconSize = 64;
 
 /// \brief Window that shows entity listing.
 ///
@@ -37,15 +37,42 @@ public:
 	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
 	virtual void mouseLeave(GLwindowState &ws);
 
+	static void cacheItemTexture(const InventoryItemClass *item);
+
 	static SQInteger sqf_constructor(HSQUIRRELVM v);
 	static bool sq_define(HSQUIRRELVM v);
+
+	friend class GLWdragItem;
 };
+
+class GLWdragItem : public GLwindow{
+protected:
+	WeakPtr<GLWinventory> dragFrom;
+	const InventoryItem *item;
+public:
+	typedef GLwindow st;
+	GLWdragItem(GLWinventory &i, InventoryItem *item) : st(i.getGame()), dragFrom(&i), item(item){
+		width = ItemIconSize;
+		height = ItemIconSize;
+	}
+	void drawInt(GLwindowState &ws, double, int mousex, int mousey, int, int)override;
+	int mouse(GLwindowState &ws, int button, int state, int mx, int my)override;
+
+	friend class GLWinventory;
+};
+
+static GLWdragItem *glwDragItem = NULL;
+
+
+
+// ======================= GLWinventory class implementation ======================== //
 
 static sqa::Initializer definer("GLWinventory", GLWinventory::sq_define);
 
 GLWinventory::GLWinventory(Game *game, Autonomous *container) :
 	st(game, "Inventory"),
 	container(container),
+	selectItem(NULL),
 	icons(false),
 	summary(true),
 	scrollpos(0)
@@ -93,7 +120,7 @@ public:
 	int count;
 	int i;
 	int iconSize;
-	InventoryIconItemLocator(GLWinventory *p, int count, int iconSize = 64) : p(p), count(count), i(0), iconSize(iconSize){}
+	InventoryIconItemLocator(GLWinventory *p, int count, int iconSize = ItemIconSize) : p(p), count(count), i(0), iconSize(iconSize){}
 	int allHeight()override{
 		return (count + (p->clientRect().width() - 10) / iconSize - 1)
 			/ max(1, (p->clientRect().width() - 10) / iconSize) * iconSize;
@@ -203,12 +230,7 @@ void GLWinventory::draw(GLwindowState &ws, double){
 			glColor4fv(selectItem == it ? Vec4f(1,1,1,1) : Vec4f(0.5f, 0.5f, 0.5f, 1));
 			rectDraw(borderRect, GL_LINE_LOOP);
 			const InventoryItemClass *ic = it->getType();
-			if(ic->textureFile != "" && ic->texture == 0){
-				suftexparam_t stp;
-				stp.flags = STP_MAGFIL | STP_ALPHA | STP_ALPHA_TEST;
-				stp.magfil = GL_LINEAR;
-				ic->texture = CallCacheBitmap(ic->typeString, ic->textureFile, &stp, NULL);
-			}
+			cacheItemTexture(ic);
 			if(ic->texture){
 				glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
 				glCallList(ic->texture);
@@ -337,7 +359,21 @@ int GLWinventory::mouse(GLwindowState &ws, int button, int state, int mx, int my
 			.append(new PopupMenuItemFunction(APPENDER(icons, "Show icons"), this, [](GLWinventory *p){p->menu_icons();}))
 			.append(new PopupMenuItemFunction(APPENDER(summary, "Show summary"), this, [](GLWinventory *p){p->summary = !p->summary;})));
 	}
-	if(button == GLUT_LEFT_BUTTON && (state == GLUT_KEEP_UP || state == GLUT_UP || state == GLUT_DOWN || state == GLUT_KEEP_DOWN)){
+	if(button == GLUT_LEFT_BUTTON && state == GLUT_KEEP_DOWN && selectItem){
+		if(!glwDragItem){
+			glwDragItem = new GLWdragItem(*this, const_cast<InventoryItem*>(selectItem));
+			glwAppend(glwDragItem);
+		}
+		if(glwDragItem){
+			GLwindow::captor = glwDragItem;
+			glwDragItem->dragFrom = this;
+			glwDragItem->item = selectItem;
+			glwActivate(glwFindPP(glwDragItem));
+			GLWrect r = glwDragItem->extentRect();
+			glwDragItem->setExtent(r.move(ws.mx - r.width() / 2, ws.my - r.height() / 2));
+		}
+	}
+	if(button == GLUT_LEFT_BUTTON && (state == GLUT_KEEP_UP || state == GLUT_UP || state == GLUT_DOWN)){
 		int i;
 		bool set = false;
 		double offset = summary ? 2 * getFontHeight() : 0;
@@ -406,6 +442,15 @@ void GLWinventory::mouseLeave(GLwindowState &ws) {
 }
 
 
+void GLWinventory::cacheItemTexture(const InventoryItemClass *ic){
+	if(ic->textureFile != "" && ic->texture == 0){
+		suftexparam_t stp;
+		stp.flags = STP_MAGFIL | STP_ALPHA | STP_ALPHA_TEST;
+		stp.magfil = GL_LINEAR;
+		ic->texture = CallCacheBitmap(ic->typeString, ic->textureFile, &stp, NULL);
+	}
+}
+
 
 // ------------------------------
 // Squirrel Initializer Implementation
@@ -438,4 +483,54 @@ bool GLWinventory::sq_define(HSQUIRRELVM v){
 	register_closure(v, _SC("constructor"), sqf_constructor);
 	sq_createslot(v, -3);
 	return true;
+}
+
+
+
+// ======================= GLWdragItem class implementation ======================== //
+
+void GLWdragItem::drawInt(GLwindowState & ws, double, int mousex, int mousey, int, int)
+{
+	if(!item)
+		return;
+	GLWrect cr = clientRect();
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
+	glColor4f(1, 1, 1, 1);
+	const InventoryItemClass *ic = item->getType();
+	GLWinventory::cacheItemTexture(ic);
+	glCallList(ic->texture);
+	glBegin(GL_QUADS);
+	glTexCoord2d(0, 1); glVertex2i(cr.x0, cr.y0);
+	glTexCoord2d(1, 1); glVertex2i(cr.x1, cr.y0);
+	glTexCoord2d(1, 0); glVertex2i(cr.x1, cr.y1);
+	glTexCoord2d(0, 0); glVertex2i(cr.x0, cr.y1);
+	glEnd();
+	glPopAttrib();
+}
+
+int GLWdragItem::mouse(GLwindowState & ws, int button, int state, int mx, int my)
+{
+	if(button == GLUT_LEFT_BUTTON && state == GLUT_KEEP_DOWN){
+		GLWrect r = extentRect();
+		setExtent(r.move(ws.mx - r.width() / 2, ws.my - r.height() / 2));
+	}
+
+	// Releasing the mouse button moves the item to the other window and deletes this window.
+	if(button == GLUT_LEFT_BUTTON && state == GLUT_UP){
+		for(GLwindow *wnd = glwlist; wnd; wnd = wnd->getNext()){
+			// Check if we've dropped the item to any of visible windows.
+			if(wnd != this && wnd->getVisible() && wnd->extentRect().include(ws.mx, ws.my)){
+				GLWinventory *dragTo = dynamic_cast<GLWinventory*>(wnd);
+				if(dragTo && dragTo != dragFrom && dragTo->container != dragFrom->container){
+					InventoryItem *mitem = const_cast<InventoryItem*>(item);
+					dragTo->container->getInventory().push_back(mitem);
+					dragFrom->container->getInventory().remove(mitem);
+				}
+				break;
+			}
+		}
+		postClose();
+		glwDragItem = NULL;
+	}
+	return 0;
 }

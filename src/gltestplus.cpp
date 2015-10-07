@@ -1689,6 +1689,9 @@ void Game::mouse_func(int button, int state, int x, int y){
 		glGetIntegerv(GL_VIEWPORT, vp);
 		gvp.set(vp);
 		ws.set(vp);
+		ws.mx = x;
+		ws.my = y;
+
 		int killfocus = 1, ret = 0;
 		ret = GLwindow::mouseFunc(button, state, x, y, ws);
 

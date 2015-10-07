@@ -1,6 +1,6 @@
 #ifndef INVENTORY_FORWARD_H
 #define INVENTORY_FORWARD_H
-#include <list>
+#include <vector>
 
 #ifdef _WIN32
 #pragma once
@@ -9,6 +9,6 @@
 class InventoryItemClass;
 class InventoryItem;
 
-typedef std::list<InventoryItem*> InventoryItemList;
+typedef std::vector<InventoryItem*> InventoryItemList;
 
 #endif

@@ -37,6 +37,9 @@ public:
 	virtual int mouse(GLwindowState &ws, int button, int state, int mx, int my);
 	virtual void mouseLeave(GLwindowState &ws);
 
+	double getHeaderOffset()const{return summary ? 2 * getFontHeight() : 0;}
+	bool addItem(InventoryItem *item, int mx, int my);
+
 	static void cacheItemTexture(const InventoryItemClass *item);
 
 	static SQInteger sqf_constructor(HSQUIRRELVM v);
@@ -157,7 +160,7 @@ void GLWinventory::draw(GLwindowState &ws, double){
 	int wid = int((r.width() - 10) / getFontWidth()) -  6;
 
 	// Offset pixels at the top of the window for showing summary
-	double offset = 0;
+	double offset = getHeaderOffset();
 	if(summary){
 		static const GLfloat color[4] = {1,1,1,1};
 		glColor4fv(color);
@@ -165,8 +168,6 @@ void GLWinventory::draw(GLwindowState &ws, double){
 		glwprintf("Volume: %g m^3", totalVolume);
 		glwpos2d(r.x0, r.y0 + 2 * getFontHeight());
 		glwprintf("Mass: %g tons", totalMass);
-
-		offset = 2 * getFontHeight();
 
 		glBegin(GL_LINES);
 		glVertex2d(r.x0, r.y0 + offset);
@@ -376,7 +377,7 @@ int GLWinventory::mouse(GLwindowState &ws, int button, int state, int mx, int my
 	if(button == GLUT_LEFT_BUTTON && (state == GLUT_KEEP_UP || state == GLUT_UP || state == GLUT_DOWN)){
 		int i;
 		bool set = false;
-		double offset = summary ? 2 * getFontHeight() : 0;
+		double offset = getHeaderOffset();
 
 		if(r.include(mx + r.x0, my + r.y0) && mx < r.width() - 10){
 			// Clear current selection on mouse down first
@@ -439,6 +440,34 @@ void GLWinventory::mouseLeave(GLwindowState &ws) {
 		glwtip->parent = NULL;
 		glwtip->setExtent(GLWrect(-10, -10, -10, -10));
 	}
+}
+
+bool GLWinventory::addItem(InventoryItem * item, int mx, int my)
+{
+	// Ensure the container is present because it can be destroyed anytime.
+	if(!container)
+		return false;
+	Autonomous *pl = container;
+	GLWrect r = clientRect();
+	int itemCount = pl->getInventory().size();
+
+	InventoryListItemLocator lil(this, itemCount);
+	InventoryIconItemLocator eil(this, itemCount);
+	InventoryItemLocator &il = icons ? (InventoryItemLocator&)eil : (InventoryItemLocator&)lil;
+
+	double offset = getHeaderOffset();
+	bool stacked = false;
+	for(auto it : items){
+		GLWrect itemRect = il.nextRect().rmove(0, -scrollpos + offset);
+		if(itemRect.include(mx, my) && it->getType() == item->getType()){
+			if(it == item) // Prevent stacking to itself
+				return false;
+			const_cast<InventoryItem*>(it)->stack(*item);
+			return true;
+		}
+	}
+	container->getInventory().push_back(item);
+	return true;
 }
 
 
@@ -521,10 +550,22 @@ int GLWdragItem::mouse(GLwindowState & ws, int button, int state, int mx, int my
 			// Check if we've dropped the item to any of visible windows.
 			if(wnd != this && wnd->getVisible() && wnd->extentRect().include(ws.mx, ws.my)){
 				GLWinventory *dragTo = dynamic_cast<GLWinventory*>(wnd);
-				if(dragTo && dragTo != dragFrom && dragTo->container != dragFrom->container){
+				if(dragTo){
 					InventoryItem *mitem = const_cast<InventoryItem*>(item);
-					dragTo->container->getInventory().push_back(mitem);
-					dragFrom->container->getInventory().remove(mitem);
+					GLWrect cr = dragTo->clientRect();
+
+					// Add to the receiver's cargo, fails if it's the same item
+					if(!dragTo->addItem(mitem, ws.mx, ws.my))
+						break;
+
+					// Delete from the sender's cargo
+					auto &inventory = dragFrom->container->getInventory();
+					for(auto it = inventory.begin(); it != inventory.end(); ++it){
+						if(*it == mitem){
+							inventory.erase(it);
+							break; // Delete only once, or the item could be lost when moved to the same cargo
+						}
+					}
 				}
 				break;
 			}

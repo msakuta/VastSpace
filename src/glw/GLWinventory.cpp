@@ -25,6 +25,7 @@ protected:
 
 	WeakPtr<Autonomous> container;
 	std::vector<const InventoryItem*> items;
+	const InventoryItem *selectItem;
 public:
 	typedef GLwindowSizeable st;
 
@@ -172,30 +173,35 @@ void GLWinventory::draw(GLwindowState &ws, double){
 	glScissor(r.x0, ws.h - r.y1, r.width(), r.height() - offset);
 	glEnable(GL_SCISSOR_TEST);
 
+	static auto rectDraw = [](const GLWrect &r, GLenum mode){
+		glBegin(mode);
+		glVertex2i(r.x0, r.y0);
+		glVertex2i(r.x1, r.y0);
+		glVertex2i(r.x1, r.y1);
+		glVertex2i(r.x0, r.y1);
+		glEnd();
+	};
+
 	int x = 0, y = offset;
 	glPushMatrix();
 	glTranslated(0, -scrollpos + offset, 0);
 	for(auto it : items){
 		GLWrect iconRect = il.nextRect();
-			
+
 		if(iconRect.include(ws.mx, ws.my + scrollpos - offset)){
-			glColor4f(0,0,1.,.5);
-			glBegin(GL_QUADS);
-			glVertex2i(iconRect.x0, iconRect.y0);
-			glVertex2i(iconRect.x1, iconRect.y0);
-			glVertex2i(iconRect.x1, iconRect.y1);
-			glVertex2i(iconRect.x0, iconRect.y1);
-			glEnd();
+			glColor4f(0,0,0.5f,.5);
+			rectDraw(iconRect, GL_QUADS);
+		}
+
+		if(selectItem == it){
+			glColor4f(0,0.5f,0.5f,0.75f);
+			rectDraw(iconRect, GL_QUADS);
 		}
 
 		if(icons){
 			GLWrect borderRect = iconRect.expand(-2);
-			glBegin(GL_LINE_LOOP);
-			glVertex2i(borderRect.x0, borderRect.y0);
-			glVertex2i(borderRect.x1, borderRect.y0);
-			glVertex2i(borderRect.x1, borderRect.y1);
-			glVertex2i(borderRect.x0, borderRect.y1);
-			glEnd();
+			glColor4fv(selectItem == it ? Vec4f(1,1,1,1) : Vec4f(0.5f, 0.5f, 0.5f, 1));
+			rectDraw(borderRect, GL_LINE_LOOP);
 			const InventoryItemClass *ic = it->getType();
 			if(ic->textureFile != "" && ic->texture == 0){
 				suftexparam_t stp;
@@ -206,6 +212,7 @@ void GLWinventory::draw(GLwindowState &ws, double){
 			if(ic->texture){
 				glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
 				glCallList(ic->texture);
+				glColor4f(1,1,1,1);
 				// Texture Y-axis coordinate is upside down
 				glBegin(GL_QUADS);
 				glTexCoord2d(0, 1); glVertex2i(borderRect.x0, borderRect.y0);
@@ -222,11 +229,7 @@ void GLWinventory::draw(GLwindowState &ws, double){
 			}
 		}
 		else{
-//				if(ps.ret)
-					glColor4f(1,1,1,1);
-//				else
-//					glColor4f(.75,.75,.75,1);
-//			}
+			glColor4fv(selectItem == it ? Vec4f(1,1,1,1) : Vec4f(0.75f, 0.75f, 0.75f, 1));
 			glwpos2d(iconRect.x0, iconRect.y1);
 			if(it->isCountable())
 				glwprintf("%*.*s x %-3g", wid, wid, it->typeString().c_str(), it->getAmount());
@@ -334,12 +337,16 @@ int GLWinventory::mouse(GLwindowState &ws, int button, int state, int mx, int my
 			.append(new PopupMenuItemFunction(APPENDER(icons, "Show icons"), this, [](GLWinventory *p){p->menu_icons();}))
 			.append(new PopupMenuItemFunction(APPENDER(summary, "Show summary"), this, [](GLWinventory *p){p->summary = !p->summary;})));
 	}
-	if(button == GLUT_LEFT_BUTTON && (state == GLUT_KEEP_UP || state == GLUT_UP)){
+	if(button == GLUT_LEFT_BUTTON && (state == GLUT_KEEP_UP || state == GLUT_UP || state == GLUT_DOWN || state == GLUT_KEEP_DOWN)){
 		int i;
 		bool set = false;
 		double offset = summary ? 2 * getFontHeight() : 0;
 
 		if(r.include(mx + r.x0, my + r.y0) && mx < r.width() - 10){
+			// Clear current selection on mouse down first
+			if(state == GLUT_DOWN)
+				selectItem = NULL;
+
 			il.begin();
 			for(auto it : items){
 				GLWrect itemRect = il.nextRect().rmove(0, -scrollpos + offset);
@@ -368,6 +375,9 @@ int GLWinventory::mouse(GLwindowState &ws, int button, int state, int mx, int my
 						glwtip->setVisible(true);
 						glwActivate(glwFindPP(glwtip));
 						set = true;
+
+						if(state == GLUT_DOWN)
+							selectItem = it;
 					}
 					break;
 				}

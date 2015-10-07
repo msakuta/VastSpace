@@ -972,15 +972,21 @@ void Game::draw_func(Viewer &vw, double dt){
 
 	if(enableGLwindow){
 		int minix = 0;
-		glPushAttrib(GL_POLYGON_BIT);
-		glEnable(GL_BLEND);
-		glDisable(GL_LINE_SMOOTH);
 		GLwindowState ws;
 		ws.w = vw.vp.w;
 		ws.h = vw.vp.h;
 		ws.m = vw.vp.m;
 		ws.mx = s_mousex;
 		ws.my = s_mousey;
+
+		projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, ws.w, ws.h, 0, -1, 1)));
+		glPushMatrix();
+		glLoadIdentity();
+
+		glPushAttrib(GL_POLYGON_BIT);
+		glEnable(GL_BLEND);
+		glDisable(GL_LINE_SMOOTH);
+
 		// Suppress drawing of minimized windows, since it's the task bar's job.
 		// We don't have mouse inputs for them.
 		// We would totally delete the drawing logic for them.
@@ -988,6 +994,9 @@ void Game::draw_func(Viewer &vw, double dt){
 			glwlist->glwDrawMinimized(ws, player->gametime, &minix);
 		glwlist->glwDraw(ws, player->gametime, &minix);
 		glPopAttrib();
+
+		glPopMatrix();
+		projection(glPopMatrix());
 	}
 
 	if(cmdwnd)

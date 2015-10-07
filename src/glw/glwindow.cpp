@@ -330,8 +330,6 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	int titleheight = fontheight + margin;
 	const GLWrect cr = clientRect();
 
-	projection((glPushMatrix(), glLoadIdentity(), glOrtho(0, w, h, 0, -1, 1)));
-	glLoadIdentity();
 	glColor4ub(0,0,0, flags & GLW_PINNED ? 63 : 192);
 	glBegin(GL_QUADS);
 	glVertex2d(wx, wy);
@@ -484,7 +482,6 @@ void GLwindow::drawInt(GLwindowState &gvp, double t, int wx, int wy, int ww, int
 	if(!(flags & GLW_COLLAPSE) && r_window_scissor){
 		glPopAttrib();
 	}
-	projection(glPopMatrix());
 }
 
 /** \brief An intermediate function that eventually calls anim().

@@ -84,7 +84,22 @@ coordsys Orbit saturn{
 		orbits Saturn
 		orbit_radius 237948
 		orbit_axis 0 sin(26.73/2*RAD_PER_DEG) cos(26.73/2*RAD_PER_DEG)
+		eccentricity 0.0047
+		argument_of_periapsis PI*0.635
 		planet
+		texture textures/enceladus.jpg
+		fragmentshader shaders/flatplanet.fs
+		vertexshader shaders/flatplanet.vs
+		basecolor .7 .8 1.
+		albedo 1.4
+		showorbit
+	}
+	coordsys Orbit enceladusOibit{
+		orbits Enceladus
+		orbit_radius 1000
+		inclination 0.5*PI
+		bookmark "Enceladus Orbit"
+		showorbit
 	}
 	astro Satellite "Tethys"{
 		radius 533.00

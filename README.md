@@ -59,12 +59,12 @@ in order to run the batch file.
 
 Since this project uses C++11 features extensively,
 supported target versions of Visual Studio are currently only
-2012 (Express).
+2015 (Express).
 
-With Visual Studio 2012, you will need to manually change
-platform toolset to "Visual Stuido 2012 (v110)" in the IDE
+With Visual Studio 2015, you will need to manually change
+platform toolset to "Visual Stuido 2015 (v140)" in the IDE
 property page.  This is because premake4 does not support
-VS2012 yet.
+VS2015 yet.
 
 You may need WTL (Windows Template Library) if you want to
 build the motion editor.

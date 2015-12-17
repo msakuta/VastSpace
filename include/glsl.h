@@ -30,6 +30,7 @@ EXPORT extern PFNGLUNIFORM1FPROC pglUniform1f;
 EXPORT extern PFNGLUNIFORM3FVPROC pglUniform3fv;
 EXPORT extern PFNGLUNIFORM4FVPROC pglUniform4fv;
 EXPORT extern PFNGLUNIFORMMATRIX3FVPROC pglUniformMatrix3fv;
+EXPORT extern PFNGLUNIFORMMATRIX4FVPROC pglUniformMatrix4fv;
 EXPORT extern PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
 EXPORT extern PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
 
@@ -42,6 +43,7 @@ EXPORT extern PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
 #define glUniform4fv(a,c,b) (pglUniform4fv ? pglUniform4fv(a,c,b) : 0)
 #define glGetUniformLocation(a,b) (pglGetUniformLocation ? pglGetUniformLocation(a,b) : -1)
 #define glUniformMatrix3fv(a,b,c,d) (pglUniformMatrix3fv ? pglUniformMatrix3fv(a,b,c,d) : 0)
+#define glUniformMatrix4fv(a,b,c,d) (pglUniformMatrix4fv ? pglUniformMatrix4fv(a,b,c,d) : 0)
 #define glGetAttribLocation(a,b) (pglGetAttribLocation ? pglGetAttribLocation(a,b) : -1)
 #define glVertexAttrib3dv(a,b) (pglVertexAttrib3dv ? pglVertexAttrib3dv(a,b) : 0)
 

@@ -51,6 +51,7 @@ struct EXPORT ShadowMapShaderBind : virtual ShaderBind{
 	GLint shadowmapLoc;
 	GLint shadowmap2Loc;
 	GLint shadowmap3Loc;
+	GLint shadowMatricesLoc;
 	GLint shadowSlopeScaledBiasLoc;
 	GLfloat shadowSlopeScaledBias;
 	ShadowMapShaderBind(GLuint shader = 0) :

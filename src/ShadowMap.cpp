@@ -163,6 +163,7 @@ void ShadowMapShaderBind::getUniformLocations(){
 	shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
 	shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
 	shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
+	shadowMatricesLoc = glGetUniformLocation(shader, "shadowMatrices");
 	shadowSlopeScaledBiasLoc = glGetUniformLocation(shader, "shadowSlopeScaledBias");
 }
 
@@ -345,10 +346,15 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 		Mat4d lightProjection[3];
 		Mat4d lightModelView;
 		GLdouble (&shadowCell)[3] = shadowMapScales/*{1. / 5., 1. / .75, 1. / .02}*/;
+		int numShadowTextures = 1;
+		// If we can use GLSL, we use cascaded shadow maps, which uses multiple textures for shadow depth.
+		if (g_shader_enable)
+			numShadowTextures += 2;
+
 
 		bool shadowok = true;
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
-		for(int i = 0; i < 1 + 2 * !!g_shader_enable; i++) if(checkFramebufferStatus()){
+		for(int i = 0; i < numShadowTextures; i++) if(checkFramebufferStatus()){
 			GLpmmatrix pmm;
 			projection((
 				glLoadIdentity(),
@@ -426,13 +432,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 							Vec4d(.0, .0, .5, .0),
 							Vec4d(.5, .5, .5 - shadowOffset * 0.5 / shadowMapSize / 50., 1.));
 
-			int numShadowTextures = 1;
-			// If we can use GLSL, we use cascaded shadow maps, which uses multiple textures for shadow depth.
-			if(g_shader_enable)
-				numShadowTextures += 2;
-
-			GLint maxTextures;
-			glGetIntegerv(GL_MAX_TEXTURE_UNITS, &maxTextures);
+			GLfloat shadowMatrices[3][16];
 
 			glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			for(int i = 0; i < numShadowTextures; i++){
@@ -477,12 +477,16 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 					Mat4d itrans = vw.irot;
 					itrans.vec3(3) = vw.pos;
 					texturemat(glLoadMatrixd(textureMatrix * itrans));
+					if(shaderBind->shadowMatricesLoc)
+						memcpy(shadowMatrices[i], (textureMatrix * itrans).cast<float>(), sizeof shadowMatrices[i]);
 					shaderBind->shadowSlopeScaledBias = getSlopeScaledBias();
 					additiveShadowMapShaderBind->shadowSlopeScaledBias = getSlopeScaledBias();
 					shaderBind->use();
 					glDisable(GL_ALPHA_TEST);
 				}
 			}
+			if(shaderBind->shadowMatricesLoc)
+				glUniformMatrix4fv(shaderBind->shadowMatricesLoc, numShadowTextures, GL_FALSE, *shadowMatrices);
 
 			glActiveTextureARB(GL_TEXTURE0_ARB);
 

@@ -18,13 +18,13 @@ varying float diffuse[2];
 
 void main (void)
 {
-    float offsetEnv;
+	float offsetEnv;
 
 	vec3 normal = nrm;
 
 	vec3 fnormal = normalize(normal)/* + invEyeRot3x3 * vec3(texture2D(nrmmap, vec2(gl_TexCoord[0]))) * .2*/;
 	vec3 flight = normalize(gl_LightSource[0].position.xyz);
-	
+
 	vec3 fview = normalize(view.xyz);
 
 	float fdiffuse = max(0.001, dot(flight, fnormal));

@@ -23,6 +23,7 @@ PFNGLUNIFORM1FPROC pglUniform1f;
 PFNGLUNIFORM3FVPROC pglUniform3fv;
 PFNGLUNIFORM4FVPROC pglUniform4fv;
 PFNGLUNIFORMMATRIX3FVPROC pglUniformMatrix3fv;
+PFNGLUNIFORMMATRIX4FVPROC pglUniformMatrix4fv;
 PFNGLGETATTRIBLOCATIONPROC pglGetAttribLocation;
 PFNGLVERTEXATTRIB3DVPROC pglVertexAttrib3dv;
 
@@ -429,6 +430,7 @@ void glsl_register(){
 	pglUniform4fv = (void*)wglGetProcAddress("glUniform4fv");
 	pglGetUniformLocation = (void*)wglGetProcAddress("glGetUniformLocation");
 	pglUniformMatrix3fv = (void*)wglGetProcAddress("glUniformMatrix3fv");
+	pglUniformMatrix4fv = (void*)wglGetProcAddress("glUniformMatrix4fv");
 	pglGetAttribLocation = (void*)wglGetProcAddress("glGetAttribLocation");
 	pglVertexAttrib3dv = (void*)wglGetProcAddress("glVertexAttrib3dv");
 	vrc_shader_enable(&g_shader_enable);

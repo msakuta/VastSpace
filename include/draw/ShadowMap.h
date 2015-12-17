@@ -31,6 +31,9 @@ class EXPORT ShadowMap{
 	double shadowOffset;
 	double shadowSlopeScaledBias;
 
+	/// Matrices to pass to shaders for texture transformation.
+	GLfloat shadowMatrices[3][16];
+
 	/// A variable indicating whether current rendering is a shadow map drawing pass.
 	/// 0 : It's not shadow map pass; real screen rendering.
 	/// >1 : A shadow map pass.  The number indicates which level of detail currently drawing.
@@ -54,6 +57,7 @@ public:
 	void enableShadows();
 	void disableShadows();
 	GLfloat getSlopeScaledBias()const;
+	const GLfloat *getShadowMatrices()const{return *shadowMatrices;}
 };
 
 EXPORT extern OpenGLState::weak_ptr<ShadowMap*> g_currentShadowMap;

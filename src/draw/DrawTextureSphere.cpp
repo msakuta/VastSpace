@@ -538,9 +538,11 @@ void DrawTextureSphere::useShader(){
 			GLint tonemapLoc;
 			GLint lightCountLoc;
 			GLint rotationLoc;
+			GLint shadowCastLoc;
 			GLint shadowmapLoc;
 			GLint shadowmap2Loc;
 			GLint shadowmap3Loc;
+			GLint shadowMatricesLoc;
 			GLint shadowSlopeScaledBiasLoc;
 			void getLocs(GLuint shader){
 				textureLoc = glGetUniformLocation(shader, "texture");
@@ -553,9 +555,11 @@ void DrawTextureSphere::useShader(){
 				tonemapLoc = glGetUniformLocation(shader, "tonemap");
 				lightCountLoc = glGetUniformLocation(shader, "lightCount");
 				rotationLoc = glGetUniformLocation(shader, "rotation");
+				shadowCastLoc = glGetUniformLocation(shader, "shadowCast");
 				shadowmapLoc = glGetUniformLocation(shader, "shadowmap");
 				shadowmap2Loc = glGetUniformLocation(shader, "shadowmap2");
 				shadowmap3Loc = glGetUniformLocation(shader, "shadowmap3");
+				shadowMatricesLoc = glGetUniformLocation(shader, "shadowMatrices");
 				shadowSlopeScaledBiasLoc = glGetUniformLocation(shader, "shadowSlopeScaledBias");
 			}
 		};
@@ -611,12 +615,18 @@ void DrawTextureSphere::useShader(){
 			Mat3<float> rot3 = src.tomat3().cast<float>();
 			glUniformMatrix3fv(locs.rotationLoc, 1, GL_FALSE, rot3);
 		}
+		if(0 <= locs.shadowCastLoc)
+			glUniform1i(locs.shadowCastLoc, vw->shadowmap && !vw->shadowmap->shadowLevel());
 		if(0 <= locs.shadowmapLoc)
 			glUniform1i(locs.shadowmapLoc, 3);
 		if(0 <= locs.shadowmap2Loc)
 			glUniform1i(locs.shadowmap2Loc, 4);
 		if(0 <= locs.shadowmap3Loc)
 			glUniform1i(locs.shadowmap3Loc, 5);
+		if(0 <= locs.shadowMatricesLoc && vw->shadowmap){
+			GLfloat shadowmMatrices[3][16];
+			glUniformMatrix4fv(locs.shadowMatricesLoc, 3, GL_FALSE, vw->shadowmap->getShadowMatrices());
+		}
 		if(0 <= locs.shadowSlopeScaledBiasLoc){
 			GLfloat shadowSlopeScaledBias = 0.;
 			if(vw->shadowmap)
@@ -626,7 +636,8 @@ void DrawTextureSphere::useShader(){
 
 		RoundAstrobj::TextureIterator it;
 		int i;
-		if(m_textures) for(it = m_textures->begin(), i = 3; it != m_textures->end(); it++, i++){
+		// Note that texture units 3,4,5 are reserved for shadow maps, so i starts with 6.
+		if(m_textures) for(it = m_textures->begin(), i = 6; it != m_textures->end(); it++, i++){
 			const RoundAstrobj::Texture &tex = *it;
 //			if(tex.shaderLoc == -2)
 				tex.shaderLoc = glGetUniformLocation(shader, tex.uniformname);

@@ -432,8 +432,6 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 							Vec4d(.0, .0, .5, .0),
 							Vec4d(.5, .5, .5 - shadowOffset * 0.5 / shadowMapSize / 50., 1.));
 
-			GLfloat shadowMatrices[3][16];
-
 			glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			for(int i = 0; i < numShadowTextures; i++){
 				glActiveTextureARB(GL_TEXTURE3_ARB + i);

@@ -15,6 +15,7 @@ uniform vec3 noisePos;
 uniform int lightCount;
 uniform mat3 rotation;
 // uniform float height; // Defined in earth_cloud_noise.fs
+uniform bool shadowCast;
 
 varying vec3 view;
 varying vec3 nrm;
@@ -59,7 +60,7 @@ void main (void)
 
 	float fdiffuse = max(0.001, dot(flight, normal));
 
-	float shadow = shadowMapIntensity(1. / fdiffuse);
+	float shadow = shadowCast ? shadowMapIntensity(1. / fdiffuse) : 1;
 
 	vec4 texColor = textureCube(texture, texCoord);
 	float specular;
@@ -147,6 +148,6 @@ void main (void)
 		texColor += textureCube(lightstexture, vec3(gl_TexCoord[0])) * min(.02, 5. * (-sundot + 0.1));
 	texColor[3] = 1.;
 //	vec3 texCoord = reflect(invEyeRot3x3 * fview, fnormal) + .5 * vec3(texColor);
-	
+
 	gl_FragColor = toneMapping(texColor);
 }

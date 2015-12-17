@@ -2,10 +2,8 @@ varying vec4 view;
 varying vec3 nrm;
 varying float diffuse[2];
 //varying vec4 col;
-uniform mat4 shadowMatrices[3];
-varying vec4 shadowTexCoord1;
-varying vec4 shadowTexCoord2;
-varying vec4 shadowTexCoord3;
+
+#include "shaders/shadowmap.vs"
 
 void main(void)
 {
@@ -28,8 +26,6 @@ void main(void)
 
 	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
 	gl_TexCoord[1] = gl_TextureMatrix[1] * gl_MultiTexCoord1;
-	shadowTexCoord1 = shadowMatrices[0] * gl_ModelViewMatrix * gl_Vertex;
-	shadowTexCoord2 = shadowMatrices[1] * gl_ModelViewMatrix * gl_Vertex;
-	shadowTexCoord3 = shadowMatrices[2] * gl_ModelViewMatrix * gl_Vertex;
 
+	shadowMapVertex();
 }

@@ -2,6 +2,8 @@ varying vec3 view;
 varying vec3 nrm;
 varying vec4 col;
 
+#include "shaders/shadowmap.vs"
+
 void main(void)
 {
 	view = vec3(gl_ModelViewMatrix * gl_Vertex);
@@ -15,4 +17,6 @@ void main(void)
 	gl_TexCoord[3] = gl_TextureMatrix[3] * gl_MultiTexCoord3;
 
 	gl_Position = ftransform();
+
+	shadowMapVertex();
 }

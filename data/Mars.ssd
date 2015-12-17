@@ -28,9 +28,10 @@ coordsys Orbit marss{
 
 		terrainNoiseEnable true
 		terrainNoiseLODs 5
-		terrainNoiseHeight 15.
+		terrainNoiseHeight 3.
 		terrainNoisePersistence 0.75
-		terrainNoiseOctaves 12
+		terrainNoiseOctaves 8
+		terrainNoiseBaseLevel 5
 		vertexshader "shaders/flatplanet.vs"
 		fragmentshader "shaders/flatplanet.fs"
 

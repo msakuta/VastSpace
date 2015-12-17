@@ -1589,7 +1589,7 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 				}
 				else{
 					for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++)
-						aheights.a[i][j] = 1.;
+						aheights.a[i][j] = aheight;
 				}
 				double persistence = m_noisePersistence;
 				int octaves = m_noiseOctaves;

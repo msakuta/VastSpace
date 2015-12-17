@@ -30,7 +30,12 @@ class EXPORT ShadowMap{
 	static GLuint depthTextures[3];
 	double shadowOffset;
 	double shadowSlopeScaledBias;
+
+	/// A variable indicating whether current rendering is a shadow map drawing pass.
+	/// 0 : It's not shadow map pass; real screen rendering.
+	/// >1 : A shadow map pass.  The number indicates which level of detail currently drawing.
 	int shadowing;
+
 	bool additive;
 	bool cullFront;
 public:

@@ -269,7 +269,7 @@ static GLint additiveLoc = -1;
 /// \param shadowSlopeScaledBias Enable slope scaled bias technique to reduce shadow acne.
 ShadowMap::ShadowMap(int ashadowMapSize, GLdouble (&ashadowMapCells)[3],
 	double shadowOffset, bool cullFront, double shadowSlopeScaledBias)
-	: shadowing(false), additive(false), shadowOffset(shadowOffset), cullFront(cullFront), shadowSlopeScaledBias(shadowSlopeScaledBias)
+	: shadowing(0), additive(false), shadowOffset(shadowOffset), cullFront(cullFront), shadowSlopeScaledBias(shadowSlopeScaledBias)
 {
 	if(FBOInit() && !fbo){
 		int	gerr = glGetError();
@@ -398,7 +398,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 				glPushAttrib(GL_LIGHTING_BIT);
 	//			glDisable(GL_LIGHT0);
 				glLightfv(GL_LIGHT0, GL_DIFFUSE, Vec4f(.2,.2,.2,1.));
-				shadowing = false; // Notify the callback implicitly that it's the real scene pass.
+				shadowing = 0; // Notify the callback implicitly that it's the real scene pass.
 				drawcallback.draw(vw, 0, 0, 0); // war_draw(vw, pl.cs, &WarField::draw);
 				glPopAttrib();
 			}
@@ -485,7 +485,7 @@ void ShadowMap::drawShadowMaps(Viewer &vw, const Vec3d &g_light, DrawCallback &d
 
 			glDepthFunc(GL_LEQUAL);
 
-			shadowing = false; // Notify the callback implicitly that it's the real scene pass.
+			shadowing = 0; // Notify the callback implicitly that it's the real scene pass.
 			if(shaderBind)
 				drawcallback.draw(vw, shaderBind->shader, shaderBind->textureLoc, shaderBind->shadowmapLoc);
 			else

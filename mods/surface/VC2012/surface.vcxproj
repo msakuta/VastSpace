@@ -22,6 +22,7 @@
     <ProjectGuid>{2DB1949F-D6A5-4D12-A9D0-7F2C8A65B06D}</ProjectGuid>
     <RootNamespace>surface</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -66,22 +67,22 @@
     <_ProjectFileVersion>11.0.60315.1</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\..\..\VC2012\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\..\VC2015\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>..\..\..\VC2012\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\..\VC2015\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\..\..\VC2012\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\..\VC2015\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>..\..\..\VC2012\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\..\VC2015\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
@@ -101,7 +102,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;zlib.lib;opengl32.lib;glu32.lib;..\..\bullet\lib\BulletDynamics_vs2010_debug.lib;..\..\bullet\lib\BulletCollision_vs2010_debug.lib;..\..\bullet\lib\LinearMath_vs2010_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\VC2012\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -125,7 +126,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;zlib.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\VC2012\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
@@ -146,7 +147,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;zlib.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010.lib;BulletCollision_vs2010.lib;LinearMath_vs2010.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\VC2012\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -173,7 +174,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;zlib.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\VC2012\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>

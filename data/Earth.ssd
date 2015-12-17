@@ -15,7 +15,7 @@ coordsys Orbit earth{
 		rotation Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))
 #		rotation 0*sqrt(2)/2 0 sin(tilt/2.) cos(tilt/2.)
 #		updirection 0 cos(tilt) sin(tilt)
-		texture textures/earth.jpg
+		texture textures/earth.jpg 0 normalize
 		basecolor .5 .65 1.
 		albedo 0.367
 

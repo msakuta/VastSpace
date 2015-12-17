@@ -131,7 +131,7 @@ inline bool operator!=(const RoundAstrobj::Texture &a, const RoundAstrobj::Textu
 
 void RoundAstrobj::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << texname;
+	sc.o << texture;
 	sc.o << oblateness;
 	sc.o << ringmin;
 	sc.o << ringmax;
@@ -163,7 +163,7 @@ void RoundAstrobj::unserialize(UnserializeContext &sc){
 	std::vector<Texture> textures; // Temporary vector to merge to this->textures in postprocessing
 
 	st::unserialize(sc);
-	sc.i >> texname;
+	sc.i >> texture;
 	sc.i >> oblateness;
 	sc.i >> ringmin;
 	sc.i >> ringmax;
@@ -199,6 +199,27 @@ void RoundAstrobj::unserialize(UnserializeContext &sc){
 
 bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	using namespace stellar_util;
+
+	/// A local function to interpret and assign flags.  Shared by texture and extexture commands.
+	auto textureFlags = [sc, argc, argv](Texture &tex, int startIndex){
+#ifndef DEDICATED
+		tex.list = 0;
+#endif
+		tex.cloudSync = startIndex < argc && 0. != sqcalc(const_cast<StellarContext&>(sc), argv[startIndex], argv[0]);
+		for(int i = startIndex + 1; i < argc; i++){
+			if(!strcmp(argv[i], "alpha"))
+				tex.flags |= DTS_ALPHA;
+			else if(!strcmp(argv[i], "height"))
+				tex.flags |= DTS_HEIGHTMAP;
+			else if(!strcmp(argv[i], "normal"))
+				tex.flags |= DTS_NORMALMAP;
+			else if (!strcmp(argv[i], "normalize"))
+				tex.flags |= DTS_NORMALIZE;
+			else
+				CmdPrint(gltestp::dstring() << "Warning: unknown extexture parameter ignored: " << argv[i]);
+		}
+	};
+
 	const char *s = argv[0], *ps = argv[1];
 	if(0);
 	else if(!strcmp(s, "oblateness")){
@@ -209,7 +230,9 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	}
 	else if(!strcmp(s, "texture")){
 		if(1 < argc){
-			this->texname = argv[1];
+			texture.uniformname = "texture";
+			texture.filename = argv[1];
+			textureFlags(texture, 2);
 		}
 		return true;
 	}
@@ -224,20 +247,7 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 			Texture tex;
 			tex.uniformname = argv[1];
 			tex.filename = argv[2];
-#ifndef DEDICATED
-			tex.list = 0;
-#endif
-			tex.cloudSync = 3 < argc && 0. != sqcalc(sc, argv[3], s);
-			for(int i = 4; i < argc; i++){
-				if(!strcmp(argv[i], "alpha"))
-					tex.flags |= DTS_ALPHA;
-				else if(!strcmp(argv[i], "height"))
-					tex.flags |= DTS_HEIGHTMAP;
-				else if(!strcmp(argv[i], "normal"))
-					tex.flags |= DTS_NORMALMAP;
-				else
-					CmdPrint(gltestp::dstring() << "Warning: unknown extexture parameter ignored: " << argv[i]);
-			}
+			textureFlags(tex, 3);
 			textures.push_back(tex);
 		}
 		return true;
@@ -583,7 +593,7 @@ const CoordSys::PropertyMap &RoundAstrobj::propertyMap()const{
 		pmap["texture"] = PropertyEntry(
 			[](HSQUIRRELVM v, const CoordSys *cs){
 				const RoundAstrobj *a = static_cast<const RoundAstrobj*>(cs);
-				sq_pushstring(v, a->texname, -1);
+				sq_pushstring(v, a->texture.filename, -1);
 				return SQInteger(1);
 			},
 			[](HSQUIRRELVM v, CoordSys *cs){
@@ -591,7 +601,7 @@ const CoordSys::PropertyMap &RoundAstrobj::propertyMap()const{
 				const SQChar *str;
 				if(SQ_FAILED(sq_getstring(v, 3, &str)))
 					return sq_throwerror(v, _SC("RoundAstrobj.texture could not convert to string"));
-				a->texname = str;
+				a->texture.filename = str;
 				return SQInteger(0);
 			}
 		);

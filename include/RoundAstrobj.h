@@ -29,7 +29,7 @@ public:
 	typedef gltestp::dstring String;
 	typedef std::vector<String> StringList;
 protected:
-	String texname, cloudtexname;
+	String cloudtexname;
 	String ringtexname, ringbacktexname;
 	unsigned int texlist, cloudtexlist; // should not really be here
 	double ringmin, ringmax, ringthick;
@@ -78,7 +78,8 @@ public:
 		DTS_HEIGHTMAP = 1<<3,
 		DTS_NORMALMAP = 1<<4,
 		DTS_NOGLOBE = 1<<5,
-		DTS_LIGHTING = 1<<6
+		DTS_LIGHTING = 1<<6,
+		DTS_NORMALIZE = 1<<7
 	};
 
 	struct Texture{
@@ -143,6 +144,7 @@ protected:
 	virtual void updateAbsMag(double dt); ///< Update absolute magnitude of this celestial body by other light sources
 	static double getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight, const TerrainMods &tmods);
 private:
+	Texture texture; /// Base color texture, should exist for all celestial bodies
 	std::vector<Texture> textures;
 #ifndef DEDICATED
 	BITMAPINFO *heightmap[6];

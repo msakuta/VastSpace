@@ -999,7 +999,7 @@ bool DrawTextureSpheroid::draw(){
 	do if(!texlist && texname){
 //		timemeas_t tm;
 //		TimeMeasStart(&tm);
-		texlist = *ptexlist = ProjectSphereCubeImage(texname, 0);
+		texlist = *ptexlist = ProjectSphereCubeImage(texname, m_flags);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
@@ -1116,7 +1116,7 @@ bool DrawTextureCubeEx::draw(){
 	if(!*ptexlist && m_texname && m_texname[0]){
 //		timemeas_t tm;
 //		TimeMeasStart(&tm);
-		*ptexlist = ProjectSphereCubeImage(m_texname, 0);
+		*ptexlist = ProjectSphereCubeImage(m_texname, m_flags);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	};
 
@@ -1865,9 +1865,11 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 				castEquirectRay(epos, j1, i1, fj1, fi1);
 
 				if(raw->bmiHeader.biBitCount == 4){ // untested
-					double accum[3] = {0}; // accumulator
+					Vec3d accum(0,0,0); // accumulator
 					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
 						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww]])[c];
+					if(flags & RoundAstrobj::DTS_NORMALIZE && 0 < accum.slen())
+						accum.normin();
 					dst->rgbRed = (GLubyte)accum[0];
 					dst->rgbGreen = (GLubyte)accum[1];
 					dst->rgbBlue = (GLubyte)accum[2];
@@ -1945,9 +1947,11 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 					}
 				}
 				else if(raw->bmiHeader.biBitCount == 24){
-					double accum[3] = {0}; // accumulator
+					Vec3d accum(0,0,0); // accumulator
 					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
 						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww * 3 + c];
+					if(flags & RoundAstrobj::DTS_NORMALIZE && 0 < accum.slen())
+						accum.normin() *= 255;
 					dst->rgbRed = (GLubyte)accum[0];
 					dst->rgbGreen = (GLubyte)accum[1];
 					dst->rgbBlue = (GLubyte)accum[2];
@@ -1955,10 +1959,12 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 				}
 				else if(raw->bmiHeader.biBitCount == 32){ // untested
 //					const unsigned char *src;
-					double accum[4] = {0}; // accumulator
+					Vec3d accum(0, 0, 0); // accumulator
 					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 4; c++)
 						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww * 4 + c];
 //					src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 * 4];
+					if(flags & RoundAstrobj::DTS_NORMALIZE && 0 < accum.slen())
+						accum.normin() *= 255;
 					dst->rgbRed = (GLubyte)accum[0];
 					dst->rgbGreen = (GLubyte)accum[1];
 					dst->rgbBlue = (GLubyte)accum[2];

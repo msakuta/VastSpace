@@ -301,6 +301,7 @@
     <ClInclude Include="..\include\CoordSys-find.h" />
     <ClInclude Include="..\include\CoordSys.h" />
     <ClInclude Include="..\include\Docker.h" />
+    <ClInclude Include="..\include\DrawTextureSphere-forward.h" />
     <ClInclude Include="..\include\draw\blackbody.h" />
     <ClInclude Include="..\include\draw\effects.h" />
     <ClInclude Include="..\include\draw\HDR.h" />

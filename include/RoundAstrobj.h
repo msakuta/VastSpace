@@ -7,6 +7,7 @@
 #ifndef DEDICATED
 #include "draw/ring-draw.h"
 #endif
+#include "DrawTextureSphere-forward.h"
 #include <squirrel.h>
 
 
@@ -28,6 +29,7 @@ public:
 	typedef Astrobj st;
 	typedef gltestp::dstring String;
 	typedef std::vector<String> StringList;
+	typedef DTS::Texture Texture;
 protected:
 	String cloudtexname;
 	String ringtexname, ringbacktexname;
@@ -70,33 +72,6 @@ protected:
 
 	void updateInt(double dt);
 public:
-	/// drawTextureSphere flags
-	enum DTS{
-		DTS_ADD = 1<<0,
-		DTS_NODETAIL = 1<<1,
-		DTS_ALPHA = 1<<2,
-		DTS_HEIGHTMAP = 1<<3,
-		DTS_NORMALMAP = 1<<4,
-		DTS_NOGLOBE = 1<<5,
-		DTS_LIGHTING = 1<<6,
-		DTS_NORMALIZE = 1<<7
-	};
-
-	struct Texture{
-		String uniformname;
-		String filename;
-#ifndef DEDICATED
-		mutable GLuint list;
-		mutable GLint shaderLoc;
-#endif
-		bool cloudSync;
-		int flags; ///< drawTextureSphere flags
-		Texture() :
-#ifndef DEDICATED
-			list(0), shaderLoc(-2),
-#endif
-			cloudSync(false), flags(false){}
-	};
 	typedef RoundAstrobj tt;
 	RoundAstrobj(Game *game);
 	RoundAstrobj(const char *name, CoordSys *cs);
@@ -120,29 +95,15 @@ public:
 	static bool sq_define(HSQUIRRELVM v);
 	double getTerrainHeight(const Vec3d &basepos)const;
 
-	/// Terrain modifier that artificially affect randomly generated terrain.
-	/// Currently, only circular flat area can be specified, but it could be various shapes.
-	struct TerrainMod{
-		Vec3d pos;
-		double radius;
-		double falloff;
-	};
-
-	/// A set of TerrainMods.  All modifications are applied to the same RoundAstrobj instance.
-	typedef std::vector<TerrainMod> TerrainMods;
-
-	/// A map type that can get TerrainMods from corresponding RoundAstrobj's SerializableId without RoundAstrobj instance.
-	typedef std::map<SerializableId, TerrainMods> TerrainModMap;
-
 	/// Global storage for storing TerrainMods for all RoundAstrobjs.  This is required for
 	/// parallelize terrain generation by threads and prevent access to deleted RoundAstrobjs from these threads.
 	/// If RoundAstrobjs are created and destroyed regularly, TerrainMods will leak memory.  Probably we could use
 	/// reference counter scheme to delete finished objects.
-	static TerrainModMap terrainModMap;
+	static DTS::TerrainModMap terrainModMap;
 
 protected:
 	virtual void updateAbsMag(double dt); ///< Update absolute magnitude of this celestial body by other light sources
-	static double getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight, const TerrainMods &tmods);
+	static double getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight, const DTS::TerrainMods &tmods);
 private:
 	Texture texture; /// Base color texture, should exist for all celestial bodies
 	std::vector<Texture> textures;
@@ -150,7 +111,7 @@ private:
 	BITMAPINFO *heightmap[6];
 #endif
 	/// Member reference to global TerrainMods object.  The object is not deleted even if this RoundAstrobj is destroyed.
-	TerrainMods &tmods;
+	DTS::TerrainMods &tmods;
 
 	const PropertyMap &propertyMap()const;
 	friend class DrawTextureSphere;

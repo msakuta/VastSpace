@@ -3,9 +3,11 @@
  */
 #ifndef DRAWTEXTURESPHERE_H
 #define DRAWTEXTURESPHERE_H
+#include "DrawTextureSphere-forward.h"
 #include "RoundAstrobj.h"
 #include "CoordSys-find.h"
 #include "judge.h"
+#include "draw/ring-draw.h"
 
 #include <functional>
 
@@ -26,7 +28,7 @@ protected:
 	GLuint *ptexlist;
 	Mat4d m_texmat;
 	const char *m_texname;
-	const std::vector<RoundAstrobj::Texture> *m_textures;
+	const DTS::TextureList *m_textures;
 	double m_rad;
 	int m_flags;
 	GLuint m_shader;
@@ -226,7 +228,7 @@ protected:
 	void enableBuffer(SubBufferSetBase &);
 	void drawPatchElements(SubBufferSetBase &bufs, GLint count, GLint base = 0, bool enableBuffer = true);
 
-	static double height(const Vec3d &basepos, int octaves, double persistence, double aheight, const RoundAstrobj::TerrainMods &mods);
+	static double height(const Vec3d &basepos, int octaves, double persistence, double aheight, const DTS::TerrainMods &mods);
 	static void point0(int divides, const Quatd &rot, BufferData &bd, int ix, int iy, HeightGetter &height);
 
 	void compileVertexBuffers()const;

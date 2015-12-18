@@ -33,6 +33,8 @@ extern "C"{
 
 #define SQRT2P2 (1.4142135623730950488016887242097/2.)
 
+using namespace DTS;
+
 const GLenum DrawTextureSphere::cubetarget[] = {
 GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
 GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
@@ -605,7 +607,7 @@ void DrawTextureSphere::useShader(){
 			glUniform1i(locs.lightCountLoc, lightingStars.size());
 		}
 		if(0 <= locs.rotationLoc){
-			RoundAstrobj *ts = dynamic_cast<RoundAstrobj*>(a);
+//			RoundAstrobj *ts = dynamic_cast<RoundAstrobj*>(a);
 			Mat4d src = (vw->cs->tocsq(a->parent).cnj() * a->rot).tomat4();
 			// When drawing oblate sphere, we need to rotate normal map texture manually.
 //			if(ts && ts->oblateness != 0.)
@@ -634,26 +636,25 @@ void DrawTextureSphere::useShader(){
 			glUniform1f(locs.shadowSlopeScaledBiasLoc, shadowSlopeScaledBias);
 		}
 
-		RoundAstrobj::TextureIterator it;
-		int i;
 		// Note that texture units 3,4,5 are reserved for shadow maps, so i starts with 6.
-		if(m_textures) for(it = m_textures->begin(), i = 6; it != m_textures->end(); it++, i++){
-			const RoundAstrobj::Texture &tex = *it;
+		int i = 6;
+		if(m_textures) for(auto it = m_textures->begin(); it != m_textures->end(); it++, i++){
+			const Texture &tex = *it;
 //			if(tex.shaderLoc == -2)
 				tex.shaderLoc = glGetUniformLocation(shader, tex.uniformname);
 
 			bool loaded = false;
 			// If it's a height map, load even if it's not used by the shader, because terrain geometry
 			// uses it too.
-			if(tex.flags & RoundAstrobj::DTS_HEIGHTMAP){
+			if(tex.flags & DTS_HEIGHTMAP){
 				if(!tex.list)
-					tex.list = ProjectSphereCubeImage(tex.filename, RoundAstrobj::DTS_NODETAIL | tex.flags);
+					tex.list = ProjectSphereCubeImage(tex.filename, DTS_NODETAIL | tex.flags);
 				loaded = true;
 			}
 
 			if(0 <= tex.shaderLoc){
 				if(!loaded && !tex.list){
-					tex.list = ProjectSphereCubeImage(tex.filename, RoundAstrobj::DTS_NODETAIL | tex.flags);
+					tex.list = ProjectSphereCubeImage(tex.filename, DTS_NODETAIL | tex.flags);
 				}
 				glActiveTextureARB(GL_TEXTURE0_ARB + i);
 				glCallList(tex.list);
@@ -750,7 +751,7 @@ bool DrawTextureSphere::draw(){
 
 	setupLight();
 
-	if(flags & RoundAstrobj::DTS_ADD){
+	if(flags & DTS_ADD){
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE);
 	}
@@ -909,7 +910,7 @@ bool DrawTextureSphere::draw(){
 
 void DrawTextureSphere::setupLight(){
 	bool texenable = ptexlist && *ptexlist && m_texmat;
-	if(m_flags & RoundAstrobj::DTS_LIGHTING){
+	if(m_flags & DTS_LIGHTING){
 		const GLfloat mat_specular[] = {0., 0., 0., 1.};
 		const GLfloat mat_shininess[] = { 50.0 };
 		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
@@ -950,7 +951,7 @@ bool DrawTextureSphere::drawSimple(){
 	double zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
 	scale *= zoom;
 	if(0. < scale && scale < 10.){
-		if(!(m_flags & RoundAstrobj::DTS_NOGLOBE)){
+		if(!(m_flags & DTS_NOGLOBE)){
 			GLubyte color[4], dark[4];
 			color[0] = GLubyte(m_mat_diffuse[0] * 255);
 			color[1] = GLubyte(m_mat_diffuse[1] * 255);
@@ -1407,7 +1408,7 @@ struct DrawTextureCubeEx::TempVertex{
 	}
 };
 
-double DrawTextureCubeEx::height(const Vec3d &basepos, int octaves, double persistence, double aheight, const RoundAstrobj::TerrainMods &tmods){
+double DrawTextureCubeEx::height(const Vec3d &basepos, int octaves, double persistence, double aheight, const TerrainMods &tmods){
 	return RoundAstrobj::getTerrainHeightInt(basepos, octaves, persistence, aheight, tmods);
 }
 
@@ -1595,7 +1596,7 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 				int octaves = m_noiseOctaves;
 				double baseLevel = (1 << m_noiseBaseLevel);
 
-				RoundAstrobj::TerrainMods &tmods = RoundAstrobj::terrainModMap[ra->getid()];
+				TerrainMods &tmods = RoundAstrobj::terrainModMap[ra->getid()];
 
 				bufs.t = &it;
 				it.startJob([=, &bufs](){
@@ -1798,12 +1799,12 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 		BITMAPINFO *proj = NULL;
 		RGBQUAD zero = {0,0,0,255};
 		texinit = 1;
-		int bits = flags & RoundAstrobj::DTS_ALPHA ? 8 : PROJBITS;
+		int bits = flags & DTS_ALPHA ? 8 : PROJBITS;
 		int linebytes = !raw ? 0 : (raw->bmiHeader.biWidth * raw->bmiHeader.biBitCount + 31) / 32 * 4;
 		int linebytesp = !raw ? 0 : (PROJC * bits + 31) / 32 * 4;
 
 		auto allocProj = [&](int &outsize){
-			BITMAPINFO *proj = (BITMAPINFO*)malloc(outsize = sizeof(BITMAPINFOHEADER) + (flags & RoundAstrobj::DTS_ALPHA ? 256 * sizeof(RGBQUAD) : 0) + (PROJC * PROJC * bits + 31) / 32 * 4);
+			BITMAPINFO *proj = (BITMAPINFO*)malloc(outsize = sizeof(BITMAPINFOHEADER) + (flags & DTS_ALPHA ? 256 * sizeof(RGBQUAD) : 0) + (PROJC * PROJC * bits + 31) / 32 * 4);
 			if(raw)
 				memcpy(proj, raw, sizeof(BITMAPINFOHEADER));
 			else{
@@ -1817,18 +1818,18 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 			}
 			proj->bmiHeader.biWidth = proj->bmiHeader.biHeight = PROJC;
 			proj->bmiHeader.biBitCount = bits;
-			proj->bmiHeader.biClrUsed = flags & RoundAstrobj::DTS_ALPHA ? 256 : 0;
+			proj->bmiHeader.biClrUsed = flags & DTS_ALPHA ? 256 : 0;
 			proj->bmiHeader.biSizeImage = proj->bmiHeader.biWidth * proj->bmiHeader.biHeight * proj->bmiHeader.biBitCount / 8;
 			for(unsigned i = 0; i < proj->bmiHeader.biClrUsed; i++)
 				proj->bmiColors[i].rgbBlue = proj->bmiColors[i].rgbGreen = proj->bmiColors[i].rgbRed = proj->bmiColors[i].rgbReserved = i;
 			return proj;
 		};
 
-		if(!cacheload && (!(flags & RoundAstrobj::DTS_HEIGHTMAP) || !heightmap))
+		if(!cacheload && (!(flags & DTS_HEIGHTMAP) || !heightmap))
 			proj = allocProj(outsize);
 
 		for(int nn = 0; nn < 6; nn++){
-			if(flags & RoundAstrobj::DTS_HEIGHTMAP && heightmap){
+			if(flags & DTS_HEIGHTMAP && heightmap){
 				proj = heightmap[nn] = allocProj(outsize);
 			}
 			if(!cacheload) for(int i = 0; i < PROJC; i++) for(int j = 0; j < PROJC; j++){
@@ -1868,7 +1869,7 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 					Vec3d accum(0,0,0); // accumulator
 					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
 						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww]])[c];
-					if(flags & RoundAstrobj::DTS_NORMALIZE && 0 < accum.slen())
+					if(flags & DTS_NORMALIZE && 0 < accum.slen())
 						accum.normin();
 					dst->rgbRed = (GLubyte)accum[0];
 					dst->rgbGreen = (GLubyte)accum[1];
@@ -1889,13 +1890,13 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 						return accum;
 					};
 
-					if(flags & RoundAstrobj::DTS_ALPHA){
+					if(flags & DTS_ALPHA){
 						double accum = 0.;
 						for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++)
 							accum += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww];
 						*dst8 = (GLubyte)(accum);
 					}
-					else if(flags & RoundAstrobj::DTS_HEIGHTMAP){
+					else if(flags & DTS_HEIGHTMAP){
 						// Obtain heights at adjacent pixels in this cube face.
 						double height = sampler8(cubedirs[nn].cnj().trans(Vec3d(j / (PROJC / 2.) - 1., i / (PROJC / 2.) - 1., -1)));
 
@@ -1905,7 +1906,7 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 						dst->rgbBlue = (GLubyte)rangein(height, 0, 255);
 						dst->rgbReserved = 255;
 					}
-					else if(flags & RoundAstrobj::DTS_NORMALMAP){
+					else if(flags & DTS_NORMALMAP){
 						const unsigned char *src = ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed]);
 						double heights[3] = {0.};
 
@@ -1950,7 +1951,7 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 					Vec3d accum(0,0,0); // accumulator
 					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 3; c++)
 						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww * 3 + c];
-					if(flags & RoundAstrobj::DTS_NORMALIZE && 0 < accum.slen())
+					if(flags & DTS_NORMALIZE && 0 < accum.slen())
 						accum.normin() *= 255;
 					dst->rgbRed = (GLubyte)accum[0];
 					dst->rgbGreen = (GLubyte)accum[1];
@@ -1963,7 +1964,7 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 					for(int ii = 0; ii < 2; ii++) for(int jj = 0; jj < 2; jj++) for(int c = 0; c < 4; c++)
 						accum[c] += (jj ? fj1 : 1. - fj1) * (ii ? fi1 : 1. - fi1) * ((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[(i1 + ii) % rawh * linebytes + (j1 + jj) % raww * 4 + c];
 //					src = &((unsigned char *)&raw->bmiColors[raw->bmiHeader.biClrUsed])[i1 * linebytes + j1 * 4];
-					if(flags & RoundAstrobj::DTS_NORMALIZE && 0 < accum.slen())
+					if(flags & DTS_NORMALIZE && 0 < accum.slen())
 						accum.normin() *= 255;
 					dst->rgbRed = (GLubyte)accum[0];
 					dst->rgbGreen = (GLubyte)accum[1];
@@ -2023,13 +2024,13 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 					SaveJPEGData(jpgfilename, &bmd, 80);
 				}
 	#endif
-				glTexImage2D(cubetarget[nn], 0, flags & RoundAstrobj::DTS_ALPHA ? GL_ALPHA : GL_RGBA,
-					PROJC, PROJC, 0, flags & RoundAstrobj::DTS_ALPHA ? GL_ALPHA : GL_RGBA, GL_UNSIGNED_BYTE, &proj->bmiColors[proj->bmiHeader.biClrUsed]);
+				glTexImage2D(cubetarget[nn], 0, flags & DTS_ALPHA ? GL_ALPHA : GL_RGBA,
+					PROJC, PROJC, 0, flags & DTS_ALPHA ? GL_ALPHA : GL_RGBA, GL_UNSIGNED_BYTE, &proj->bmiColors[proj->bmiHeader.biClrUsed]);
 
 			}
 			else{
-				glTexImage2D(cubetarget[nn], 0, flags & RoundAstrobj::DTS_ALPHA ? GL_ALPHA : cacheload[nn]->bmiHeader.biBitCount / 8, cacheload[nn]->bmiHeader.biWidth, cacheload[nn]->bmiHeader.biHeight, 0,
-					cacheload[nn]->bmiHeader.biBitCount == 32 ? GL_RGBA : cacheload[nn]->bmiHeader.biBitCount == 24 ? GL_RGB : cacheload[nn]->bmiHeader.biBitCount == 8 ? flags & RoundAstrobj::DTS_ALPHA ? GL_ALPHA : GL_LUMINANCE : (assert(0), 0),
+				glTexImage2D(cubetarget[nn], 0, flags & DTS_ALPHA ? GL_ALPHA : cacheload[nn]->bmiHeader.biBitCount / 8, cacheload[nn]->bmiHeader.biWidth, cacheload[nn]->bmiHeader.biHeight, 0,
+					cacheload[nn]->bmiHeader.biBitCount == 32 ? GL_RGBA : cacheload[nn]->bmiHeader.biBitCount == 24 ? GL_RGB : cacheload[nn]->bmiHeader.biBitCount == 8 ? flags & DTS_ALPHA ? GL_ALPHA : GL_LUMINANCE : (assert(0), 0),
 					GL_UNSIGNED_BYTE, &cacheload[nn]->bmiColors[cacheload[nn]->bmiHeader.biClrUsed]);
 				if(proj)
 					memcpy(proj, cacheload[nn], outsize + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * proj->bmiHeader.biClrUsed);
@@ -2096,7 +2097,7 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 		glMaterialfv(GL_FRONT, GL_AMBIENT, Vec4<float>(.5,.5,.5,1.));
 //		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Vec4<float>(.5,.5,.5,1.));
 
-		if(glActiveTextureARB && !(flags & RoundAstrobj::DTS_NODETAIL)){
+		if(glActiveTextureARB && !(flags & DTS_NODETAIL)){
 			glActiveTextureARB(GL_TEXTURE1_ARB);
 			glBindTexture(GL_TEXTURE_2D, detailname);
 			glEnable(GL_TEXTURE_2D);
@@ -2116,7 +2117,7 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 		fclose(fp);
 #endif
 
-		if(!(flags & RoundAstrobj::DTS_HEIGHTMAP) || !heightmap)
+		if(!(flags & DTS_HEIGHTMAP) || !heightmap)
 			free(proj);
 /*		free(raw);*/
 	}

@@ -707,6 +707,9 @@
     <ClInclude Include="..\include\Inventory.h">
       <Filter>Exported Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\DrawTextureSphere-forward.h">
+      <Filter>Exported Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\VastSpace.rc" />

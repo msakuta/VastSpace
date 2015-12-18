@@ -23,6 +23,8 @@ extern "C"{
 
 #include <algorithm>
 
+using namespace DTS;
+
 RoundAstrobj::RoundAstrobj(Game *game) :
 	st(game),
 #ifndef DEDICATED
@@ -75,7 +77,7 @@ RoundAstrobj::RoundAstrobj(const char *name, CoordSys *cs) : st(name, cs),
 }
 
 const ClassRegister<RoundAstrobj> RoundAstrobj::classRegister("RoundAstrobj", sq_define);
-RoundAstrobj::TerrainModMap RoundAstrobj::terrainModMap;
+TerrainModMap RoundAstrobj::terrainModMap;
 
 RoundAstrobj::~RoundAstrobj(){
 	// Should I delete here?

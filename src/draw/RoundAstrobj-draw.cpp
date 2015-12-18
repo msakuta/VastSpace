@@ -17,6 +17,8 @@ extern "C"{
 
 #define EPSILON 1e-7 // not sure
 
+using namespace DTS;
+
 void drawAtmosphere(const Astrobj *a, const Viewer *vw, const Vec3d &sunpos, double thick, const GLfloat hor[4], const GLfloat dawn[4], GLfloat ret_horz[4], GLfloat ret_amb[4], int slices);
 
 

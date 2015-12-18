@@ -99,6 +99,8 @@ public:
 	/// reference counter scheme to delete finished objects.
 	static DTS::TerrainModMap terrainModMap;
 
+	bool hasTerrainMap()const{return heightmap[0];}
+
 protected:
 	virtual void updateAbsMag(double dt); ///< Update absolute magnitude of this celestial body by other light sources
 	static double getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight, const DTS::TerrainMods &tmods);

@@ -49,13 +49,19 @@ public:
 	SurfaceWar(SurfaceCS *);
 	~SurfaceWar();
 	Vec3d accel(const Vec3d &pos, const Vec3d &velo)const override;
+	void anim(double dt)override;
 	void draw(WarDraw*)override;
 	double atmosphericPressure(const Vec3d &pos)const override;
 	bool sendMessage(Message &)override;
 protected:
+	static const int patchSize = 64;
+	struct HeightMapData{
+		btScalar heights[patchSize][patchSize];
+	};
 	btStaticPlaneShape *groundPlane;
 	btRigidBody *groundBody;
 	SurfaceEntity *entity;
+	std::list<HeightMapData> patches;
 };
 
 Entity::EntityRegister<SurfaceEntity> SurfaceEntity::entityRegister("SurfaceEntity");
@@ -405,13 +411,9 @@ SurfaceWar::SurfaceWar(SurfaceCS *cs) : st(cs), entity(new SurfaceEntity(this)){
 #endif
 }
 
-void SurfaceWar::draw(WarDraw *wd){
-#ifndef DEDICATED
-	// Draw planets or asteroids in this z-slice.
-	// Search RoundAstrobjs from ancestors and direct children of
-	// ancestors.
+Astrobj *findNearestAstrobj(WarField *wf){
 	Astrobj *a = nullptr;
-	for(CoordSys *cs = this->cs; cs; cs = cs->parent){
+	for(CoordSys *cs = wf->cs; cs; cs = cs->parent){
 		if(cs->toAstrobj()){
 			a = cs->toAstrobj();
 			break;
@@ -425,6 +427,61 @@ void SurfaceWar::draw(WarDraw *wd){
 		if(a)
 			break;
 	}
+	return a;
+}
+
+void SurfaceWar::anim(double dt){
+	Astrobj *a = findNearestAstrobj(this);
+	st::anim(dt);
+	if(!a)
+		return;
+	RoundAstrobj *ra = dynamic_cast<RoundAstrobj*>(a);
+
+	if(ra && ra->hasTerrainMap()){
+		Vec3d apos = cs->tocs(vec3_000, a);
+		for(auto e : el){
+			Vec3d delta = e->pos - apos;
+			double height = delta.len() - a->rad;
+			if(height < 1e6 * 1e6){
+				if(patches.empty()){
+					Vec3d dir = delta.norm();
+					Quatd rot = Quatd::direction(dir);
+					Quatd arot = cs->tocsq(a) * rot;
+					const double patchScale = 0.125e-4;
+					patches.push_back(HeightMapData());
+					HeightMapData &heightmap = patches.back();
+					btScalar minHeight = 0, maxHeight = 0;
+					for(int iy = 0; iy < patchSize; iy++){
+						for(int ix = 0; ix < patchSize; ix++){
+							Vec3d localPos((ix - patchSize / 2. + .5) * patchScale, (iy - patchSize / 2. + .5) * patchScale, 0);
+							localPos[2] = sqrt(1. - localPos[0] * localPos[0] + localPos[1] * localPos[1]);
+							double len = localPos.len();
+							float height = (ra->getTerrainHeight(arot.trans(localPos)) - 1.) * ra->rad;
+							heightmap.heights[iy][ix] = height;
+							if(height < minHeight)
+								minHeight = height;
+							if(maxHeight < height)
+								maxHeight = height;
+						}
+					}
+					btHeightfieldTerrainShape *shape = new btHeightfieldTerrainShape(patchSize, patchSize, heightmap.heights, 1., minHeight, maxHeight, 2, PHY_FLOAT, false);
+					shape->setLocalScaling(btVector3(a->rad * patchScale, a->rad * patchScale, 1));
+					btRigidBody *rbd = new btRigidBody(0, nullptr, shape);
+					btTransform tr(btqc(rot), btvc(apos + dir * a->rad + rot.trans(Vec3d(0, 0, (maxHeight + minHeight) / 2))));
+					rbd->setWorldTransform(tr);
+					bdw->addRigidBody(rbd);
+				}
+			}
+		}
+	}
+}
+
+void SurfaceWar::draw(WarDraw *wd){
+#ifndef DEDICATED
+	// Draw planets or asteroids in this z-slice.
+	// Search RoundAstrobjs from ancestors and direct children of
+	// ancestors.
+	Astrobj *a = findNearestAstrobj(this);
 
 	if(a){
 		RoundAstrobj *ra = dynamic_cast<RoundAstrobj*>(a);

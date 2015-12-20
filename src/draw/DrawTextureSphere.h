@@ -29,7 +29,8 @@ protected:
 	const DTS::Texture *m_texture;
 	const DTS::TextureList *m_textures;
 	double m_rad;
-	int m_flags;
+	bool m_lighting; ///< Whether to apply light shading from nearest star
+	bool m_noglobe; ///< Disable drawing of globe when the distance from the camera is so far
 	GLuint m_shader;
 	bool m_drawint;
 	int m_ncuts;
@@ -49,7 +50,10 @@ public:
 		, m_texmat(mat4_u)
 		, m_texture(NULL)
 		, m_textures(NULL)
-		, m_rad(0), m_flags(0), m_shader(0), m_drawint(false)
+		, m_rad(0)
+		, m_lighting(false)
+		, m_noglobe(false)
+		, m_shader(0), m_drawint(false)
 		, m_ncuts(32), m_nfinecuts(256), m_nffinecuts(2048)
 		, m_ring(NULL)
 		, m_ringmin(0.), m_ringmax(0.)
@@ -63,7 +67,8 @@ public:
 	tt &texture(const DTS::Texture &atexture){m_texture = &atexture; return *this;}
 	tt &textures(const std::vector<RoundAstrobj::Texture> &atextures){m_textures = &atextures; return *this;}
 	tt &rad(double a){m_rad = a; return *this;}
-	tt &flags(int a){m_flags = a; return *this;}
+	tt &lighting(bool a){m_lighting = a; return *this;}
+	tt &noglobe(bool a){m_noglobe = a; return *this;}
 	tt &shader(GLuint a){m_shader = a; return *this;}
 	tt &drawint(bool a){m_drawint = a; return *this;}
 	tt &ncuts(int a){m_ncuts = a; m_nfinecuts = a * 8; m_nffinecuts = a * 64; return *this;}

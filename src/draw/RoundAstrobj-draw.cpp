@@ -134,13 +134,13 @@ void RoundAstrobj::draw(const Viewer *vw){
 			if(g_cloud && (cloudTexture.filename.len() || cloudTexture.list)){
 				cloudDraw
 				.oblateness(oblateness)
-				.flags(DTS_LIGHTING)
+				.lighting(true)
 				.texture(cloudTexture)
 				.texmat(cloudRotation().cnj().tomat4())
 				.textures(textures)
 				.shader(cloudShader)
 				.rad(fcloudHeight)
-				.flags(DTS_ALPHA | DTS_NODETAIL | DTS_NOGLOBE)
+				.noglobe(true)
 				.drawint(true)
 				.ncuts(g_tscuts);
 				if(underCloud){
@@ -152,7 +152,7 @@ void RoundAstrobj::draw(const Viewer *vw){
 			}
 			bool ret = DrawTextureSpheroid(this, vw, sunpos)
 				.oblateness(oblateness)
-				.flags(DTS_LIGHTING)
+				.lighting(true)
 				.mat_diffuse(basecolor * brightness)
 				.mat_ambient(basecolor * brightness / 10.)
 				.texture(texture)
@@ -177,7 +177,7 @@ void RoundAstrobj::draw(const Viewer *vw){
 			DrawTextureSphere cloudDraw = DrawTextureSphere(this, vw, sunpos);
 			if(g_cloud && (cloudTexture.filename.len() || cloudTexture.list)){
 				cloudDraw
-				.flags(DTS_LIGHTING)
+				.lighting(true)
 				.texture(cloudTexture)
 				.texmat(cloudRotation().cnj().tomat4())
 				.textures(textures)
@@ -195,7 +195,7 @@ void RoundAstrobj::draw(const Viewer *vw){
 			}
 			auto proc = [&](DrawTextureSphere &ds){
 				return ds
-				.flags(DTS_LIGHTING)
+				.lighting(true)
 				.mat_diffuse(basecolor)
 				.mat_ambient(basecolor / 2.f)
 				.texmat(rot.cnj().tomat4())
@@ -246,7 +246,7 @@ void RoundAstrobj::drawSolid(const Viewer *vw){
 	if(oblateness != 0.){
 		bool ret = DrawTextureSpheroid(this, vw, sunpos)
 			.oblateness(oblateness)
-			.flags(DTS_LIGHTING)
+			.lighting(true)
 			.mat_diffuse(basecolor * brightness)
 			.mat_ambient(basecolor * brightness / 10.)
 			.texture(texture)
@@ -267,7 +267,7 @@ void RoundAstrobj::drawSolid(const Viewer *vw){
 	else{
 		auto proc = [&](DrawTextureSphere &ds){
 			return ds
-			.flags(DTS_LIGHTING)
+			.lighting(true)
 			.mat_diffuse(basecolor)
 			.mat_ambient(basecolor / 2.f)
 			.texture(texture)

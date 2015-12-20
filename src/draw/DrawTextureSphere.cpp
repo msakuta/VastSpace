@@ -748,7 +748,7 @@ bool DrawTextureSphere::draw(){
 
 	setupLight();
 
-	if(m_flags & DTS_ADD){ // This is not really a flag for the texture
+	if(m_texture && m_texture->flags & DTS_ADD){
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE);
 	}
@@ -907,7 +907,7 @@ bool DrawTextureSphere::draw(){
 
 void DrawTextureSphere::setupLight(){
 	bool texenable = m_texture && m_texture->list && m_texmat;
-	if(m_flags & DTS_LIGHTING){
+	if(m_lighting){
 		const GLfloat mat_specular[] = {0., 0., 0., 1.};
 		const GLfloat mat_shininess[] = { 50.0 };
 		const GLfloat color[] = {1.f, 1.f, 1.f, 1.f}, amb[] = {g_astro_ambient, g_astro_ambient, g_astro_ambient, 1.f};
@@ -948,7 +948,7 @@ bool DrawTextureSphere::drawSimple(){
 	double zoom = !vw->relative || vw->velolen == 0. ? 1. : LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) /*(1. + (LIGHT_SPEED / (LIGHT_SPEED - vw->velolen) - 1.) * spe * spe)*/;
 	scale *= zoom;
 	if(0. < scale && scale < 10.){
-		if(!(m_flags & DTS_NOGLOBE)){
+		if(!m_noglobe){
 			GLubyte color[4], dark[4];
 			color[0] = GLubyte(m_mat_diffuse[0] * 255);
 			color[1] = GLubyte(m_mat_diffuse[1] * 255);
@@ -972,7 +972,6 @@ bool DrawTextureSpheroid::draw(){
 	const Vec4f &mat_ambient = m_mat_ambient;
 	const Mat4d &texmat = m_texmat;
 	double &rad = m_rad;
-	int flags = m_flags;
 	GLuint shader = m_shader;
 //	const Quatd *texrot;
 	double &oblateness = m_oblateness;
@@ -995,7 +994,7 @@ bool DrawTextureSpheroid::draw(){
 	do if(m_texture && !m_texture->list && m_texture->filename){
 //		timemeas_t tm;
 //		TimeMeasStart(&tm);
-		m_texture->list = ProjectSphereCubeImage(m_texture->filename, m_flags);
+		m_texture->list = ProjectSphereCubeImage(m_texture->filename, m_texture->flags);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 

@@ -240,7 +240,7 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 		if(1 < argc){
 			cloudTexture.uniformname = "texture";
 			cloudTexture.filename = argv[1];
-			cloudTexture.flags = DTS_ALPHA | DTS_NODETAIL | DTS_NOGLOBE;
+			cloudTexture.flags = DTS_ALPHA | DTS_NODETAIL;
 		}
 		return true;
 	}

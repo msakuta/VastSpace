@@ -574,10 +574,10 @@ void DrawTextureSphere::useShader(){
 
 		glUseProgram(shader);
 
-		if(0 <= locs.textureLoc && ptexlist){
+		if(0 <= locs.textureLoc && m_texture){
 			glUniform1i(locs.textureLoc, 0);
 		}
-		if(0 <= locs.noise3DLoc && ptexlist){
+		if(0 <= locs.noise3DLoc && m_texture){
 			glActiveTextureARB(GL_TEXTURE2_ARB);
 			glUniform1i(locs.noise3DLoc, 2);
 			glBindTexture(GL_TEXTURE_3D, noise3tex);
@@ -678,14 +678,11 @@ bool DrawTextureSphere::draw(){
 	const Vec4f &mat_diffuse = m_mat_diffuse;
 	const Vec4f &mat_ambient = m_mat_ambient;
 	const Mat4d &texmat = m_texmat;
-//	GLuint texlist = *ptexlist;
-	const char *texname = m_texname;
 	double &rad = m_rad;
-	int flags = m_flags;
 	GLuint shader = m_shader;
 
 	int i, j, jstart, fine;
-	bool texenable = ptexlist && *ptexlist && texmat;
+	bool texenable = m_texture && m_texture->list && texmat;
 	normvertex_params params;
 	Mat4d rot;
 	
@@ -697,12 +694,12 @@ bool DrawTextureSphere::draw(){
 		return true;
 
 	// Allocate surface texture
-	do if(ptexlist && !*ptexlist && texname && texname[0]){
+	do if(m_texture && !m_texture->list && m_texture->filename){
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 //		texlist = *ptexlist = ProjectSphereJpg(texname);
-		*ptexlist = ProjectSphereCubeImage(texname, flags);
-		CmdPrintf("DrawTextureSphere::draw(\"%s\") projection: %lg", texname, TimeMeasLap(&tm));
+		m_texture->list = ProjectSphereCubeImage(m_texture->filename, m_texture->flags);
+		CmdPrintf("DrawTextureSphere::draw(\"%s\") projection: %lg", m_texture->filename, TimeMeasLap(&tm));
 	} while(0);
 
 	double (*cuts)[2] = CircleCuts(m_ncuts);
@@ -725,7 +722,7 @@ bool DrawTextureSphere::draw(){
 	glColor3ub(255,255,255);*/
 
 	if(texenable){
-		glCallList(*ptexlist);
+		glCallList(m_texture->list);
 		glActiveTextureARB(GL_TEXTURE1_ARB);
 		glDisable(GL_TEXTURE_2D);
 		glMultiTexCoord2fARB(GL_TEXTURE1_ARB, 0., 0.);
@@ -751,7 +748,7 @@ bool DrawTextureSphere::draw(){
 
 	setupLight();
 
-	if(flags & DTS_ADD){
+	if(m_flags & DTS_ADD){ // This is not really a flag for the texture
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE);
 	}
@@ -909,7 +906,7 @@ bool DrawTextureSphere::draw(){
 }
 
 void DrawTextureSphere::setupLight(){
-	bool texenable = ptexlist && *ptexlist && m_texmat;
+	bool texenable = m_texture && m_texture->list && m_texmat;
 	if(m_flags & DTS_LIGHTING){
 		const GLfloat mat_specular[] = {0., 0., 0., 1.};
 		const GLfloat mat_shininess[] = { 50.0 };
@@ -974,8 +971,6 @@ bool DrawTextureSpheroid::draw(){
 	const Vec4f &mat_diffuse = m_mat_diffuse;
 	const Vec4f &mat_ambient = m_mat_ambient;
 	const Mat4d &texmat = m_texmat;
-	GLuint texlist = *ptexlist;
-	const char *texname = m_texname;
 	double &rad = m_rad;
 	int flags = m_flags;
 	GLuint shader = m_shader;
@@ -985,7 +980,7 @@ bool DrawTextureSpheroid::draw(){
 	double ringminrad = m_ringmin;
 	double ringmaxrad = m_ringmax;
 
-	bool texenable = !!texlist;
+	bool texenable = !!m_texture;
 	normvertex_params params;
 	Mat4d &mat = params.mat;
 	Mat4d rot;
@@ -997,10 +992,10 @@ bool DrawTextureSpheroid::draw(){
 	if(drawSimple())
 		return true;
 
-	do if(!texlist && texname){
+	do if(m_texture && !m_texture->list && m_texture->filename){
 //		timemeas_t tm;
 //		TimeMeasStart(&tm);
-		texlist = *ptexlist = ProjectSphereCubeImage(texname, m_flags);
+		m_texture->list = ProjectSphereCubeImage(m_texture->filename, m_flags);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	} while(0);
 
@@ -1012,7 +1007,7 @@ bool DrawTextureSpheroid::draw(){
 	glDisable(GL_BLEND);
 
 	if(texenable){
-		glCallList(texlist);
+		glCallList(m_texture->list);
 	}
 	else
 		glDisable(GL_TEXTURE_2D);
@@ -1112,17 +1107,17 @@ bool DrawTextureCubeEx::draw(){
 
 	glEnable(GL_DEPTH_TEST);
 
-	bool texenable = nullptr != ptexlist;
+	bool texenable = nullptr != m_texture;
 
-	if(!*ptexlist && m_texname && m_texname[0]){
+	if(m_texture && !m_texture->list && m_texture->filename){
 //		timemeas_t tm;
 //		TimeMeasStart(&tm);
-		*ptexlist = ProjectSphereCubeImage(m_texname, m_flags);
+		m_texture->list = ProjectSphereCubeImage(m_texture->filename, m_texture->flags);
 //		CmdPrintf("%s draw: %lg", texname, TimeMeasLap(&tm));
 	};
 
 	if(texenable){
-		glCallList(*ptexlist);
+		glCallList(m_texture->list);
 	}
 	else
 		glDisable(GL_TEXTURE_2D);

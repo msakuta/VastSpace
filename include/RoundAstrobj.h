@@ -31,9 +31,7 @@ public:
 	typedef std::vector<String> StringList;
 	typedef DTS::Texture Texture;
 protected:
-	String cloudtexname;
 	String ringtexname, ringbacktexname;
-	unsigned int texlist, cloudtexlist; // should not really be here
 	double ringmin, ringmax, ringthick;
 	double atmodensity;
 	double oblateness;
@@ -105,8 +103,10 @@ protected:
 	virtual void updateAbsMag(double dt); ///< Update absolute magnitude of this celestial body by other light sources
 	static double getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight, const DTS::TerrainMods &tmods);
 private:
-	Texture texture; /// Base color texture, should exist for all celestial bodies
+	/// The first element of this vector is the base color texture, should exist for all celestial bodies
+	Texture texture;
 	std::vector<Texture> textures;
+	Texture cloudTexture;
 #ifndef DEDICATED
 	BITMAPINFO *heightmap[6];
 #endif

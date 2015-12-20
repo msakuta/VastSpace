@@ -28,8 +28,6 @@ using namespace DTS;
 RoundAstrobj::RoundAstrobj(Game *game) :
 	st(game),
 #ifndef DEDICATED
-	texlist(0),
-	cloudtexlist(0),
 	shader(0),
 	shaderGiveup(false),
 	cloudShader(0),
@@ -67,7 +65,6 @@ RoundAstrobj::RoundAstrobj(const char *name, CoordSys *cs) : st(name, cs),
 	terrainNoiseEnable(false),
 	tmods(terrainModMap[id])
 {
-	texlist = cloudtexlist = 0;
 	ringmin = ringmax = ringthick = 0;
 	atmodensity = 0.;
 #ifndef DEDICATED
@@ -146,7 +143,7 @@ void RoundAstrobj::serialize(SerializeContext &sc){
 	sc.o << textures;
 	sc.o << vertexShaderName;
 	sc.o << fragmentShaderName;
-	sc.o << cloudtexname;
+	sc.o << cloudTexture;
 	sc.o << cloudVertexShaderName;
 	sc.o << cloudFragmentShaderName;
 	sc.o << cloudHeight;
@@ -178,7 +175,7 @@ void RoundAstrobj::unserialize(UnserializeContext &sc){
 	sc.i >> textures;
 	sc.i >> vertexShaderName;
 	sc.i >> fragmentShaderName;
-	sc.i >> cloudtexname;
+	sc.i >> cloudTexture;
 	sc.i >> cloudVertexShaderName;
 	sc.i >> cloudFragmentShaderName;
 	sc.i >> cloudHeight;
@@ -232,15 +229,18 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 	}
 	else if(!strcmp(s, "texture")){
 		if(1 < argc){
-			texture.uniformname = "texture";
-			texture.filename = argv[1];
-			textureFlags(texture, 2);
+			Texture &tex = texture;
+			tex.uniformname = "texture";
+			tex.filename = argv[1];
+			textureFlags(tex, 2);
 		}
 		return true;
 	}
 	else if(!strcmp(s, "cloudtexture")){
 		if(1 < argc){
-			this->cloudtexname = argv[1];
+			cloudTexture.uniformname = "texture";
+			cloudTexture.filename = argv[1];
+			cloudTexture.flags = DTS_ALPHA | DTS_NODETAIL | DTS_NOGLOBE;
 		}
 		return true;
 	}

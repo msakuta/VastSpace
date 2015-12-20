@@ -131,13 +131,12 @@ void RoundAstrobj::draw(const Viewer *vw){
 		bool underCloud = (pos - vw->pos).len() < fcloudHeight;
 		if(oblateness != 0.){
 			DrawTextureSpheroid cloudDraw = DrawTextureSpheroid(this, vw, sunpos);
-			if(g_cloud && (cloudtexname.len() || cloudtexlist)){
+			if(g_cloud && (cloudTexture.filename.len() || cloudTexture.list)){
 				cloudDraw
 				.oblateness(oblateness)
 				.flags(DTS_LIGHTING)
-				.texlist(&cloudtexlist)
+				.texture(cloudTexture)
 				.texmat(cloudRotation().cnj().tomat4())
-				.texname(cloudtexname)
 				.textures(textures)
 				.shader(cloudShader)
 				.rad(fcloudHeight)
@@ -146,21 +145,20 @@ void RoundAstrobj::draw(const Viewer *vw){
 				.ncuts(g_tscuts);
 				if(underCloud){
 					bool ret = cloudDraw.draw();
-					if(!ret && *cloudtexname){
-						cloudtexname = "";
+					if(!ret && cloudTexture.filename){
+						cloudTexture.filename = ""; // Give up
 					}
 				}
 			}
 			bool ret = DrawTextureSpheroid(this, vw, sunpos)
 				.oblateness(oblateness)
-				.flags(DTS_LIGHTING | texture.flags)
+				.flags(DTS_LIGHTING)
 				.mat_diffuse(basecolor * brightness)
 				.mat_ambient(basecolor * brightness / 10.)
-				.texlist(&texlist)
+				.texture(texture)
 				.texmat(mat4_u)
 				.textures(textures)
 				.shader(shader)
-				.texname(texture.filename)
 				.rad(rad)
 				.ring(&astroRing)
 				.ringRange(ringmin, ringmax)
@@ -168,43 +166,41 @@ void RoundAstrobj::draw(const Viewer *vw){
 				.noisePos(noisePos.cast<float>())
 				.lightingStar(param.results)
 				.draw();
-			if(!ret && *texture.filename){
-				texture.filename = "";
-			}
-			if(g_cloud && (cloudtexname.len() || cloudtexlist) && !underCloud){
+			if(g_cloud && (cloudTexture.filename.len() || cloudTexture.list) && !underCloud){
 				bool ret = cloudDraw.drawint(false).draw();
-				if(!ret && *cloudtexname){
-					cloudtexname = "";
+				if(!ret && cloudTexture.filename){
+					cloudTexture.filename = ""; // Give up
 				}
 			}
 		}
 		else{
 			DrawTextureSphere cloudDraw = DrawTextureSphere(this, vw, sunpos);
-			if(g_cloud && (cloudtexname.len() || cloudtexlist)){
+			if(g_cloud && (cloudTexture.filename.len() || cloudTexture.list)){
 				cloudDraw
-				.texlist(&cloudtexlist)
+				.flags(DTS_LIGHTING)
+				.texture(cloudTexture)
 				.texmat(cloudRotation().cnj().tomat4())
-				.texname(cloudtexname)
 				.textures(textures)
 				.shader(cloudShader)
 				.rad(fcloudHeight)
-				.flags(DTS_LIGHTING | DTS_ALPHA | DTS_NODETAIL | DTS_NOGLOBE)
 				.lightingStar(param.results)
 				.drawint(true)
 				.ncuts(g_tscuts);
 				if(underCloud){
 					bool ret = cloudDraw.draw();
-					if(!ret && *cloudtexname){
-						cloudtexname = "";
+					if(!ret && cloudTexture.filename){
+						cloudTexture.filename = ""; // Give up
 					}
 				}
 			}
 			auto proc = [&](DrawTextureSphere &ds){
 				return ds
-				.flags(DTS_LIGHTING | texture.flags)
+				.flags(DTS_LIGHTING)
 				.mat_diffuse(basecolor)
 				.mat_ambient(basecolor / 2.f)
-				.texlist(&texlist).texmat(rot.cnj().tomat4()).texname(texture.filename).shader(shader)
+				.texmat(rot.cnj().tomat4())
+				.texture(texture)
+				.shader(shader)
 				.textures(textures)
 				.ncuts(g_tscuts)
 				.ring(&astroRing)
@@ -222,13 +218,10 @@ void RoundAstrobj::draw(const Viewer *vw){
 				.noiseOctaves(terrainNoiseOctaves)
 				.noiseBaseLevel(terrainNoiseBaseLevel))
 				: proc(DrawTextureSphere(this, vw, sunpos));
-			if(!ret && *texture.filename){
-				texture.filename = "";
-			}
-			if(g_cloud && (cloudtexname.len() || cloudtexlist) && !underCloud){
+			if(g_cloud && (cloudTexture.filename.len() || cloudTexture.list) && !underCloud){
 				bool ret = cloudDraw.drawint(false).draw();
-				if(!ret && *cloudtexname){
-					cloudtexname = "";
+				if(!ret && cloudTexture.filename){
+					cloudTexture.filename = ""; // Give up
 				}
 			}
 		}
@@ -256,11 +249,10 @@ void RoundAstrobj::drawSolid(const Viewer *vw){
 			.flags(DTS_LIGHTING)
 			.mat_diffuse(basecolor * brightness)
 			.mat_ambient(basecolor * brightness / 10.)
-			.texlist(&texlist)
+			.texture(texture)
 			.texmat(mat4_u)
 			.textures(textures)
 			.shader(shader)
-			.texname(texture.filename)
 			.rad(rad)
 			.ring(&astroRing)
 			.ringRange(ringmin, ringmax)
@@ -268,8 +260,8 @@ void RoundAstrobj::drawSolid(const Viewer *vw){
 			.noisePos(noisePos.cast<float>())
 			.lightingStar(param.results)
 			.draw();
-		if(!ret && *texture.filename){
-			texture.filename = "";
+		if(!ret && textures.front().filename){
+			textures.front().filename = "";
 		}
 	}
 	else{
@@ -278,7 +270,9 @@ void RoundAstrobj::drawSolid(const Viewer *vw){
 			.flags(DTS_LIGHTING)
 			.mat_diffuse(basecolor)
 			.mat_ambient(basecolor / 2.f)
-			.texlist(&texlist).texmat(rot.cnj().tomat4()).texname(texture.filename).shader(shader)
+			.texture(texture)
+			.texmat(rot.cnj().tomat4())
+			.shader(shader)
 			.textures(textures)
 			.ncuts(g_tscuts)
 			.ring(&astroRing)

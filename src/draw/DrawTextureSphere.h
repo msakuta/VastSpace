@@ -25,9 +25,8 @@ protected:
 	std::vector<FindBrightestAstrobj::ResultSet> lightingStars;
 	Vec4f m_mat_diffuse;
 	Vec4f m_mat_ambient;
-	GLuint *ptexlist;
 	Mat4d m_texmat;
-	const char *m_texname;
+	const DTS::Texture *m_texture;
 	const DTS::TextureList *m_textures;
 	double m_rad;
 	int m_flags;
@@ -47,8 +46,8 @@ public:
 	tt(Astrobj *a, const Viewer *vw, const Vec3d &sunpos) : a(a), vw(vw), sunpos(sunpos)
 		, apos(vw->cs->tocs(a->pos, a->parent))
 		, m_mat_diffuse(1,1,1,1), m_mat_ambient(.5, .5, .5, 1.)
-		, ptexlist(NULL)
 		, m_texmat(mat4_u)
+		, m_texture(NULL)
 		, m_textures(NULL)
 		, m_rad(0), m_flags(0), m_shader(0), m_drawint(false)
 		, m_ncuts(32), m_nfinecuts(256), m_nffinecuts(2048)
@@ -60,9 +59,8 @@ public:
 	tt &viewer(const Viewer *vw){this->vw = vw; return *this;}
 	tt &mat_diffuse(const Vec4f &a){this->m_mat_diffuse = a; return *this;}
 	tt &mat_ambient(const Vec4f &a){this->m_mat_ambient = a; return *this;}
-	tt &texlist(GLuint *a){ptexlist = a; return *this;}
 	tt &texmat(const Mat4d &a){m_texmat = a; return *this;}
-	tt &texname(const char *a){m_texname = a; return *this;}
+	tt &texture(const DTS::Texture &atexture){m_texture = &atexture; return *this;}
 	tt &textures(const std::vector<RoundAstrobj::Texture> &atextures){m_textures = &atextures; return *this;}
 	tt &rad(double a){m_rad = a; return *this;}
 	tt &flags(int a){m_flags = a; return *this;}

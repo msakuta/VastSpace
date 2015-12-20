@@ -1578,10 +1578,11 @@ void Star::draw(const Viewer *vw){
 		return;
 	}*/
 
-	static GLuint texlist = 0;
+	// All stars share the same texture for now
+	static DTS::Texture texture;
+	texture.filename = "textures/Star.jpg";
 	DrawTextureSphere(this, vw, vec3_000)
-		.texlist(&texlist)
-		.texname("textures/Star.jpg")
+		.texture(texture)
 		.draw();
 	if(/*!((struct sun*)a)->aircorona !(flags & AO_DRAWAIRCORONA)*/1){
 		Astrobj *abest = NULL;

@@ -275,6 +275,7 @@ register_console_command("chart", function(...){
 	chart.addSeries("sampled", 3, "lodCount4", [0.5,0,1]);
 	chart.addSeries("sampled", 3, "lodCount5", [1,1,0.5]);
 	chart.addSeries("sampled", 3, "lodCount6", [0.5,1,1]);
+	chart.addSeries("sampled", 3, "lodCountAll", [1,0.75,1]);
 	chart.addSeries("sampled", 3, "lodPatchWaits", [0.5,1,1]);
 
 	// Following charts are only available in debug build.

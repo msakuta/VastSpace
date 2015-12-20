@@ -1198,8 +1198,12 @@ bool DrawTextureCubeEx::draw(){
 #if PROFILE_CUBEEX
 		if(2 <= vw->zslice){
 			GLWchart::addSampleToCharts("dtstime", TimeMeasLap(&tm));
-			for(int i = 0; i < numof(lodCounts); i++)
+			int accum = 0;
+			for(int i = 0; i < numof(lodCounts); i++){
 				GLWchart::addSampleToCharts(gltestp::dstring("lodCount") << i, lodCounts[i]);
+				accum += lodCounts[i];
+			}
+			GLWchart::addSampleToCharts("lodCountAll", accum);
 			GLWchart::addSampleToCharts("lodPatchWaits", lodPatchWaits);
 		}
 #endif

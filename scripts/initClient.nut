@@ -229,6 +229,35 @@ register_console_command("viewdist_zoom", function(...){
 	player.viewdist *= vargv[0].tofloat();
 });
 
+// Ported from astrobj.cpp
+local function hsv2rgb(hsv){
+	local hue = hsv[0];
+	local sat = hsv[1];
+	local bri = hsv[2];
+	local hi = floor(hue * 6.).tointeger();
+	local f = hue * 6. - hi;
+	local p = bri * (1. - sat);
+	local q = bri * (1. - f * sat);
+	local t = bri * (1. - (1. - f) * sat);
+	local r,g,b;
+	switch(hi){
+		case 0: r = bri, g = t, b = q; break;
+		case 1: r = q, g = bri, b = p; break;
+		case 2: r = p, g = bri, b = t; break;
+		case 3: r = p, g = q, b = bri; break;
+		case 4: r = t, g = p, b = bri; break;
+		case 5:
+		case 6: r = bri, g = p, b = q; break;
+		default: r = g = b = bri;
+	}
+	return [r, g, b];
+}
+
+// Returns rainbow color by given phase in range [0,1]
+function rainbow(phase){
+	return hsv2rgb([phase, 1, 1]);
+}
+
 register_console_command("chart", function(...){
 	if(isWindow("chart")){
 		chart.collapsed = !chart.collapsed;
@@ -268,13 +297,8 @@ register_console_command("chart", function(...){
 	chart.addSeries("sampled", 2, "dtstime", [1,0,1]);
 	chart.addSeries("sampled", 2, "dtstime1", [0.5,0,1]);
 	chart.addSeries("sampled", 2, "dtstime2", [1,0.5,1]);
-	chart.addSeries("sampled", 3, "lodCount0", [0.5,0.5,1]);
-	chart.addSeries("sampled", 3, "lodCount1", [1,0.5,0.5]);
-	chart.addSeries("sampled", 3, "lodCount2", [0.5,1,0.5]);
-	chart.addSeries("sampled", 3, "lodCount3", [0.5,0,0.5]);
-	chart.addSeries("sampled", 3, "lodCount4", [0.5,0,1]);
-	chart.addSeries("sampled", 3, "lodCount5", [1,1,0.5]);
-	chart.addSeries("sampled", 3, "lodCount6", [0.5,1,1]);
+	for(local i = 0; i < 7; i++)
+		chart.addSeries("sampled", 3, "lodCount" + i, rainbow(i / 7.));
 	chart.addSeries("sampled", 3, "lodCountAll", [1,0.75,1]);
 	chart.addSeries("sampled", 3, "lodPatchWaits", [0.5,1,1]);
 

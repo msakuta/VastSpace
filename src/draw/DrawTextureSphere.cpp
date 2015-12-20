@@ -1624,10 +1624,10 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 						for(int npy = 0; npy < patchRatio; npy++){
 							bufs.subPatchIdx[npx][npy] = bd.indices.size();
 
-							const int ixBegin = px * divides / lodPatchSize + npx * divides / nextPatchSize;
-							const int ixEnd = px * divides / lodPatchSize + (npx + 1) * divides / nextPatchSize;
-							const int iyBegin = py * divides / lodPatchSize + npy * divides / nextPatchSize;
-							const int iyEnd = py * divides / lodPatchSize + (npy + 1) * divides / nextPatchSize;
+							const int ixBegin = (double)px * divides / lodPatchSize + (double)npx * divides / nextPatchSize;
+							const int ixEnd = (double)px * divides / lodPatchSize + (double)(npx + 1) * divides / nextPatchSize;
+							const int iyBegin = (double)py * divides / lodPatchSize + (double)npy * divides / nextPatchSize;
+							const int iyEnd = (double)py * divides / lodPatchSize + (double)(npy + 1) * divides / nextPatchSize;
 
 							// This function is asynchoronous, so using this object to
 							// refer to parameters is invalid.  Capturing parameters by

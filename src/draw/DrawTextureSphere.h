@@ -139,7 +139,7 @@ public:
 	/// Sets Z buffering mode
 	tt &zbufmode(bool v){m_zbufmode = v; return *this;}
 
-	static const int maxLods = 7;
+	static const int maxLods = 10;
 	static const int lodPatchSize = 1;
 	static const int lodPatchSize2 = lodPatchSize * lodPatchSize;
 	static const int maxPatchRatio = 4;

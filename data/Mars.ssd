@@ -29,7 +29,7 @@ coordsys Orbit marss{
 		terrainNoiseEnable true
 		terrainNoiseLODs 7
 		terrainNoiseHeight 3.
-		terrainNoisePersistence 0.6
+		terrainNoisePersistence 0.8
 		terrainNoiseOctaves 10
 		terrainNoiseBaseLevel 5
 		terrainNoiseLODRange 3.

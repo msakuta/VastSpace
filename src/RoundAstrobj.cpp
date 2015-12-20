@@ -480,6 +480,8 @@ static double sfnoise3(const Vec3d &basepos, int octaves, double persistence){
 }
 
 double RoundAstrobj::getTerrainHeightInt(const Vec3d &basepos, int octaves, double persistence, double aheight, const TerrainMods &tmods){
+	// Modulate persistence itself with another simplex noise to obtain variation in terrain
+	persistence *= (sfnoise3(basepos, octaves, persistence) + 1.) / 2.;
 
 	// Apply TerrainMods
 	for(auto it : tmods){

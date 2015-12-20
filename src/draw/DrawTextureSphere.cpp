@@ -1132,7 +1132,7 @@ bool DrawTextureCubeEx::draw(){
 		if(&a->getStatic() == &RoundAstrobj::classRegister)
 			height *= static_cast<RoundAstrobj*>(a)->getTerrainHeight(a->tocs(vw->pos, vw->cs).norm());
 		// Can get close as one meter
-		double nearest = std::max(1e-3, ((apos - vw->pos).len() - (height + 0.1)) / 2.);
+		double nearest = std::max(1., ((apos - vw->pos).len() - (height + 0.1)) / 2.);
 		double farthest = (apos - vw->pos).len() + (1.5 * m_rad + 2. * m_noiseHeight);
 
 		glMatrixMode(GL_PROJECTION);

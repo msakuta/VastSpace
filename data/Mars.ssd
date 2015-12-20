@@ -23,15 +23,16 @@ coordsys Orbit marss{
 		spherehit
 		atmosphere_height 5.5
 		atmosphere_color 1 .3 .1
-		atmosphere_dawn .1 .51 1 
+		atmosphere_dawn .1 .51 1
 		albedo 0.250
 
 		terrainNoiseEnable true
-		terrainNoiseLODs 5
+		terrainNoiseLODs 7
 		terrainNoiseHeight 3.
-		terrainNoisePersistence 0.75
-		terrainNoiseOctaves 8
+		terrainNoisePersistence 0.6
+		terrainNoiseOctaves 10
 		terrainNoiseBaseLevel 5
+		terrainNoiseLODRange 3.
 		vertexshader "shaders/flatplanet.vs"
 		fragmentshader "shaders/flatplanet.fs"
 

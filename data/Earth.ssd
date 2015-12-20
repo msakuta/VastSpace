@@ -24,10 +24,10 @@ coordsys Orbit earth{
 		extexture "lightstexture" textures/earth_lights.png
 		terrainNoiseEnable true
 		terrainNoiseLODRange 3.
-		terrainNoiseLODs 6
-		terrainNoiseHeight 8.
-		terrainNoisePersistence 0.75
-		terrainNoiseOctaves 8
+		terrainNoiseLODs 7
+		terrainNoiseHeight 15.
+		terrainNoisePersistence 0.60
+		terrainNoiseOctaves 10
 		terrainNoiseBaseLevel 5
 #		vertexshader "shaders/flatplanet.vs"
 #		fragmentshader "shaders/flatplanet.fs"

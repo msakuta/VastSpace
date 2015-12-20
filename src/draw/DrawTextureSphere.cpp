@@ -1196,11 +1196,12 @@ bool DrawTextureCubeEx::draw(){
 		}
 
 #if PROFILE_CUBEEX
-		GLWchart::addSampleToCharts("dtstime", TimeMeasLap(&tm));
-		GLWchart::addSampleToCharts("lodCount0", lodCounts[0]);
-		GLWchart::addSampleToCharts("lodCount1", lodCounts[1]);
-		GLWchart::addSampleToCharts("lodCount2", lodCounts[2]);
-		GLWchart::addSampleToCharts("lodPatchWaits", lodPatchWaits);
+		if(2 <= vw->zslice){
+			GLWchart::addSampleToCharts("dtstime", TimeMeasLap(&tm));
+			for(int i = 0; i < numof(lodCounts); i++)
+				GLWchart::addSampleToCharts(gltestp::dstring("lodCount") << i, lodCounts[i]);
+			GLWchart::addSampleToCharts("lodPatchWaits", lodPatchWaits);
+		}
 #endif
 
 		glDisableClientState(GL_VERTEX_ARRAY);
@@ -1298,6 +1299,10 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 						if(!patchDetail(ix, iy) && basex < maxPatchRatio && basey < maxPatchRatio && !m_zbufmode){
 							drawPatchElements(it2->second, it2->second.subPatchCount[basex][basey],
 								it2->second.subPatchIdx[basex][basey], false);
+#if PROFILE_CUBEEX
+							if(lod+1 < numof(lodCounts))
+								lodCounts[lod+1]++;
+#endif
 						}
 					}
 				}
@@ -1314,7 +1319,8 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 			drawPatchElements(it2->second, it2->second.count);
 #if PROFILE_CUBEEX
 			GLWchart::addSampleToCharts(gltestp::dstring("dtstime") << lod, TimeMeasLap(&tms));
-			lodCounts[1]++;
+			if(lod+1 < numof(lodCounts))
+				lodCounts[lod+1]++;
 #endif
 			drawn = true;
 		}

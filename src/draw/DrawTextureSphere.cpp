@@ -1080,7 +1080,7 @@ int DrawTextureCubeEx::getPatchSize(int lod){
 }
 
 int DrawTextureCubeEx::getDivision(int lod){
-	return 32 << (2 * (lod + 1));
+	return 8 << (2 * (lod + 1));
 }
 
 #define PROFILE_CUBEEX 1

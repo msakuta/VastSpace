@@ -158,7 +158,7 @@ public:
 	void draw(wardraw_t *)override;
 	void drawCockpit(WarDraw *)override;
 	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const override;
-	double getHitRadius()const{return 0.02;}
+	double getHitRadius()const{return 5.;}
 	double getMaxHealth()const override{return maxHealthValue;}
 
 protected:

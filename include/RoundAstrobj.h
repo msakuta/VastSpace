@@ -99,7 +99,8 @@ public:
 	/// reference counter scheme to delete finished objects.
 	static DTS::TerrainModMap terrainModMap;
 
-	bool hasTerrainMap()const{return heightmap[0];}
+	bool isLoadedTerrainMap()const{return heightmap[0];}
+	bool hasTerrainMap()const;
 
 protected:
 	virtual void updateAbsMag(double dt); ///< Update absolute magnitude of this celestial body by other light sources

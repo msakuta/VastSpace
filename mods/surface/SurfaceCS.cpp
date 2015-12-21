@@ -454,7 +454,7 @@ void SurfaceWar::anim(double dt){
 		return;
 	RoundAstrobj *ra = dynamic_cast<RoundAstrobj*>(a);
 
-	if(ra && ra->hasTerrainMap()){
+	if(ra && (!ra->hasTerrainMap() || ra->isLoadedTerrainMap())){
 		Vec3d apos = cs->tocs(vec3_000, a);
 
 		// Clear the usage flag first

@@ -498,6 +498,14 @@ double RoundAstrobj::getTerrainHeightInt(const Vec3d &basepos, int octaves, doub
 	return ((sfnoise3(basepos, octaves, persistence) + 0.1) * aheight + 1.);
 }
 
+bool RoundAstrobj::hasTerrainMap()const{
+	for(auto it : textures){
+		if(it.flags & DTS_HEIGHTMAP)
+			return true;
+	}
+	return false;
+}
+
 void RoundAstrobj::updateAbsMag(double dt){
 	FindBrightestAstrobj finder(this, vec3_000);
 	finder.threshold = 1e-6;

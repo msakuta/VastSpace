@@ -36,6 +36,8 @@ birds.append(f15);
 local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
 player.chase = tank;
 
+local truck = player.cs.addent("M3Truck", Vec3d(50., 0, 0));
+
 //f15.enemy = tank;
 //a10.enemy = tank;
 

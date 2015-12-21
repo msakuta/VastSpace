@@ -16,6 +16,7 @@ extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
 }
+#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <algorithm>
 
 
@@ -106,6 +107,7 @@ bool LandVehicle::buildBody(){
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
 		rbInfo.m_linearDamping = .05;
 		rbInfo.m_angularDamping = .05;
+		rbInfo.m_friction = 0.8;
 		bbody = new btRigidBody(rbInfo);
 		bbody->setActivationState(DISABLE_DEACTIVATION);
 
@@ -418,47 +420,60 @@ void LandVehicle::anim(double dt){
 		const Vec3d delta(0, -20. - btVelo[1] * dt, 0);
 		const Vec3d start(btPos - delta);
 
-		// If the CoordSys is a SurfaceCS, we can expect ground in negative y direction.
-		// dynamic_cast should be preferred.
-		if(&w->cs->getStatic() == &SurfaceCS::classRegister){
-			SurfaceCS *s = static_cast<SurfaceCS*>(w->cs);
-			RoundAstrobj *cbody = s->getCelBody();
-			if(cbody){
-				Vec3d basepos = cbody->tocs(btPos, s);
-				Vec3d basenorm = basepos.norm();
-				double terrain = cbody->getTerrainHeight(basenorm) * cbody->rad;
-				if(basepos.slen() < terrain * terrain){
-					basepos = basenorm * terrain;
-					Vec3d lpos = s->tocs(basepos, cbody);
-					const double delta = 1e-7; /// Delta for the differenciation to derive gradient
-					Vec3d xh = basenorm.vp(Vec3d(1,0,0));
-					double terrainx = cbody->getTerrainHeight(basenorm + xh * delta) * cbody->rad;
-					Vec3d yh = basenorm.vp(xh);
-					double terrainy = cbody->getTerrainHeight(basenorm + yh * delta) * cbody->rad;
-					Vec3d grad = xh * (terrain - terrainx) / delta / cbody->rad
-						+ yh * (terrain - terrainy) / delta / cbody->rad + basenorm;
-					grad.normin();
-					Vec3d norm = (grad - basenorm * basenorm.sp(grad) + basenorm).norm();
-					worldNormal = btvc(s->tocs(norm, cbody, true));
-					Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
-					setPosition(&lpos, NULL, &newVelo);
-					floorTouch = true;
-				}
-				if(bbody){
-					bbody->applyCentralForce(btvc(w->accel(pos, velo) / bbody->getInvMass()));
-				}
+		if(!m_vehicleRayCaster)
+			m_vehicleRayCaster = new btDefaultVehicleRaycaster(ws->bdw);
+		if(!m_vehicle){
+			// These suspension parameters should be proportional to the vehicle mass
+			// if we want similar behaviors regardless of mass, but they looks like
+			// capped by maxSuspensionForce anyway.
+			btScalar suspensionStiffness = 20.f;
+			btScalar suspensionDamping = 2.3f;
+			btScalar suspensionCompression = 4.4f;
+			btScalar wheelRadius = 0.5f;
+			btScalar wheelWidth = 0.4f;
+			btScalar wheelFriction = 1000;//BT_LARGE_FLOAT;
+			btScalar rollInfluence = 0.1f;//1.0f;
+			btScalar suspensionRestLength(0.6);
+			// The default parameter is optimized for a vehilce weighing 800 kg.
+			m_tuning.m_maxSuspensionForce *= this->mass / 800.;
+			m_vehicle = new btRaycastVehicle(m_tuning,bbody,m_vehicleRayCaster);
+
+			float connectionHeight = 0.25f;
+
+			bool isFrontWheel=true;
+			const double CUBE_HALF_EXTENTS = 1.5; // Should be read from configuration
+
+			btVector3 wheelDirectionCS0(0,-1,0);
+			btVector3 wheelAxleCS(-1,0,0);
+
+			//choose coordinate system
+			m_vehicle->setCoordinateSystem(0,1,2);
+
+			btVector3 connectionPointCS0(CUBE_HALF_EXTENTS-(0.3*wheelWidth),connectionHeight,2*CUBE_HALF_EXTENTS-wheelRadius);
+
+			m_vehicle->addWheel(connectionPointCS0,wheelDirectionCS0,wheelAxleCS,suspensionRestLength,wheelRadius,m_tuning,isFrontWheel);
+			connectionPointCS0 = btVector3(-CUBE_HALF_EXTENTS+(0.3*wheelWidth),connectionHeight,2*CUBE_HALF_EXTENTS-wheelRadius);
+
+			m_vehicle->addWheel(connectionPointCS0,wheelDirectionCS0,wheelAxleCS,suspensionRestLength,wheelRadius,m_tuning,isFrontWheel);
+			connectionPointCS0 = btVector3(-CUBE_HALF_EXTENTS+(0.3*wheelWidth),connectionHeight,-2*CUBE_HALF_EXTENTS+wheelRadius);
+			isFrontWheel = false;
+			m_vehicle->addWheel(connectionPointCS0,wheelDirectionCS0,wheelAxleCS,suspensionRestLength,wheelRadius,m_tuning,isFrontWheel);
+			connectionPointCS0 = btVector3(CUBE_HALF_EXTENTS-(0.3*wheelWidth),connectionHeight,-2*CUBE_HALF_EXTENTS+wheelRadius);
+			m_vehicle->addWheel(connectionPointCS0,wheelDirectionCS0,wheelAxleCS,suspensionRestLength,wheelRadius,m_tuning,isFrontWheel);
+
+			for (int i=0;i<m_vehicle->getNumWheels();i++)
+			{
+				btWheelInfo& wheel = m_vehicle->getWheelInfo(i);
+				wheel.m_suspensionStiffness = suspensionStiffness;
+				wheel.m_wheelsDampingRelaxation = suspensionDamping;
+				wheel.m_wheelsDampingCompression = suspensionCompression;
+				wheel.m_frictionSlip = wheelFriction;
+				wheel.m_rollInfluence = rollInfluence;
 			}
-			else{
-				double height = s->getHeight(btPos[0], btPos[2], &normal);
-				worldNormal = btvc(normal);
-				if(btPos[1] - offset[1] < height){
-					Vec3d dest(btPos[0], height + offset[1], btPos[2]);
-					Vec3d newVelo = (btVelo - worldNormal.dot(btVelo) * worldNormal) * exp(-dt);
-					setPosition(&dest, NULL, &newVelo);
-					floorTouch = true;
-				}
-			}
+			ws->bdw->addVehicle(m_vehicle);
 		}
+
+		bbody->applyCentralForce(btvc(w->accel(pos, velo) / bbody->getInvMass()));
 	}
 
 	if(floorTouch){
@@ -554,55 +569,55 @@ void LandVehicle::anim(double dt){
 		velo += accel * dt;
 	}
 
-	if(floorTouch){
-		if(inputs.press & PL_W){
-			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * getTopSpeed()), worldNormal));
-		}
-		if(inputs.press & PL_S){
-			bbody->applyCentralForce(alignPlane(btvc(rot.trans(Vec3d(0,0,-1)) * mass * -getBackSpeed()), worldNormal));
-		}
 
+	btScalar maxEngineForce = 1. * this->mass;//this should be engine/velocity dependent
+	btScalar maxBreakingForce = 0.1 * this->mass;
+	btScalar gBreakingForce = maxBreakingForce;
+
+	if(m_vehicle){
 		// The behavior of steering handle differs between tracked vehicle and wheeled vehicle.
-		// Notably, backward steering direction is opposite.
 		if(isTracked()){
-			if(inputs.press & PL_A){
-				bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * 0.5 * 1e-2));
-			}
-			if(inputs.press & PL_D){
-				bbody->applyTorque(btvc(rot.trans(Vec3d(0,1,0)) * mass * -0.5 * 1e-2));
-			}
+			btScalar thrustLeft = rangein(!!(inputs.press & PL_W) - !!(inputs.press & PL_A) + !!(inputs.press & PL_D), -1, 1) * -maxEngineForce;
+			btScalar thrustRight = rangein(!!(inputs.press & PL_W) + !!(inputs.press & PL_A) - !!(inputs.press & PL_D), -1, 1) * -maxEngineForce;
+			// Tracked vehicle, like a tank, has very high friction on their wheels that we'd assume
+			// they are braking all the time.  But when we actually command brake, it should have
+			// higher braking force.
+			if(inputs.press & PL_S)
+				gBreakingForce *= 2.;
+			int wheelIndex = 2;
+			m_vehicle->applyEngineForce(thrustLeft,wheelIndex);
+			m_vehicle->setBrake(gBreakingForce,wheelIndex);
+			wheelIndex = 3;
+			m_vehicle->applyEngineForce(thrustRight,wheelIndex);
+			m_vehicle->setBrake(gBreakingForce,wheelIndex);
+			wheelIndex = 0;
+			m_vehicle->applyEngineForce(thrustRight,wheelIndex);
+			m_vehicle->setBrake(gBreakingForce,wheelIndex);
+			wheelIndex = 1;
+			m_vehicle->applyEngineForce(thrustLeft,wheelIndex);
+			m_vehicle->setBrake(gBreakingForce,wheelIndex);
 		}
 		else{
-			// If either one of steering keys is pressed, head to that direction.
-			if(inputs.press & PL_A)
-				steer = approach(steer, -getMaxSteeringAngle(), dt * getMaxSteeringAngle(), 0);
-			if(inputs.press & PL_D)
-				steer = approach(steer, getMaxSteeringAngle(), dt * getMaxSteeringAngle(), 0);
-			if(!(inputs.press & (PL_A | PL_D)))
-				steer = approach(steer, 0., dt * getMaxSteeringAngle(), 0); // Otherwise approach to neutral
+			btScalar gEngineForce = inputs.press & PL_W ? -maxEngineForce : 0.f;
+			btScalar steeringIncrement = 0.04f;
+			btScalar steeringClamp = 0.3f;
+			btScalar gVehicleSteering = inputs.press & PL_A ? -steeringClamp : inputs.press & PL_D ? steeringClamp : 0.f;
+			if(!(inputs.press & PL_S))
+				gBreakingForce = 0.;
+			int wheelIndex = 2;
+			m_vehicle->applyEngineForce(gEngineForce,wheelIndex);
+			m_vehicle->setBrake(gBreakingForce,wheelIndex);
+			wheelIndex = 3;
+			m_vehicle->applyEngineForce(gEngineForce,wheelIndex);
+			m_vehicle->setBrake(gBreakingForce,wheelIndex);
 
-			// Head to steered direction.
-			btTransform worldTrans = bbody->getWorldTransform();
-			double speed = worldTrans.getBasis().getColumn(2).dot(bbody->getLinearVelocity());
-			worldTrans.setRotation(worldTrans.getRotation() * btQuaternion(btVector3(0, 1, 0), speed * steer / 2. * dt / getWheelBase()));
-			bbody->setWorldTransform(worldTrans);
+			wheelIndex = 0;
+			m_vehicle->setSteeringValue(gVehicleSteering,wheelIndex);
+			wheelIndex = 1;
+			m_vehicle->setSteeringValue(gVehicleSteering,wheelIndex);
 		}
-
-		// Cancel lateral velocity
-		bbody->setLinearVelocity(alignAxis(bbody->getLinearVelocity(), bbody->getWorldTransform().getBasis().getColumn(2)));
-
-		if(!(inputs.press & (PL_W | PL_S))){
-			// Precisely, friction should be affected by gravity acceleration.
-			const double friction = 0.005 * dt;
-			btVector3 btVelo = bbody->getLinearVelocity();
-			if(btVelo.length2() < friction * friction)
-				btVelo.setZero();
-			else
-				btVelo *= 1. - friction / btVelo.length();
-			bbody->setLinearVelocity(btVelo);
-		}
-//		vehicle_drive(dt, points, numof(points));
 	}
+
 #if 0
 	else{
 		int in = pt->inputs.press;
@@ -933,6 +948,12 @@ int LandVehicle::tracehit(const Vec3d &src, const Vec3d &dir, double rad, double
 	}
 #endif
 	return reti;
+}
+
+void LandVehicle::removeRigidBody(WarSpace *ws){
+	if(ws->bdw && m_vehicle)
+		ws->bdw->removeVehicle(m_vehicle);
+	st::removeRigidBody(ws);
 }
 
 void Tank::anim(double dt){

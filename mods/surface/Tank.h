@@ -36,10 +36,11 @@ public:
 	typedef ModelEntity st;
 
 	LandVehicle(Game *game) : st(game){}
-	LandVehicle(WarField *w) : st(w), steer(0.){}
+	LandVehicle(WarField *w) : st(w), steer(0.), m_vehicleRayCaster(NULL), m_vehicle(NULL){}
 	void addRigidBody(WarSpace*)override;
 	virtual void anim(double dt);
 	virtual int tracehit(const Vec3d &start, const Vec3d &dir, double rad, double dt, double *ret, Vec3d *retp, Vec3d *retnormal); // return nonzero on hit
+	void removeRigidBody(WarSpace *ws)override;
 	void cockpitView(Vec3d &pos, Quatd &rot, int seatid)const;
 	bool isTargettable()const override{return true;}
 	bool isSelectable()const override{return true;}
@@ -66,9 +67,14 @@ public:
 	static gltestp::dstring modPath(){return _SC("mods/surface/");}
 
 protected:
+	btVehicleRaycaster*	m_vehicleRayCaster;
+	btRaycastVehicle*	m_vehicle;
+	btRaycastVehicle::btVehicleTuning	m_tuning;
 
-	short bbodyGroup()const override{return 1<<2;}
-	short bbodyMask()const override{return 1<<2;}
+	// Masking is unnecessary for btVehicle since its suspensions keep our vehicle's
+	// rigid body from touching ground.
+//	short bbodyGroup()const override{return 1<<2;}
+//	short bbodyMask()const override{return 1<<2;}
 
 	virtual bool isTracked()const{return false;} ///< If have continuous track like tanks
 	virtual HitBoxList &getHitBoxes()const = 0;

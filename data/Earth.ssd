@@ -23,8 +23,8 @@ coordsys Orbit earth{
 		extexture "cloudtexture" textures/cloud.jpg alpha cloudSync
 		extexture "lightstexture" textures/earth_lights.png
 		terrainNoiseEnable true
-		terrainNoiseLODRange 3.
-		terrainNoiseLODs 7
+		terrainNoiseLODRange 2.5
+		terrainNoiseLODs 8
 		terrainNoiseHeight 15.
 		terrainNoisePersistence 0.80
 		terrainNoiseOctaves 11
@@ -71,8 +71,8 @@ coordsys Orbit earth{
 		# Flat area for the airport
 		terrainMod{
 			pos sin(phi) cos(theta)*cos(phi) sin(theta)*cos(phi)
-			radius 0.0005
-			falloff 0.001
+			radius 0.00020
+			falloff 0.0005
 		}
 	}
 

@@ -1637,7 +1637,7 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 							};
 							HeightGetter bheight = [=](const Vec3d &v, int ix, int iy){
 								return lheight(v, ix, iy)
-									- aheight * pow(persistence, 2 * lod); // Finer mesh doesn't require tall skirts
+									- aheight * pow(persistence, 4 * lod); // Finer mesh doesn't require tall skirts
 							};
 
 							auto point = [&](int ix, int iy){

@@ -204,8 +204,7 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 #ifndef DEDICATED
 		tex.list = 0;
 #endif
-		tex.cloudSync = startIndex < argc && 0. != sqcalc(const_cast<StellarContext&>(sc), argv[startIndex], argv[0]);
-		for(int i = startIndex + 1; i < argc; i++){
+		for(int i = startIndex; i < argc; i++){
 			if(!strcmp(argv[i], "alpha"))
 				tex.flags |= DTS_ALPHA;
 			else if(!strcmp(argv[i], "height"))
@@ -214,6 +213,10 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 				tex.flags |= DTS_NORMALMAP;
 			else if (!strcmp(argv[i], "normalize"))
 				tex.flags |= DTS_NORMALIZE;
+			else if(!strcmp(argv[i], "cloudSync"))
+				tex.cloudSync = true;
+			else if(!strcmp(argv[i], "-cloudSync"))
+				tex.cloudSync = false;
 			else
 				CmdPrint(gltestp::dstring() << "Warning: unknown extexture parameter ignored: " << argv[i]);
 		}

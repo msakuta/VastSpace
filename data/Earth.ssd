@@ -15,12 +15,12 @@ coordsys Orbit earth{
 		rotation Quatd.rotation(1*PI/6.,Vec3d(0,1,0))*Quatd.rotation(tilt,Vec3d(1,0,0))
 #		rotation 0*sqrt(2)/2 0 sin(tilt/2.) cos(tilt/2.)
 #		updirection 0 cos(tilt) sin(tilt)
-		texture textures/earth.jpg 0 normalize
+		texture textures/earth.jpg normalize
 		basecolor .5 .65 1.
 		albedo 0.367
 
-		extexture "heighttexture" textures/earth_bump.jpg 0 height
-		extexture "cloudtexture" textures/cloud.jpg 0 alpha
+		extexture "heighttexture" textures/earth_bump.jpg height
+		extexture "cloudtexture" textures/cloud.jpg alpha cloudSync
 		extexture "lightstexture" textures/earth_lights.png
 		terrainNoiseEnable true
 		terrainNoiseLODRange 3.

@@ -1,6 +1,7 @@
 /** \file
  * \brief Implementation of SurfaceCS class.
  */
+#define NOMINMAX
 #include "SurfaceCS.h"
 #include "EntityRegister.h"
 #include "WarMap.h"
@@ -26,6 +27,7 @@ extern "C"{
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 
 #include <fstream>
+#include <algorithm>
 
 /// \brief A placeholder Entity that receives Bullets as the ground terrain.
 class SurfaceEntity : public Entity{
@@ -54,14 +56,18 @@ public:
 	double atmosphericPressure(const Vec3d &pos)const override;
 	bool sendMessage(Message &)override;
 protected:
-	static const int patchSize = 64;
+	static const int patchSize = 32;
 	struct HeightMapData{
+		bool used;
+		btCollisionShape *shape;
+		btRigidBody *rigidBody;
 		btScalar heights[patchSize][patchSize];
 	};
 	btStaticPlaneShape *groundPlane;
 	btRigidBody *groundBody;
 	SurfaceEntity *entity;
-	std::list<HeightMapData> patches;
+	typedef std::tuple<int, int, int> HeightMapKey;
+	std::map<HeightMapKey, HeightMapData> patches;
 };
 
 Entity::EntityRegister<SurfaceEntity> SurfaceEntity::entityRegister("SurfaceEntity");
@@ -430,6 +436,17 @@ Astrobj *findNearestAstrobj(WarField *wf){
 	return a;
 }
 
+#define SQRT2P2 (1.4142135623730950488016887242097/2.)
+static const Quatd cubedirs[] = {
+	Quatd(SQRT2P2,0,SQRT2P2,0), /* {0,-SQRT2P2,0,SQRT2P2} */
+	Quatd(SQRT2P2,0,0,SQRT2P2),
+	Quatd(0,0,1,0), /* {0,0,0,1} */
+	Quatd(-SQRT2P2,0,SQRT2P2,0), /*{0,SQRT2P2,0,SQRT2P2},*/
+	Quatd(-SQRT2P2,0,0,SQRT2P2), /* ??? {0,-SQRT2P2,SQRT2P2,0},*/
+	Quatd(-1,0,0,0), /* {0,1,0,0}, */
+};
+
+
 void SurfaceWar::anim(double dt){
 	Astrobj *a = findNearestAstrobj(this);
 	st::anim(dt);
@@ -439,39 +456,107 @@ void SurfaceWar::anim(double dt){
 
 	if(ra && ra->hasTerrainMap()){
 		Vec3d apos = cs->tocs(vec3_000, a);
+
+		// Clear the usage flag first
+		for(auto &p : patches)
+			p.second.used = false;
+
+		// For each Entity, add heightmap meshes if necessary.
 		for(auto e : el){
 			Vec3d delta = e->pos - apos;
 			double height = delta.len() - a->rad;
-			if(height < 1e6 * 1e6){
-				if(patches.empty()){
-					Vec3d dir = delta.norm();
-					Quatd rot = Quatd::direction(dir);
+
+			// Don't bother worrying about hitting the ground when you're in space.
+			if(1e6 * 1e6 < height)
+				continue;
+
+			// First, find the face direction of the Entity's position in RoundAstrobj's cube.
+			Vec3d edir = delta.norm();
+			double maxf = 0.;
+			int direction = 0;
+			for(int d = 0; d < 6; d++){
+				double sp = cubedirs[d].trans(Vec3d(0, 0, 1)).sp(edir);
+				if(maxf < sp){
+					direction = d;
+					maxf = sp;
+				}
+			}
+
+			static const double patchScale = 0.5e-5;
+			static const int division = int(1. / (patchSize - 1) / patchScale);
+			Quatd rot = cubedirs[direction];
+			Vec3d ddir = rot.cnj().trans(edir);
+
+			// This should depend on the Entity's size.
+			int ixmin = std::max(int(ddir[0] * division) - 1, -division);
+			int ixmax = std::min(int(ddir[0] * division) + 1, division);
+			int iymin = std::max(int(ddir[1] * division) - 1, -division);
+			int iymax = std::min(int(ddir[1] * division) + 1, division);
+
+			for(int ix = ixmin; ix <= ixmax; ix++){
+				for(int iy = iymin; iy <= iymax; iy++){
+					// Find the direction vector for this specific collision mesh.
+					Vec3d localDir((ix + 0.) / division, (iy + 0.) / division, 1);
+					localDir[2] = sqrt(1 - (localDir[0] * localDir[0] + localDir[1] * localDir[1]));
+					Vec3d dir = rot.trans(localDir);
+					auto idx = HeightMapKey(direction, ix, iy);
+					double sdist = (dir - edir).slen();
+					bool inRange = sdist < patchScale * patchSize * patchScale * patchSize;
+
+					// If collision mesh is already created, flag as used and exit.
+					if(patches.find(idx) != patches.end()){
+						patches[idx].used = patches[idx].used || inRange;
+						continue;
+					}
+
+					if(!inRange)
+						continue;
+
 					Quatd arot = cs->tocsq(a) * rot;
-					const double patchScale = 0.125e-4;
-					patches.push_back(HeightMapData());
-					HeightMapData &heightmap = patches.back();
+					HeightMapData &heightmap = patches[idx];
 					btScalar minHeight = 0, maxHeight = 0;
-					for(int iy = 0; iy < patchSize; iy++){
-						for(int ix = 0; ix < patchSize; ix++){
-							Vec3d localPos((ix - patchSize / 2. + .5) * patchScale, (iy - patchSize / 2. + .5) * patchScale, 0);
-							localPos[2] = sqrt(1. - localPos[0] * localPos[0] + localPos[1] * localPos[1]);
-							double len = localPos.len();
-							float height = (ra->getTerrainHeight(arot.trans(localPos)) - 1.) * ra->rad;
-							heightmap.heights[iy][ix] = height;
+					for(int jy = 0; jy < patchSize; jy++){
+						for(int jx = 0; jx < patchSize; jx++){
+							// Find the location of each vertex in the heightfield.  Note that the position should be normalized.
+							Vec3d localPos((jx - patchSize / 2. + .5) * patchScale, (jy - patchSize / 2. + .5) * patchScale, 0);
+							localPos[0] += localDir[0];
+							localPos[1] += localDir[1];
+							localPos[2] = sqrt(1. - (localPos[0] * localPos[0] + localPos[1] * localPos[1]));
+							// Correct local curvature by adding localPos[2] - localDir[2]
+							double height = (ra->getTerrainHeight(arot.trans(localPos)) - 1. + localPos[2] - localDir[2]) * ra->rad;
+							heightmap.heights[jy][jx] = height;
 							if(height < minHeight)
 								minHeight = height;
 							if(maxHeight < height)
 								maxHeight = height;
 						}
 					}
+
+					// Create the heightmap and register it as a collision shape to Bulle Dynamics World.
+					heightmap.used = true;
 					btHeightfieldTerrainShape *shape = new btHeightfieldTerrainShape(patchSize, patchSize, heightmap.heights, 1., minHeight, maxHeight, 2, PHY_FLOAT, false);
 					shape->setLocalScaling(btVector3(a->rad * patchScale, a->rad * patchScale, 1));
+					heightmap.shape = shape;
 					btRigidBody *rbd = new btRigidBody(0, nullptr, shape);
 					btTransform tr(btqc(rot), btvc(apos + dir * a->rad + rot.trans(Vec3d(0, 0, (maxHeight + minHeight) / 2))));
 					rbd->setWorldTransform(tr);
+					heightmap.rigidBody = rbd;
 					bdw->addRigidBody(rbd);
 				}
 			}
+		}
+
+		// Delete heightmap collision shapes if no one is near them.
+		for(auto p = patches.begin(); p != patches.end();){
+			auto next = p;
+			++next;
+			if(!p->second.used){
+				bdw->removeRigidBody(p->second.rigidBody);
+				delete p->second.rigidBody;
+				delete p->second.shape;
+				patches.erase(p->first);
+			}
+			p = next;
 		}
 	}
 }

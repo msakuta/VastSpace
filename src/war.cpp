@@ -384,7 +384,9 @@ void WarSpace::anim(double dt){
 	aaanim(dt, this, &WarField::el, &Entity::anim);
 //	fprintf(stderr, "otbuild %p %p %p %d\n", this->ot, this->otroot, this->ottemp);
 
-	bdw->stepSimulation(dt / 1., 0);
+	// Allow substeps for stable physics even if the frame rate drops.
+	// How many should the maxSubSteps be? I have no clue.
+	bdw->stepSimulation(dt / 1., 20);
 
 #ifdef _WIN32
 	CreateDirectory("logs", NULL);

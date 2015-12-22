@@ -1703,6 +1703,34 @@ gltestp::dstring sqTableGetString(HSQUIRRELVM v, const SQChar *fieldName, const 
 	return def;
 }
 
+Vec3d sqTableGetVec3d(HSQUIRRELVM v, const SQChar *fieldName, const Vec3d &def, bool raiseOnError, SQInteger idx){
+	SQVec3d qv;
+	sq_pushstring(v, fieldName, -1);
+	if(SQ_SUCCEEDED(sq_get(v, idx))){
+		try{
+			qv.getValue(v, -1);
+		}
+		catch(SQFError &e){
+			if(raiseOnError)
+				throw;
+			else{
+				sq_poptop(v);
+				return def;
+			}
+		}
+		sq_poptop(v);
+	}
+	else{
+		if (raiseOnError)
+			throw sqa::SQFError(gltestp::dstring() + "Field " + fieldName + " is not found in table");
+		else
+			return def;
+	}
+	return qv.value;
+}
+
+
+
 
 /// \brief ClientMessage to notify something from the client's Squirrel VM to the server's one.
 struct CMSQ : public ClientMessage{

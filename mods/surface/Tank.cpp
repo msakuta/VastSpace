@@ -12,6 +12,7 @@
 #include "audio/playSound.h"
 #include "audio/wavemixer.h"
 #include "astrodef.h"
+#include "sqadapt.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -46,7 +47,7 @@ double Tank::barrelPitchMin = -0.05 * M_PI;
 double Tank::barrelPitchMax = 0.3 * M_PI;
 double Tank::sightCheckInterval = 1.;
 HitBoxList Tank::hitboxes;
-
+LandVehicle::VehicleConfig Tank::vehicleConfig;
 
 const char *Tank::idname()const{return "tank";}
 const char *Tank::classname()const{return "Tank";}
@@ -134,6 +135,7 @@ void Tank::init(){
 			SingleDoubleProcess(barrelPitchMin, "barrelPitchMin") <<=
 			SingleDoubleProcess(barrelPitchMax, "barrelPitchMax") <<=
 			SingleDoubleProcess(sightCheckInterval, "sightCheckInterval") <<=
+			VehicleConfigProcess(vehicleConfig) <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
 	}
@@ -423,52 +425,26 @@ void LandVehicle::anim(double dt){
 		if(!m_vehicleRayCaster)
 			m_vehicleRayCaster = new btDefaultVehicleRaycaster(ws->bdw);
 		if(!m_vehicle){
-			// These suspension parameters should be proportional to the vehicle mass
-			// if we want similar behaviors regardless of mass, but they looks like
-			// capped by maxSuspensionForce anyway.
-			btScalar suspensionStiffness = 20.f;
-			btScalar suspensionDamping = 2.3f;
-			btScalar suspensionCompression = 4.4f;
-			btScalar wheelRadius = 0.5f;
-			btScalar wheelWidth = 0.4f;
-			btScalar wheelFriction = 1000;//BT_LARGE_FLOAT;
-			btScalar rollInfluence = 0.1f;//1.0f;
-			btScalar suspensionRestLength(0.6);
-			// The default parameter is optimized for a vehilce weighing 800 kg.
-			m_tuning.m_maxSuspensionForce *= this->mass / 800.;
+			const VehicleConfig &conf = getVehicleConfig();
+			m_tuning.m_maxSuspensionForce = conf.maxSuspensionForce;
 			m_vehicle = new btRaycastVehicle(m_tuning,bbody,m_vehicleRayCaster);
 
-			float connectionHeight = 0.25f;
-
-			bool isFrontWheel=true;
-			const double CUBE_HALF_EXTENTS = 1.5; // Should be read from configuration
-
-			btVector3 wheelDirectionCS0(0,-1,0);
-			btVector3 wheelAxleCS(-1,0,0);
+			for(auto it : conf.wheels){
+				m_vehicle->addWheel(btvc(it.connectionPoint), btvc(it.wheelDirection), btvc(it.wheelAxle),
+					it.suspensionRestLength, it.wheelRadius, m_tuning, it.isFrontWheel);
+			}
 
 			//choose coordinate system
 			m_vehicle->setCoordinateSystem(0,1,2);
 
-			btVector3 connectionPointCS0(CUBE_HALF_EXTENTS-(0.3*wheelWidth),connectionHeight,2*CUBE_HALF_EXTENTS-wheelRadius);
-
-			m_vehicle->addWheel(connectionPointCS0,wheelDirectionCS0,wheelAxleCS,suspensionRestLength,wheelRadius,m_tuning,isFrontWheel);
-			connectionPointCS0 = btVector3(-CUBE_HALF_EXTENTS+(0.3*wheelWidth),connectionHeight,2*CUBE_HALF_EXTENTS-wheelRadius);
-
-			m_vehicle->addWheel(connectionPointCS0,wheelDirectionCS0,wheelAxleCS,suspensionRestLength,wheelRadius,m_tuning,isFrontWheel);
-			connectionPointCS0 = btVector3(-CUBE_HALF_EXTENTS+(0.3*wheelWidth),connectionHeight,-2*CUBE_HALF_EXTENTS+wheelRadius);
-			isFrontWheel = false;
-			m_vehicle->addWheel(connectionPointCS0,wheelDirectionCS0,wheelAxleCS,suspensionRestLength,wheelRadius,m_tuning,isFrontWheel);
-			connectionPointCS0 = btVector3(CUBE_HALF_EXTENTS-(0.3*wheelWidth),connectionHeight,-2*CUBE_HALF_EXTENTS+wheelRadius);
-			m_vehicle->addWheel(connectionPointCS0,wheelDirectionCS0,wheelAxleCS,suspensionRestLength,wheelRadius,m_tuning,isFrontWheel);
-
 			for (int i=0;i<m_vehicle->getNumWheels();i++)
 			{
 				btWheelInfo& wheel = m_vehicle->getWheelInfo(i);
-				wheel.m_suspensionStiffness = suspensionStiffness;
-				wheel.m_wheelsDampingRelaxation = suspensionDamping;
-				wheel.m_wheelsDampingCompression = suspensionCompression;
-				wheel.m_frictionSlip = wheelFriction;
-				wheel.m_rollInfluence = rollInfluence;
+				wheel.m_suspensionStiffness = conf.suspensionStiffness;
+				wheel.m_wheelsDampingRelaxation = conf.suspensionDamping;
+				wheel.m_wheelsDampingCompression = conf.suspensionCompression;
+				wheel.m_frictionSlip = conf.wheelFriction;
+				wheel.m_rollInfluence = conf.rollInfluence;
 			}
 			ws->bdw->addVehicle(m_vehicle);
 		}
@@ -570,51 +546,45 @@ void LandVehicle::anim(double dt){
 	}
 
 
-	btScalar maxEngineForce = 1. * this->mass;//this should be engine/velocity dependent
-	btScalar maxBreakingForce = 0.1 * this->mass;
-	btScalar gBreakingForce = maxBreakingForce;
-
 	if(m_vehicle){
+		const VehicleConfig &conf = getVehicleConfig();
+		btScalar brakingForce = conf.maxBrakingForce;
+
 		// The behavior of steering handle differs between tracked vehicle and wheeled vehicle.
 		if(isTracked()){
-			btScalar thrustLeft = rangein(!!(inputs.press & PL_W) - !!(inputs.press & PL_A) + !!(inputs.press & PL_D), -1, 1) * -maxEngineForce;
-			btScalar thrustRight = rangein(!!(inputs.press & PL_W) + !!(inputs.press & PL_A) - !!(inputs.press & PL_D), -1, 1) * -maxEngineForce;
+			btScalar thrustLeft = rangein(!!(inputs.press & PL_W) - !!(inputs.press & PL_A) + !!(inputs.press & PL_D), -1, 1) * -conf.maxEngineForce;
+			btScalar thrustRight = rangein(!!(inputs.press & PL_W) + !!(inputs.press & PL_A) - !!(inputs.press & PL_D), -1, 1) * -conf.maxEngineForce;
 			// Tracked vehicle, like a tank, has very high friction on their wheels that we'd assume
 			// they are braking all the time.  But when we actually command brake, it should have
 			// higher braking force.
 			if(inputs.press & PL_S)
-				gBreakingForce *= 2.;
-			int wheelIndex = 2;
-			m_vehicle->applyEngineForce(thrustLeft,wheelIndex);
-			m_vehicle->setBrake(gBreakingForce,wheelIndex);
-			wheelIndex = 3;
-			m_vehicle->applyEngineForce(thrustRight,wheelIndex);
-			m_vehicle->setBrake(gBreakingForce,wheelIndex);
-			wheelIndex = 0;
-			m_vehicle->applyEngineForce(thrustRight,wheelIndex);
-			m_vehicle->setBrake(gBreakingForce,wheelIndex);
-			wheelIndex = 1;
-			m_vehicle->applyEngineForce(thrustLeft,wheelIndex);
-			m_vehicle->setBrake(gBreakingForce,wheelIndex);
+				brakingForce *= 2.;
+			for(int i = 0; i < conf.wheels.size(); i++){
+				m_vehicle->applyEngineForce(conf.wheels[i].isLeftWheel ? thrustLeft : thrustRight, i);
+				m_vehicle->setBrake(brakingForce, i);
+			}
 		}
 		else{
-			btScalar gEngineForce = inputs.press & PL_W ? -maxEngineForce : 0.f;
-			btScalar steeringIncrement = 0.04f;
-			btScalar steeringClamp = 0.3f;
-			btScalar gVehicleSteering = inputs.press & PL_A ? -steeringClamp : inputs.press & PL_D ? steeringClamp : 0.f;
+			btScalar gEngineForce = inputs.press & PL_W ? -conf.maxEngineForce : 0.f;
+			if(inputs.press & PL_A)
+				steer = approach(steer, -getMaxSteeringAngle(), dt * getSteeringSpeed(), 0);
+			else if(steer < 0) // Let leaveing A key and pressing D key accelerate to neutral
+				steer = approach(steer, 0, dt * getSteeringSpeed(), 0);
+			if(inputs.press & PL_D)
+				steer = approach(steer, getMaxSteeringAngle(), dt * getSteeringSpeed(), 0);
+			else if(0 < steer) // Let leaveing D key and pressing A key accelerate to neutral
+				steer = approach(steer, 0, dt * getSteeringSpeed(), 0);
 			if(!(inputs.press & PL_S))
-				gBreakingForce = 0.;
-			int wheelIndex = 2;
-			m_vehicle->applyEngineForce(gEngineForce,wheelIndex);
-			m_vehicle->setBrake(gBreakingForce,wheelIndex);
-			wheelIndex = 3;
-			m_vehicle->applyEngineForce(gEngineForce,wheelIndex);
-			m_vehicle->setBrake(gBreakingForce,wheelIndex);
-
-			wheelIndex = 0;
-			m_vehicle->setSteeringValue(gVehicleSteering,wheelIndex);
-			wheelIndex = 1;
-			m_vehicle->setSteeringValue(gVehicleSteering,wheelIndex);
+				brakingForce = 0.;
+			for(int i = 0; i < conf.wheels.size(); i++){
+				if(conf.wheels[i].isFrontWheel)
+					m_vehicle->setSteeringValue(-steer, i);
+				else{
+					// By default, assume rear wheels are driving.  But it could be a configuration, too.
+					m_vehicle->applyEngineForce(gEngineForce, i);
+					m_vehicle->setBrake(brakingForce, i);
+				}
+			}
 		}
 	}
 
@@ -800,6 +770,49 @@ void LandVehicle::cockpitView(Vec3d &pos, Quatd &rot, int seatid)const{
 	// Face to the turret's aiming point
 	rot = this->rot.rotate(turrety, 0, -1, 0).rotate(barrelp, 1, 0, 0);
 }
+
+void LandVehicle::VehicleConfigProcess::process(HSQUIRRELVM v)const{
+	sq_pushstring(v, _SC("wheels"), -1); // root string
+
+	// Not defining is valid. Just ignore the case.
+	if(SQ_FAILED(sq_get(v, -2))){ // root obj
+		if(mandatory)
+			throw SQFError(gltestp::dstring("wheels") << _SC(" not defined"));
+		else
+			return;
+	}
+	SQInteger len = sq_getsize(v, -1);
+	if(-1 == len)
+		throw SQFError(gltestp::dstring("wheels") << _SC(" size could not be acquired"));
+	value.wheels.resize(len);
+	for(int i = 0; i < len; i++){
+		sq_pushinteger(v, i); // root obj i
+		if(SQ_FAILED(sq_get(v, -2))) // root obj obj[i]
+			continue;
+		Wheel &n = value.wheels[i];
+
+		n.connectionPoint = sqTableGetVec3d(v, _SC("connectionPoint"), Vec3d(0,0,0), mandatory);
+		n.wheelDirection = sqTableGetVec3d(v, _SC("wheelDirection"), Vec3d(0,0,0), mandatory);
+		n.wheelAxle = sqTableGetVec3d(v, _SC("wheelAxle"), Vec3d(0,0,0), mandatory);
+		n.suspensionRestLength = sqTableGetFloat(v, _SC("suspensionRestLength"), 1., mandatory);
+		n.wheelRadius = sqTableGetFloat(v, _SC("wheelRadius"), 1., mandatory);
+		n.isFrontWheel = sqTableGetBool(v, _SC("isFrontWheel"), 1., mandatory);
+		n.isLeftWheel = sqTableGetBool(v, _SC("isLeftWheel"), 1., mandatory);
+
+		sq_poptop(v); // root obj
+	}
+	sq_poptop(v); // root
+
+	value.suspensionStiffness = (btScalar)sqTableGetFloat(v, _SC("suspensionStiffness"), 20., mandatory);
+	value.suspensionDamping = (btScalar)sqTableGetFloat(v, _SC("suspensionDamping"), 2.3, mandatory);
+	value.suspensionCompression = (btScalar)sqTableGetFloat(v, _SC("suspensionCompression"), 4.4, mandatory);
+	value.wheelFriction = (btScalar)sqTableGetFloat(v, _SC("wheelFriction"), 1000, mandatory);//BT_LARGE_FLOAT;
+	value.rollInfluence = (btScalar)sqTableGetFloat(v, _SC("rollInfluence"), 0.1, mandatory);//1.0f;
+	value.maxSuspensionForce = (btScalar)sqTableGetFloat(v, _SC("maxSuspensionForce"), 6000., mandatory);
+	value.maxEngineForce = (btScalar)sqTableGetFloat(v, _SC("maxEngineForce"), 800., mandatory);
+	value.maxBrakingForce = (btScalar)sqTableGetFloat(v, _SC("maxBrakingForce"), 80., mandatory);
+}
+
 
 double Tank::getHitRadius()const{
 	return 7.;
@@ -1051,7 +1064,7 @@ void Tank::aiControl(double dt, const Vec3d &normal){
 				else
 					inputs.press |= PL_ENTER;
 			}
-	
+
 
 //			playWAVEFile("c0wg42.wav");
 /*			{
@@ -1146,8 +1159,11 @@ double M3Truck::barrelPitchSpeed = 0.2 * M_PI;
 double M3Truck::barrelPitchMin = -0.05 * M_PI;
 double M3Truck::barrelPitchMax = 0.3 * M_PI;
 double M3Truck::sightCheckInterval = 1.;
+double M3Truck::steeringSpeed = M_PI / 12.;
+double M3Truck::maxSteeringAngle = M_PI / 12.;
 std::vector<Vec3d> M3Truck::cameraPositions;
 HitBoxList M3Truck::hitboxes;
+LandVehicle::VehicleConfig M3Truck::vehicleConfig;
 
 const char *M3Truck::idname()const{return "M3Truck";}
 const char *M3Truck::classname()const{return "M3Truck";}
@@ -1186,7 +1202,10 @@ void M3Truck::init(){
 			SingleDoubleProcess(barrelPitchMin, "barrelPitchMin") <<=
 			SingleDoubleProcess(barrelPitchMax, "barrelPitchMax") <<=
 			SingleDoubleProcess(sightCheckInterval, "sightCheckInterval") <<=
+			SingleDoubleProcess(steeringSpeed, "steeringSpeed") <<=
+			SingleDoubleProcess(maxSteeringAngle, "maxSteeringAngle") <<=
 			Vec3dListProcess(cameraPositions, "cameraPositions") <<=
+			VehicleConfigProcess(vehicleConfig) <<=
 			HitboxProcess(hitboxes));
 		initialized = true;
 	}
@@ -1456,5 +1475,3 @@ void M3Truck::deathEffects(){}
 void M3Truck::draw(WarDraw*){}
 void M3Truck::drawCockpit(WarDraw *wd){}
 #endif
-
-

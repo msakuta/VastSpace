@@ -66,7 +66,36 @@ public:
 
 	static gltestp::dstring modPath(){return _SC("mods/surface/");}
 
+	class VehicleConfigProcess;
+
 protected:
+	/// Structure for constructing a btVehicle's wheel.
+	/// There's a very similar structure named btWheelInfo in Bullet, but
+	/// it contains a lot of runtime information which is not required for
+	/// constructing.
+	struct Wheel{
+		Vec3d connectionPoint;
+		Vec3d wheelDirection;
+		Vec3d wheelAxle;
+		double suspensionRestLength;
+		double wheelRadius;
+		bool isFrontWheel;
+		bool isLeftWheel;
+	};
+	typedef std::vector<Wheel> WheelList;
+
+	struct VehicleConfig{
+		WheelList wheels;
+		btScalar suspensionStiffness;
+		btScalar suspensionDamping;
+		btScalar suspensionCompression;
+		btScalar wheelFriction;
+		btScalar rollInfluence;
+		btScalar maxSuspensionForce;
+		double maxEngineForce;
+		double maxBrakingForce;
+	};
+
 	btVehicleRaycaster*	m_vehicleRayCaster;
 	btRaycastVehicle*	m_vehicle;
 	btRaycastVehicle::btVehicleTuning	m_tuning;
@@ -81,14 +110,27 @@ protected:
 	virtual double getTopSpeed()const = 0;
 	virtual double getBackSpeed()const = 0;
 	virtual double getLandOffset()const{return 0.0010;}
+	virtual double getSteeringSpeed()const{return M_PI / 6.;}
 	virtual double getMaxSteeringAngle()const{return M_PI / 6.;}
 	virtual double getWheelBase()const{return 0.005;} ///< Affects turning radius, defaults 5 meters
 	virtual bool buildBody();
 	virtual void aiControl(double dt, const Vec3d &normal){}
+	virtual const VehicleConfig &getVehicleConfig()const = 0;
 
 	void find_enemy_logic();
 	void vehicle_drive(double dt, Vec3d *points, int npoints);
 };
+
+/// \brief Processes a WingList value in a Squirrel script.
+class LandVehicle::VehicleConfigProcess : public SqInitProcess{
+public:
+	VehicleConfig &value;
+	bool mandatory;
+	// Usually, you can't drive without wheels, so this is mandatory by default.
+	VehicleConfigProcess(VehicleConfig &value, bool mandatory = true) : value(value), mandatory(mandatory){}
+	void process(HSQUIRRELVM)const override;
+};
+
 
 /// \brief JSDF's type 90 main battle tank.
 class Tank : public LandVehicle{
@@ -130,6 +172,7 @@ protected:
 	static double barrelPitchMax;
 	static double sightCheckInterval;
 	static HitBoxList hitboxes;
+	static VehicleConfig vehicleConfig;
 
 	bool isTracked()const override{return true;}
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
@@ -137,6 +180,7 @@ protected:
 	double getBackSpeed()const override{return backSpeed;}
 	double getLandOffset()const override{return landOffset;}
 	void aiControl(double dt, const Vec3d &normal)override;
+	const VehicleConfig &getVehicleConfig()const override{return vehicleConfig;}
 
 	void init();
 	int shootcannon(double dt);
@@ -187,14 +231,20 @@ protected:
 	static double barrelPitchMin;
 	static double barrelPitchMax;
 	static double sightCheckInterval;
+	static double steeringSpeed;
+	static double maxSteeringAngle;
 	static std::vector<Vec3d> cameraPositions;
 	static HitBoxList hitboxes;
+	static VehicleConfig vehicleConfig;
 
 	HitBoxList &getHitBoxes()const override{return hitboxes;}
 	double getTopSpeed()const override{return topSpeed;}
 	double getBackSpeed()const override{return backSpeed;}
 	double getLandOffset()const override{return landOffset;}
+	double getSteeringSpeed()const override{return steeringSpeed;}
+	double getMaxSteeringAngle()const override{return maxSteeringAngle;}
 	void aiControl(double dt, const Vec3d &normal)override;
+	const VehicleConfig &getVehicleConfig()const override{return vehicleConfig;}
 
 	void init();
 	bool tryshoot(double dt);

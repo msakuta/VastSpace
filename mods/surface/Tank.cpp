@@ -121,20 +121,7 @@ ATTRIBUTE_ALIGNED16(struct)	btEntityMotionState : public btMotionState
 
 bool LandVehicle::buildBody(){
 	if(!bbody){
-		static btCompoundShape *shape = NULL;
-		if(!shape){
-			shape = new btCompoundShape();
-			HitBoxList &hitboxes = getHitBoxes();
-			for(HitBoxList::iterator i = hitboxes.begin(); i != hitboxes.end(); ++i){
-				HitBox &it = *i;
-				const Vec3d &sc = it.sc;
-				const Quatd &rot = it.rot;
-				const Vec3d &pos = it.org;
-				btBoxShape *box = new btBoxShape(btvc(sc));
-				btTransform trans = btTransform(btqc(rot), btvc(pos));
-				shape->addChildShape(trans, box);
-			}
-		}
+		btCollisionShape *shape = getShape();
 		btTransform startTransform;
 		startTransform.setIdentity();
 		startTransform.setOrigin(btvc(pos));
@@ -158,6 +145,30 @@ bool LandVehicle::buildBody(){
 //		bbody->setSleepingThresholds(.0001, .0001);
 	}
 	return true;
+}
+
+/// @brief Utility function to build a Bullet shape out of hitboxes
+///
+/// Derived classes should override getShape() and call this function in there
+/// when needed.
+btCollisionShape *LandVehicle::buildShape(){
+	btCompoundShape *shape = new btCompoundShape();
+	for(auto it : getHitBoxes()){
+		const Vec3d &sc = it.sc;
+		const Quatd &rot = it.rot;
+		const Vec3d &pos = it.org;
+		btBoxShape *box = new btBoxShape(btvc(sc));
+		btTransform trans = btTransform(btqc(rot), btvc(pos));
+		shape->addChildShape(trans, box);
+	}
+	return shape;
+}
+
+
+
+btCollisionShape *Tank::getShape(){
+	static btCollisionShape *shape = buildShape();
+	return shape;
 }
 
 void Tank::init(){
@@ -1511,6 +1522,11 @@ void M3Truck::control(const input_t *in, double dt){
 		}
 	}
 
+}
+
+btCollisionShape *M3Truck::getShape(){
+	static btCollisionShape *shape = buildShape();
+	return shape;
 }
 
 

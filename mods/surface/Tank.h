@@ -114,6 +114,8 @@ protected:
 	virtual double getMaxSteeringAngle()const{return M_PI / 6.;}
 	virtual double getWheelBase()const{return 0.005;} ///< Affects turning radius, defaults 5 meters
 	virtual bool buildBody();
+	virtual btCollisionShape *buildShape();
+	virtual btCollisionShape *getShape() = 0;
 	virtual void aiControl(double dt, const Vec3d &normal){}
 	virtual const VehicleConfig &getVehicleConfig()const = 0;
 
@@ -181,6 +183,7 @@ protected:
 	double getLandOffset()const override{return landOffset;}
 	void aiControl(double dt, const Vec3d &normal)override;
 	const VehicleConfig &getVehicleConfig()const override{return vehicleConfig;}
+	btCollisionShape *getShape()override;
 
 	void init();
 	int shootcannon(double dt);
@@ -245,6 +248,7 @@ protected:
 	double getMaxSteeringAngle()const override{return maxSteeringAngle;}
 	void aiControl(double dt, const Vec3d &normal)override;
 	const VehicleConfig &getVehicleConfig()const override{return vehicleConfig;}
+	btCollisionShape *getShape()override;
 
 	void init();
 	bool tryshoot(double dt);

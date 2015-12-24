@@ -24,8 +24,8 @@ landOffset <- 0.7;
 
 
 hitbox <- [
-	[Vec3d(0., landOffset, -0.0025), Quatd(0,0,0,1), Vec3d(0.002, 0.002, 0.0025)],
-	[Vec3d(0., landOffset,  0.0025), Quatd(0,0,0,1), Vec3d(0.002, 0.002, 0.0025)],
+	[Vec3d(0., landOffset - 0.05, -1.5), Quatd(0,0,0,1), Vec3d(1.11, 0.9, 1.5)],
+	[Vec3d(0., landOffset - 0.05,  1.5), Quatd(0,0,0,1), Vec3d(1.11, 0.9, 1.5)],
 ];
 
 cameraPositions <- [
@@ -50,8 +50,8 @@ maxBrakingForce <- 0.1 * mass;
 steeringSpeed <- PI / 12.;
 maxSteeringAngle <- PI / 12.;
 
-local halfTread = 1.5;
-local wheelBase = 3.0; //Assume wheels are evenly placed before and after center of gravity
+local halfTread = 1.;
+local wheelBase = 2.5; //Assume wheels are evenly placed before and after center of gravity
 local connectionHeight = 0.25;
 local wheelDirection = Vec3d(0,-1,0);
 local wheelAxle = Vec3d(-1,0,0);

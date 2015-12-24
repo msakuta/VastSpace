@@ -1271,7 +1271,18 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 		auto patchDetail = [&](int ix, int iy){
 			double x = 2. * (ix + 0.5) / nextPatchSize - 1.;
 			double y = 2. * (iy + 0.5) / nextPatchSize - 1.;
-			Vec3d rpos = Vec3d(x,y,1).norm() * m_rad;
+			Vec3d rpos = Vec3d(x,y,1).norm();
+			// Dirty heuristic that terrain variation can affect LOD determination only if the level
+			// in question is fairly detailed; you won't mind details on the orbit.
+			// This should really be relevant to terrain height variance, but I couldn't think up of
+			// a robust logic to determine the threshold.
+			// After all, calling getTerrainHeight() every patch wouldn't cost so much.
+			if(3 < lod){
+				RoundAstrobj *ra = dynamic_cast<RoundAstrobj*>(a);
+				rpos *= m_rad * ra->getTerrainHeight(cubedirs[direction].trans(rpos));
+			}
+			else
+				rpos *= m_rad;
 			return (apos + qrot.trans(cubedirs[direction].trans(rpos)) - vw->pos).len() / (m_rad / nextPatchSize) < m_noiseLODRange;
 		};
 

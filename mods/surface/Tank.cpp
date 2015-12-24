@@ -76,6 +76,49 @@ Tank::Tank(WarField *aw) : st(aw), gunsid(0){
 	sightCheck = false;
 }
 
+/// @brief Custom Motion state bound to an Entity.
+///
+/// We need to respond to motionstate update in order to reflect interpolated position of btRigidBody.
+/// Querying world transform in anim() is considered inefficient and seems not working with interpolation.
+/// This makes difference if the frame rate is very high (or time scale is very low).
+///
+/// I still don't understand who owns (should delete) the object!?
+ATTRIBUTE_ALIGNED16(struct)	btEntityMotionState : public btMotionState
+{
+	btTransform m_graphicsWorldTrans;
+	btTransform	m_centerOfMassOffset;
+	Entity*		m_entity;
+
+	BT_DECLARE_ALIGNED_ALLOCATOR();
+
+	btEntityMotionState(Entity *e, const btTransform& startTrans = btTransform::getIdentity(),const btTransform& centerOfMassOffset = btTransform::getIdentity())
+		: m_graphicsWorldTrans(startTrans),
+		m_centerOfMassOffset(centerOfMassOffset),
+		m_entity(e)
+	{
+	}
+
+	///synchronizes world transform from user to physics
+	virtual void	getWorldTransform(btTransform& centerOfMassWorldTrans ) const override
+	{
+		centerOfMassWorldTrans = 	m_centerOfMassOffset.inverse() * m_graphicsWorldTrans ;
+	}
+
+	///synchronizes world transform from physics to user
+	///Bullet only calls the update of worldtransform for active objects
+	virtual void	setWorldTransform(const btTransform& centerOfMassWorldTrans)override
+	{
+		btTransform trans = centerOfMassWorldTrans * m_centerOfMassOffset ;
+		m_entity->pos = btvc(trans.getOrigin());
+		m_entity->rot = btqc(trans.getRotation());
+		// We can't determine linear and angular velocities with motionstate.
+		// We still need to query them in anim() every frame.
+		//m_entity->velo
+		//m_entity->omg
+	}
+};
+
+
 bool LandVehicle::buildBody(){
 	if(!bbody){
 		static btCompoundShape *shape = NULL;
@@ -104,7 +147,7 @@ bool LandVehicle::buildBody(){
 			shape->calculateLocalInertia(mass,localInertia);
 
 		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-		btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btEntityMotionState* myMotionState = new btEntityMotionState(this, startTransform);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,shape,localInertia);
 		rbInfo.m_linearDamping = .05;
 		rbInfo.m_angularDamping = .05;
@@ -660,9 +703,10 @@ void LandVehicle::anim(double dt){
 //	omg /= dt + 1.;
 
 	if(bbody){
-		pos = btvc(bbody->getCenterOfMassPosition());
+		// Position and orientation are updated via btEntityMotionState.
+//		pos = btvc(bbody->getCenterOfMassPosition());
 		velo = btvc(bbody->getLinearVelocity());
-		rot = btqc(bbody->getOrientation());
+//		rot = btqc(bbody->getOrientation());
 		omg = btvc(bbody->getAngularVelocity());
 	}
 

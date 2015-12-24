@@ -1,3 +1,6 @@
+
+dofile("mods/surface/models/LandVehicle.nut");
+
 local m = 1;
 
 modelScale <- 2.22 / 200.0 * m;
@@ -32,6 +35,10 @@ cameraPositions <- [
 	Vec3d(-50, 170, -70) * modelScale - Vec3d(0, landOffset, 0),
 	Vec3d(0., 7.5, 25),
 ]
+
+if(isClient()){
+	registerClass("M3Truck");
+}
 
 
 /// =========== Vehicle configuration ==========================================

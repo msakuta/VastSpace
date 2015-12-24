@@ -1,3 +1,6 @@
+
+dofile("mods/surface/models/LandVehicle.nut");
+
 local m = 1;
 
 modelScale <- 3.33 / 200 * m;
@@ -28,6 +31,11 @@ hitbox <- [
 	[Vec3d(0., 0.1250,  1.5), Quatd(0,0,0,1), Vec3d(1.665, 0.4, 1.5)],
 	[Vec3d(0., 100 * 3.4 / 200. - 0.7, 0.0), Quatd(0,0,0,1), Vec3d(1.5, 20 * 3.4 / 200., 2.)],
 ];
+
+
+if(isClient()){
+	registerClass("Tank");
+}
 
 
 

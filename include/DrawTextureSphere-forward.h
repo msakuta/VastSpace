@@ -50,6 +50,31 @@ struct Texture{
 
 typedef std::vector<Texture> TextureList;
 
+/// Structure to share terrain noise parameters among DrawTextureCubeEx and its users.
+/// Since the number of parameters have increased, it's easier to handle all the parameters
+/// in a structure.
+struct TerrainNoise{
+	bool enable;
+	double height;
+	double persistence;
+	double lodRange;
+	int lods;
+	int octaves;
+	int baseLevel;
+	int zBufLODs;
+
+	TerrainNoise() :
+		enable(false),
+		height(1000.),
+		persistence(0.65),
+		lodRange(3.),
+		lods(3),
+		octaves(7),
+		baseLevel(0),
+		zBufLODs(3){
+	}
+};
+
 /// Terrain modifier that artificially affect randomly generated terrain.
 /// Currently, only circular flat area can be specified, but it could be various shapes.
 struct TerrainMod{

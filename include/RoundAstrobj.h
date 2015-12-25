@@ -60,13 +60,7 @@ protected:
 	AstroRing astroRing;
 #endif
 
-	double terrainNoiseHeight;
-	double terrainNoisePersistence;
-	double terrainNoiseLODRange;
-	int terrainNoiseLODs;
-	int terrainNoiseOctaves;
-	int terrainNoiseBaseLevel;
-	bool terrainNoiseEnable;
+	DTS::TerrainNoise terrainNoise;
 
 	void updateInt(double dt);
 public:

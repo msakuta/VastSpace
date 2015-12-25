@@ -209,15 +209,14 @@ void RoundAstrobj::draw(const Viewer *vw){
 				.lightingStar(param.results)
 				.draw();
 			};
-			bool ret = terrainNoiseEnable ?
-				proc(DrawTextureCubeEx(this, vw, sunpos)
-				.noiseLODRange(terrainNoiseLODRange)
-				.noiseLODs(terrainNoiseLODs)
-				.noiseHeight(terrainNoiseHeight)
-				.noisePersistence(terrainNoisePersistence)
-				.noiseOctaves(terrainNoiseOctaves)
-				.noiseBaseLevel(terrainNoiseBaseLevel))
-				: proc(DrawTextureSphere(this, vw, sunpos));
+			bool ret;
+			if(terrainNoise.enable){
+				DrawTextureCubeEx cubeEx(this, vw, sunpos);
+				cubeEx.terrainNoise(terrainNoise);
+				ret = proc(cubeEx);
+			}
+			else
+				ret = proc(DrawTextureSphere(this, vw, sunpos));
 			if(g_cloud && (cloudTexture.filename.len() || cloudTexture.list) && !underCloud){
 				bool ret = cloudDraw.drawint(false).draw();
 				if(!ret && cloudTexture.filename){
@@ -281,16 +280,15 @@ void RoundAstrobj::drawSolid(const Viewer *vw){
 			.lightingStar(param.results)
 			.draw();
 		};
-		bool ret = terrainNoiseEnable ?
-			proc(DrawTextureCubeEx(this, vw, sunpos)
-			.noiseLODRange(terrainNoiseLODRange)
-			.noiseLODs(terrainNoiseLODs)
-			.noiseHeight(terrainNoiseHeight)
-			.noisePersistence(terrainNoisePersistence)
-			.noiseOctaves(terrainNoiseOctaves)
-			.noiseBaseLevel(terrainNoiseBaseLevel)
-			.zbufmode(true))
-			: proc(DrawTextureSphere(this, vw, sunpos));
+		bool ret;
+		if(terrainNoise.enable){
+			DrawTextureCubeEx cubeEx(this, vw, sunpos);
+			cubeEx.terrainNoise(terrainNoise);
+			cubeEx.zbufmode(true);
+			ret = proc(cubeEx);
+		}
+		else
+			ret = proc(DrawTextureSphere(this, vw, sunpos));
 	}
 }
 

@@ -56,13 +56,6 @@ RoundAstrobj::RoundAstrobj(const char *name, CoordSys *cs) : st(name, cs),
 #endif
 	cloudPhase(0.),
 	noisePos(0,0,0),
-	terrainNoiseHeight(1000.),
-	terrainNoisePersistence(0.65),
-	terrainNoiseLODRange(3.),
-	terrainNoiseLODs(3),
-	terrainNoiseOctaves(7),
-	terrainNoiseBaseLevel(0),
-	terrainNoiseEnable(false),
 	tmods(terrainModMap[id])
 {
 	ringmin = ringmax = ringthick = 0;
@@ -120,6 +113,30 @@ UnserializeStream &operator>>(UnserializeStream &i, RoundAstrobj::Texture &a){
 	return i;
 }
 
+SerializeStream &operator<<(SerializeStream &o, const TerrainNoise &a){
+	o << a.enable;
+	o << a.height;
+	o << a.persistence;
+	o << a.lodRange;
+	o << a.lods;
+	o << a.octaves;
+	o << a.baseLevel;
+	o << a.zBufLODs;
+	return o;
+}
+
+UnserializeStream &operator>>(UnserializeStream &i, TerrainNoise &a){
+	i >> a.enable;
+	i >> a.height;
+	i >> a.persistence;
+	i >> a.lodRange;
+	i >> a.lods;
+	i >> a.octaves;
+	i >> a.baseLevel;
+	i >> a.zBufLODs;
+	return i;
+}
+
 inline bool operator==(const RoundAstrobj::Texture &a, const RoundAstrobj::Texture &b){
 	return a.uniformname == b.uniformname && b.filename == b.filename && a.cloudSync == b.cloudSync && a.flags == b.flags;
 }
@@ -151,11 +168,7 @@ void RoundAstrobj::serialize(SerializeContext &sc){
 		sc.o << ringtexname;
 		sc.o << ringbacktexname;
 	}
-	sc.o << terrainNoiseEnable;
-	sc.o << terrainNoiseHeight;
-	sc.o << terrainNoiseOctaves;
-	sc.o << terrainNoiseBaseLevel;
-	sc.o << terrainNoisePersistence;
+	sc.o << terrainNoise;
 }
 
 void RoundAstrobj::unserialize(UnserializeContext &sc){
@@ -183,11 +196,7 @@ void RoundAstrobj::unserialize(UnserializeContext &sc){
 		sc.i >> ringtexname;
 		sc.i >> ringbacktexname;
 	}
-	sc.i >> terrainNoiseEnable;
-	sc.i >> terrainNoiseHeight;
-	sc.i >> terrainNoiseOctaves;
-	sc.i >> terrainNoiseBaseLevel;
-	sc.i >> terrainNoisePersistence;
+	sc.i >> terrainNoise;
 
 	// Postprocessing
 	if(textures.size() != this->textures.size())
@@ -345,31 +354,35 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 		return true;
 	}
 	else if(!scstrcmp(s, "terrainNoiseEnable")){
-		terrainNoiseEnable = sqcalcb(sc, ps, s);
+		terrainNoise.enable = sqcalcb(sc, ps, s);
 		return true;
 	}
 	else if(!scstrcmp(s, "terrainNoiseLODRange")){
-		terrainNoiseLODRange = sqcalcd(sc, ps, s);
+		terrainNoise.lodRange = sqcalcd(sc, ps, s);
 		return true;
 	}
 	else if(!scstrcmp(s, "terrainNoiseLODs")){
-		terrainNoiseLODs = sqcalci(sc, ps, s);
+		terrainNoise.lods = sqcalci(sc, ps, s);
 		return true;
 	}
 	else if(!scstrcmp(s, "terrainNoiseHeight")){
-		terrainNoiseHeight = sqcalc(sc, ps, s) * lengthUnit;
+		terrainNoise.height = sqcalc(sc, ps, s) * lengthUnit;
 		return true;
 	}
 	else if(!scstrcmp(s, "terrainNoisePersistence")){
-		terrainNoisePersistence = sqcalc(sc, ps, s);
+		terrainNoise.persistence = sqcalc(sc, ps, s);
 		return true;
 	}
 	else if(!scstrcmp(s, "terrainNoiseOctaves")){
-		terrainNoiseOctaves = sqcalci(sc, ps, s);
+		terrainNoise.octaves = sqcalci(sc, ps, s);
 		return true;
 	}
 	else if(!scstrcmp(s, "terrainNoiseBaseLevel")){
-		terrainNoiseBaseLevel = sqcalci(sc, ps, s);
+		terrainNoise.baseLevel = sqcalci(sc, ps, s);
+		return true;
+	}
+	else if(!scstrcmp(s, "terrainNoiseZBufLODs")){
+		terrainNoise.zBufLODs = sqcalci(sc, ps, s);
 		return true;
 	}
 	else if(!scstrcmp(s, _SC("terrainMod"))){
@@ -436,7 +449,7 @@ double RoundAstrobj::getTerrainHeight(const Vec3d &basepos)const{
 		}
 	}
 
-	double height = terrainNoiseHeight;
+	double height = terrainNoise.height;
 	if(heightmap[direction]){
 		BITMAPINFO *bi = heightmap[direction];
 
@@ -458,13 +471,13 @@ double RoundAstrobj::getTerrainHeight(const Vec3d &basepos)const{
 			for(int jy = 0; jy < 2; jy++){
 				long jjy = std::max(std::min(bi->bmiHeader.biHeight - long(iy + jy) - 1, bi->bmiHeader.biHeight-1), 0l);
 				uint8_t ui = ((RGBQUAD*)(((uint8_t*)&bi->bmiColors[bi->bmiHeader.biClrUsed]) + bi->bmiHeader.biBitCount * (jjx + jjy * bi->bmiHeader.biWidth) / 8))->rgbRed;
-				accum += this->terrainNoiseHeight * (jx ? fx : 1. - fx) * (jy ? fy : 1. - fy) * (ui - 42) / 256.;
+				accum += this->terrainNoise.height * (jx ? fx : 1. - fx) * (jy ? fy : 1. - fy) * (ui - 42) / 256.;
 			}
 		}
 		height = accum;
 	}
 
-	return getTerrainHeightInt(basepos * (1 << terrainNoiseBaseLevel), terrainNoiseOctaves, terrainNoisePersistence, height / rad, tmods);
+	return getTerrainHeightInt(basepos * (1 << terrainNoise.baseLevel), terrainNoise.octaves, terrainNoise.persistence, height / rad, tmods);
 }
 
 /// Simplex Fractal Noise in 3D

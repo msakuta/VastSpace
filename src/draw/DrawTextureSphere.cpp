@@ -1127,7 +1127,7 @@ bool DrawTextureCubeEx::draw(){
 			height *= static_cast<RoundAstrobj*>(a)->getTerrainHeight(a->tocs(vw->pos, vw->cs).norm());
 		// Can get close as one meter
 		double nearest = std::max(1., ((apos - vw->pos).len() - (height + 0.1)) / 2.);
-		double farthest = (apos - vw->pos).len() + (1.5 * m_rad + 2. * m_noiseHeight);
+		double farthest = (apos - vw->pos).len() + (1.5 * m_rad + 2. * m_terrainNoise.height);
 
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
@@ -1283,12 +1283,20 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 			}
 			else
 				rpos *= m_rad;
-			return (apos + qrot.trans(cubedirs[direction].trans(rpos)) - vw->pos).len() / (m_rad / nextPatchSize) < m_noiseLODRange;
+			return (apos + qrot.trans(cubedirs[direction].trans(rpos)) - vw->pos).len() / (m_rad / nextPatchSize) < m_terrainNoise.lodRange;
 		};
+
+		// If zbufmode is on, draw patch elements only in the range of z buffering, i.e. nearer than far clipping plane.
+		// Otherwise, draw everything else which wouldn't be drawn in z buffering mode.
+		// The logic is exclusive-or and we use bitwise operator because logical operator is not available.
+		// m_terrainNoise.zBufLODs could be calculated from current clipping plane distance and m_rad,
+		// but it's difficult to predict which distance will make z-fighting apparent.
+		// Note that z buffering is enabled in case of m_zbufmode == false too for self-occlusion test.
+		bool zbufCheck = !m_zbufmode ^ ((m_terrainNoise.lods - m_terrainNoise.zBufLODs) <= lod);
 
 		bool drawn = false;
 		// If there are no higher LOD available, don't bother trying rendering them.
-		if(lod+1 < m_lods){
+		if(lod+1 < m_terrainNoise.lods){
 			// First, try rendering detailed patches.
 			for(int ix = ixBegin; ix < ixEnd; ix++){
 				for(int iy = iyBegin; iy < iyEnd; iy++){
@@ -1305,7 +1313,7 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 					for(int iy = iyBegin; iy < iyEnd; iy++){
 						int basex = ix - ixBegin;
 						int basey = iy - iyBegin;
-						if(!patchDetail(ix, iy) && basex < maxPatchRatio && basey < maxPatchRatio && !m_zbufmode){
+						if(!patchDetail(ix, iy) && basex < maxPatchRatio && basey < maxPatchRatio && zbufCheck){
 							drawPatchElements(it2->second, it2->second.subPatchCount[basex][basey],
 								it2->second.subPatchIdx[basex][basey], false);
 #if PROFILE_CUBEEX
@@ -1320,7 +1328,7 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 
 		// If no higher level of detail patches are drawn, render the coarse patch at once.
 		// Only draw the highest LOD patch when m_zbufmode is true.
-		if(!drawn && (!m_zbufmode || m_lods <= lod+1)){
+		if(!drawn && zbufCheck){
 #if PROFILE_CUBEEX
 			timemeas_t tms;
 			TimeMeasStart(&tms);
@@ -1449,12 +1457,12 @@ void DrawTextureCubeEx::compileVertexBuffers()const{
 
 	BufferSet &bufs = bufsets[a];
 
-	bufs.subbufs.resize(m_lods);
+	bufs.subbufs.resize(m_terrainNoise.lods);
 
 	// This function is synchronized, so using this object's members is valid.
 	HeightGetter lheight = [this](const Vec3d &v, int, int){
 		// At this point, DrawTextureCubeEx object is alive, which means RoundAstrobj is alive, too.
-		return height(v, m_noiseOctaves, m_noisePersistence, m_noiseHeight / m_rad, RoundAstrobj::terrainModMap[this->a->getid()]);
+		return height(v, m_terrainNoise.octaves, m_terrainNoise.persistence, m_terrainNoise.height / m_rad, RoundAstrobj::terrainModMap[this->a->getid()]);
 	};
 
 	// Least detailed LOD's division per cube face
@@ -1560,7 +1568,7 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 			if(it.free){
 				RoundAstrobj *ra = dynamic_cast<RoundAstrobj*>(a);
 				// Temporary variables for capturing by the lambda.
-				double aheight = m_noiseHeight / m_rad;
+				double aheight = m_terrainNoise.height / m_rad;
 
 				// Temporary buffer to pass heights at corners.
 				// We cannot pass an array in a capture list, so we make it a temporary struct
@@ -1607,9 +1615,9 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 					for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++)
 						aheights.a[i][j] = aheight;
 				}
-				double persistence = m_noisePersistence;
-				int octaves = m_noiseOctaves;
-				double baseLevel = (1 << m_noiseBaseLevel);
+				double persistence = m_terrainNoise.persistence;
+				int octaves = m_terrainNoise.octaves;
+				double baseLevel = (1 << m_terrainNoise.baseLevel);
 
 				TerrainMods &tmods = RoundAstrobj::terrainModMap[ra->getid()];
 

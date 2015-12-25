@@ -29,6 +29,7 @@ coordsys Orbit earth{
 		terrainNoisePersistence 0.80
 		terrainNoiseOctaves 11
 		terrainNoiseBaseLevel 5
+		terrainNoiseZBufLODs 3
 #		vertexshader "shaders/flatplanet.vs"
 #		fragmentshader "shaders/flatplanet.fs"
 		fragmentshader shaders/earth.fs

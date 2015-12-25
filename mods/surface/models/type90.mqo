@@ -11,7 +11,7 @@ Scene {
 	amb 0.250 0.250 0.250
 }
 Material 3 {
-	"body" shader(3) col(0.216 0.459 0.212 1.000) dif(0.790) amb(0.600) emi(0.000) spc(0.000) power(5.00) tex("armorcolor.bmp")
+	"body" shader(3) col(1.000 1.000 1.000 1.000) dif(0.790) amb(0.600) emi(0.000) spc(0.000) power(5.00) tex("camo.png")
 	"caterpiller" shader(3) col(0.310 0.251 0.200 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00)
 	"gunmetal" shader(3) col(1.000 1.000 1.000 1.000) dif(0.480) amb(0.280) emi(0.000) spc(0.000) power(5.00)
 }

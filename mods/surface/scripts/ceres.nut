@@ -25,14 +25,14 @@ sc.setrot(Quatd(0,sqrt(2.)/2.,0,sqrt(2.)/2.));
 
 
 local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
-local ceres = targetcs.parent;
-if("getTerrainHeight" in ceres){
-	local ceresPos = ceres.transPosition(tank.pos, player.cs);
-	ceresPos.normin();
-	ceresPos *= (ceres.getTerrainHeight(ceresPos) + 0.) * ceres.radius + 2.;
-	print(ceresPos);
-	tank.pos = player.cs.transPosition(ceresPos, ceres);
-	print(tank.pos);
+if(targetcs){
+	local ceres = targetcs.parent;
+	if("getTerrainHeight" in ceres){
+		local ceresPos = ceres.transPosition(tank.pos, player.cs);
+		ceresPos.normin();
+		ceresPos *= ceres.getTerrainHeight(ceresPos) * ceres.radius + 2.;
+		tank.pos = player.cs.transPosition(ceresPos, ceres);
+	}
 }
 player.chase = tank;
 

@@ -1286,6 +1286,9 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 			return (apos + qrot.trans(cubedirs[direction].trans(rpos)) - vw->pos).len() / (m_rad / nextPatchSize) < m_terrainNoise.lodRange;
 		};
 
+		// This array size should be enough to contain flags for all subpatches
+		bool subPathDrawn[maxPatchRatio][maxPatchRatio] = {false};
+
 		// If zbufmode is on, draw patch elements only in the range of z buffering, i.e. nearer than far clipping plane.
 		// Otherwise, draw everything else which wouldn't be drawn in z buffering mode.
 		// The logic is exclusive-or and we use bitwise operator because logical operator is not available.
@@ -1301,7 +1304,9 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 			for(int ix = ixBegin; ix < ixEnd; ix++){
 				for(int iy = iyBegin; iy < iyEnd; iy++){
 					if(patchDetail(ix, iy)){
-						drawn = drawn | drawPatch(bufs, direction, lod + 1, ix, iy);
+						assert(ix - ixBegin < maxPatchRatio && iy - iyBegin < maxPatchRatio);
+						subPathDrawn[ix - ixBegin][iy - iyBegin] = drawPatch(bufs, direction, lod + 1, ix, iy);
+						drawn |= subPathDrawn[ix - ixBegin][iy - iyBegin];
 					}
 				}
 			}
@@ -1313,7 +1318,7 @@ bool DrawTextureCubeEx::drawPatch(BufferSet &bufs, int direction, int lod, int p
 					for(int iy = iyBegin; iy < iyEnd; iy++){
 						int basex = ix - ixBegin;
 						int basey = iy - iyBegin;
-						if(!patchDetail(ix, iy) && basex < maxPatchRatio && basey < maxPatchRatio && zbufCheck){
+						if(basex < maxPatchRatio && basey < maxPatchRatio && !subPathDrawn[basex][basey] && zbufCheck){
 							drawPatchElements(it2->second, it2->second.subPatchCount[basex][basey],
 								it2->second.subPatchIdx[basex][basey], false);
 #if PROFILE_CUBEEX

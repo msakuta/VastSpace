@@ -1646,8 +1646,13 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 							// refer to parameters is invalid.  Capturing parameters by
 							// values is the valid method.
 							HeightGetter lheight = [=](const Vec3d &v, int ix, int iy){
-								double fx = double(ix - ixBegin) / (ixEnd - ixBegin);
-								double fy = double(iy - iyBegin) / (iyEnd - iyBegin);
+								// Here are two levels of loop; the outer loop variables are npx and npy having a period of patchRatio,
+								// and the inner loop variables are ix and iy having a period of (i*End - i*Begin).
+								// It could be another implementation that sample height map for each npx and npy grid points and
+								// interpolate in a single loop, but it would require extra calls to getTerrainHeightInt.
+								// Current implementation behaves well, so let's leave it until we'd find a problem.
+								double fx = double(npx * (ixEnd - ixBegin) + ix - ixBegin) / (ixEnd - ixBegin) / patchRatio;
+								double fy = double(npy * (iyEnd - iyBegin) + iy - iyBegin) / (iyEnd - iyBegin) / patchRatio;
 								double accum = 0.;
 								for(int jx = 0; jx < 2; jx++)
 									for(int jy = 0; jy < 2; jy++)

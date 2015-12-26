@@ -653,6 +653,17 @@ bool RoundAstrobj::sq_define(HSQUIRRELVM v){
 	sq_settypetag(v, -1, SQUserPointer(classRegister.id));
 	sq_setclassudsize(v, -1, sq_udsize); // classudsize is not inherited from CoordSys
 	register_closure(v, _SC("constructor"), sq_CoordSysConstruct<RoundAstrobj>);
+	register_closure(v, _SC("getTerrainHeight"), [](HSQUIRRELVM v){
+		RoundAstrobj *a = static_cast<RoundAstrobj*>(sq_refobj(v));
+		SQVec3d qv;
+		qv.getValue(v, 2);
+		// RoundAstrobj::getTerrainHeight requires the argument vector to be normalized
+		// and usually the caller should normalize before calling, but we will do this
+		// for scripts in case the scripter has forgotten.  After all, Squirrel VM
+		// overhead would be far more costly than a vector's normalization.
+		sq_pushfloat(v, a->getTerrainHeight(qv.value.norm()));
+		return SQInteger(1);
+	});
 	sq_createslot(v, -3);
 	return true;
 }

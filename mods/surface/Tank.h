@@ -9,6 +9,8 @@
 #include "btadapt.h"
 #include "Bullet.h"
 #include "tent3d.h"
+#include "draw/OpenGLState.h"
+#include "Motion-forward.h"
 extern "C"{
 #include <clib/mathdef.h>
 }
@@ -158,8 +160,11 @@ protected:
 	bool sightCheck;
 	int gunsid; ///< The main gun's sound id
 
+	OpenGLState::weak_ptr<bool> modelInit;
 	static Model *model;
 	static double modelScale;
+	static Motion *turretYawMotion;
+	static Motion *barrelPitchMotion;
 	static double landOffset;
 	static double defaultMass;
 	static double maxHealthValue;
@@ -186,6 +191,7 @@ protected:
 	btCollisionShape *getShape()override;
 
 	void init();
+	void loadModel();
 	int shootcannon(double dt);
 	int tryshoot(double dt);
 	Vec3d tankMuzzlePos(Vec3d *nh = NULL)const;

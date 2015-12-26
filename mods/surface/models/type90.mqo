@@ -1,5 +1,5 @@
 Metasequoia Document
-Format Text Ver 1.0
+Format Text Ver 1.1
 
 Scene {
 	pos 39.7024 -152.0399 1500.0000
@@ -336,12 +336,32 @@ Object "type90_barrel" {
 		2 V(20 21) M(0)
 	}
 }
+Object "type90_muzzle" {
+	depth 3
+	folding 0
+	scale 1 1 1
+	rotation 0 -0 0
+	translation 0 0 0
+	visible 15
+	locking 0
+	shading 1
+	facet 59.5
+	color 0.898 0.498 0.698
+	color_type 0
+	vertex 2 {
+		0 92 -83
+		-0.2091552 91.949997 -270.02283
+	}
+	face 1 {
+		2 V(0 1) M(0)
+	}
+}
 Object "type90_m2" {
 	depth 2
 	folding 0
-	scale 1.000000 1.000000 1.000000
-	rotation 0.000000 -0.000000 0.000000
-	translation 0.000000 0.000000 0.000000
+	scale 1 1 1
+	rotation 0 0 0
+	translation 0 0 0
 	visible 15
 	locking 1
 	shading 1

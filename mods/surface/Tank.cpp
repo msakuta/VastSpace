@@ -13,6 +13,8 @@
 #include "audio/wavemixer.h"
 #include "astrodef.h"
 #include "sqadapt.h"
+#include "mqo.h"
+#include "draw/mqoadapt.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -22,7 +24,6 @@ extern "C"{
 
 
 
-#define FORESPEED 0.004
 #define ROTSPEED (.075 * M_PI)
 #define GUNVARIANCE .005
 #define INTOLERANCE (M_PI / 50.)
@@ -55,6 +56,8 @@ const char *Tank::classname()const{return "Tank";}
 const unsigned Tank::classid = registerClass("Tank", Conster<Tank>);
 Entity::EntityRegister<Tank> Tank::entityRegister("Tank");
 
+Motion *Tank::turretYawMotion = NULL;
+Motion *Tank::barrelPitchMotion = NULL;
 
 Tank::Tank(Game *game) : st(game), gunsid(0){
 	init();
@@ -194,6 +197,21 @@ void Tank::init(){
 		initialized = true;
 	}
 	mass = defaultMass;
+	loadModel();
+}
+
+/// We need to load the model even if we don't render it because
+/// the model and motions are used for muzzle position acquisition.
+/// Actuall, all we need is the skeleton and motions, but we have to
+/// load everything.
+void Tank::loadModel(){
+	/// For OpenGL state reset
+	if(!modelInit){
+		model = LoadMQOModel(modPath() << _SC("models/type90.mqo"));
+		turretYawMotion = LoadMotion(modPath() << "models/type90-turretyaw.mot");
+		barrelPitchMotion = LoadMotion(modPath() << "models/type90-barrelpitch.mot");
+		modelInit.create(*openGLState);
+	};
 }
 
 void LandVehicle::addRigidBody(WarSpace *ws){
@@ -208,20 +226,28 @@ void LandVehicle::addRigidBody(WarSpace *ws){
 static const avec3_t tank_cog = {0., .7, 0.};
 
 Vec3d Tank::tankMuzzlePos(Vec3d *nh)const{
-	static const Vec3d velo0(0., 0., -1000.), pos0(0., 0/*.0025*/, -5.);
-/*	const double *cog = tank_cog;*/
-	Mat4d mat, rot;
+	if(model && turretYawMotion && barrelPitchMotion){
+		MotionPose mp[2];
+		turretYawMotion->interpolate(mp[0], fmod(turrety / M_PI * 20. + 20., 40.));
+		barrelPitchMotion->interpolate(mp[1], barrelp / M_PI * 20. + 10.);
+		mp[0].next = &mp[1];
+		Vec3d muzzlePos;
+		Quatd muzzleRot;
+		if(model->getBonePos("type90_muzzle", mp[0], &muzzlePos, &muzzleRot)){
+			if(nh)
+				*nh = this->rot.trans(muzzleRot.trans(Vec3d(0, 0, -1)));
+			muzzlePos *= modelScale;
+			muzzlePos[1] -= getLandOffset();
+			return this->rot.trans(muzzlePos) + this->pos;
+		}
+	}
 
+	static const Vec3d pos0(0., 0/*.0025*/, -5.);
+	Mat4d mat;
 	transform(mat);
-	mat.translatein(-tank_cog[0], -tank_cog[1], -tank_cog[2]);
-	rot = mat.roty(-turrety);
-	rot.translatein(0, 90 * modelScale, -85 * modelScale);
-	mat = rot.rotx(barrelp);
-
 	if(nh)
-		*nh = mat.dvp3(velo0);
+		*nh = mat.dvp3(Vec3d(0, 0, -1));
 	return mat.vp3(pos0);
-
 }
 
 int Tank::shootcannon(double dt){

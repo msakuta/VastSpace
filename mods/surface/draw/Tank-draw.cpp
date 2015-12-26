@@ -30,8 +30,6 @@ extern "C"{
 
 
 void Tank::draw(WarDraw *wd){
-	static Motion *turretYawMotion = NULL;
-	static Motion *barrelPitchMotion = NULL;
 	if(!w)
 		return;
 
@@ -43,14 +41,7 @@ void Tank::draw(WarDraw *wd){
 		return;
 	wd->lightdraws++;
 
-
-	static OpenGLState::weak_ptr<bool> init;
-	if(!init){
-		model = LoadMQOModel(modPath() << _SC("models/type90.mqo"));
-		turretYawMotion = LoadMotion(modPath() << "models/type90-turretyaw.mot");
-		barrelPitchMotion = LoadMotion(modPath() << "models/type90-barrelpitch.mot");
-		init.create(*openGLState);
-	};
+	loadModel();
 
 	if(model){
 		// TODO: We'd like to apply the team colors to the model sometime.

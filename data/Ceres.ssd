@@ -16,12 +16,13 @@ coordsys Orbit ceres{
 		texture textures/Ceres.png
 
 		terrainNoiseEnable true
-		terrainNoiseLODs 5
-		terrainNoiseHeight 5.
-		terrainNoisePersistence 0.75
-		terrainNoiseOctaves 12
-		vertexshader "shaders/flatplanet.vs"
-		fragmentshader "shaders/flatplanet.fs"
+		terrainNoiseLODs 7
+		terrainNoiseHeight 2.
+		terrainNoisePersistence 0.80
+		terrainNoiseBaseLevel 5
+		terrainNoiseOctaves 8
+		vertexshader "shaders/terrainplanet.vs"
+		fragmentshader "shaders/terrainplanet.fs"
 
 		coordsys Surface ceress{
 			define theta 0.53*PI

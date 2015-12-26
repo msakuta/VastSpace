@@ -22,34 +22,51 @@
 #define strnicmp strncasecmp
 #endif
 
-typedef struct{
-	std::istream *is;
-	size_t n;
-	char *buf;
-} FPOS;
+/// @brief A class-like structure to interpret input stream by tokenizing.
+///
+/// The sole purpose of this structure is to contain a buffer for temporary
+/// token to enable usage like strtok().  It could be a subclass of std::istream.
+struct FPOS{
+	std::istream &is;
+	gltestp::dstring buf;
 
-static char *ftok(FPOS *fp){
+	FPOS(std::istream &is) : is(is){}
+	char *ftok();
+};
+
+/// @brief Tokenizes input stream and returns a pointer to its buffer
+/// @returns The pointer to string containing next token.
+///          This pointer is valid until next call to ftok().
+///          You may modify the contents of the buffer as long as
+///          the modification takes place inside the range of the
+///          original string length.
+///
+/// The returned pointer should really be const, but I couldn't make it
+/// because existing codes assume it's not const.
+/// This is the reason why I could not use std::string as the buffer.
+/// Std::string::c_str() does not guarantee it's safe to modify
+/// returned buffer, but our own gltestp::dstring implementation
+/// has no problem with that (except the fool-proof const qualifier).
+char *FPOS::ftok(){
 	size_t i;
 	int lc;
-	char *s = fp->buf;
-	for(i = 0; i < fp->n; i++){
-		char c;
-		fp->is->get(c);
-		if(fp->is->eof() || isspace(c)){
+	buf = gltestp::dstring();
+	for(i = 0;; i++){
+		int c = is.get();
+		if(is.eof() || isspace(c)){
 			if(i == 0 || isspace(lc)){
-				if(fp->is->eof()) return NULL;
+				if(is.eof()) return NULL;
 				lc = c;
 				continue;
 			}
-			*s = '\0';
-			return fp->buf;
+			return const_cast<char*>(buf.c_str());
 		}
 		lc = c;
-		*s++ = (char)c;
+		buf << char(c);
 	}
-	if(i == fp->n) /* overflow! */
-		return NULL;
-	return s;
+	// You should never come here
+	assert(0);
+	return const_cast<char*>(buf.c_str());
 }
 
 static char *quotok(char **src){
@@ -100,7 +117,7 @@ static int chunk_material(Mesh *ret, FPOS *pfo){
 	char *s;
 	int n, i, j;
 	Mesh::Attrib *patr;
-	s = ftok(pfo);
+	s = pfo->ftok();
 	if(!s) return NULL;
 	n = atoi(s);
 
@@ -111,13 +128,13 @@ static int chunk_material(Mesh *ret, FPOS *pfo){
 	ret->na = n;
 	ret->a = (Mesh::Attrib*)malloc(n * sizeof *ret->a);
 
-	while((s = ftok(pfo)) && s[0] != '{');
+	while((s = pfo->ftok()) && s[0] != '{');
 
 	for(i = 0; i < n;){
 		char line[512], *cur;
 		Mesh::Attrib *atr = &ret->a[i];
 		double opa = 1.;
-		pfo->is->getline(line, sizeof line);
+		pfo->is.getline(line, sizeof line);
 		cur = line;
 		s = quotok(&cur);
 		if(!s || s[0] == '}')
@@ -188,7 +205,7 @@ static int chunk_material(Mesh *ret, FPOS *pfo){
 		i++;
 	}
 
-	if(!(s = ftok(pfo)) || s[0] != '}')
+	if(!(s = pfo->ftok()) || s[0] != '}')
 		return 0;
 
 	return 1;
@@ -206,7 +223,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 	int mirror = 0, mirror_axis = 0, mirrors = 0;
 	int mirrornv[3];
 
-	pfo->is->getline(line, sizeof line);
+	pfo->is.getline(line, sizeof line);
 	s = line;
 	if(!s) return NULL;
 	cur = s;
@@ -223,7 +240,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 	}
 
 	/* forward until vertex chunk */
-	while((pfo->is->getline(line, sizeof line), !pfo->is->eof()) && !(cur = line, (s = quotok(&cur)) && !stricmp(s, "vertex"))){
+	while((pfo->is.getline(line, sizeof line), !pfo->is.eof()) && !(cur = line, (s = quotok(&cur)) && !stricmp(s, "vertex"))){
 		if(!stricmp(s, "shading"))
 			shading = atoi(quotok(&cur));
 		else if(!stricmp(s, "facet"))
@@ -272,7 +289,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 	ret->v = (Mesh::Coord(*)[3])malloc(n * (mirror ? 1 << mirrors : 1) * sizeof *ret->v);
 
 	i = 0;
-	while(i < n && (pfo->is->getline(line, sizeof line), s = line, !pfo->is->eof())){
+	while(i < n && (pfo->is.getline(line, sizeof line), s = line, !pfo->is.eof())){
 		if(!s)
 			return NULL;
 		if(*s == '{')
@@ -299,7 +316,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 	}
 
 	/* forward until face chunk */
-	while((pfo->is->getline(line, sizeof line), !pfo->is->eof()) && !(cur = line, (s = quotok(&cur)) && !stricmp(s, "face")));
+	while((pfo->is.getline(line, sizeof line), !pfo->is.eof()) && !(cur = line, (s = quotok(&cur)) && !stricmp(s, "face")));
 
 	/* multiple face chunks leads to an error. */
 	if(ret->p)
@@ -311,7 +328,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 	ret->p = (Mesh::Primitive**)malloc(n * (mirror ? 1 << mirrors : 1) * sizeof *ret->p);
 
 	i = 0;
-	while(i <= n && (pfo->is->getline(line, sizeof line), s = line, !pfo->is->eof())){
+	while(i <= n && (pfo->is.getline(line, sizeof line), s = line, !pfo->is.eof())){
 		int polys;
 		Mesh::ElemType type = Mesh::ET_Polygon;
 		Mesh::Index verts[4], norms[4], uvs[4]; /* vertex count is capped at 4 in Metasequoia */
@@ -549,7 +566,7 @@ static int chunk_object(Mesh *ret, FPOS *pfo, Mesh::Coord scale, struct Bone ***
 		}
 	}
 
-	if(!(s = ftok(pfo)) || s[0] != '}')
+	if(!(s = pfo->ftok()) || s[0] != '}')
 		return 0;
 
 	return 1;
@@ -562,23 +579,21 @@ Mesh *LoadMQO_SUF(const char *fname){
 	Mesh *ret;
 	char buf[128], *s = NULL, *name = NULL;
 	Mesh::Index atr = USHRT_MAX; /* current attribute index */
-	FPOS fo;
 
 	fp = fopen(fname, "r");
 	if(!fp)
 		return NULL;
 
 	std::ifstream is(fname);
-	fo.is = &is;
-	fo.n = sizeof buf, fo.buf = buf;
+	FPOS fo(is);
 
 	/* checking signatures */
-	if(!(s = ftok(&fo)) || stricmp(s, "Metasequoia")) return NULL;
-	if(!(s = ftok(&fo)) || stricmp(s, "Document")) return NULL;
-	if(!(s = ftok(&fo)) || stricmp(s, "Format")) return NULL;
-	if(!(s = ftok(&fo)) || stricmp(s, "Text")) return NULL;
-	if(!(s = ftok(&fo)) || stricmp(s, "Ver")) return NULL;
-	if(!(s = ftok(&fo)) || stricmp(s, "1.0")) return NULL; /* fixed version validation */
+	if(!(s = fo.ftok()) || stricmp(s, "Metasequoia")) return NULL;
+	if(!(s = fo.ftok()) || stricmp(s, "Document")) return NULL;
+	if(!(s = fo.ftok()) || stricmp(s, "Format")) return NULL;
+	if(!(s = fo.ftok()) || stricmp(s, "Text")) return NULL;
+	if(!(s = fo.ftok()) || stricmp(s, "Ver")) return NULL;
+	if(!(s = fo.ftok()) || stricmp(s, "1.0")) return NULL; /* fixed version validation */
 
 	ret = new Mesh;
 	ret->nv = 0;
@@ -590,7 +605,7 @@ Mesh *LoadMQO_SUF(const char *fname){
 
 	do{
 		int bracestack = 0;
-		s = ftok(&fo);
+		s = fo.ftok();
 		if(!s) break;
 		if(!stricmp(s, "material")){
 			if(!chunk_material(ret, &fo))
@@ -600,7 +615,7 @@ Mesh *LoadMQO_SUF(const char *fname){
 			if(!chunk_object(ret, &fo, 1., NULL, 1))
 				return NULL;
 		}
-		else while((s = ftok(&fo))){
+		else while((s = fo.ftok())){
 			if(s[0] == '{')
 				bracestack++;
 			else if(s[0] == '}' && !--bracestack)
@@ -621,27 +636,24 @@ int LoadMQO_Scale(std::istream &is, Mesh ***pret, char ***pname, Mesh::Coord sca
 	Mesh **ret = NULL;
 	Mesh *sufatr = NULL;
 	Mesh::Index atr = USHRT_MAX; /* current attribute index */
-	FPOS fo;
 	int num = 0;
 
 	if(is.eof() || !is.good())
 		return 0;
+	FPOS fo(is);
 
 	if(bones)
 		*bones = NULL;
 	if(tex_callback_data)
 		*tex_callback_data = NULL;
 
-	fo.is = &is;
-	fo.n = sizeof buf, fo.buf = buf;
-
 	/* checking signatures */
-	if(!(s = ftok(&fo)) || stricmp(s, "Metasequoia")) return NULL;
-	if(!(s = ftok(&fo)) || stricmp(s, "Document")) return NULL;
-	if(!(s = ftok(&fo)) || stricmp(s, "Format")) return NULL;
-	if(!(s = ftok(&fo)) || stricmp(s, "Text")) return NULL;
-	if(!(s = ftok(&fo)) || stricmp(s, "Ver")) return NULL;
-	if(!(s = ftok(&fo)) || stricmp(s, "1.0")) return NULL; /* fixed version validation */
+	if(!(s = fo.ftok()) || stricmp(s, "Metasequoia")) return NULL;
+	if(!(s = fo.ftok()) || stricmp(s, "Document")) return NULL;
+	if(!(s = fo.ftok()) || stricmp(s, "Format")) return NULL;
+	if(!(s = fo.ftok()) || stricmp(s, "Text")) return NULL;
+	if(!(s = fo.ftok()) || stricmp(s, "Ver")) return NULL;
+	if(!(s = fo.ftok()) || stricmp(s, "1.0") && stricmp(s, "1.1")) return NULL; /* fixed version validation */
 
 	if(tex_callback_data){
 		*tex_callback_data = (MeshTex**)malloc(num * sizeof *tex_callback_data);
@@ -649,7 +661,7 @@ int LoadMQO_Scale(std::istream &is, Mesh ***pret, char ***pname, Mesh::Coord sca
 
 	do{
 		int bracestack = 0;
-		s = ftok(&fo);
+		s = fo.ftok();
 		if(!s) break;
 		if(!stricmp(s, "material")){
 			if(!sufatr){
@@ -693,7 +705,7 @@ int LoadMQO_Scale(std::istream &is, Mesh ***pret, char ***pname, Mesh::Coord sca
 			ret[num]->a = sufatr->a;
 			ret[num]->np = 0;
 			ret[num]->p = NULL;
-			s = ftok(&fo);
+			s = fo.ftok();
 			if(s && pname){
 				*pname = (char**)realloc(*pname, (num + 1) * sizeof **pname);
 				(*pname)[num] = (char*)malloc(strlen(s) - 1);
@@ -733,7 +745,7 @@ int LoadMQO_Scale(std::istream &is, Mesh ***pret, char ***pname, Mesh::Coord sca
 			}
 			num++;
 		}
-		else while((s = ftok(&fo))){
+		else while((s = fo.ftok())){
 			if(s[0] == '{')
 				bracestack++;
 			else if(s[0] == '}' && !--bracestack)

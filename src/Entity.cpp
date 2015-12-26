@@ -432,25 +432,25 @@ SQInteger Entity::sqSet(HSQUIRRELVM v, const SQChar *name){
 	else if(!scstrcmp(name, _SC("pos"))){
 		SQVec3d r;
 		r.getValue(v);
-		pos = r.value;
+		setPosition(&r.value);
 		return 0;
 	}
 	else if(!scstrcmp(name, _SC("velo"))){
 		SQVec3d r;
 		r.getValue(v);
-		velo = r.value;
+		setPosition(NULL, NULL, &r.value);
 		return 0;
 	}
 	else if(!scstrcmp(name, _SC("rot"))){
 		SQQuatd r;
 		r.getValue(v);
-		rot = r.value;
+		setPosition(NULL, &r.value);
 		return 0;
 	}
 	else if(!scstrcmp(name, _SC("omg"))){
 		SQVec3d r;
 		r.getValue(v);
-		omg = r.value;
+		setPosition(NULL, NULL, NULL, &r.value);
 		return 0;
 	}
 	else if(!strcmp(name, _SC("enemy"))){

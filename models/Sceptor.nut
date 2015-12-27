@@ -7,10 +7,13 @@ maxhealth <- 200.; // Show some guts for demonstrating shooting effect in the cl
 
 maxfuel <- 120.; // seconds for full thrust
 
+maxAngleAccel <- PI * 0.8;
+angleAccel <- PI * 0.4;
+
 hitbox <- [
 	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(5., 2., 3.)],
 ];
- 
+
 enginePos <- [
 	{pos = Vec3d(0,0,30.) * modelScale, rot = Quatd(0,0,0,1)},
 	{pos = Vec3d(34.5,0,40.) * modelScale, rot = Quatd(0,0,0,1)},
@@ -74,4 +77,55 @@ function drawOverlay(){
 	glVertex2d( 1.0, -1.0);
 	glVertex2d( 0.0, -0.5);
 	glEnd();
+}
+
+if(isClient()){
+	local classname = "Sceptor";
+
+	local function controlProc(direction, state){
+		local controlled = player.controlled;
+		if(controlled)
+			controlled.setControl(direction, state);
+	}
+
+	register_console_command("+turnleft", @() controlProc("left", true));
+	register_console_command("-turnleft", @() controlProc("left", false));
+	register_console_command("+turnright", @() controlProc("right", true));
+	register_console_command("-turnright", @() controlProc("right", false));
+	register_console_command("+turnup", @() controlProc("up", true));
+	register_console_command("-turnup", @() controlProc("up", false));
+	register_console_command("+turndown", @() controlProc("down", true));
+	register_console_command("-turndown", @() controlProc("down", false));
+	register_console_command("+turnCW", @() controlProc("rollCW", true));
+	register_console_command("-turnCW", @() controlProc("rollCW", false));
+	register_console_command("+turnCCW", @() controlProc("rollCCW", true));
+	register_console_command("-turnCCW", @() controlProc("rollCCW", false));
+	register_console_command("+throttleUp", @() controlProc("throttleUp", true));
+	register_console_command("-throttleUp", @() controlProc("throttleUp", false));
+	register_console_command("+throttleDown", @() controlProc("throttleDown", true));
+	register_console_command("-throttleDown", @() controlProc("throttleDown", false));
+	register_console_command("throttleReset", @() controlProc("throttleReset", true));
+
+	beginControl[classname] <- function (){
+		if("print" in this)
+			print("Sceptor::beginControl");
+		cmd("pushbind");
+		cmd("bind a +turnleft");
+		cmd("bind d +turnright");
+		cmd("bind w +turnup");
+		cmd("bind s +turndown");
+		cmd("bind q +turnCW");
+		cmd("bind e +turnCCW");
+		cmd("bind r +throttleUp");
+		cmd("bind f +throttleDown");
+		cmd("bind x throttleReset");
+		cmd("r_windows 0");
+	}
+
+	endControl[classname] <- function (){
+		if("print" in this)
+			print("Sceptor::endControl");
+		cmd("popbind");
+		cmd("r_windows 1");
+	}
 }

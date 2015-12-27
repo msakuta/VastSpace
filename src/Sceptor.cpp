@@ -21,6 +21,7 @@
 #include "audio/playSound.h"
 #include "audio/wavemixer.h"
 #include "cmd.h"
+#include "sqadapt.h"
 extern "C"{
 #include <clib/cfloat.h>
 #include <clib/mathdef.h>
@@ -61,6 +62,8 @@ double Sceptor::modelScale = 1./10;
 double Sceptor::defaultMass = 4e3;
 double Sceptor::maxHealthValue = 200.;
 double Sceptor::maxFuelValue = 120.;
+double Sceptor::maxAngleAccel = M_PI * 0.8;
+double Sceptor::angleAccel = M_PI * 0.4;
 GLuint Sceptor::overlayDisp = 0;
 HSQOBJECT Sceptor::sqPopupMenu = sq_nullobj();
 HSQOBJECT Sceptor::sqCockpitView = sq_nullobj();
@@ -76,6 +79,12 @@ const char *Sceptor::idname()const{
 const char *Sceptor::classname()const{
 	return "Sceptor";
 }
+
+template<>
+void Entity::EntityRegister<Sceptor>::sq_defineInt(HSQUIRRELVM v){
+	register_closure(v, _SC("setControl"), Sceptor::sqf_setControl);
+}
+
 
 const unsigned Sceptor::classid = registerClass("Sceptor", Conster<Sceptor>);
 Entity::EntityRegister<Sceptor> Sceptor::entityRegister("Sceptor");
@@ -157,6 +166,14 @@ Sceptor::Sceptor(Game *game) : st(game),
 	paradec(-1), 
 	thrustSid(0),
 	thrustHiSid(0),
+	left(false),
+	right(false),
+	up(false),
+	down(false),
+	rollCW(false),
+	rollCCW(false),
+	throttleUp(false),
+	throttleDown(false),
 	active(true)
 {
 	init();
@@ -176,6 +193,14 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	attitude(Passive),
 	thrustSid(0),
 	thrustHiSid(0),
+	left(false),
+	right(false),
+	up(false),
+	down(false),
+	rollCW(false),
+	rollCCW(false),
+	throttleUp(false),
+	throttleDown(false),
 	active(true)
 {
 	Sceptor *const p = this;
@@ -233,7 +258,9 @@ void Sceptor::init(){
 			EnginePosListProcess(enginePosRev, "enginePosRev") <<=
 			DrawOverlayProcess(overlayDisp) <<=
 			SqCallbackProcess(sqPopupMenu, "popupMenu", false) <<=
-			SqCallbackProcess(sqCockpitView, "cockpitView", false));
+			SqCallbackProcess(sqCockpitView, "cockpitView", false) <<=
+			SingleDoubleProcess(angleAccel, "angleAccel", false) <<=
+			SingleDoubleProcess(maxAngleAccel, "maxAngleAccel", false));
 		initialized = true;
 	}
 }
@@ -1148,26 +1175,46 @@ void Sceptor::anim(double dt){
 #endif
 		}
 
-		static const double torqueAmount = .1;
+		const double torqueAmount = angleAccel / bbody->getInvInertiaDiagLocal().length();
 		bbody->activate(true);
-		if(pt->inputs.press & PL_A){
+		if(left){
 			bbody->applyTorque(btvc(mat.vec3(1) * torqueAmount));
 		}
-		if(pt->inputs.press & PL_D){
+		if(right){
 			bbody->applyTorque(btvc(-mat.vec3(1) * torqueAmount));
 		}
-		if(pt->inputs.press & PL_W){
+		if(up){
 			bbody->applyTorque(btvc(mat.vec3(0) * torqueAmount));
 		}
-		if(pt->inputs.press & PL_S){
+		if(down){
 			bbody->applyTorque(btvc(-mat.vec3(0) * torqueAmount));
+		}
+		if(rollCW){
+			bbody->applyTorque(btvc(mat.vec3(2) * torqueAmount));
+		}
+		if(rollCCW){
+			bbody->applyTorque(btvc(-mat.vec3(2) * torqueAmount));
 		}
 
 		if(controlled){
-			if(inputs.press & PL_Q)
+			if(throttleUp)
 				p->throttle = MIN(throttle + dt, 1.);
-			if(inputs.press & PL_Z)
+			if(throttleDown)
 				p->throttle = MAX(throttle - dt, -1.); // Reverse thrust is permitted
+
+			// Stabilize rotation
+			if(!left && !right && !up && !down && !rollCW && !rollCCW && 0 < bbody->getAngularVelocity().length2()){
+				// If current angular velocity has little magnitude, so little that would be complete stop in this frame,
+				// set zero instead of adding a torque to make it zero.
+				// Otherwise, the ship would look like trembling (oscillation by frame delay).
+				if(bbody->getAngularVelocity().length2() < maxAngleAccel * dt * maxAngleAccel * dt)
+					bbody->setAngularVelocity(btVector3(0,0,0));
+				else{
+					const double maxTorqueAmount = maxAngleAccel / bbody->getInvInertiaDiagLocal().length();
+					btVector3 counterTorque = -maxTorqueAmount * bbody->getAngularVelocity().normalized();
+					bbody->applyTorque(counterTorque);
+				}
+			}
 		}
 
 		/* you're not allowed to accel further than certain velocity. */
@@ -1582,6 +1629,39 @@ static int cmd_delta_formation(int argc, char *argv[], void *pv){
 		(*e)->command(&com);
 	}
 	return 0;
+}
+
+SQInteger Sceptor::sqf_setControl(HSQUIRRELVM v){
+	Entity *e = sq_refobj(v);
+	Sceptor *sceptor = dynamic_cast<Sceptor*>(e);
+	if(!sceptor)
+		return sq_throwerror(v, _SC("setControl this pointer is not a Sceptor"));
+	const SQChar *str;
+	if(SQ_FAILED(sq_getstring(v, 2, &str)))
+		return sq_throwerror(v, _SC("setControl first argument not string"));
+	SQBool b;
+	if(SQ_FAILED(sq_getbool(v, 3, &b)))
+		return sq_throwerror(v, _SC("setControl second argument not bool"));
+	if(!scstrcmp(str, _SC("left")))
+		sceptor->left = b;
+	else if(!scstrcmp(str, _SC("right")))
+		sceptor->right = b;
+	else if(!scstrcmp(str, _SC("up")))
+		sceptor->up = b;
+	else if(!scstrcmp(str, _SC("down")))
+		sceptor->down = b;
+	else if(!scstrcmp(str, _SC("rollCW")))
+		sceptor->rollCW = b;
+	else if(!scstrcmp(str, _SC("rollCCW")))
+		sceptor->rollCCW = b;
+	else if(!scstrcmp(str, _SC("throttleUp")))
+		sceptor->throttleUp = b;
+	else if(!scstrcmp(str, _SC("throttleDown")))
+		sceptor->throttleDown = b;
+	else if(!scstrcmp(str, _SC("throttleReset")))
+		sceptor->throttle = 0.;
+
+	return SQInteger(0);
 }
 
 static void register_sceptor_cmd(Game &game){

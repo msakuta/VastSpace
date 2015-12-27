@@ -18,6 +18,8 @@ protected:
 	static double defaultMass;
 	static double maxHealthValue;
 	static double maxFuelValue;
+	static double maxAngleAccel;
+	static double angleAccel;
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
 	static HSQOBJECT sqPopupMenu;
@@ -109,7 +111,9 @@ public:
 	static double pid_ifactor;
 	static double pid_pfactor;
 	static double pid_dfactor;
+	static SQInteger sqf_setControl(HSQUIRRELVM v);
 protected:
+	bool left, right, up, down, rollCW, rollCCW, throttleUp, throttleDown;
 	bool buildBody();
 	short bbodyMask()const;
 	HSQOBJECT getSqPopupMenu()override;

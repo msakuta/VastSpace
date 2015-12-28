@@ -1228,6 +1228,8 @@ void Sceptor::anim(double dt){
 			bbody->applyTorque(btvc(-mat.vec3(2) * torqueAmount));
 		}
 
+		typedef ManeuverParams MP;
+
 		if(controlled){
 			if(throttleUp)
 				p->targetThrottle = MIN(targetThrottle + dt, 1.);
@@ -1237,12 +1239,16 @@ void Sceptor::anim(double dt){
 			double targetHorizontalThrust = 0.;
 			double targetVerticalThrust = 0.;
 			btMatrix3x3 basis = bbody->getWorldTransform().getBasis();
-			if(flightAssist && targetThrottle == 0.)
-				targetThrottleValue = rangein(bbody->getLinearVelocity().dot(basis.getColumn(2)) / maneuverParams.getAccel(ManeuverParams::NZ), -1, 1);
+			if(flightAssist && targetThrottle == 0.){
+				btScalar dotz = bbody->getLinearVelocity().dot(basis.getColumn(2));
+				targetThrottleValue = rangein(dotz / maneuverParams.getAccel(dotz < 0. ? MP::NZ : MP::PZ), -1, 1);
+			}
 			// Always cancel lateral velocity when flight assistance is on.
 			if(flightAssist){
-				targetHorizontalThrust = rangein(-bbody->getLinearVelocity().dot(basis.getColumn(0)) / maneuverParams.getAccel(ManeuverParams::NX), -1, 1);
-				targetVerticalThrust = rangein(-bbody->getLinearVelocity().dot(basis.getColumn(1)) / maneuverParams.getAccel(ManeuverParams::NY), -1, 1);
+				btScalar dotx = bbody->getLinearVelocity().dot(basis.getColumn(0));
+				targetHorizontalThrust = rangein(-dotx / maneuverParams.getAccel(dotx < 0. ? MP::PX : MP::NX), -1, 1);
+				btScalar doty = bbody->getLinearVelocity().dot(basis.getColumn(1));
+				targetVerticalThrust = rangein(-doty / maneuverParams.getAccel(doty < 0. ? MP::PY : MP::NY), -1, 1);
 			}
 			throttle = approach(throttle, targetThrottleValue, dt, 0.);
 			horizontalThrust = approach(horizontalThrust, targetHorizontalThrust, dt, 0.);
@@ -1298,9 +1304,9 @@ void Sceptor::anim(double dt){
 			else
 				p->fuel -= consump;
 			double spd = pf->throttle * (p->task != Attack ? 1. : 0.5);
-			Vec3d acc = pt->rot.trans(Vec3d(0., 0., -1.)) * spd * maneuverParams.getAccel(ManeuverParams::NZ);
-			acc += pt->rot.trans(Vec3d(1, 0, 0)) * horizontalThrust * maneuverParams.getAccel(ManeuverParams::NX);
-			acc += pt->rot.trans(Vec3d(0, 1, 0)) * verticalThrust * maneuverParams.getAccel(ManeuverParams::NY);
+			Vec3d acc = pt->rot.trans(Vec3d(0., 0., -1.)) * spd * maneuverParams.getAccel(spd < 0. ? MP::PZ : MP::NZ); // Only Z axis has inverse definiton
+			acc += pt->rot.trans(Vec3d(1, 0, 0)) * horizontalThrust * maneuverParams.getAccel(horizontalThrust < 0. ? MP::NX : MP::PX);
+			acc += pt->rot.trans(Vec3d(0, 1, 0)) * verticalThrust * maneuverParams.getAccel(verticalThrust < 0. ? MP::NY : MP::PY);
 			bbody->applyCentralForce(btvc(acc * mass));
 			pt->velo += acc * spd;
 		}

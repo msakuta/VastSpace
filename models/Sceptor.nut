@@ -8,7 +8,15 @@ maxhealth <- 200.; // Show some guts for demonstrating shooting effect in the cl
 maxfuel <- 120.; // seconds for full thrust
 
 maxAngleAccel <- PI * 0.8;
-angleAccel <- PI * 0.4;
+angleaccel <- PI * 0.4;
+maxanglespeed <- PI;
+
+local lateralAccel = 100.;
+dir_accel <- [
+	lateralAccel, lateralAccel, // Negative/Positive X-axis
+	lateralAccel, lateralAccel, // Negative/Positive X-axis
+	200., 150., // Forward/backward
+]
 
 hitbox <- [
 	[Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(5., 2., 3.)],
@@ -105,6 +113,11 @@ if(isClient()){
 	register_console_command("+throttleDown", @() controlProc("throttleDown", true));
 	register_console_command("-throttleDown", @() controlProc("throttleDown", false));
 	register_console_command("throttleReset", @() controlProc("throttleReset", true));
+	register_console_command("toggleFlightAssist", function(){
+		local controlled = player.controlled;
+		if(controlled)
+			controlled.flightAssist = !controlled.flightAssist;
+	});
 
 	beginControl[classname] <- function (){
 		if("print" in this)
@@ -119,6 +132,7 @@ if(isClient()){
 		cmd("bind r +throttleUp");
 		cmd("bind f +throttleDown");
 		cmd("bind x throttleReset");
+		cmd("bind z toggleFlightAssist");
 		cmd("r_windows 0");
 	}
 

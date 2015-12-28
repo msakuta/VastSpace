@@ -63,10 +63,10 @@ double Sceptor::defaultMass = 4e3;
 double Sceptor::maxHealthValue = 200.;
 double Sceptor::maxFuelValue = 120.;
 double Sceptor::maxAngleAccel = M_PI * 0.8;
-double Sceptor::angleAccel = M_PI * 0.4;
 GLuint Sceptor::overlayDisp = 0;
 HSQOBJECT Sceptor::sqPopupMenu = sq_nullobj();
 HSQOBJECT Sceptor::sqCockpitView = sq_nullobj();
+Autonomous::ManeuverParams Sceptor::maneuverParams;
 
 /*static const struct hitbox sceptor_hb[] = {
 	hitbox(Vec3d(0,0,0), Quatd(0,0,0,1), Vec3d(.005, .002, .003)),
@@ -93,6 +93,8 @@ void Sceptor::serialize(SerializeContext &sc){
 	st::serialize(sc);
 	sc.o << aac; /* angular acceleration */
 	sc.o << throttle;
+	sc.o << horizontalThrust;
+	sc.o << verticalThrust;
 	sc.o << fuel;
 	sc.o << cooldown;
 	sc.o << dest;
@@ -112,6 +114,8 @@ void Sceptor::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
 	sc.i >> aac; /* angular acceleration */
 	sc.i >> throttle;
+	sc.i >> horizontalThrust;
+	sc.i >> verticalThrust;
 	sc.i >> fuel;
 	sc.i >> cooldown;
 	sc.i >> dest;
@@ -174,6 +178,8 @@ Sceptor::Sceptor(Game *game) : st(game),
 	rollCCW(false),
 	throttleUp(false),
 	throttleDown(false),
+	flightAssist(true),
+	targetThrottle(0.),
 	active(true)
 {
 	init();
@@ -201,6 +207,8 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	rollCCW(false),
 	throttleUp(false),
 	throttleDown(false),
+	flightAssist(true),
+	targetThrottle(0.),
 	active(true)
 {
 	Sceptor *const p = this;
@@ -213,6 +221,8 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	p->aac.clear();
 	memset(p->thrusts, 0, sizeof p->thrusts);
 	p->throttle = .5;
+	horizontalThrust = 0.;
+	verticalThrust = 0.;
 	p->cooldown = 1.;
 	WarSpace *ws;
 #ifndef DEDICATED
@@ -259,8 +269,8 @@ void Sceptor::init(){
 			DrawOverlayProcess(overlayDisp) <<=
 			SqCallbackProcess(sqPopupMenu, "popupMenu", false) <<=
 			SqCallbackProcess(sqCockpitView, "cockpitView", false) <<=
-			SingleDoubleProcess(angleAccel, "angleAccel", false) <<=
-			SingleDoubleProcess(maxAngleAccel, "maxAngleAccel", false));
+			SingleDoubleProcess(maxAngleAccel, "maxAngleAccel", false) <<=
+			ManeuverParamsProcess(maneuverParams));
 		initialized = true;
 	}
 }
@@ -583,6 +593,28 @@ bool Sceptor::buildBody(){
 /// Do not collide with dock base (such as Shipyards)
 short Sceptor::bbodyMask()const{
 	return ~2;
+}
+
+SQInteger Sceptor::sqGet(HSQUIRRELVM v, const SQChar *name)const{
+	if(!strcmp(name, _SC("flightAssist"))){
+		sq_pushbool(v, flightAssist);
+		return 1;
+	}
+	else 
+		return st::sqGet(v, name);
+}
+
+SQInteger Sceptor::sqSet(HSQUIRRELVM v, const SQChar *name){
+	if(!scstrcmp(name, _SC("flightAssist"))){
+		SQBool retb;
+		if(SQ_FAILED(sq_getbool(v, 3, &retb)))
+			return SQ_ERROR;
+		race = int(retb);
+		flightAssist = retb != SQFalse;
+		return 0;
+	}
+	else
+		return st::sqGet(v, name);
 }
 
 HSQOBJECT Sceptor::getSqPopupMenu(){
@@ -1175,7 +1207,7 @@ void Sceptor::anim(double dt){
 #endif
 		}
 
-		const double torqueAmount = angleAccel / bbody->getInvInertiaDiagLocal().length();
+		const double torqueAmount = maneuverParams.angleaccel / bbody->getInvInertiaDiagLocal().length();
 		bbody->activate(true);
 		if(left){
 			bbody->applyTorque(btvc(mat.vec3(1) * torqueAmount));
@@ -1198,12 +1230,26 @@ void Sceptor::anim(double dt){
 
 		if(controlled){
 			if(throttleUp)
-				p->throttle = MIN(throttle + dt, 1.);
+				p->targetThrottle = MIN(targetThrottle + dt, 1.);
 			if(throttleDown)
-				p->throttle = MAX(throttle - dt, -1.); // Reverse thrust is permitted
+				p->targetThrottle = MAX(targetThrottle - dt, -1.); // Reverse thrust is permitted
+			double targetThrottleValue = targetThrottle;
+			double targetHorizontalThrust = 0.;
+			double targetVerticalThrust = 0.;
+			btMatrix3x3 basis = bbody->getWorldTransform().getBasis();
+			if(flightAssist && targetThrottle == 0.)
+				targetThrottleValue = rangein(bbody->getLinearVelocity().dot(basis.getColumn(2)) / maneuverParams.getAccel(ManeuverParams::NZ), -1, 1);
+			// Always cancel lateral velocity when flight assistance is on.
+			if(flightAssist){
+				targetHorizontalThrust = rangein(-bbody->getLinearVelocity().dot(basis.getColumn(0)) / maneuverParams.getAccel(ManeuverParams::NX), -1, 1);
+				targetVerticalThrust = rangein(-bbody->getLinearVelocity().dot(basis.getColumn(1)) / maneuverParams.getAccel(ManeuverParams::NY), -1, 1);
+			}
+			throttle = approach(throttle, targetThrottleValue, dt, 0.);
+			horizontalThrust = approach(horizontalThrust, targetHorizontalThrust, dt, 0.);
+			verticalThrust = approach(verticalThrust, targetVerticalThrust, dt, 0.);
 
-			// Stabilize rotation
-			if(!left && !right && !up && !down && !rollCW && !rollCCW && 0 < bbody->getAngularVelocity().length2()){
+			// Stabilize rotation only if flight assist is enabled and no rotation is commanded.
+			if(flightAssist && !left && !right && !up && !down && !rollCW && !rollCCW && 0 < bbody->getAngularVelocity().length2()){
 				// If current angular velocity has little magnitude, so little that would be complete stop in this frame,
 				// set zero instead of adding a torque to make it zero.
 				// Otherwise, the ship would look like trembling (oscillation by frame delay).
@@ -1235,20 +1281,27 @@ void Sceptor::anim(double dt){
 		}
 
 		{
-			double consump = dt * (fabs(pf->throttle) + p->fcloak * 4.); /* cloaking consumes fuel extremely */
-			Vec3d acc, acc0(0., 0., -1.);
+			double consump = dt * (fabs(pf->throttle) + fabs(horizontalThrust) * 0.5 + fabs(verticalThrust) * 0.5 + p->fcloak * 4.); /* cloaking consumes fuel extremely */
 			if(p->fuel <= consump){
-				if(.05 < pf->throttle)
-					pf->throttle = .05;
+				const double outOfFuelThrust = 0.05;
+				// If out of fuel, allow only very slow acceleration.
+				if(outOfFuelThrust < throttle)
+					throttle = outOfFuelThrust;
+				if(outOfFuelThrust < fabs(horizontalThrust))
+					horizontalThrust *= outOfFuelThrust / fabs(horizontalThrust);
+				if(outOfFuelThrust < fabs(verticalThrust))
+					verticalThrust *= outOfFuelThrust / fabs(verticalThrust);
 				if(p->cloak)
 					p->cloak = 0;
 				p->fuel = 0.;
 			}
 			else
 				p->fuel -= consump;
-			double spd = pf->throttle * (p->task != Attack ? 10. : 5.);
-			acc = pt->rot.trans(acc0);
-			bbody->applyCentralForce(btvc(acc * spd * 20. * mass));
+			double spd = pf->throttle * (p->task != Attack ? 1. : 0.5);
+			Vec3d acc = pt->rot.trans(Vec3d(0., 0., -1.)) * spd * maneuverParams.getAccel(ManeuverParams::NZ);
+			acc += pt->rot.trans(Vec3d(1, 0, 0)) * horizontalThrust * maneuverParams.getAccel(ManeuverParams::NX);
+			acc += pt->rot.trans(Vec3d(0, 1, 0)) * verticalThrust * maneuverParams.getAccel(ManeuverParams::NY);
+			bbody->applyCentralForce(btvc(acc * mass));
 			pt->velo += acc * spd;
 		}
 
@@ -1659,7 +1712,7 @@ SQInteger Sceptor::sqf_setControl(HSQUIRRELVM v){
 	else if(!scstrcmp(str, _SC("throttleDown")))
 		sceptor->throttleDown = b;
 	else if(!scstrcmp(str, _SC("throttleReset")))
-		sceptor->throttle = 0.;
+		sceptor->targetThrottle = 0.;
 
 	return SQInteger(0);
 }

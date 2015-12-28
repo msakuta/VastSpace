@@ -19,11 +19,11 @@ protected:
 	static double maxHealthValue;
 	static double maxFuelValue;
 	static double maxAngleAccel;
-	static double angleAccel;
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
 	static HSQOBJECT sqPopupMenu;
 	static HSQOBJECT sqCockpitView;
+	static ManeuverParams maneuverParams;
 
 	enum Task{
 		Idle = sship_idle,
@@ -46,6 +46,8 @@ protected:
 	Vec3d aac; /* angular acceleration */
 	double thrusts[3][2]; /* 3 pairs of thrusters, 2 directions each */
 	double throttle;
+	double horizontalThrust;
+	double verticalThrust;
 	double fuel;
 	double cooldown;
 	float fcloak;
@@ -114,8 +116,12 @@ public:
 	static SQInteger sqf_setControl(HSQUIRRELVM v);
 protected:
 	bool left, right, up, down, rollCW, rollCCW, throttleUp, throttleDown;
+	bool flightAssist;
+	double targetThrottle; ///< The real throttle tries to approach to this value
 	bool buildBody();
 	short bbodyMask()const;
+	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;
+	SQInteger sqSet(HSQUIRRELVM v, const SQChar *name)override;
 	HSQOBJECT getSqPopupMenu()override;
 	HSQOBJECT getSqCockpitView()const override;
 private:

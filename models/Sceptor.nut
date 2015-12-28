@@ -10,6 +10,7 @@ maxfuel <- 120.; // seconds for full thrust
 maxAngleAccel <- PI * 0.8;
 angleaccel <- PI * 0.4;
 maxanglespeed <- PI;
+maxspeed <- 500.;
 
 local lateralAccel = 100.;
 dir_accel <- [

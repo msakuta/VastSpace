@@ -1270,14 +1270,19 @@ void Sceptor::anim(double dt){
 		}
 
 		/* you're not allowed to accel further than certain velocity. */
-		const double maxvelo = 500., speed = std::max(0., -p->velo.sp(mat.vec3(2)));
-		if(maxvelo < speed)
-			p->throttle = 0.;
-		else{
-			if(!controlled && (p->task == Attack || p->task == Away))
-				p->throttle = 1.;
-			if(1. - speed / maxvelo < throttle)
-				throttle = 1. - speed / maxvelo;
+		if(0 < maneuverParams.maxspeed){
+			const double maxvelo = maneuverParams.maxspeed;
+			const double speed = -this->velo.sp(mat.vec3(2));
+			if(throttle * speed <= 0.)
+				; // Don't care as long throttle is the opposite direction of current velocity
+			else if(0. < throttle && maxvelo < speed || throttle < 0. && speed < -maxvelo)
+				throttle = 0.;
+			else{
+				if(!controlled && (p->task == Attack || p->task == Away))
+					throttle = 1.;
+				if(throttle != 0. && 1. - fabs(speed) / maxvelo < fabs(throttle))
+					throttle *= (1. - fabs(speed) / maxvelo) / fabs(throttle);
+			}
 		}
 
 		/* Friction (in space!) */

@@ -873,6 +873,9 @@ void Autonomous::ManeuverParamsProcess::process(HSQUIRRELVM v)const{
 	for(int i = 0; i < numof(mn.dir_accel); i++){
 		SQFloat f;
 		// Defining a directional accel table and not providing sufficient parameters is an error.
+		sq_pushinteger(v, i);
+		if(SQ_FAILED(sq_get(v, -2)))
+			throw SQFError(gltestp::dstring("dir_accel[") << i << _SC("] couldn't be accessed"));
 		if(SQ_FAILED(sq_getfloat(v, -1, &f)))
 			throw SQFError(gltestp::dstring("dir_accel[") << i << _SC("] couldn't be converted to float"));
 		mn.dir_accel[i] = f;

@@ -10,6 +10,7 @@
 #include "draw/WarDraw.h"
 #include "draw/OpenGLState.h"
 #include "draw/mqoadapt.h"
+#include "glw/glwindow.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/cfloat.h>
@@ -103,7 +104,8 @@ void Sceptor::draw(wardraw_t *wd){
 
 	double pixels = 5. * fabs(wd->vw->gc->scale(pos)) * nf;
 
-	draw_healthbar(this, wd, health / getMaxHealth(), 10. * nf, fuel / maxfuel(), -1.);
+	if(!controller)
+		draw_healthbar(this, wd, health / getMaxHealth(), 10. * nf, fuel / maxfuel(), -1.);
 
 	if(!init) do{
 		model = LoadMQOModel("models/interceptor.mqo");
@@ -354,6 +356,199 @@ void Sceptor::drawtra(wardraw_t *wd){
 		glMatrixMode(GL_MODELVIEW);*/
 		glPopAttrib();
 	}
+}
+
+void Sceptor::drawHUD(WarDraw *wd){
+
+	timemeas_t tm;
+	TimeMeasStart(&tm);
+	st::drawHUD(wd);
+
+	// If the camera is in tactical mode, HUD won't make much sense.
+	if(!(game->player && game->player->mover == game->player->cockpitview))
+		return;
+
+	glPushAttrib(GL_LINE_BIT);
+	glDisable(GL_LINE_SMOOTH);
+
+	// Get viewport size
+	GLint vp[4];
+	glGetIntegerv(GL_VIEWPORT, vp);
+	int w = vp[2], h = vp[3];
+	int maxSize = w < h ? h : w;
+	int minSize = w < h ? w : h;
+	double vpLeft = -(double)w / minSize;
+	double vpBottom = -(double)h / minSize;
+
+	// Correct aspect ratio
+	glPushMatrix();
+	glLoadIdentity();
+	glScaled(1./*(double)mi / w*/, 1./*(double)mi / h*/, (double)maxSize / minSize);
+
+	const double fontSize = 0.0025;
+
+	{
+		const double size = 0.1;
+		const double gap = 0.025;
+		// Crosshair
+		glBegin(GL_LINES);
+		glVertex3d(-size, 0, -1.);
+		glVertex3d(-gap, 0, -1.);
+		glVertex3d(gap, 0, -1.);
+		glVertex3d(size, 0, -1.);
+		glVertex3d(0, -size, -1.);
+		glVertex3d(0, -gap, -1.);
+		glVertex3d(0, gap, -1.);
+		glVertex3d(0, size, -1.);
+		glEnd();
+	}
+
+	// Flight path vector (prograde marker)
+	if(FLT_EPSILON < this->velo.slen()){
+		Vec3d lheading = rot.itrans(this->velo.norm());
+		if(0 < fabs(lheading[2])){
+			lheading[0] /= -lheading[2];
+			lheading[1] /= -lheading[2];
+			double hudFov = game->player->fov * maxSize / minSize;
+			if(lheading[2] < 0. && -hudFov < lheading[0] && lheading[0] < hudFov && -hudFov < lheading[1] && lheading[1] < hudFov){
+				glPushMatrix();
+				glTranslated(lheading[0] * hudFov, lheading[1] * hudFov, -1.);
+				glScaled(0.02, 0.02, 1.);
+
+				// Draw the circle
+				glBegin(GL_LINE_LOOP);
+				const double (*cuts)[2] = CircleCuts(16);
+				for(int i = 0; i < 16; i++){
+					double phase = i * 2 * M_PI / 16;
+					glVertex2dv(cuts[i]);
+				}
+				glEnd();
+
+				// Draw the stabilizers
+				glBegin(GL_LINES);
+				glVertex2d(0, 1);
+				glVertex2d(0, 2);
+				glVertex2d(1, 0);
+				glVertex2d(3, 0);
+				glVertex2d(-1, 0);
+				glVertex2d(-3, 0);
+				glEnd();
+
+				glPopMatrix();
+			}
+		}
+	}
+
+	{
+		const double left = vpLeft + 0.2;
+		const double right = left + 0.05;
+		const double top = vpBottom + 0.3;
+		const double bottom = vpBottom + 0.1;
+		const double height = top - bottom;
+		const double vcenter = (top + bottom) / 2;
+
+		// Box surrounding throttle indicator
+		glBegin(GL_LINE_LOOP);
+		glVertex3d(left, top, -1.);
+		glVertex3d(left, bottom, -1.);
+		glVertex3d(right, bottom, -1.);
+		glVertex3d(right, top, -1.);
+		glEnd();
+
+		// Indicator for current target throttle setting
+		glBegin(GL_LINE_LOOP);
+		glVertex3d(left, vcenter + targetThrottle * height / 2, -1.);
+		glVertex3d(left - 0.02, vcenter + targetThrottle * height / 2 + 0.01, -1.);
+		glVertex3d(left - 0.02, vcenter + targetThrottle * height / 2 - 0.01, -1.);
+		glEnd();
+
+		glBegin(GL_LINE_LOOP);
+		glVertex3d(right, vcenter + targetThrottle * height / 2, -1.);
+		glVertex3d(right + 0.02, vcenter + targetThrottle * height / 2 + 0.01, -1.);
+		glVertex3d(right + 0.02, vcenter + targetThrottle * height / 2 - 0.01, -1.);
+		glEnd();
+
+		glBegin(GL_LINES);
+		glVertex3d(left, vcenter + targetThrottle * height / 2, -1.);
+		glVertex3d(right, vcenter + targetThrottle * height / 2, -1.);
+		glEnd();
+
+		// Indicator for actual throttle
+		glBegin(GL_QUADS);
+		glVertex3d(left, vcenter + throttle * height / 2, -1.);
+		glVertex3d(left, vcenter, -1.);
+		glVertex3d(right, vcenter, -1.);
+		glVertex3d(right, vcenter + throttle * height / 2, -1.);
+		glEnd();
+
+		// Speed value readout
+		char speed[32];
+		sprintf(speed, "%5.1lf m/s", velo.len());
+		glPushMatrix();
+		glTranslated(left - 0.075, top + 0.01, -1.);
+		glScaled(fontSize, -fontSize, .1);
+		glwPutTextureString(speed, 16);
+		glPopMatrix();
+	}
+
+	{
+		const double left = vpLeft + 0.4;
+		const double right = left + 0.03;
+		const double top = vpBottom + 0.3;
+		const double bottom = vpBottom + 0.1;
+		const double height = top - bottom;
+
+		// Box surrounding fuel meter
+		glBegin(GL_LINE_LOOP);
+		glVertex3d(left, top, -1.);
+		glVertex3d(left, bottom, -1.);
+		glVertex3d(right, bottom, -1.);
+		glVertex3d(right, top, -1.);
+		glEnd();
+
+		// Fuel indicator
+		glBegin(GL_QUADS);
+		glVertex3d(left, bottom + fuel / maxFuelValue * height, -1.);
+		glVertex3d(left, bottom, -1.);
+		glVertex3d(right, bottom, -1.);
+		glVertex3d(right, bottom + fuel / maxFuelValue * height, -1.);
+		glEnd();
+
+		// Fuel readout
+		glPushMatrix();
+		glTranslated((left + right) / 2. - fontSize * glwGetSizeTextureString("FUEL", 16) / 2., top + 0.01, -1.);
+		glScaled(fontSize, -fontSize, .1);
+		glwPutTextureString("FUEL", 16);
+		glPopMatrix();
+	}
+
+
+	{
+		const double left = -vpLeft - 0.3;
+		const double bottom = vpBottom + 0.1;
+		const double top = bottom + fontSize * 16;
+		const double vcenter = (top + bottom) / 2.;
+		const double squareSize = fontSize * 16 * .8;
+		const double squareMargin = squareSize * 0.2;
+
+		// Flight assist indicator
+		glPushMatrix();
+		glTranslated(left, bottom, -1.);
+		glScaled(fontSize, -fontSize, .1);
+		glwPutTextureString("ASSIST", 16);
+		glPopMatrix();
+
+		glBegin(flightAssist ? GL_QUADS : GL_LINE_LOOP);
+		glVertex3d(left - squareMargin, vcenter + squareSize / 2., -1.);
+		glVertex3d(left - squareMargin, vcenter - squareSize / 2., -1.);
+		glVertex3d(left - squareMargin - squareSize, vcenter - squareSize / 2., -1.);
+		glVertex3d(left - squareMargin - squareSize, vcenter + squareSize / 2., -1.);
+		glEnd();
+	}
+
+	glPopMatrix();
+	glPopAttrib();
+
 }
 
 void Sceptor::drawOverlay(wardraw_t *){

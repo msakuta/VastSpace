@@ -94,6 +94,7 @@ public:
 	virtual void clientUpdate(double dt);
 	virtual void draw(wardraw_t *);
 	virtual void drawtra(wardraw_t *);
+	void drawHUD(WarDraw *)override;
 	virtual void drawOverlay(wardraw_t *);
 	virtual bool solid(const Entity*)const;
 	virtual int takedamage(double damage, int hitpart);

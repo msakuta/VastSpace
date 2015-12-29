@@ -12,6 +12,9 @@ angleaccel <- PI * 0.4;
 maxanglespeed <- PI;
 maxspeed <- 500.;
 
+analogDeadZone <- 0.1;
+analogSensitivity <- 0.01;
+
 local lateralAccel = 100.;
 dir_accel <- [
 	lateralAccel, lateralAccel, // Negative/Positive X-axis

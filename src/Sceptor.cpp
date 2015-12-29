@@ -63,6 +63,13 @@ double Sceptor::defaultMass = 4e3;
 double Sceptor::maxHealthValue = 200.;
 double Sceptor::maxFuelValue = 120.;
 double Sceptor::maxAngleAccel = M_PI * 0.8;
+
+/// Analog input device's parameters.  It could be different among devices,
+/// such as mouses, joysticks and gamepads (specifically, joysticks may have
+/// deadzones by their own), but for the time being, they share the same parameters.
+double Sceptor::analogDeadZone = 0.1;
+double Sceptor::analogSensitivity = 0.01;
+
 GLuint Sceptor::overlayDisp = 0;
 HSQOBJECT Sceptor::sqPopupMenu = sq_nullobj();
 HSQOBJECT Sceptor::sqCockpitView = sq_nullobj();
@@ -265,6 +272,8 @@ void Sceptor::init(){
 			MassProcess(defaultMass) <<=
 			SingleDoubleProcess(maxHealthValue, "maxhealth", false) <<=
 			SingleDoubleProcess(maxFuelValue, "maxfuel", false) <<=
+			SingleDoubleProcess(analogDeadZone, "analogDeadZone", false) <<=
+			SingleDoubleProcess(analogSensitivity, "analogSensitivity", false) <<=
 			HitboxProcess(hitboxes) <<=
 			EnginePosListProcess(enginePos, "enginePos") <<=
 			EnginePosListProcess(enginePosRev, "enginePosRev") <<=
@@ -276,6 +285,7 @@ void Sceptor::init(){
 		initialized = true;
 	}
 	fuel = maxfuel();
+	analogStick[0] = analogStick[1] = 0.;
 }
 
 /*static void SCEPTOR_control(entity_t *pt, warf_t *w, input_t *inputs, double dt){
@@ -1255,6 +1265,26 @@ void Sceptor::anim(double dt){
 		typedef ManeuverParams MP;
 
 		if(controlled){
+			int axes[2] = {1, 0};
+			btMatrix3x3 basis = bbody->getWorldTransform().getBasis();
+
+			// Analog input (mouse) process.
+			for(int i = 0; i < 2; i++){
+				analogStick[i] = rangein(analogStick[i] + inputs.analog[i] * analogSensitivity, -1, 1);
+
+				// Deadzone is present because it's very hard to place the mouse exactly at the center
+				// when the player want no rotation.
+				if(analogDeadZone < fabs(analogStick[i])){
+					// Normalized analog input rate, whose magnitude range in [0,1], but sign can be negative.
+					double rate = (analogStick[i] - analogDeadZone * signof(analogStick[i])) / (1. - analogDeadZone);
+
+					// Feedback signal amount.  Current angular velocity is added because its sign will eventually be inverted.
+					double feedback = rate * maneuverParams.maxanglespeed + basis.getColumn(axes[i]).dot(bbody->getAngularVelocity());
+
+					bbody->applyTorque(-basis.getColumn(axes[i]) * feedback * torqueAmount);
+				}
+			}
+
 			if(flightAssist){
 				targetSpeed = rangein(targetSpeed
 					+ (throttleUp - throttleDown) * maneuverParams.getAccel(MP::NZ) * 2. * dt,
@@ -1269,7 +1299,6 @@ void Sceptor::anim(double dt){
 			double targetThrottleValue = targetThrottle;
 			double targetHorizontalThrust = 0.;
 			double targetVerticalThrust = 0.;
-			btMatrix3x3 basis = bbody->getWorldTransform().getBasis();
 			if(flightAssist){
 				btScalar dotz = bbody->getLinearVelocity().dot(basis.getColumn(2)) + targetSpeed;
 				targetThrottleValue = rangein(dotz / maneuverParams.getAccel(dotz < 0. ? MP::NZ : MP::PZ), -1, 1);
@@ -1285,16 +1314,25 @@ void Sceptor::anim(double dt){
 			verticalThrust = approach(verticalThrust, targetVerticalThrust, dt, 0.);
 
 			// Stabilize rotation only if flight assist is enabled and no rotation is commanded.
-			if(flightAssist && !left && !right && !up && !down && !rollCW && !rollCCW && 0 < bbody->getAngularVelocity().length2()){
+			if(flightAssist && 0 < bbody->getAngularVelocity().length2()){
+				bool axisStabilize[3] = {
+					!up && !down && fabs(analogStick[1]) <= analogDeadZone,
+					!left && !right && fabs(analogStick[0]) <= analogDeadZone,
+					!rollCW && !rollCCW
+				};
 				// If current angular velocity has little magnitude, so little that would be complete stop in this frame,
 				// set zero instead of adding a torque to make it zero.
 				// Otherwise, the ship would look like trembling (oscillation by frame delay).
-				if(bbody->getAngularVelocity().length2() < maxAngleAccel * dt * maxAngleAccel * dt)
+				if(axisStabilize[0] && axisStabilize[1] && axisStabilize[2] && bbody->getAngularVelocity().length2() < maxAngleAccel * dt * maxAngleAccel * dt)
 					bbody->setAngularVelocity(btVector3(0,0,0));
 				else{
-					const double maxTorqueAmount = maxAngleAccel / bbody->getInvInertiaDiagLocal().length();
-					btVector3 counterTorque = -maxTorqueAmount * bbody->getAngularVelocity().normalized();
-					bbody->applyTorque(counterTorque);
+					for(int i = 0; i < 3; i++){
+						if(!axisStabilize[i])
+							continue;
+						const double maxTorqueAmount = maxAngleAccel / bbody->getInvInertiaDiagLocal()[i];
+						btVector3 counterTorque = -maxTorqueAmount * basis.getColumn(i).dot(bbody->getAngularVelocity()) * basis.getColumn(i);
+						bbody->applyTorque(counterTorque);
+					}
 				}
 			}
 		}

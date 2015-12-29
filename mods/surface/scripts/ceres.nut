@@ -21,8 +21,8 @@ birds.append(f15);*/
 
 local sc = player.cs.addent("Sceptor", Vec3d(200, 720, 5000. - 350.));
 sc.setrot(Quatd(0,sqrt(2.)/2.,0,sqrt(2.)/2.));
-//player.chase = sc;
-
+player.chase = sc;
+player.select([sc]);
 
 local tank = player.cs.addent("Tank", Vec3d(0, 0, 0));
 if(targetcs){
@@ -34,7 +34,7 @@ if(targetcs){
 		tank.pos = player.cs.transPosition(ceresPos, ceres);
 	}
 }
-player.chase = tank;
+//player.chase = tank;
 
 universe.paused = false;
 player.setrot(Quatd(0,0,0,1)); // Reset rotation for freelook

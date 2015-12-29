@@ -19,6 +19,8 @@ protected:
 	static double maxHealthValue;
 	static double maxFuelValue;
 	static double maxAngleAccel;
+	static double analogDeadZone;
+	static double analogSensitivity;
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
 	static HSQOBJECT sqPopupMenu;
@@ -120,6 +122,7 @@ protected:
 	bool flightAssist;
 	double targetThrottle; ///< The real throttle tries to approach to this value
 	double targetSpeed; ///< If flight assist is on, the vehicle automatically approaches to this speed.
+	double analogStick[2]; ///< Current analog input integration.
 	bool buildBody();
 	short bbodyMask()const;
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;

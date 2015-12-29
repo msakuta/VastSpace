@@ -403,6 +403,43 @@ void Sceptor::drawHUD(WarDraw *wd){
 		glEnd();
 	}
 
+	// Analog input axis indicator
+	{
+		const double left = -0.5;
+		const double right = 0.5;
+		const double top = 0.5;
+		const double bottom = -0.5;
+		double angle = atan2(-analogStick[1], analogStick[0]);
+		double length = sqrt(analogStick[1] * analogStick[1] + analogStick[0] * analogStick[0]);
+
+		// Show triangle marker toward the rotation (similar to Elite Dangerous)
+		if(analogDeadZone < length){
+			glPushMatrix();
+			glRotated(angle * deg_per_rad, 0, 0, 1);
+			glTranslated(length * 0.5, 0, -1);
+			glPushAttrib(GL_CURRENT_BIT);
+			for(int i = 0; i < 2; i++){
+				glColor4f(!i, !i, !i, (length - analogDeadZone) / (1. - analogDeadZone));
+				glBegin(i == 0 ? GL_POLYGON : GL_LINE_LOOP);
+				glVertex2d(-0.05, -0.025);
+				glVertex2d(-0.05,  0.025);
+				glVertex2d( 0.05,  0.0  );
+				glEnd();
+			}
+			glPopAttrib();
+			glPopMatrix();
+		}
+
+		/* Alternative method for drawing analog input indicator
+		glBegin(GL_LINES);
+		glVertex3d(analogStick[0] * (right - left) / 2, top, -1.);
+		glVertex3d(analogStick[0] * (right - left) / 2, bottom, -1.);
+		glVertex3d(left, -analogStick[1] * (top - bottom) / 2, -1.);
+		glVertex3d(right, -analogStick[1] * (top - bottom) / 2, -1.);
+		glEnd();
+		*/
+	}
+
 	// Flight path vector (prograde marker)
 	if(FLT_EPSILON < this->velo.slen()){
 		Vec3d lheading = rot.itrans(this->velo.norm());

@@ -273,6 +273,7 @@ void Sceptor::init(){
 			ManeuverParamsProcess(maneuverParams));
 		initialized = true;
 	}
+	fuel = maxfuel();
 }
 
 /*static void SCEPTOR_control(entity_t *pt, warf_t *w, input_t *inputs, double dt){
@@ -1232,15 +1233,15 @@ void Sceptor::anim(double dt){
 
 		if(controlled){
 			if(throttleUp)
-				p->targetThrottle = MIN(targetThrottle + dt, 1.);
+				p->targetThrottle = MIN(targetThrottle + 0.5 * dt, 1.);
 			if(throttleDown)
-				p->targetThrottle = MAX(targetThrottle - dt, -1.); // Reverse thrust is permitted
+				p->targetThrottle = MAX(targetThrottle - 0.5 * dt, -1.); // Reverse thrust is permitted
 			double targetThrottleValue = targetThrottle;
 			double targetHorizontalThrust = 0.;
 			double targetVerticalThrust = 0.;
 			btMatrix3x3 basis = bbody->getWorldTransform().getBasis();
-			if(flightAssist && targetThrottle == 0.){
-				btScalar dotz = bbody->getLinearVelocity().dot(basis.getColumn(2));
+			if(flightAssist){
+				btScalar dotz = bbody->getLinearVelocity().dot(basis.getColumn(2)) + targetThrottle * maneuverParams.maxspeed;
 				targetThrottleValue = rangein(dotz / maneuverParams.getAccel(dotz < 0. ? MP::NZ : MP::PZ), -1, 1);
 			}
 			// Always cancel lateral velocity when flight assistance is on.

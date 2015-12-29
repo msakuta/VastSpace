@@ -473,12 +473,13 @@ void Sceptor::drawHUD(WarDraw *wd){
 		glVertex3d(right, vcenter + targetThrottle * height / 2, -1.);
 		glEnd();
 
-		// Indicator for actual throttle
+		// Indicator for actual throttle or speed in case flight assist is on
+		double indicator = flightAssist || !controller ? rangein(velo.sp(rot.trans(Vec3d(0,0,-1))) / maneuverParams.maxspeed, -1, 1) : throttle;
 		glBegin(GL_QUADS);
-		glVertex3d(left, vcenter + throttle * height / 2, -1.);
+		glVertex3d(left, vcenter + indicator * height / 2, -1.);
 		glVertex3d(left, vcenter, -1.);
 		glVertex3d(right, vcenter, -1.);
-		glVertex3d(right, vcenter + throttle * height / 2, -1.);
+		glVertex3d(right, vcenter + indicator * height / 2, -1.);
 		glEnd();
 
 		// Speed value readout

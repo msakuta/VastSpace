@@ -205,9 +205,9 @@ void Autonomous::drawHUD(wardraw_t *wd){
 			velo = absvelo().len();
 	//		w->orientation(wf, &ort, pt->pos);
 			glRasterPos3d(left + 200. / m, -bottom - 100. / m, -1);
-			gldprintf("%lg km/s", velo);
+			gldprintf("%lg m/s", velo);
 			glRasterPos3d(left + 200. / m, -bottom - 120. / m, -1);
-			gldprintf("%lg kt", 1944. * velo);
+			gldprintf("%lg kt", 1.944 * velo);
 			glScaled((double)mi / m, (double)mi / m, 1);
 		}
 	}

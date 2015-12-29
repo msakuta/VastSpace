@@ -456,21 +456,22 @@ void Sceptor::drawHUD(WarDraw *wd){
 		glEnd();
 
 		// Indicator for current target throttle setting
+		double target = flightAssist || !controller ? targetSpeed / maneuverParams.maxspeed : targetThrottle;
 		glBegin(GL_LINE_LOOP);
-		glVertex3d(left, vcenter + targetThrottle * height / 2, -1.);
-		glVertex3d(left - 0.02, vcenter + targetThrottle * height / 2 + 0.01, -1.);
-		glVertex3d(left - 0.02, vcenter + targetThrottle * height / 2 - 0.01, -1.);
+		glVertex3d(left, vcenter + target * height / 2, -1.);
+		glVertex3d(left - 0.02, vcenter + target * height / 2 + 0.01, -1.);
+		glVertex3d(left - 0.02, vcenter + target * height / 2 - 0.01, -1.);
 		glEnd();
 
 		glBegin(GL_LINE_LOOP);
-		glVertex3d(right, vcenter + targetThrottle * height / 2, -1.);
-		glVertex3d(right + 0.02, vcenter + targetThrottle * height / 2 + 0.01, -1.);
-		glVertex3d(right + 0.02, vcenter + targetThrottle * height / 2 - 0.01, -1.);
+		glVertex3d(right, vcenter + target * height / 2, -1.);
+		glVertex3d(right + 0.02, vcenter + target * height / 2 + 0.01, -1.);
+		glVertex3d(right + 0.02, vcenter + target * height / 2 - 0.01, -1.);
 		glEnd();
 
 		glBegin(GL_LINES);
-		glVertex3d(left, vcenter + targetThrottle * height / 2, -1.);
-		glVertex3d(right, vcenter + targetThrottle * height / 2, -1.);
+		glVertex3d(left, vcenter + target * height / 2, -1.);
+		glVertex3d(right, vcenter + target * height / 2, -1.);
 		glEnd();
 
 		// Indicator for actual throttle or speed in case flight assist is on

@@ -116,8 +116,13 @@ if(isClient()){
 	register_console_command("throttleReset", @() controlProc("throttleReset", true));
 	register_console_command("toggleFlightAssist", function(){
 		local controlled = player.controlled;
-		if(controlled)
+		if(controlled){
 			controlled.flightAssist = !controlled.flightAssist;
+			if(controlled.flightAssist)
+				controlled.targetSpeed = controlled.rot.trans(Vec3d(0,0,-1)).sp(controlled.velo);
+			else
+				controlled.targetThrottle = 0.;
+		}
 	});
 
 	beginControl[classname] <- function (){

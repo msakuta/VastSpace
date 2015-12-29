@@ -119,6 +119,7 @@ protected:
 	bool left, right, up, down, rollCW, rollCCW, throttleUp, throttleDown;
 	bool flightAssist;
 	double targetThrottle; ///< The real throttle tries to approach to this value
+	double targetSpeed; ///< If flight assist is on, the vehicle automatically approaches to this speed.
 	bool buildBody();
 	short bbodyMask()const;
 	SQInteger sqGet(HSQUIRRELVM v, const SQChar *name)const override;

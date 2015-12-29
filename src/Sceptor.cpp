@@ -180,6 +180,7 @@ Sceptor::Sceptor(Game *game) : st(game),
 	throttleDown(false),
 	flightAssist(true),
 	targetThrottle(0.),
+	targetSpeed(0.),
 	active(true)
 {
 	init();
@@ -209,6 +210,7 @@ Sceptor::Sceptor(WarField *aw) : st(aw),
 	throttleDown(false),
 	flightAssist(true),
 	targetThrottle(0.),
+	targetSpeed(0.),
 	active(true)
 {
 	Sceptor *const p = this;
@@ -601,7 +603,15 @@ SQInteger Sceptor::sqGet(HSQUIRRELVM v, const SQChar *name)const{
 		sq_pushbool(v, flightAssist);
 		return 1;
 	}
-	else 
+	else if(!scstrcmp(name, _SC("targetThrottle"))){
+		sq_pushfloat(v, targetThrottle);
+		return 1;
+	}
+	else if(!scstrcmp(name, _SC("targetSpeed"))){
+		sq_pushfloat(v, targetSpeed);
+		return 1;
+	}
+	else
 		return st::sqGet(v, name);
 }
 
@@ -610,8 +620,21 @@ SQInteger Sceptor::sqSet(HSQUIRRELVM v, const SQChar *name){
 		SQBool retb;
 		if(SQ_FAILED(sq_getbool(v, 3, &retb)))
 			return SQ_ERROR;
-		race = int(retb);
 		flightAssist = retb != SQFalse;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("targetThrottle"))){
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
+			return SQ_ERROR;
+		targetThrottle = retf;
+		return 0;
+	}
+	else if(!scstrcmp(name, _SC("targetSpeed"))){
+		SQFloat retf;
+		if(SQ_FAILED(sq_getfloat(v, 3, &retf)))
+			return SQ_ERROR;
+		targetSpeed = retf;
 		return 0;
 	}
 	else
@@ -1232,20 +1255,26 @@ void Sceptor::anim(double dt){
 		typedef ManeuverParams MP;
 
 		if(controlled){
-			if(throttleUp)
-				p->targetThrottle = MIN(targetThrottle + 0.5 * dt, 1.);
-			if(throttleDown)
-				p->targetThrottle = MAX(targetThrottle - 0.5 * dt, -1.); // Reverse thrust is permitted
+			if(flightAssist){
+				targetSpeed = rangein(targetSpeed
+					+ (throttleUp - throttleDown) * maneuverParams.getAccel(MP::NZ) * 2. * dt,
+					-maneuverParams.maxspeed, maneuverParams.maxspeed); // Reverse thrust is permitted
+			}
+			else{
+				if(throttleUp)
+					p->targetThrottle = MIN(targetThrottle + 0.5 * dt, 1.);
+				if(throttleDown)
+					p->targetThrottle = MAX(targetThrottle - 0.5 * dt, -1.); // Reverse thrust is permitted
+			}
 			double targetThrottleValue = targetThrottle;
 			double targetHorizontalThrust = 0.;
 			double targetVerticalThrust = 0.;
 			btMatrix3x3 basis = bbody->getWorldTransform().getBasis();
 			if(flightAssist){
-				btScalar dotz = bbody->getLinearVelocity().dot(basis.getColumn(2)) + targetThrottle * maneuverParams.maxspeed;
+				btScalar dotz = bbody->getLinearVelocity().dot(basis.getColumn(2)) + targetSpeed;
 				targetThrottleValue = rangein(dotz / maneuverParams.getAccel(dotz < 0. ? MP::NZ : MP::PZ), -1, 1);
-			}
-			// Always cancel lateral velocity when flight assistance is on.
-			if(flightAssist){
+
+				// Always cancel lateral velocity when flight assistance is on.
 				btScalar dotx = bbody->getLinearVelocity().dot(basis.getColumn(0));
 				targetHorizontalThrust = rangein(-dotx / maneuverParams.getAccel(dotx < 0. ? MP::PX : MP::NX), -1, 1);
 				btScalar doty = bbody->getLinearVelocity().dot(basis.getColumn(1));
@@ -1723,8 +1752,12 @@ SQInteger Sceptor::sqf_setControl(HSQUIRRELVM v){
 		sceptor->throttleUp = b;
 	else if(!scstrcmp(str, _SC("throttleDown")))
 		sceptor->throttleDown = b;
-	else if(!scstrcmp(str, _SC("throttleReset")))
-		sceptor->targetThrottle = 0.;
+	else if(!scstrcmp(str, _SC("throttleReset"))){
+		if(sceptor->flightAssist)
+			sceptor->targetSpeed = 0.;
+		else
+			sceptor->targetThrottle = 0.;
+	}
 
 	return SQInteger(0);
 }

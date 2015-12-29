@@ -1516,6 +1516,10 @@ void Sceptor::anim(double dt){
 		}
 	}
 
+	// Apply gravity, should really be done in btActionInterface
+	if(bbody)
+		bbody->applyCentralForce(btvc(w->accel(this->pos, this->velo) / bbody->getInvMass()));
+
 	reverser = approach(reverser, throttle < 0, dt * 5., 0.);
 
 	if(muzzleFlash < dt)

@@ -607,14 +607,11 @@ void DrawTextureSphere::useShader(){
 			glUniform1i(locs.lightCountLoc, lightingStars.size());
 		}
 		if(0 <= locs.rotationLoc){
-//			RoundAstrobj *ts = dynamic_cast<RoundAstrobj*>(a);
-			Mat4d src = (vw->cs->tocsq(a->parent).cnj() * a->rot).tomat4();
-			// When drawing oblate sphere, we need to rotate normal map texture manually.
-//			if(ts && ts->oblateness != 0.)
-//				src = vw->rot * src;
 			// We always perform rotation since DrawTextureCubeEx is used by default.
-			src = vw->rot * src;
-			Mat3<float> rot3 = src.tomat3().cast<float>();
+			// Rotation matrix is necessary to compute UV directions in the shader to modulate by bump mapping.
+			Mat4d src = vw->cs->tocsq(a).tomat4();
+			Mat4d viewRot = vw->rot * src; // Take the camera's rotation into account
+			Mat3<float> rot3 = viewRot.tomat3().cast<float>();
 			glUniformMatrix3fv(locs.rotationLoc, 1, GL_FALSE, rot3);
 		}
 		if(0 <= locs.shadowCastLoc)
@@ -1950,8 +1947,8 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 						// Normal vector modulation before rotation for cube faces
 						Vec3d localVec((heights[0] - heights[1]) / 256., (heights[0] - heights[2]) / 256., 0.);
 
-						// Normal vector after rotation.  Negated direction seems right.
-						Vec3d globalVec = -(epos + cubedirs[nn].cnj().trans(localVec));
+						// Normal vector after rotation.
+						Vec3d globalVec = (epos + cubedirs[nn].cnj().trans(localVec));
 
 						// Store the normal vector in BGR order
 						dst->rgbRed = (GLubyte)rangein(127 + globalVec[2] * 128, 0, 255);

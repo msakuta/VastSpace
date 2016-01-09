@@ -79,7 +79,9 @@ class Astrobj extends CoordSys{
 }
 
 class RoundAstrobj extends Astrobj{
+	constructor(string name, CoordSys parent);
 	float oblateness;
+	float getTerrainHeight(Vec3d pos); ///< Returns terrain height of this RoundAstrobj at the given point relative to origin
 }
 
 class Star extends Astrobj{

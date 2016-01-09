@@ -78,7 +78,7 @@ class Astrobj extends CoordSys{
 	float radius; ///< Radius of the celestial body
 }
 
-class TexSphere extends Astrobj{
+class RoundAstrobj extends Astrobj{
 	float oblateness;
 }
 

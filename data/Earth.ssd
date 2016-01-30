@@ -132,7 +132,7 @@ coordsys Orbit earth{
 			inclination 13.3
 			argument_of_periapsis 180
 			ascending_node -90
-			updirection 0 1 
+			updirection 0 1
 			showorbit
 		}
 	}
@@ -141,7 +141,7 @@ coordsys Orbit earth{
 		cs_radius 200
 		object1 Earth
 		object2 moon/Moon
-		updirection 0 1 
+		updirection 0 1
 		fullname "Earth Lagrange 1"
 		bookmark "Earth Lagrange 1" 0 0 10
 		bookmark "Earth Lagrange 1,2" 0 0 -10 "Quatd.rotation(PI, Vec3d(0,1,0))"
@@ -162,7 +162,7 @@ coordsys Orbit earth{
 			bookmark "Side 7"
 		}
 	}
-	
+
 /*	coordsys Lagrange2 el2{
 		cs_radius 500
 		object1 Earth
@@ -176,7 +176,7 @@ coordsys Orbit earth{
 		cs_radius 500
 		object1 Earth
 		object2 moon/Moon
-		updirection 0 1 
+		updirection 0 1
 		bookmark "Earth Lagrange 4" 0 0 10
 		astro Island3 "Side 3"{
 			race 2
@@ -187,7 +187,7 @@ coordsys Orbit earth{
 		cs_radius 500
 		object1 Earth
 		object2 moon/Moon
-		updirection 0 1 
+		updirection 0 1
 		bookmark "Earth Lagrange 5" 0 0 10
 		astro Island3 "Side 5"{
 			race 2
@@ -202,7 +202,7 @@ coordsys Orbit earth{
 		inclination -23.4
 		argument_of_periapsis 180
 		ascending_node 0
-		updirection 0 1 
+		updirection 0 1
 		rstation
 #		addent assault 3 -3 0 1
 #		addent assault 3 3 0 1
@@ -218,7 +218,7 @@ coordsys Orbit earth{
 		ascending_node 0
 #		rotation Quatd.rotation(0.3*PI,Vec3d(1.4,0,1.4).norm())
 		rotation Quatd.rotation(0.65*PI,Vec3d(1,0,0))
-#		updirection 0 1 
+#		updirection 0 1
 /*		new astro Surface "s"{
 			pos 0 0 0
 #			rotation Quatd.rotation(0.3*PI,Vec3d(1,0,0))

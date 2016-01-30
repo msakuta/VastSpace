@@ -141,6 +141,7 @@ public:
 	static const int lodPatchSize = 1;
 	static const int lodPatchSize2 = lodPatchSize * lodPatchSize;
 	static const int maxPatchRatio = 4;
+	static const int meshRatio = 8;
 
 	static int getPatchSize(int lod = 0);
 	static int getPatchSize2(int lod = 0){

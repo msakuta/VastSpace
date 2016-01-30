@@ -1071,7 +1071,7 @@ int DrawTextureCubeEx::getPatchSize(int lod){
 }
 
 int DrawTextureCubeEx::getDivision(int lod){
-	return 8 << (2 * (lod + 1));
+	return meshRatio << (2 * (lod + 1));
 }
 
 #define PROFILE_CUBEEX 1
@@ -1571,12 +1571,13 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 				RoundAstrobj *ra = dynamic_cast<RoundAstrobj*>(a);
 				// Temporary variables for capturing by the lambda.
 				double aheight = m_terrainNoise.height / m_rad;
+				double mapHeight = m_terrainNoise.mapHeight / m_rad;
 
 				// Temporary buffer to pass heights at corners.
 				// We cannot pass an array in a capture list, so we make it a temporary struct
 				// (similar to a technique used for arguments).
 				struct{
-					double a[2][2];
+					double a[maxPatchRatio * meshRatio + 2][maxPatchRatio * meshRatio + 2];
 				} aheights;
 
 				// If we have a height map texture, use it to determine heights at the corners.
@@ -1585,15 +1586,17 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 				if(ra && ra->heightmap[direction]){
 					BITMAPINFO *bi = ra->heightmap[direction];
 
+					int currentPatchRatio = getPatchSize(lod+1) / getPatchSize(lod);
+
 					// iix and iiy are iterators for corner points
-					for(int iix = 0; iix < 2; iix++){
-						int indx = (px + iix) % getPatchSize(lod);
-						double dx = (double)indx * bi->bmiHeader.biWidth / getPatchSize(lod);
+					for(int iix = 0; iix < numof(aheights.a); iix++){
+						int indx = (px * currentPatchRatio * meshRatio + iix) % getDivision(lod);
+						double dx = (double)indx * bi->bmiHeader.biWidth / getDivision(lod);
 						int ix = int(dx);
 						double fx = dx - ix;
-						for(int iiy = 0; iiy < 2; iiy++){
-							int indy = (py + iiy) % getPatchSize(lod);
-							double dy = (double)indy * bi->bmiHeader.biHeight / getPatchSize(lod);
+						for(int iiy = 0; iiy < numof(aheights.a[iix]); iiy++){
+							int indy = (py * currentPatchRatio * meshRatio + iiy) % getDivision(lod);
+							double dy = (double)indy * bi->bmiHeader.biHeight / getDivision(lod);
 							int iy = int(dy);
 							double fy = dy - iy;
 
@@ -1605,17 +1608,16 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 									int jjy = std::max(std::min(bi->bmiHeader.biHeight - long(iy + jy) - 1, bi->bmiHeader.biHeight-1), 0l);
 									uint8_t ui = ((RGBQUAD*)(((uint8_t*)&bi->bmiColors[bi->bmiHeader.biClrUsed])
 										+ bi->bmiHeader.biBitCount * (jjx + jjy * bi->bmiHeader.biWidth) / 8))->rgbRed;
-									accum += aheight * (jx ? fx : 1. - fx) * (jy ? fy : 1. - fy) * (ui - 42) / 256.;
+									accum += mapHeight * (jx ? fx : 1. - fx) * (jy ? fy : 1. - fy) * (ui - 42) / 256.;
 								}
 							}
 							aheights.a[iix][iiy] = std::max(0., accum);
 						}
 					}
-//					aheight *= (double)std::max(0., accum - 42) / 256.;
 				}
 				else{
-					for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++)
-						aheights.a[i][j] = aheight;
+					for(int i = 0; i < numof(aheights.a); i++) for(int j = 0; j < numof(aheights.a[i]); j++)
+						aheights.a[i][j] = 0.;
 				}
 				double persistence = m_terrainNoise.persistence;
 				int octaves = m_terrainNoise.octaves;
@@ -1630,6 +1632,7 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 					const int nextPatchSize = getPatchSize(lod+1);
 					const int patchRatio = nextPatchSize / lodPatchSize;
 					const int divides = getDivision(lod);
+					const int meshRatio = divides / nextPatchSize;
 
 					BufferData &bd = *bufs.pbd;
 
@@ -1653,13 +1656,12 @@ DrawTextureCubeEx::SubBufs::iterator DrawTextureCubeEx::compileVertexBuffersSubB
 								// It could be another implementation that sample height map for each npx and npy grid points and
 								// interpolate in a single loop, but it would require extra calls to getTerrainHeightInt.
 								// Current implementation behaves well, so let's leave it until we'd find a problem.
-								double fx = double(npx * (ixEnd - ixBegin) + ix - ixBegin) / (ixEnd - ixBegin) / patchRatio;
-								double fy = double(npy * (iyEnd - iyBegin) + iy - iyBegin) / (iyEnd - iyBegin) / patchRatio;
-								double accum = 0.;
-								for(int jx = 0; jx < 2; jx++)
-									for(int jy = 0; jy < 2; jy++)
-										accum += aheights.a[jx][jy] * (jx ? fx : 1. - fx) * (jy ? fy : 1. - fy);
-								return height(v * baseLevel, octaves, persistence, accum, tmods);
+								double x = meshRatio * double(ix - ixBegin) / (ixEnd - ixBegin);
+								double y = meshRatio * double(iy - iyBegin) / (iyEnd - iyBegin);
+								int iix = std::min((int)numof(aheights.a)-1, npx * meshRatio + int(x));
+								int iiy = std::min((int)numof(aheights.a[0])-1, npy * meshRatio + int(y));
+								double accum = aheights.a[iix][iiy];
+								return height(v * baseLevel, octaves, persistence, aheight, tmods) + accum;
 							};
 							HeightGetter bheight = [=](const Vec3d &v, int ix, int iy){
 								return lheight(v, ix, iy)
@@ -2007,7 +2009,7 @@ GLuint DrawTextureSphere::ProjectSphereCube(const char *name, const BITMAPINFO *
 //				std::ostringstream bstr;
 				const char *p;
 	//			FILE *fp;
-				gltestp::dstring dstr = pathProjection(name, nn);
+				gltestp::dstring dstr = pathProjection(name, nn, flags & DTS_HEIGHTMAP);
 //				bstr << "cache/" << (p ? std::string(name).substr(0, p - name) : name) << "_proj" << nn << ".bmp";
 
 				// Create directories to make path available
@@ -2180,7 +2182,7 @@ GLuint DrawTextureSphere::ProjectSphereCubeImage(const char *fname, int flags)co
 			int i;
 			bool ok = true;
 			for(i = 0; i < 6; i++){
-				gltestp::dstring outfilename = pathProjection(fname, i);
+				gltestp::dstring outfilename = pathProjection(fname, i, flags & DTS_HEIGHTMAP);
 
 				if(!GetFileAttributesEx(outfilename, GetFileExInfoStandard, &fd))
 					goto heterogeneous;

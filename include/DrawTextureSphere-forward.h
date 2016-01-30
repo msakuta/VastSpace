@@ -55,7 +55,8 @@ typedef std::vector<Texture> TextureList;
 /// in a structure.
 struct TerrainNoise{
 	bool enable;
-	double height;
+	double height; ///< Noise's height scale
+	double mapHeight; ///< Texture height map's maximum height
 	double persistence;
 	double lodRange;
 	int lods;
@@ -66,6 +67,7 @@ struct TerrainNoise{
 	TerrainNoise() :
 		enable(false),
 		height(1000.),
+		mapHeight(1000.),
 		persistence(0.65),
 		lodRange(3.),
 		lods(3),

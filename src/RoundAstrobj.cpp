@@ -116,6 +116,7 @@ UnserializeStream &operator>>(UnserializeStream &i, RoundAstrobj::Texture &a){
 SerializeStream &operator<<(SerializeStream &o, const TerrainNoise &a){
 	o << a.enable;
 	o << a.height;
+	o << a.mapHeight;
 	o << a.persistence;
 	o << a.lodRange;
 	o << a.lods;
@@ -128,6 +129,7 @@ SerializeStream &operator<<(SerializeStream &o, const TerrainNoise &a){
 UnserializeStream &operator>>(UnserializeStream &i, TerrainNoise &a){
 	i >> a.enable;
 	i >> a.height;
+	i >> a.mapHeight;
 	i >> a.persistence;
 	i >> a.lodRange;
 	i >> a.lods;
@@ -369,6 +371,10 @@ bool RoundAstrobj::readFile(StellarContext &sc, int argc, const char *argv[]){
 		terrainNoise.height = sqcalc(sc, ps, s) * lengthUnit;
 		return true;
 	}
+	else if(!scstrcmp(s, "terrainTextureHeight")){
+		terrainNoise.mapHeight = sqcalc(sc, ps, s) * lengthUnit;
+		return true;
+	}
 	else if(!scstrcmp(s, "terrainNoisePersistence")){
 		terrainNoise.persistence = sqcalc(sc, ps, s);
 		return true;
@@ -449,7 +455,7 @@ double RoundAstrobj::getTerrainHeight(const Vec3d &basepos)const{
 		}
 	}
 
-	double height = terrainNoise.height;
+	double height = 0;
 	if(heightmap[direction]){
 		BITMAPINFO *bi = heightmap[direction];
 
@@ -471,13 +477,13 @@ double RoundAstrobj::getTerrainHeight(const Vec3d &basepos)const{
 			for(int jy = 0; jy < 2; jy++){
 				long jjy = std::max(std::min(bi->bmiHeader.biHeight - long(iy + jy) - 1, bi->bmiHeader.biHeight-1), 0l);
 				uint8_t ui = ((RGBQUAD*)(((uint8_t*)&bi->bmiColors[bi->bmiHeader.biClrUsed]) + bi->bmiHeader.biBitCount * (jjx + jjy * bi->bmiHeader.biWidth) / 8))->rgbRed;
-				accum += this->terrainNoise.height * (jx ? fx : 1. - fx) * (jy ? fy : 1. - fy) * (ui - 42) / 256.;
+				accum += this->terrainNoise.mapHeight * (jx ? fx : 1. - fx) * (jy ? fy : 1. - fy) * (ui - 42) / 256.;
 			}
 		}
 		height = accum;
 	}
 
-	return getTerrainHeightInt(basepos * (1 << terrainNoise.baseLevel), terrainNoise.octaves, terrainNoise.persistence, height / rad, tmods);
+	return getTerrainHeightInt(basepos * (1 << terrainNoise.baseLevel), terrainNoise.octaves, terrainNoise.persistence, terrainNoise.height / rad, tmods) + height / rad;
 }
 
 /// Simplex Fractal Noise in 3D

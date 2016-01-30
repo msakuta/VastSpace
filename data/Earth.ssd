@@ -25,11 +25,12 @@ coordsys Orbit earth{
 		terrainNoiseEnable true
 		terrainNoiseLODRange 2.5
 		terrainNoiseLODs 8
-		terrainNoiseHeight 15.
+		terrainNoiseHeight 5.
 		terrainNoisePersistence 0.80
 		terrainNoiseOctaves 11
 		terrainNoiseBaseLevel 5
 		terrainNoiseZBufLODs 3
+		terrainTextureHeight 10.
 #		vertexshader "shaders/flatplanet.vs"
 #		fragmentshader "shaders/flatplanet.fs"
 		fragmentshader shaders/earth.fs
@@ -95,13 +96,34 @@ coordsys Orbit earth{
 			omega "(Quatd.rotation(ascending_node * RAD_PER_DEG,Vec3d(0,0,1))*Quatd.rotation(tilt,Vec3d(1,0,0))).trans(Vec3d(0,0,1)) * PI*2/(27*DAY_SECONDS+7*HOUR_SECONDS+43.7*MINUTE_SECONDS)"   #rotation speed
 #			rotation "Quatd.rotation(ascending_node * RAD_PER_DEG,Vec3d(0,0,1))*Quatd.rotation(tilt,Vec3d(1,0,0))"
 			texture textures/moon.png
-			extexture bumptexture textures/moonbump.png 0 normal
+			extexture bumptexture textures/moonbump.png normal
+			extexture heighttexture textures/moonbump.png height
 			fragmentshader shaders/moon.fs
 			vertexshader shaders/moon.vs
 #			updirection 0 1 0
 #			oblateness 0.01
 			planet
 			spherehit
+
+			terrainNoiseEnable true
+			terrainNoiseLODs 7
+			terrainNoiseHeight 2.
+			terrainNoisePersistence 0.70
+			terrainNoiseBaseLevel 5
+			terrainNoiseOctaves 8
+			terrainTextureHeight 10.
+
+			define theta 0.40*PI
+			define phi 1.0*PI
+			define rad 1738+2
+
+			coordsys Surface moons{
+				pos rad*sin(phi) rad*cos(theta)*cos(phi) rad*sin(theta)*cos(phi)
+	#			updirection sin(phi) sin(theta)*cos(phi) -cos(theta)*cos(phi)
+				rotation Quatd.rotation(theta,Vec3d(1,0,0))*Quatd.rotation(-phi,Vec3d(0,0,1))
+				teleport "Moon Surface" 0 0 0
+			}
+
 		}
 		coordsys Orbit moonlo{
 			fullname "Moon Low Orbit"

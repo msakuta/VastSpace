@@ -16,10 +16,10 @@ function init_Universe(){
 		mainmenu.addItem("Earth Surface Demo", @() sendCM("load_surface_demo"));
 		mainmenu.addItem("Ceres Surface Demo", @() sendCM("load_surface_ceres"));
 		mainmenu.addItem("Mars Surface Demo", @() sendCM("load_surface_mars"));
+		mainmenu.addItem("Moon Surface Demo", @() sendCM("load_surface_moon"));
 
 		// Adjust window position to center of screen, after all menu items are added.
 		mainmenu.x = screenwidth() / 2 - mainmenu.width / 2;
 		mainmenu.y = screenheight() / 2 - mainmenu.height / 2;
 	});
 }
-

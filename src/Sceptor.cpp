@@ -648,7 +648,7 @@ SQInteger Sceptor::sqSet(HSQUIRRELVM v, const SQChar *name){
 		return 0;
 	}
 	else
-		return st::sqGet(v, name);
+		return st::sqSet(v, name);
 }
 
 HSQOBJECT Sceptor::getSqPopupMenu(){

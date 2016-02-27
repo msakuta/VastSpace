@@ -19,6 +19,8 @@ ScriptWinMenu MENU
     POPUP "&File"
     {
         MENUITEM "&Open", IDM_SCRIPT_OPEN
+        MENUITEM "&Save", IDM_SCRIPT_SAVE
+        MENUITEM "Save &As...", IDM_SCRIPT_SAVEAS
     }
     POPUP "&View"
     {

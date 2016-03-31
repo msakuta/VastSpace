@@ -2571,7 +2571,7 @@ int main(int argc, char *argv[])
 		sc.runProc = scripterRunProc;
 		sc.onClose = NULL;
 		CmdPrintHandler = CmdPrintAdapter;
-		sc.sourceFilters = "Squirrel sources (*.nut)\0*.nut\0All (*.*)\0*.*\0";
+		sc.sourceFilters = "Squirrel sources (*.nut)|*.nut|All (*.*)|*.*";
 		scwin = scripter_init(&sc);
 	}
 #else

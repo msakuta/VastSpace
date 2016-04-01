@@ -4,9 +4,23 @@
 
 #include <windows.h>
 #include "resource.h"
+#include <CommCtrl.h>
 
 #include <string>
+#include <sstream>
 #include <vector>
+#include <deque>
+
+
+// Because ResEdit erases unused IDs from resource.h automatically, we cannot define
+// the dynamic (runtime generated) control IDs in there, unless we use a placeholder
+// control in the resource for the sole purpose of reserving the ID, which would be
+// counterintuitive. So we define the value here.
+// This ID is only used for Scintilla component notification messages, so multiple
+// controls can share this ID (individual control is identified by window handles).
+// The problem is that it's hard to keep it unique from all the other IDs in resource.h.
+#define IDC_SCRIPTEDIT_DYNAMIC 1998
+
 
 struct ScripterWindowImpl : ScripterWindow{
 	/// Window handle for the scripting window.
@@ -19,31 +33,76 @@ struct ScripterWindowImpl : ScripterWindow{
 	std::vector<char*> cmdHistory;
 	int currentHistory;
 
-	std::string fileName;
-	bool dirty;
+	struct Buffer{
+		std::string fileName;
+		std::string contents;
+		HWND hEdit;
+		bool dirty;
+		Buffer() : dirty(false){}
+	};
+
+	std::deque<Buffer> buffers;
+	int activeBuffer;
+
+	ScripterWindowImpl() : activeBuffer(0){}
 
 	void print(const char *line);
 
-	ScripterWindowImpl() : dirty(false){}
-
 	INT_PTR ScriptCommandProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-	void SetFileName(const char *fileName){
-		this->fileName = fileName;
-		std::string title = "Scripting Window (" + this->fileName + ")";
+	void UpdateTitle(){
+		std::string title = "Scripting Window ";
+		if(0 <= activeBuffer && activeBuffer < buffers.size()){
+			Buffer &buf = buffers[activeBuffer];
+			if(buf.dirty)
+				title += "* ";
+			if(!buf.fileName.empty())
+				title += "(" + buf.fileName + ")";
+		}
 		SetWindowTextA(hwndScriptDlg, title.c_str());
+	}
+
+	void SetFileName(const char *fileName, bool dirty = false){
+		if(0 <= activeBuffer && activeBuffer < buffers.size()){
+			Buffer &buf = buffers[activeBuffer];
+			buf.fileName = fileName;
+			buf.dirty = dirty;
+
+			// Update current buffer's tab title string, too
+			TCITEMA tcitem;
+			tcitem.mask = TCIF_TEXT;
+			const char *pstr = strrchr(fileName, '\\');
+			std::string bufName = GetBufferName(activeBuffer);
+			tcitem.pszText = const_cast<LPSTR>(bufName.c_str());
+			SendMessageA(GetDlgItem(hwndScriptDlg, IDC_TABBUFFER), TCM_SETITEMA, activeBuffer, (LPARAM)&tcitem);
+		}
+		UpdateTitle();
 	}
 
 	/// Update save point status (whether the document is dirty i.e. need to be saved before closing)
 	void SavePoint(bool reached){
-		std::string title = "Scripting Window ";
-		if(!reached)
-			title += "* ";
-		if(!fileName.empty())
-			title += "(" + this->fileName + ")";
-		SetWindowTextA(hwndScriptDlg, title.c_str());
-		dirty = !reached;
+		if(0 <= activeBuffer && activeBuffer < buffers.size()){
+			Buffer &buf = buffers[activeBuffer];
+			buf.dirty = !reached;
+		}
+		UpdateTitle();
 	}
+
+	Buffer &GetCurrentBuffer(){
+		if(0 <= activeBuffer && activeBuffer < buffers.size()){
+			Buffer &buf = buffers[activeBuffer];
+		}
+		else
+			throw std::exception("No active buffer");
+	}
+
+	void SetCurrentBuffer(int index);
+	std::string GetBufferName(int index);
+
+	Buffer &AddBuffer(const char *fileName);
+
+	void SetLexerSingle(HWND hEdit);
+	void SetLexer();
 };
 
 static void PrintProc(ScripterWindow *p, const char *s){
@@ -72,6 +131,127 @@ void ScripterWindowImpl::print(const char *line){
 		SendMessageA(hEdit, EM_REPLACESEL, 0, (LPARAM) s.c_str());
 	}
 }
+
+void ScripterWindowImpl::SetCurrentBuffer(int index){
+	if(0 <= index && index < buffers.size()){
+		// Hide old buffer
+		if(0 <= activeBuffer && activeBuffer < buffers.size()){
+			ShowWindow(buffers[activeBuffer].hEdit, SW_HIDE);
+		}
+
+		activeBuffer = index;
+		Buffer &buf = buffers[index];
+		UpdateTitle();
+		ShowWindow(buf.hEdit, SW_SHOW); // Show new buffer
+	}
+}
+
+std::string ScripterWindowImpl::GetBufferName(int index){
+	if(0 <= index && index < buffers.size()){
+		if(buffers[index].fileName.empty()){
+			std::stringstream ss;
+			ss << "(New " << index << ")";
+			return ss.str();
+		}
+		else{
+			size_t pos = buffers[index].fileName.rfind('\\');
+			return pos == std::string::npos ? buffers[index].fileName : buffers[index].fileName.substr(pos + 1);
+		}
+	}
+	else
+		throw std::exception("No active buffer");
+}
+
+ScripterWindowImpl::Buffer &ScripterWindowImpl::AddBuffer(const char *fileName){
+	buffers.push_back(ScripterWindowImpl::Buffer());
+	Buffer *buf = &buffers.back();
+	buf->fileName = fileName;
+
+	HWND hRun = GetDlgItem(hwndScriptDlg, IDOK);
+	HWND hScr = GetDlgItem(hwndScriptDlg, IDC_SCRIPTEDIT);
+	RECT cr;
+	GetClientRect(hwndScriptDlg, &cr);
+	RECT scr;
+	GetWindowRect(hScr, &scr);
+	POINT posScr = {scr.left, scr.top};
+	ScreenToClient(hwndScriptDlg, &posScr);
+	RECT runr;
+	GetWindowRect(hRun, &runr);
+	buf->hEdit = CreateWindowExW(0,
+		L"Scintilla", L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_CLIPCHILDREN,
+		posScr.x, posScr.y, posScr.x + scr.right - scr.left, posScr.y + scr.bottom - scr.top, hwndScriptDlg,
+		(HMENU)IDC_SCRIPTEDIT_DYNAMIC, GetModuleHandle(NULL), NULL);
+	if(!buf->hEdit)
+		throw std::exception("Couldn't create editor component");
+
+	// Adjust position as in WM_SIZE
+	SetWindowPos(buf->hEdit, NULL, 0, 0, cr.right - posScr.x - (runr.right - runr.left) - 10,
+		scr.bottom - scr.top, SWP_NOMOVE);
+
+	SetLexerSingle(buf->hEdit);
+
+	TCITEMA tcitem;
+	tcitem.mask = TCIF_TEXT;
+	const char *pstr = strrchr(fileName, '\\');
+	tcitem.pszText = const_cast<LPSTR>(fileName[0] == '\0' ? "(New)" : pstr ? pstr+1 : fileName);
+	SendMessageA(GetDlgItem(hwndScriptDlg, IDC_TABBUFFER), TCM_INSERTITEMA, buffers.size() - 1, (LPARAM)&tcitem);
+	SetCurrentBuffer(buffers.size() - 1);
+	SendMessageA(GetDlgItem(hwndScriptDlg, IDC_TABBUFFER), TCM_SETCURSEL, buffers.size() - 1, 0);
+
+	return *buf;
+}
+
+inline int SciRGB(unsigned char r, unsigned char g, unsigned char b){
+	return r | (g << 8) | (b << 16);
+}
+
+void ScripterWindowImpl::SetLexerSingle(HWND hScriptEdit){
+	SendMessage(hScriptEdit, SCI_SETLEXER, SCLEX_CPP, 0);
+	SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_COMMENT, SciRGB(0,127,0));
+	SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_COMMENTLINE, SciRGB(0,127,0));
+	SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_COMMENTDOC, SciRGB(0,127,0));
+	SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_COMMENTLINEDOC, SciRGB(0,127,63));
+	SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_COMMENTDOCKEYWORD, SciRGB(0,63,127));
+	SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_COMMENTDOCKEYWORDERROR, SciRGB(255,0,0));
+	SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_NUMBER, SciRGB(0,127,255));
+	SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_WORD, SciRGB(0,0,255));
+	SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_STRING, SciRGB(127,0,0));
+	SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_CHARACTER, SciRGB(127,0,127));
+	SendMessage(hScriptEdit, SCI_SETKEYWORDS, 0,
+		(LPARAM)"base break case catch class clone "
+		"continue const default delete else enum "
+		"extends for foreach function if in "
+		"local null resume return switch this "
+		"throw try typeof while yield constructor "
+		"instanceof true false static ");
+	SendMessage(hScriptEdit, SCI_SETKEYWORDS, 2,
+		(LPARAM)"a addindex addtogroup anchor arg attention author authors b brief bug "
+		"c callgraph callergraph category cite class code cond copybrief copydetails "
+		"copydoc copyright date def defgroup deprecated details diafile dir docbookonly "
+		"dontinclude dot dotfile e else elseif em endcode endcond enddocbookonly enddot "
+		"endhtmlonly endif endinternal endlatexonly endlink endmanonly endmsc endparblock "
+		"endrtfonly endsecreflist endverbatim enduml endxmlonly enum example exception extends "
+		"f$ f[ f] f{ f} file fn headerfile hideinitializer htmlinclude htmlonly idlexcept if "
+		"ifnot image implements include includelineno ingroup internal invariant interface "
+		"latexinclude latexonly li line link mainpage manonly memberof msc mscfile n name "
+		"namespace nosubgrouping note overload p package page par paragraph param parblock "
+		"post pre private privatesection property protected protectedsection protocol public "
+		"publicsection pure ref refitem related relates relatedalso relatesalso remark remarks "
+		"result return returns retval rtfonly sa secreflist section see short showinitializer "
+		"since skip skipline snippet startuml struct subpage subsection subsubsection "
+		"tableofcontents test throw throws todo tparam typedef union until var verbatim "
+		"verbinclude version vhdlflow warning weakgroup xmlonly xrefitem $ @ \\ & ~ < > # %");
+
+	bool state = (GetMenuState(GetMenu(hwndScriptDlg), IDM_WHITESPACES, MF_BYCOMMAND) & MF_CHECKED);
+	SendMessage(hScriptEdit, SCI_SETVIEWWS, state ? SCWS_VISIBLEALWAYS : SCWS_INVISIBLE, 0);
+	SendMessage(hScriptEdit, SCI_SETWHITESPACEFORE, 1, SciRGB(0x7f, 0xbf, 0xbf));
+}
+
+void ScripterWindowImpl::SetLexer(){
+	for(int i = 0; i < buffers.size(); i++)
+		SetLexerSingle(buffers[i].hEdit);
+}
+
 
 static HMODULE hSciLexer = NULL;
 
@@ -144,34 +324,57 @@ INT_PTR ScripterWindowImpl::ScriptCommandProc(HWND hWnd, UINT message, WPARAM wP
 	return CallWindowProc(defEditWndProc, hWnd, message, wParam, lParam);
 }
 
-inline int SciRGB(unsigned char r, unsigned char g, unsigned char b){
-	return r | (g << 8) | (b << 16);
-}
-
 /// Calculate width of line numbers margin by contents
 static void RecalcLineNumberWidth(HWND hDlg){
-	HWND hScriptEdit = GetDlgItem(hDlg, IDC_SCRIPTEDIT);
-	if(!hScriptEdit)
-		return;
-	bool showState = (GetMenuState(GetMenu(hDlg), IDM_LINENUMBERS, MF_BYCOMMAND) & MF_CHECKED) != 0;
+	ScripterWindowImpl *p = (ScripterWindowImpl*)GetWindowLongPtr(hDlg, GWLP_USERDATA);
+	for(int i = 0; i < p->buffers.size(); i++){
+		HWND hScriptEdit = p->buffers[i].hEdit;
+		if(!hScriptEdit)
+			return;
+		bool showState = (GetMenuState(GetMenu(hDlg), IDM_LINENUMBERS, MF_BYCOMMAND) & MF_CHECKED) != 0;
 
-	// Make sure to set type of the first margin to be line numbers
-	SendMessage(hScriptEdit, SCI_SETMARGINTYPEN, 0, SC_MARGIN_NUMBER);
+		// Make sure to set type of the first margin to be line numbers
+		SendMessage(hScriptEdit, SCI_SETMARGINTYPEN, 0, SC_MARGIN_NUMBER);
 
-	// Obtain width needed to display all line count in the buffer
-	int lineCount = SendMessage(hScriptEdit, SCI_GETLINECOUNT, 0, 0);
-	std::string lineText = "_";
-	for(int i = 0; pow(10, i) <= lineCount; i++)
-		lineText += "9";
+		// Obtain width needed to display all line count in the buffer
+		int lineCount = SendMessage(hScriptEdit, SCI_GETLINECOUNT, 0, 0);
+		std::string lineText = "_";
+		for(int i = 0; pow(10, i) <= lineCount; i++)
+			lineText += "9";
 
-	int width = showState ? SendMessage(hScriptEdit, SCI_TEXTWIDTH, STYLE_LINENUMBER, (LPARAM)lineText.c_str()) : 0;
-	SendMessage(hScriptEdit, SCI_SETMARGINWIDTHN, 0, width);
+		int width = showState ? SendMessage(hScriptEdit, SCI_TEXTWIDTH, STYLE_LINENUMBER, (LPARAM)lineText.c_str()) : 0;
+		SendMessage(hScriptEdit, SCI_SETMARGINWIDTHN, 0, width);
+	}
 }
 
 static void LoadScriptFile(HWND hDlg, const char *fileName){
 	ScripterWindowImpl *p = (ScripterWindowImpl*)GetWindowLongPtr(hDlg, GWLP_USERDATA);
 	if(!p)
 		return;
+
+	ScripterWindowImpl::Buffer *buf = NULL;
+	// Find a buffer with the same file name and select it instead of creating a new buffer.
+	if(fileName[0]){
+		for(int i = 0; i < p->buffers.size(); i++){
+			if(p->buffers[i].fileName == fileName){
+				buf = &p->buffers[i];
+				p->SetCurrentBuffer(i);
+				SendMessageA(GetDlgItem(hDlg, IDC_TABBUFFER), TCM_SETCURSEL, i, 0);
+				break;
+			}
+		}
+	}
+	if(!buf){
+		buf = &p->AddBuffer(fileName);
+	}
+
+	// Reset status to create an empty buffer if file name is absent
+	if(fileName[0] == '\0'){
+		p->SetFileName("");
+		RecalcLineNumberWidth(hDlg);
+		return;
+	}
+
 	HANDLE hFile = CreateFileA(fileName, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if(hFile != INVALID_HANDLE_VALUE){
 		DWORD textLen = GetFileSize(hFile, NULL);
@@ -183,12 +386,15 @@ static void LoadScriptFile(HWND hDlg, const char *fileName){
 		// SetWindowTextA() seems to convert given string into unicode string prior to calling message handler.
 //						SetWindowTextA(GetDlgItem(hDlg, IDC_SCRIPTEDIT), text);
 		// SCI_SETTEXT seems to pass the pointer verbatum to the message handler.
-		SendMessageA(GetDlgItem(hDlg, IDC_SCRIPTEDIT), SCI_SETTEXT, 0, (LPARAM)text);
+		SendMessageA(p->GetCurrentBuffer().hEdit, SCI_SETTEXT, 0, (LPARAM)text);
 		CloseHandle(hFile);
 		free(text);
 		free(wtext);
-		// Set savepoint for buffer dirtiness management
-		SendMessageA(GetDlgItem(hDlg, IDC_SCRIPTEDIT), SCI_SETSAVEPOINT, 0, 0);
+
+		// Clear undo buffer instead of setting a savepoint because we don't want to undo to empty document
+		// if it's opened from a file.
+		SendMessageA(buf->hEdit, SCI_EMPTYUNDOBUFFER, 0, 0);
+
 		p->SetFileName(fileName);
 		RecalcLineNumberWidth(hDlg);
 	}
@@ -200,14 +406,14 @@ static void SaveScriptFile(HWND hDlg, const char *fileName){
 		return;
 	HANDLE hFile = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if(hFile != INVALID_HANDLE_VALUE){
-		DWORD textLen = SendMessageA(GetDlgItem(hDlg, IDC_SCRIPTEDIT), SCI_GETTEXTLENGTH, 0, 0);
+		DWORD textLen = SendMessageA(p->GetCurrentBuffer().hEdit, SCI_GETTEXTLENGTH, 0, 0);
 		char *text = (char*)malloc((textLen+1) * sizeof(char));
-		SendMessageA(GetDlgItem(hDlg, IDC_SCRIPTEDIT), SCI_GETTEXT, textLen + 1, (LPARAM)text);
+		SendMessageA(p->GetCurrentBuffer().hEdit, SCI_GETTEXT, textLen + 1, (LPARAM)text);
 		WriteFile(hFile, text, textLen, &textLen, NULL);
 		CloseHandle(hFile);
 		free(text);
 		// Set savepoint for buffer dirtiness management
-		SendMessageA(GetDlgItem(hDlg, IDC_SCRIPTEDIT), SCI_SETSAVEPOINT, 0, 0);
+		SendMessageA(p->GetCurrentBuffer().hEdit, SCI_SETSAVEPOINT, 0, 0);
 		p->SetFileName(fileName); // Remember the file name for the next save operation
 	}
 }
@@ -220,6 +426,7 @@ static INT_PTR CALLBACK ScriptDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 	case WM_INITDIALOG:
 		SetWindowLongPtr(hDlg, GWLP_USERDATA, (LONG_PTR)lParam);
 		p = (ScripterWindowImpl*)lParam;
+		p->hwndScriptDlg = hDlg;
 		{
 			HWND hCommand = GetDlgItem(hDlg, IDC_COMMAND);
 			p->defEditWndProc = (WNDPROC)GetWindowLongPtr(hCommand, GWLP_WNDPROC);
@@ -227,20 +434,10 @@ static INT_PTR CALLBACK ScriptDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 			SetWindowLongPtr(hCommand, GWLP_USERDATA, (LONG_PTR)lParam);
 		}
 		if(hSciLexer){
-			HWND hScriptEdit = GetDlgItem(hDlg, IDC_SCRIPTEDIT);
-			RECT r;
-			GetWindowRect(hScriptEdit, &r);
-			POINT lt = {r.left, r.top};
-			ScreenToClient(hDlg, &lt);
-			hwndScintilla = CreateWindowExW(0,
-				L"Scintilla", L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_CLIPCHILDREN,
-				lt.x, lt.y, lt.x + r.right - r.left, lt.y + r.bottom - r.top, hDlg,
-				(HMENU)IDC_SCRIPTEDIT, GetModuleHandle(NULL), NULL);
-			if(!hwndScintilla)
-				break;
-			// If we could create Scintilla window control, delete normal edit control.
-			DestroyWindow(hScriptEdit);
-			RecalcLineNumberWidth(hDlg);
+			// Hide the placeholder control instead of destroying because we need it to
+			// get position of dynamically created controls.
+			ShowWindow(GetDlgItem(hDlg, IDC_SCRIPTEDIT), SW_HIDE);
+			LoadScriptFile(hDlg, ""); // Initialize with empty buffer
 		}
 		break;
 	case WM_DESTROY:
@@ -252,15 +449,28 @@ static INT_PTR CALLBACK ScriptDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 			HWND hEdit = GetDlgItem(hDlg, IDC_CONSOLE);
 			HWND hScr = GetDlgItem(hDlg, IDC_SCRIPTEDIT);
 			HWND hRun = GetDlgItem(hDlg, IDOK);
+			HWND hTab = GetDlgItem(hDlg, IDC_TABBUFFER);
 			RECT scr, runr, rect, cr, wr, comr;
 			GetClientRect(hDlg, &cr);
+			GetWindowRect(hRun, &runr);
+
+			// Adjust tabs bar size
+			RECT tabr;
+			GetWindowRect(hTab, &tabr);
+			POINT posTab = {tabr.left, tabr.top};
+			ScreenToClient(hDlg, &posTab);
+			SetWindowPos(hTab, NULL, 0, 0, cr.right - posTab.x - (runr.right - runr.left) - 10,
+				tabr.bottom - tabr.top, SWP_NOMOVE);
 
 			GetWindowRect(hScr, &scr);
 			POINT posScr = {scr.left, scr.top};
 			ScreenToClient(hDlg, &posScr);
-			GetWindowRect(hRun, &runr);
 			SetWindowPos(hScr, NULL, 0, 0, cr.right - posScr.x - (runr.right - runr.left) - 10,
 				scr.bottom - scr.top, SWP_NOMOVE);
+			// Update all Scintilla components including hidden ones
+			for(int i = 0; i < p->buffers.size(); i++)
+				SetWindowPos(p->buffers[i].hEdit, NULL, 0, 0, cr.right - posScr.x - (runr.right - runr.left) - 10,
+					scr.bottom - scr.top, SWP_NOMOVE);
 			SetWindowPos(hRun, NULL, cr.right - (runr.right - runr.left) - 5, 10, 0, 0, SWP_NOSIZE);
 			SetWindowPos(GetDlgItem(hDlg, IDCANCEL), NULL, cr.right - (runr.right - runr.left) - 5, 10 + (runr.bottom - runr.top + 10), 0, 0, SWP_NOSIZE);
 			SetWindowPos(GetDlgItem(hDlg, IDC_CLEARCONSOLE), NULL, cr.right - (runr.right - runr.left) - 5, 10 + (runr.bottom - runr.top + 10) * 2, 0, 0, SWP_NOSIZE);
@@ -282,21 +492,29 @@ static INT_PTR CALLBACK ScriptDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 		if(p){
 			UINT id = LOWORD(wParam);
 			if(id == IDOK){
-				HWND hEdit = GetDlgItem(hDlg, IDC_SCRIPTEDIT);
+				HWND hEdit = p->GetCurrentBuffer().hEdit;
 				int buflen = GetWindowTextLengthW(hEdit)+1;
 				char *buf = (char*)malloc(buflen * 3 * sizeof*buf);
 				wchar_t *wbuf = (wchar_t*)malloc(buflen * sizeof*wbuf);
 				SendMessageW(hEdit, WM_GETTEXT, buflen, (LPARAM)wbuf);
 				// Squirrel is not compiled with unicode, so we must convert text into utf-8, which is ascii transparent.
 				::WideCharToMultiByte(CP_UTF8, 0, wbuf, buflen, buf, buflen * 3, NULL, NULL);
-				p->config.runProc(p->fileName.c_str(), buf);
+				p->config.runProc(p->GetCurrentBuffer().fileName.c_str(), buf);
 				free(buf);
 				free(wbuf);
 				return TRUE;
 			}
 			else if(id == IDCANCEL || id == IDCLOSE)
 			{
-				if(!p->dirty || MessageBoxA(hDlg, "Current buffer is not saved. OK to close?", "Scripting Window", MB_OKCANCEL) == IDOK){
+				bool canceled = false;
+				// Confirm all dirty buffers before closing
+				for(int i = 0; i < p->buffers.size(); i++){
+					if(p->buffers[i].dirty && MessageBoxA(hDlg, (p->GetBufferName(i) + " is not saved. OK to close?").c_str(), "Scripting Window", MB_OKCANCEL) != IDOK){
+						canceled = true;
+						break;
+					}
+				}
+				if(!canceled){
 					EndDialog(hDlg, LOWORD(wParam));
 					if(p->config.onClose)
 						p->config.onClose(p);
@@ -305,6 +523,10 @@ static INT_PTR CALLBACK ScriptDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 			}
 			else if(id == IDC_CLEARCONSOLE){
 				SetDlgItemText(p->hwndScriptDlg, IDC_CONSOLE, TEXT(""));
+				return TRUE;
+			}
+			else if(id == IDM_NEW){
+				LoadScriptFile(hDlg, "");
 				return TRUE;
 			}
 			else if(id == IDM_SCRIPT_OPEN){
@@ -336,7 +558,7 @@ static INT_PTR CALLBACK ScriptDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 				}
 			}
 			else if(id == IDM_SCRIPT_SAVE || id == IDM_SCRIPT_SAVEAS){
-				if(p->fileName.empty() || id == IDM_SCRIPT_SAVEAS){
+				if(p->GetCurrentBuffer().fileName.empty() || id == IDM_SCRIPT_SAVEAS){
 					static char fileBuf[MAX_PATH];
 					OPENFILENAMEA ofn = {
 						sizeof(OPENFILENAME), //  DWORD         lStructSize;
@@ -365,16 +587,18 @@ static INT_PTR CALLBACK ScriptDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 					}
 				}
 				else
-					SaveScriptFile(hDlg, p->fileName.c_str());
+					SaveScriptFile(hDlg, p->GetCurrentBuffer().fileName.c_str());
 			}
 			else if(id == IDM_WHITESPACES){
 				bool newState = !(GetMenuState(GetMenu(hDlg), IDM_WHITESPACES, MF_BYCOMMAND) & MF_CHECKED);
 				CheckMenuItem(GetMenu(hDlg), IDM_WHITESPACES,
 					(newState ? MF_CHECKED : MF_UNCHECKED) | MF_BYCOMMAND);
-				HWND hScriptEdit = GetDlgItem(hDlg, IDC_SCRIPTEDIT);
-				if(hScriptEdit){
-					SendMessage(hScriptEdit, SCI_SETVIEWWS, newState ? SCWS_VISIBLEALWAYS : SCWS_INVISIBLE, 0);
-					SendMessage(hScriptEdit, SCI_SETWHITESPACEFORE, 1, SciRGB(0x7f, 0xbf, 0xbf));
+				for(int i = 0; i < p->buffers.size(); i++){
+					HWND hScriptEdit = p->buffers[i].hEdit;
+					if(hScriptEdit){
+						SendMessage(hScriptEdit, SCI_SETVIEWWS, newState ? SCWS_VISIBLEALWAYS : SCWS_INVISIBLE, 0);
+						SendMessage(hScriptEdit, SCI_SETWHITESPACEFORE, 1, SciRGB(0x7f, 0xbf, 0xbf));
+					}
 				}
 			}
 			else if(id == IDM_LINENUMBERS){
@@ -389,10 +613,14 @@ static INT_PTR CALLBACK ScriptDlg(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 		if(p){
 			UINT id = LOWORD(wParam);
 			NMHDR *nmh = (NMHDR*)lParam;
-			if(nmh->idFrom == IDC_SCRIPTEDIT && nmh->code == SCN_SAVEPOINTREACHED)
+			if(nmh->idFrom == IDC_SCRIPTEDIT_DYNAMIC && nmh->code == SCN_SAVEPOINTREACHED)
 				p->SavePoint(true);
-			else if(nmh->idFrom == IDC_SCRIPTEDIT && nmh->code == SCN_SAVEPOINTLEFT)
+			else if(nmh->idFrom == IDC_SCRIPTEDIT_DYNAMIC && nmh->code == SCN_SAVEPOINTLEFT)
 				p->SavePoint(false);
+
+			if(nmh->idFrom == IDC_TABBUFFER && nmh->code == TCN_SELCHANGE){
+				p->SetCurrentBuffer(SendMessageA(GetDlgItem(hDlg, IDC_TABBUFFER), TCM_GETCURSEL, 0, 0));
+			}
 		}
 		break;
 	}
@@ -421,53 +649,15 @@ int scripter_show(ScripterWindow *sc){
 
 int scripter_lexer_squirrel(ScripterWindow *sc){
 	ScripterWindowImpl *p = static_cast<ScripterWindowImpl*>(sc);
-	HWND hScriptEdit = GetDlgItem(p->hwndScriptDlg, IDC_SCRIPTEDIT);
-	if(hScriptEdit){
-		SendMessage(hScriptEdit, SCI_SETLEXER, SCLEX_CPP, 0);
-		SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_COMMENT, SciRGB(0,127,0));
-		SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_COMMENTLINE, SciRGB(0,127,0));
-		SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_COMMENTDOC, SciRGB(0,127,0));
-		SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_COMMENTLINEDOC, SciRGB(0,127,63));
-		SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_COMMENTDOCKEYWORD, SciRGB(0,63,127));
-		SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_COMMENTDOCKEYWORDERROR, SciRGB(255,0,0));
-		SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_NUMBER, SciRGB(0,127,255));
-		SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_WORD, SciRGB(0,0,255));
-		SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_STRING, SciRGB(127,0,0));
-		SendMessage(hScriptEdit, SCI_STYLESETFORE, SCE_C_CHARACTER, SciRGB(127,0,127));
-		SendMessage(hScriptEdit, SCI_SETKEYWORDS, 0,
-			(LPARAM)"base break case catch class clone "
-			"continue const default delete else enum "
-			"extends for foreach function if in "
-			"local null resume return switch this "
-			"throw try typeof while yield constructor "
-			"instanceof true false static ");
-		SendMessage(hScriptEdit, SCI_SETKEYWORDS, 2,
-			(LPARAM)"a addindex addtogroup anchor arg attention author authors b brief bug "
-			"c callgraph callergraph category cite class code cond copybrief copydetails "
-			"copydoc copyright date def defgroup deprecated details diafile dir docbookonly "
-			"dontinclude dot dotfile e else elseif em endcode endcond enddocbookonly enddot "
-			"endhtmlonly endif endinternal endlatexonly endlink endmanonly endmsc endparblock "
-			"endrtfonly endsecreflist endverbatim enduml endxmlonly enum example exception extends "
-			"f$ f[ f] f{ f} file fn headerfile hideinitializer htmlinclude htmlonly idlexcept if "
-			"ifnot image implements include includelineno ingroup internal invariant interface "
-			"latexinclude latexonly li line link mainpage manonly memberof msc mscfile n name "
-			"namespace nosubgrouping note overload p package page par paragraph param parblock "
-			"post pre private privatesection property protected protectedsection protocol public "
-			"publicsection pure ref refitem related relates relatedalso relatesalso remark remarks "
-			"result return returns retval rtfonly sa secreflist section see short showinitializer "
-			"since skip skipline snippet startuml struct subpage subsection subsubsection "
-			"tableofcontents test throw throws todo tparam typedef union until var verbatim "
-			"verbinclude version vhdlflow warning weakgroup xmlonly xrefitem $ @ \\ & ~ < > # %");
-		return 1;
-	}
+	p->SetLexer();
 	return 0;
 }
 
 void scripter_adderror(ScripterWindow *sc, const char *desc, const char *source, int line, int column){
 	ScripterWindowImpl *p = static_cast<ScripterWindowImpl*>(sc);
-	HWND hScriptEdit = GetDlgItem(p->hwndScriptDlg, IDC_SCRIPTEDIT);
+	HWND hScriptEdit = p->GetCurrentBuffer().hEdit;
 	if(hScriptEdit){
-		if(strcmp(source, "scriptbuf") && strcmp(source, p->fileName.c_str()))
+		if(strcmp(source, "scriptbuf") && strcmp(source, p->GetCurrentBuffer().fileName.c_str()))
 			LoadScriptFile(p->hwndScriptDlg, source);
 
 		int pos = SendMessage(hScriptEdit, SCI_POSITIONFROMLINE, line - 1, 0);
@@ -483,7 +673,7 @@ void scripter_adderror(ScripterWindow *sc, const char *desc, const char *source,
 
 void scripter_clearerror(ScripterWindow *sc){
 	ScripterWindowImpl *p = static_cast<ScripterWindowImpl*>(sc);
-	HWND hScriptEdit = GetDlgItem(p->hwndScriptDlg, IDC_SCRIPTEDIT);
+	HWND hScriptEdit = p->GetCurrentBuffer().hEdit;
 	if(hScriptEdit){
 		SendMessage(hScriptEdit, SCI_INDICATORCLEARRANGE, 0, SendMessage(hScriptEdit, SCI_GETLENGTH, 0, 0));
 		SendMessage(hScriptEdit, SCI_MARKERDELETEALL, 0, 0);

@@ -30,6 +30,13 @@ struct ScripterWindow{
 /// \brief Initialize the scripter system with command and print procedures
 SCRIPTER_EXPORT ScripterWindow *scripter_init(const ScripterConfig *);
 
+/// \brief Sets the resource (toolbar icons, strings, etc) path for GUI
+///
+/// Since SqScripter is provided as a DLL, the main program may know where the
+/// resources resides.  Default path is the same as working directory, but
+/// working directory can be changed by any code in the program, so be careful.
+/// Call before first invocation of scripter_show, because obviously 
+SCRIPTER_EXPORT bool scripter_set_resource_path(ScripterWindow *, const char *path);
 
 /// \brief Show the scripter window
 SCRIPTER_EXPORT int scripter_show(ScripterWindow *);

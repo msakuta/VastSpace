@@ -2573,6 +2573,7 @@ int main(int argc, char *argv[])
 		CmdPrintHandler = CmdPrintAdapter;
 		sc.sourceFilters = "Squirrel sources (*.nut)|*.nut|All (*.*)|*.*";
 		scwin = scripter_init(&sc);
+		scripter_set_resource_path(scwin, "sqscripter");
 	}
 #else
 	// If no GUI is available, do not retry and just die.

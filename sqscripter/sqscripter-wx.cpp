@@ -72,7 +72,10 @@ private:
 	void OnAbout(wxCommandEvent& event);
 	void OnClose(wxCloseEvent&);
 	void OnClear(wxCommandEvent& event);
+	void OnWhiteSpaces(wxCommandEvent&);
+	void OnLineNumbers(wxCommandEvent&);
 	void OnEnterCmd(wxCommandEvent&);
+	void OnCmdChar(wxKeyEvent&);
 	void OnPageChange(wxAuiNotebookEvent&);
 	void OnPageClose(wxAuiNotebookEvent&);
 	void OnSavePointReached(wxStyledTextEvent&);
@@ -82,7 +85,7 @@ private:
 	void SetStcLexer(wxStyledTextCtrl *stc);
 	void AddError(AddErrorEvent&);
 	void ClearError();
-	void RecalcLineNumberWidth();
+	void RecalcLineNumberWidth(int pageIndex = -1);
 	void LoadScriptFile(const wxString& fileName);
 	void SaveScriptFile(const wxString& fileName);
 	void UpdateTitle();
@@ -106,6 +109,11 @@ private:
 	wxLog *logger;
 	wxTextCtrl *cmd;
 	wxString fileName;
+
+	/// Command history buffer
+	wxArrayString cmdHistory; // wxArrayString is (hopefully) more efficient than std::vector<wxString> or such.
+	int currentHistory;
+
 	enum{LexUnknown, LexSquirrel} lex;
 	int pageIndexGenerator;
 	bool dirty;
@@ -147,6 +155,8 @@ enum
 	ID_Save,
 	ID_SaveAs,
 	ID_Clear,
+	ID_WhiteSpaces,
+	ID_LineNumbers,
 	ID_Command,
 	ID_NoteBook
 };
@@ -159,6 +169,8 @@ EVT_MENU(ID_Open,  SqScripterFrame::OnOpen)
 EVT_MENU(ID_Save,  SqScripterFrame::OnSave)
 EVT_MENU(ID_SaveAs,  SqScripterFrame::OnSave)
 EVT_MENU(ID_Clear,  SqScripterFrame::OnClear)
+EVT_MENU(ID_WhiteSpaces, SqScripterFrame::OnWhiteSpaces)
+EVT_MENU(ID_LineNumbers, SqScripterFrame::OnLineNumbers)
 EVT_MENU(wxID_EXIT,  SqScripterFrame::OnExit)
 EVT_MENU(wxID_ABOUT, SqScripterFrame::OnAbout)
 EVT_CLOSE(SqScripterFrame::OnClose)
@@ -448,11 +460,17 @@ SqScripterFrame::SqScripterFrame(const wxString& title, const wxPoint& pos, cons
 	menuFile->Append(ID_Clear, "&Clear Log\tCtrl-C", "Clear output log");
 	menuFile->AppendSeparator();
 	menuFile->Append(wxID_EXIT);
+	wxMenu *menuView = new wxMenu;
+	menuView->AppendCheckItem(ID_WhiteSpaces, "Toggle Whitespaces\tCtrl-W", "Toggles show state of whitespaces");
+	menuView->AppendCheckItem(ID_LineNumbers, "Toggle Line Numbers\tCtrl-L", "Toggles show state of line numbers");
+	menuView->Check(ID_LineNumbers, true); // Default is true
 	wxMenu *menuHelp = new wxMenu;
 	menuHelp->Append(wxID_ABOUT);
 	wxMenuBar *menuBar = new wxMenuBar;
 	menuBar->Append( menuFile, "&File" );
+	menuBar->Append( menuView, "&View" );
 	menuBar->Append( menuHelp, "&Help" );
+	SetMenuBar( menuBar ); // Menu bar must be set before first call to SetStcLexer()
 
 	wxSplitterWindow *splitter = new wxSplitterWindow(this);
 	// Script editing pane almost follows the window size, while the log pane occupies surplus area.
@@ -471,6 +489,7 @@ SqScripterFrame::SqScripterFrame(const wxString& title, const wxPoint& pos, cons
 	splitter->SplitHorizontally(note, log, 200);
 
 	cmd = new wxTextCtrl(this, ID_Command, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+	cmd->Bind(wxEVT_CHAR_HOOK, &SqScripterFrame::OnCmdChar, this);
 	wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
 	sizer->Add(splitter, 1, wxEXPAND | wxALL);
 	sizer->Add(cmd, 0, wxEXPAND | wxBOTTOM);
@@ -486,7 +505,6 @@ SqScripterFrame::SqScripterFrame(const wxString& title, const wxPoint& pos, cons
 	toolbar->AddTool(ID_SaveAs, "SaveAs", app.LoadBitmap("saveas.png"), "Save with a new name");
 	toolbar->AddTool(ID_Clear, "Clear", app.LoadBitmap("clear.png"), "Clear output log");
 	toolbar->Realize();
-	SetMenuBar( menuBar );
 	CreateStatusBar();
 	SetStatusText( "" );
 
@@ -514,6 +532,8 @@ void SqScripterFrame::SetStcLexer(wxStyledTextCtrl *stc){
 	stc->SetFont(stcFont);
 	stc->StyleSetFont(wxSTC_STYLE_DEFAULT, stcFont);
 	stc->SetTabWidth(4);
+	stc->SetViewWhiteSpace(GetMenuBar()->IsChecked(ID_WhiteSpaces) ? wxSTC_WS_VISIBLEALWAYS : wxSTC_WS_INVISIBLE);
+	stc->SetWhitespaceForeground(true, wxColour(0x7f, 0xbf, 0xbf));
 	if(lex != LexSquirrel)
 		return;
 	stc->SetLexer(wxSTC_LEX_CPP);
@@ -551,9 +571,6 @@ void SqScripterFrame::SetStcLexer(wxStyledTextCtrl *stc){
 		"since skip skipline snippet startuml struct subpage subsection subsubsection "
 		"tableofcontents test throw throws todo tparam typedef union until var verbatim "
 		"verbinclude version vhdlflow warning weakgroup xmlonly xrefitem $ @ \\ & ~ < > # %");
-	bool state = true;
-	stc->SetViewWhiteSpace(state ? wxSTC_WS_VISIBLEALWAYS : wxSTC_WS_INVISIBLE);
-	stc->SetWhitespaceForeground(true, wxColour(0x7f, 0xbf, 0xbf));
 }
 
 void SqScripterFrame::AddError(AddErrorEvent &ae){
@@ -588,26 +605,23 @@ void SqScripterFrame::ClearError(){
 }
 
 /// Calculate width of line numbers margin by contents
-void SqScripterFrame::RecalcLineNumberWidth(){
-	wxWindow *w = note->GetCurrentPage();
-	if(!w)
+void SqScripterFrame::RecalcLineNumberWidth(int pageIndex){
+	StyledFileTextCtrl *stc = pageIndex < 0 ? GetCurrentPage() : GetPage(pageIndex);
+	if(!stc)
 		return;
-	wxStyledTextCtrl *stc = static_cast<wxStyledTextCtrl*>(w);
-	{
-		bool showState = true;//(GetMenuState(GetMenu(hDlg), IDM_LINENUMBERS, MF_BYCOMMAND) & MF_CHECKED) != 0;
+	bool showState = GetMenuBar()->IsChecked(ID_LineNumbers);
 
-		// Make sure to set type of the first margin to be line numbers
-		stc->SetMarginType(0, wxSTC_MARGIN_NUMBER);
+	// Make sure to set type of the first margin to be line numbers
+	stc->SetMarginType(0, wxSTC_MARGIN_NUMBER);
 
-		// Obtain width needed to display all line count in the buffer
-		int lineCount = stc->GetLineCount();
-		wxString lineText = "_";
-		for(int i = 0; pow(10, i) <= lineCount; i++)
-			lineText += "9";
+	// Obtain width needed to display all line count in the buffer
+	int lineCount = stc->GetLineCount();
+	wxString lineText = "_";
+	for(int i = 0; pow(10, i) <= lineCount; i++)
+		lineText += "9";
 
-		int width = showState ? stc->TextWidth(wxSTC_STYLE_LINENUMBER, lineText) : 0;
-		stc->SetMarginWidth(0, width);
-	}
+	int width = showState ? stc->TextWidth(wxSTC_STYLE_LINENUMBER, lineText) : 0;
+	stc->SetMarginWidth(0, width);
 }
 
 void SqScripterFrame::LoadScriptFile(const wxString& fileName){
@@ -731,14 +745,53 @@ void SqScripterFrame::OnClear(wxCommandEvent& event){
 	log->Clear();
 }
 
+void SqScripterFrame::OnWhiteSpaces(wxCommandEvent& event){
+	// Update all editor control in all pages
+	for(int i = 0; i < note->GetPageCount(); i++){
+		StyledFileTextCtrl *stc = GetPage(i);
+		if(stc)
+			stc->SetViewWhiteSpace(event.IsChecked() ? wxSTC_WS_VISIBLEALWAYS : wxSTC_WS_INVISIBLE);
+	}
+}
+
+void SqScripterFrame::OnLineNumbers(wxCommandEvent& event){
+	// Update all editor control in all pages
+	for(int i = 0; i < note->GetPageCount(); i++)
+		RecalcLineNumberWidth(i);
+}
+
 void SqScripterFrame::OnEnterCmd(wxCommandEvent& event){
 	wxLog* oldLogger = wxLog::SetActiveTarget(logger);
 	wxStreamToTextRedirector redirect(log);
+	wxString cmdStr = cmd->GetValue();
 	if(wxGetApp().handle && wxGetApp().handle->config.commandProc)
-		wxGetApp().handle->config.commandProc(cmd->GetValue());
+		wxGetApp().handle->config.commandProc(cmdStr);
 	else
-		wxLogMessage("Execute the command");
+		wxLogMessage("Execute the command: " + cmdStr + "\n");
+	// Remember issued command in the history buffer only if the command is not repeated.
+	if(cmdHistory.empty() || cmdHistory.back() != cmdStr){
+		cmdHistory.push_back(cmdStr);
+		currentHistory = -1;
+	}
+	cmd->Clear();
 	wxLog::SetActiveTarget(oldLogger);
+}
+
+/// Event handler for Command line control character input.
+void SqScripterFrame::OnCmdChar(wxKeyEvent& event){
+	if(event.GetEventObject() == cmd){
+		if((event.GetKeyCode() == WXK_DOWN || event.GetKeyCode() == WXK_UP) && cmdHistory.size() != 0){
+			if(currentHistory == -1)
+				currentHistory = (int)cmdHistory.size() - 1;
+			else
+				currentHistory = (int)(currentHistory + (event.GetKeyCode() == WXK_DOWN ? -1 : 1) + cmdHistory.size()) % cmdHistory.size();
+			cmd->SetValue(cmdHistory[currentHistory]);
+			// Set the caret to the end, because DOS or ssh command line users usually expect this behavior.
+			cmd->SetInsertionPointEnd();
+			return; // Return without skipping
+		}
+	}
+	event.Skip();
 }
 
 void SqScripterFrame::OnRun(wxCommandEvent& event)
@@ -765,6 +818,7 @@ void SqScripterFrame::OnNew(wxCommandEvent&)
 	SetStcLexer(stc);
 	note->AddPage(stc, wxString("(New ") << pageIndexGenerator++ << ")", true, 0);
 	SetFileName("");
+	RecalcLineNumberWidth();
 }
 
 void SqScripterFrame::OnOpen(wxCommandEvent& event)

@@ -1457,7 +1457,7 @@ void ClientApplication::display_func(void){
 	GLwindow::glwEndFrame();
 }
 	
-void Game::clientDraw(double gametime, double dt){
+void ClientGame::clientDraw(double gametime, double dt){
 	if(!player || !universe)
 		return;
 	Viewer viewer;
@@ -1469,10 +1469,14 @@ void Game::clientDraw(double gametime, double dt){
 			0,0,0,1,
 		};
 		GLint vp[4];
-		glGetIntegerv(GL_VIEWPORT, vp);
-		if(vp[2] <= vp[0] || vp[3] <= vp[1])
-			return;
-		viewer.vp.set(vp);
+		// Getting viewport rectangle somehow takes so much time that we do not want every frame.
+		// We can cache the values on reshape_func().
+//		glGetIntegerv(GL_VIEWPORT, vp);
+//		if(vp[2] <= vp[0] || vp[3] <= vp[1])
+//			return;
+		viewer.vp.w = application.getViewportWidth();
+		viewer.vp.h = application.getViewportHeight();
+		viewer.vp.m = max(viewer.vp.w, viewer.vp.h);
 		viewer.fov = player->fov;
 		double dnear = g_warspace_near_clip, dfar = g_warspace_far_clip;
 /*		if(pl.cs->w && pl.cs->w->vft->nearplane)
@@ -1809,8 +1813,11 @@ void Game::mouse_func(int button, int state, int x, int y){
 #endif
 }
 
-void reshape_func(int w, int h)
+void ClientApplication::reshape_func(int w, int h)
 {
+	viewportWidth = w;
+	viewportHeight = h;
+
 	// Call before viewport changes.
 	GLwindow::reshapeFunc(w, h);
 
@@ -2043,7 +2050,7 @@ static LRESULT WINAPI CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, L
 
 		case WM_SIZE:
 			if(hgl){
-				reshape_func(LOWORD(lParam), HIWORD(lParam));
+				application.reshape_func(LOWORD(lParam), HIWORD(lParam));
 			}
 			break;
 

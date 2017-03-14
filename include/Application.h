@@ -153,13 +153,19 @@ public:
 	bool joinGame(const char *host, int port);
 	bool startGame();
 	void display_func();
+	void reshape_func(int w, int h);
 	void mouse_func(int button, int state, int x, int y);
 	void signalMessage(const char *text);
 	void errorMessage(const char *str);
 
+	int getViewportWidth()const{return viewportWidth;}
+	int getViewportHeight()const{return viewportHeight;}
+
 protected:
 	JoinGameData data;
 	SOCKET s;
+	int viewportWidth;
+	int viewportHeight;
 };
 
 EXPORT extern ClientApplication application;

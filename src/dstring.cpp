@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define alunit 0x10 /* allocation unit */
 #define alsize(s) ((((s) + alunit - 1) / alunit) * alunit) /* allocated size */
@@ -179,6 +180,42 @@ dstring::~dstring(){
 #endif
 	}
 	p = NULL;
+}
+
+typedef uint32_t Fnv32_t;
+
+#define FNV1_32_INIT ((Fnv32_t)0x811c9dc5)
+#define FNV1_32A_INIT FNV1_32_INIT
+
+/// @brief Hash function for hash tables (slightly modified version of FNV-1a algorithm)
+/// @returns The hash value in 32 bits. The type size_t may have size wider than 32 bits
+///          (especially on 64 bit platforms), but the algorithm only makes use of lower 32.
+///
+/// See http://isthe.com/chongo/tech/comp/fnv/ for FNV-1a hash function algorithm.
+size_t dstring::hash()const{
+	Fnv32_t hval = FNV1_32_INIT;
+	if(!p)
+		return (size_t)hval;
+	unsigned char *bp = (unsigned char *)p->s;	/* start of buffer */
+	unsigned char *be = bp + p->size;		/* beyond end of buffer */
+
+										/*
+										* FNV-1a hash each octet in the buffer
+										*/
+	while (bp < be) {
+
+		/* xor the bottom with the current octet */
+		hval ^= (Fnv32_t)*bp++;
+
+		/* multiply by the 32 bit FNV magic prime mod 2^32 */
+#if defined(NO_FNV_GCC_OPTIMIZATION)
+		hval *= FNV_32_PRIME;
+#else
+		hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
+#endif
+	}
+	/* return our new hash value */
+	return (size_t)hval;
 }
 
 }

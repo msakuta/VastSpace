@@ -46,6 +46,7 @@ namespace gltestp{
 		char front()const; ///< Mimics behavior of std::string
 		char back()const; ///< Mimics behavior of std::string
 		void push_back(char c); ///< Mimics behavior of std::string
+		size_t hash()const;
 
 		/// Returns newly created string with string passed by argument concatenated.
 		/// Note that operator << or += is expected to be more efficient.

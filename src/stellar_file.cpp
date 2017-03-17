@@ -49,6 +49,8 @@ protected:
 	gltestp::dstring buf;
 	gltestp::dstring currentToken;
 	TokenList tokens;
+
+	gltestp::dstring &expandToken(gltestp::dstring &token);
 };
 
 StellarStructureScanner::StellarStructureScanner(StellarContext &sc, std::istream *fp, linenum_t line) :
@@ -78,7 +80,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 				; // Do nothing
 			else{
 				if(0 < currentToken.len()){
-					tokens.push_back(currentToken);
+					tokens.push_back(expandToken(currentToken));
 					currentToken = "";
 				}
 				if(argv){
@@ -133,7 +135,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 			}
 			else if(isspace(c)){
 				if(0 < currentToken.len()){
-					tokens.push_back(currentToken);
+					tokens.push_back(expandToken(currentToken));
 					currentToken = "";
 				}
 			}
@@ -168,7 +170,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 		case Quotes:
 			if(lc != '\\' && c == '"'){
 				if(0 < currentToken.len()){
-					tokens.push_back(currentToken);
+					tokens.push_back(expandToken(currentToken));
 					currentToken = "";
 				}
 				state = Normal;
@@ -215,13 +217,34 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 	if(argv){
 		// This makes difference if the input stream has no whitespaces after the last token.
 		if(0 < currentToken.len())
-			tokens.push_back(currentToken);
+			tokens.push_back(expandToken(currentToken));
 		*argv = tokens;
 	}
 	return buf;
 }
 
-
+/// @brief Tries to expand a variable name if a token starts with an "@"
+/// @returns The reference to the original token, possibly replaced with variable expansion.
+///          Note that the original string may have modified.
+gltestp::dstring &StellarStructureScanner::expandToken(gltestp::dstring &token){
+	if(token.front() == '$'){
+		StackReserver sr(sc.v);
+		sq_pushstring(sc.v, token.c_str() + 1, -1);
+		if(SQ_SUCCEEDED(sq_get(sc.v, -2))){
+			const SQChar *sqstr;
+			SQFloat sqf;
+			if(SQ_SUCCEEDED(sq_getstring(sc.v, -1, &sqstr)))
+				token = sqstr;
+			else if(SQ_SUCCEEDED(sq_getfloat(sc.v, -1, &sqf)))
+				token = sqf;
+			else
+				throw StellarError(gltestp::dstring() << "variable not compatible with string: " << token);
+		}
+		else
+			throw StellarError(gltestp::dstring() << "variable not found in table: " << token);
+	}
+	return token;
+}
 
 
 
@@ -326,8 +349,22 @@ int StellarContext::parseCoordSys(CoordSys *cs){
 }
 
 void StellarContext::scmd_define(StellarContext &sc, TokenList &argv){
+	if(argv.size() < 3){
+		printf("%s(%ld): Insufficient number of arguments to %s command\n", sc.fname, sc.line, argv.front());
+		return;
+	}
 	sq_pushstring(sc.v, argv[1], -1);
 	sq_pushfloat(sc.v, SQFloat(CoordSys::sqcalc(sc, argv[2], argv[1])));
+	sq_createslot(sc.v, -3);
+}
+
+static void scmd_set(StellarContext &sc, TokenList &argv){
+	if(argv.size() < 3){
+		printf("%s(%ld): Insufficient number of arguments to %s command\n", sc.fname, sc.line, argv.front());
+		return;
+	}
+	sq_pushstring(sc.v, argv[1], -1);
+	sq_pushstring(sc.v, argv[2], -1);
 	sq_createslot(sc.v, -3);
 }
 
@@ -382,6 +419,13 @@ static void scmd_echo(StellarContext &sc, TokenList &argv){
 	for(TokenList::iterator it = argv.begin() + 1; it != argv.end(); ++it)
 		catstr += *it;
 	CmdPrint(catstr);
+}
+
+static void scmd_concat(StellarContext &sc, TokenList &argv){
+	gltestp::dstring catstr;
+	for(TokenList::iterator it = argv.begin() + 1; it != argv.end(); ++it)
+		catstr += *it;
+	sc.retval = catstr;
 }
 
 static void scmd_proc(StellarContext &sc, TokenList &argv){
@@ -515,12 +559,14 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		int inquote = 0;
 		CommandMap commandMap(0, hash_dstr);
 		commandMap["define"] = scmd_define;
+		commandMap["set"] = scmd_set;
 		commandMap["include"] = scmd_include;
 		commandMap["if"] = scmd_if;
 		commandMap["while"] = scmd_while;
 		commandMap["expr"] = scmd_expr;
 		commandMap["echo"] = scmd_echo;
 		commandMap["puts"] = scmd_echo;
+		commandMap["concat"] = scmd_concat;
 		commandMap["new"] = scmd_new;
 		commandMap["astro"] = scmd_coordsys;
 		commandMap["coordsys"] = scmd_coordsys;

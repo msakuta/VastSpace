@@ -43,6 +43,9 @@ namespace gltestp{
 		~dstring();
 		operator const char *()const; ///< conversion to c-str
 		const char *c_str()const; ///< conversion to c-str
+		char front()const; ///< Mimics behavior of std::string
+		char back()const; ///< Mimics behavior of std::string
+		void push_back(char c); ///< Mimics behavior of std::string
 
 		/// Returns newly created string with string passed by argument concatenated.
 		/// Note that operator << or += is expected to be more efficient.
@@ -142,6 +145,19 @@ namespace gltestp{
 
 	inline const char *dstring::c_str()const{
 		return p ? p->s : "";
+	}
+
+	inline char dstring::front()const{
+		return p ? p->s[0] : '\0';
+	}
+
+	inline char dstring::back()const{
+		return p ? p->s[p->size-1] : '\0';
+	}
+
+	inline void dstring::push_back(char c){
+		char tmp[2] = {c, '\0'};
+		*this += tmp;
 	}
 }
 

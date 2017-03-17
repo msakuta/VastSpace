@@ -32,6 +32,7 @@ struct StellarContext{
 	HSQUIRRELVM v;
 	StellarStructureScanner *scanner;
 	CommandMap *commands;
+	gltestp::dstring retval; ///< A variable to hold returned values from nested function calls
 
 	/// @brief Parse single command
 	int parseCommand(TokenList &argv);

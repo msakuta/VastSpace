@@ -14,6 +14,7 @@
 #include "Entity.h"
 //#include "island3.h"
 //#include "ringworld.h"
+#include "cmd.h"
 extern "C"{
 #include <clib/c.h>
 #include <clib/mathdef.h>
@@ -36,20 +37,22 @@ extern double gravityfactor;
 /// It would be even possible to suspend scanning per-character basis.
 class StellarStructureScanner{
 public:
-	StellarStructureScanner(std::istream *fp, linenum_t line = 0);
+	StellarStructureScanner(StellarContext &, std::istream *fp, linenum_t line = 0);
 	gltestp::dstring nextLine(TokenList* = NULL);
 	bool eof()const{return 0 != fp->eof();}
 	linenum_t getLine()const{return line;} /// Returns line number.
 protected:
+	StellarContext &sc;
 	std::istream *fp;
 	linenum_t line;
-	enum{Normal, LineComment, BlockComment, Quotes, Braces} state;
+	enum{Normal, LineComment, BlockComment, Quotes, Braces, Brackets} state;
 	gltestp::dstring buf;
 	gltestp::dstring currentToken;
 	TokenList tokens;
 };
 
-StellarStructureScanner::StellarStructureScanner(std::istream *fp, linenum_t line) : fp(fp), line(line), state(Normal){
+StellarStructureScanner::StellarStructureScanner(StellarContext &sc, std::istream *fp, linenum_t line) :
+	sc(sc), fp(fp), line(line), state(Normal){
 }
 
 /// Scan and interpret input stream, separate them into tokens, returns on end of line.
@@ -115,13 +118,13 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 				continue;
 			}
 
-			if(c == '{'){
+			if(c == '{' || c == '['){
 				if(0 < currentToken.len()){
 					tokens.push_back(currentToken);
 					currentToken = "";
 				}
 				braceNests = 1;
-				state = Braces;
+				state = c == '{' ? Braces : Brackets;
 				continue;
 			}
 
@@ -177,8 +180,18 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 			break;
 
 		case Braces:
+		case Brackets:
 			// Read the whole string (including newlines!) until matching closing brace is found.
-			if(c == '}' && --braceNests <= 0){
+			if((c == '}' || c == ']') && --braceNests <= 0){
+				if(c == ']'){
+					std::stringstream sstr = std::stringstream(std::string(currentToken));
+					StellarContext sc2(sc);
+					StellarStructureScanner ssc(sc2, &sstr, line);
+					sc2.fp = nullptr;
+					sc2.scanner = &ssc;
+					sc2.parseBlock();
+					currentToken = sc2.retval;
+				}
 				tokens.push_back(currentToken);
 				currentToken = "";
 				state = Normal;
@@ -262,7 +275,7 @@ int StellarContext::parseString(const char *s, CoordSys *cs, linenum_t linenum, 
 	if(newCommandMap)
 		sc2.commands = newCommandMap;
 	std::stringstream sstr = std::stringstream(std::string(s));
-	StellarStructureScanner ssc(&sstr, linenum);
+	StellarStructureScanner ssc(*this, &sstr, linenum);
 	sc2.scanner = &ssc;
 	if(cs)
 		return sc2.parseCoordSys(cs);
@@ -360,7 +373,15 @@ static void scmd_expr(StellarContext &sc, TokenList &argv){
 	gltestp::dstring catstr;
 	for(TokenList::iterator it = argv.begin() + 1; it != argv.end(); ++it)
 		catstr += *it;
-	CoordSys::sqcalc(sc, catstr, "expr");
+	auto ret = CoordSys::sqcalc(sc, catstr, "expr");
+	sc.retval = ret;
+}
+
+static void scmd_echo(StellarContext &sc, TokenList &argv){
+	gltestp::dstring catstr;
+	for(TokenList::iterator it = argv.begin() + 1; it != argv.end(); ++it)
+		catstr += *it;
+	CmdPrint(catstr);
 }
 
 static void scmd_proc(StellarContext &sc, TokenList &argv){
@@ -371,7 +392,7 @@ static void scmd_proc(StellarContext &sc, TokenList &argv){
 	TokenList params;
 	{
 		std::stringstream sstr = std::stringstream(std::string(argv[2]));
-		StellarStructureScanner ssc(&sstr, sc.line);
+		StellarStructureScanner ssc(sc, &sstr, sc.line);
 		ssc.nextLine(&params);
 	}
 	gltestp::dstring body = argv[3];
@@ -498,6 +519,8 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		commandMap["if"] = scmd_if;
 		commandMap["while"] = scmd_while;
 		commandMap["expr"] = scmd_expr;
+		commandMap["echo"] = scmd_echo;
+		commandMap["puts"] = scmd_echo;
 		commandMap["new"] = scmd_new;
 		commandMap["astro"] = scmd_coordsys;
 		commandMap["coordsys"] = scmd_coordsys;
@@ -512,7 +535,7 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		sc.cs = cs;
 		sc.line = 0;
 		sc.fp = &fp;
-		sc.scanner = new StellarStructureScanner(&fp);
+		sc.scanner = new StellarStructureScanner(sc, &fp);
 		sc.commands = &commandMap;
 //		sqa_init(&sc.v);
 

@@ -16,10 +16,18 @@ typedef std::deque<gltestp::dstring> TokenList;
 
 typedef long linenum_t; ///< I think 2 billions would be enough.
 
+/// Template instantiation for unordered map key hash of gltestp::dstring
+template<> struct std::hash<gltestp::dstring>{
+	size_t operator()(const gltestp::dstring &s)const{
+		return s.hash();
+	}
+};
 
 /// Context object in the process of interpreting a stellar file.
 struct StellarContext{
-	typedef std::unordered_map<gltestp::dstring, std::function<void (StellarContext &, TokenList &)>, size_t (*)(const gltestp::dstring &)> CommandMap;
+	typedef std::unordered_map<gltestp::dstring, std::function<void (StellarContext &, TokenList &)>> CommandMap;
+	typedef std::unordered_map<gltestp::dstring, gltestp::dstring> UpvarMap;
+
 	Game *game;
 	const char *fname;
 	CoordSys *root;
@@ -32,6 +40,7 @@ struct StellarContext{
 	HSQUIRRELVM v;
 	StellarStructureScanner *scanner;
 	CommandMap *commands;
+	UpvarMap *upvars;
 	gltestp::dstring retval; ///< A variable to hold returned values from nested function calls
 
 	/// @brief Parse single command

@@ -377,7 +377,14 @@ static void scmd_set(StellarContext &sc, TokenList &argv){
 		printf("%s(%ld): Insufficient number of arguments to %s command\n", sc.fname, sc.line, argv.front());
 		return;
 	}
-	sq_pushstring(sc.v, argv[1], -1);
+	StackReserver sr(sc.v);
+	auto upvar = sc.upvars->find(argv[1]);
+	if(upvar != sc.upvars->end()){
+		sq_getdelegate(sc.v, -1);
+		sq_pushstring(sc.v, upvar->second, -1);
+	}
+	else
+		sq_pushstring(sc.v, argv[1], -1);
 	sq_pushstring(sc.v, argv[2], -1);
 	sq_createslot(sc.v, -3);
 }
@@ -431,7 +438,7 @@ static void scmd_expr(StellarContext &sc, TokenList &argv){
 static void scmd_echo(StellarContext &sc, TokenList &argv){
 	gltestp::dstring catstr;
 	for(TokenList::iterator it = argv.begin() + 1; it != argv.end(); ++it)
-		catstr += *it;
+		catstr += *it + " ";
 	CmdPrint(catstr);
 }
 
@@ -458,9 +465,15 @@ static void scmd_proc(StellarContext &sc, TokenList &argv){
 		HSQUIRRELVM v = sc.game->sqvm;
 		sqa::StackReserver sr(v);
 
+		// Upvars is a mapping of variable names in current stack frame to another stack frame,
+		// so we need to allocate a new Upvars on calling.
+		StellarContext::UpvarMap *oldUpvars = sc.upvars;
+		StellarContext::UpvarMap upvars;
+		sc.upvars = &upvars;
+
 		try{
 
-			// Create a temporary table for Squirrel to save CoordSys-local defines.
+			// Create a temporary table for Squirrel to save local variables.
 			// Defined variables in parent CoordSys's can be referenced by delegation.
 			sq_newtable(v);
 			sq_pushobject(v, sc.vars);
@@ -487,7 +500,23 @@ static void scmd_proc(StellarContext &sc, TokenList &argv){
 		catch(StellarError &e){
 			printf("%s(%ld): Error %s: %s\n", sc.fname, sc.line, sc.cs->classname(), e.what());
 		}
+
+		// Don't forget to get back to the old Upvars on returning.
+		sc.upvars = oldUpvars;
 	};
+}
+
+static void scmd_upvar(StellarContext &sc, TokenList &argv){
+	// In Tcl, you can specify number of stack frames to go up, but it's not as easy in our implementation.
+	gltestp::dstring upname;
+	for(auto it = argv.begin() + 1; it != argv.end(); ++it){
+		if(upname.len() == 0)
+			upname = *it;
+		else{
+			(*sc.upvars)[*it] = upname;
+			upname = "";
+		}
+	}
 }
 
 void StellarContext::scmd_new(StellarContext &sc, TokenList &argv){
@@ -543,25 +572,6 @@ void StellarContext::scmd_coordsys(StellarContext &sc, TokenList &argv){
 }
 
 
-/// Borrowed code from Squirrel library (squirrel3/squirrel/sqstring.h) which in turn borrowed
-/// from Lua code.  The header file is Squirrel's internal header, so we cannot just include it
-/// from this file without confronting dependency hell (which could be much worse when we update
-/// Squirrel library).  Originally we considered using CRC32, but this code would be more efficient
-/// for long strings.
-inline SQHash _hashstr (const SQChar *s, size_t l)
-{
-		SQHash h = (SQHash)l;  /* seed */
-		size_t step = (l>>5)|1;  /* if string is too long, don't hash all its chars */
-		for (; l>=step; l-=step)
-			h = h ^ ((h<<5)+(h>>2)+(unsigned short)*(s++));
-		return h;
-}
-
-/// Return a hash for unordered_map of dstring.
-static size_t hash_dstr(const gltestp::dstring &s){
-	return _hashstr(s.c_str(), s.len());
-}
-
 int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext *prev_sc){
 	timemeas_t tm;
 	TimeMeasStart(&tm);
@@ -571,7 +581,7 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 			return -1;
 		int mode = 0;
 		int inquote = 0;
-		CommandMap commandMap(0, hash_dstr);
+		CommandMap commandMap;
 		commandMap["define"] = scmd_define;
 		commandMap["set"] = scmd_set;
 		commandMap["include"] = scmd_include;
@@ -585,6 +595,8 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		commandMap["astro"] = scmd_coordsys;
 		commandMap["coordsys"] = scmd_coordsys;
 		commandMap["proc"] = scmd_proc;
+		commandMap["upvar"] = scmd_upvar;
+		UpvarMap upvars;
 		StellarContext sc;
 		Universe *univ = root->toUniverse();
 		CoordSys *cs = NULL;
@@ -597,6 +609,7 @@ int StellarContext::parseFile(const char *fname, CoordSys *root, StellarContext 
 		sc.fp = &fp;
 		sc.scanner = new StellarStructureScanner(sc, &fp);
 		sc.commands = &commandMap;
+		sc.upvars = &upvars;
 //		sqa_init(&sc.v);
 
 		HSQUIRRELVM v = sc.game->sqvm;

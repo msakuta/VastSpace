@@ -65,6 +65,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 	int c, lc = EOF;
 	bool escaped = false; // We never yield scanning in escaped state, so it don't need to be a member of StellarStructureScanner.
 	int braceNests = 0; // We never yield in the middle of braces.
+	int dollarPos = -1; // Position of a doller character in a string which could be start of a variable substitution.
 	while((c = fp->get()) != EOF){
 
 		// Return the line unless it's escaped by a backslash.
@@ -132,6 +133,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 
 			if(c == '"'){
 				state = Quotes;
+				dollarPos = -1;
 			}
 			else if(isspace(c)){
 				if(0 < currentToken.len()){
@@ -175,8 +177,20 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 				}
 				state = Normal;
 			}
-			else
+			else{
+				if(0 <= dollarPos){
+					if(!isalnum(c)){
+						gltestp::dstring prefix(currentToken, dollarPos);
+						gltestp::dstring tempToken = currentToken.c_str() + dollarPos;
+						currentToken = prefix + expandToken(tempToken);
+						dollarPos = -1;
+					}
+				}
+				else if(c == '$'){
+					dollarPos = currentToken.len();
+				}
 				currentToken << char(c);
+			}
 
 			buf << char(c);
 			break;
@@ -185,7 +199,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 		case Brackets:
 			// Read the whole string (including newlines!) until matching closing brace is found.
 			if((c == '}' || c == ']') && --braceNests <= 0){
-				if(c == ']'){
+				if(state == Brackets){
 					std::stringstream sstr = std::stringstream(std::string(currentToken));
 					StellarContext sc2(sc);
 					StellarStructureScanner ssc(sc2, &sstr, line);
@@ -204,7 +218,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 				buf << char(c);
 
 				// Count up braces to properly parse nested structure.
-				if(c == '{')
+				if(c == '{' || c == '[')
 					braceNests++;
 			}
 			break;

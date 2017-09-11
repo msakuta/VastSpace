@@ -1167,7 +1167,7 @@ const GalaxyField *initGalaxyField(){
 		void (*freeproc)(BITMAPINFO*);
 		BITMAPINFO *bmi = ReadPNG(g_galaxy_file, &freeproc);
 		// We assume 8 bit grayscale image
-		if(bmi->bmiHeader.biBitCount != 8)
+		if(!bmi || bmi->bmiHeader.biBitCount != 8)
 			return NULL;
 		const unsigned char *src = (unsigned char*)&bmi->bmiColors[bmi->bmiHeader.biClrUsed];
 		srcx = bmi->bmiHeader.biWidth;

@@ -3,7 +3,7 @@ set three [expr 1+$two]
 set string hour
 set period .
 puts [concat $three " $string s are " [expr $three * 60 * 60] " seconds$period"]
-puts rush-$string
+puts rush-$string/* just before a block comment */
 
 define MINUTE_SECONDS 60 # comment
 define HOUR_SECONDS 60*60 /* block comment */

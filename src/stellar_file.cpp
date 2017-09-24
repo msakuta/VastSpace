@@ -135,7 +135,9 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 
 			if(c == '*' && lc == '/'){
 				if(1 < currentToken.len()){
-					tokens.push_back(currentToken[1]);
+					replaceToken();
+					gltestp::dstring tmp(currentToken, currentToken.len()-1);
+					tokens.push_back(tmp);
 				}
 				currentToken = "";
 				state = BlockComment;

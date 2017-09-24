@@ -66,6 +66,22 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 	bool escaped = false; // We never yield scanning in escaped state, so it don't need to be a member of StellarStructureScanner.
 	int braceNests = 0; // We never yield in the middle of braces.
 	int dollarPos = -1; // Position of a doller character in a string which could be start of a variable substitution.
+
+	// A local function that replaces a variable substitution (e.g. $somevar) into its value.
+	// Defined here because it happens multiple times along the scanning.
+	// We could go with another approach, i.e. to replace variable substitutions at once after the whole
+	// range of a string is loaded, but it would require scanning the whole string twice.
+	// Our approach is hopefully a little faster because we don't need to scan the entire string twice to
+	// find variable substitutions, especially in very long strings.
+	auto replaceToken = [this, &dollarPos](){
+		if(0 <= dollarPos){
+			gltestp::dstring prefix(currentToken, dollarPos);
+			gltestp::dstring tempToken = currentToken.c_str() + dollarPos;
+			currentToken = prefix + expandToken(tempToken);
+			dollarPos = -1;
+		}
+	};
+
 	while((c = fp->get()) != EOF){
 
 		// Return the line unless it's escaped by a backslash.
@@ -81,6 +97,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 				; // Do nothing
 			else{
 				if(0 < currentToken.len()){
+					replaceToken();
 					tokens.push_back(expandToken(currentToken));
 					currentToken = "";
 				}
@@ -102,9 +119,13 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 		switch(state){
 		case Normal:
 
-			// Line comment scan till newline
+			// Line comment scan till newline (Tcl language only allow comments if # is the first character of the command,
+			// but our data structure rarely needs the character # as a part of data, so we don't follow the syntax of Tcl for
+			// comments beginning in the middle of a command string, i.e. ";#". Also, it's a surprising syntax for people
+			// who are not familiar with Tcl.)
 			if(c == '#'){
 				if(0 < currentToken.len()){
+					replaceToken();
 					tokens.push_back(currentToken);
 					currentToken = "";
 				}
@@ -123,6 +144,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 
 			if(c == '{' || c == '['){
 				if(0 < currentToken.len()){
+					replaceToken();
 					tokens.push_back(currentToken);
 					currentToken = "";
 				}
@@ -137,12 +159,14 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 			}
 			else if(isspace(c)){
 				if(0 < currentToken.len()){
+					replaceToken();
 					tokens.push_back(expandToken(currentToken));
 					currentToken = "";
 				}
 			}
 			else if(c == ';'){
 				if(0 < currentToken.len()){
+					replaceToken();
 					tokens.push_back(currentToken);
 					currentToken = "";
 				}
@@ -150,8 +174,19 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 					*argv = tokens;
 				return buf;
 			}
-			else
+			else{
+				if(0 <= dollarPos){
+					// Termination of variable substitution
+					if(!isalnum(c)){
+						replaceToken();
+					}
+				}
+				else if(c == '$'){
+					// Beginning of variable substitution
+					dollarPos = currentToken.len();
+				}
 				currentToken << char(c);
+			}
 
 //			if(argv && isspace(c))
 //				argv->push_back(buf);
@@ -172,6 +207,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 		case Quotes:
 			if(lc != '\\' && c == '"'){
 				if(0 < currentToken.len()){
+					replaceToken();
 					tokens.push_back(expandToken(currentToken));
 					currentToken = "";
 				}
@@ -180,10 +216,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 			else{
 				if(0 <= dollarPos){
 					if(!isalnum(c)){
-						gltestp::dstring prefix(currentToken, dollarPos);
-						gltestp::dstring tempToken = currentToken.c_str() + dollarPos;
-						currentToken = prefix + expandToken(tempToken);
-						dollarPos = -1;
+						replaceToken();
 					}
 				}
 				else if(c == '$'){
@@ -230,8 +263,10 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 	// Write out tokens when the input stream is exhausted.
 	if(argv){
 		// This makes difference if the input stream has no whitespaces after the last token.
-		if(0 < currentToken.len())
+		if(0 < currentToken.len()){
+			replaceToken();
 			tokens.push_back(expandToken(currentToken));
+		}
 		*argv = tokens;
 	}
 	return buf;

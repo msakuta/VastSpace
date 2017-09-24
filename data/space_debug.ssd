@@ -1,11 +1,9 @@
-set three [expr 1 + 2]
+set two 2
+set three [expr 1+$two]
 set string hour
-puts [concat $three " $string s are " [expr $three * 60 * 60] " seconds."]
-
-proc define {id val} {
-	upvar $id myid
-	set myid [expr $val.tofloat()]
-}
+set period .
+puts [concat $three " $string s are " [expr $three * 60 * 60] " seconds$period"]
+puts rush-$string
 
 define MINUTE_SECONDS 60 # comment
 define HOUR_SECONDS 60*60 /* block comment */

@@ -102,7 +102,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;zlib.lib;opengl32.lib;glu32.lib;..\..\bullet\lib\BulletDynamics_vs2010_debug.lib;..\..\bullet\lib\BulletCollision_vs2010_debug.lib;..\..\bullet\lib\LinearMath_vs2010_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;..\..\..\bullet\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -126,7 +126,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;zlib.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;..\..\..\bullet\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
@@ -147,7 +147,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;zlib.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010.lib;BulletCollision_vs2010.lib;LinearMath_vs2010.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;..\..\..\bullet\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -174,7 +174,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;zlib.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010_x64_release.lib;BulletCollision_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;..\..\..\bullet\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>

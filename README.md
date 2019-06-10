@@ -47,22 +47,36 @@ Linux server must be able to build on most distributions.
 Fedora 8 is tested.
 
 
+
+
 Building Windows Client
 -----------------------
+
+### Prerequisites
+
+* Git
+* Visual studio 2017 or later
+
+### Steps
 
 All dependent libraries except Bullet Dynamics Engine are
 included in this repository as source files.
 
-Run svn-bullet.bat BEFORE opening a Visual Studio solution file.
-You need a Subversion client installed on your computer
-in order to run the batch file.
+Run
 
-Since this project uses C++11 features extensively,
-supported target versions of Visual Studio are currently only
-2015 (Express).
+```
+git clone https://github.com/bulletphysics/bullet3.git bullet
+cd bullet
+git checkout 2.88
+```
+
+on the console.
+
+Open `bullet\build3\vs2010\0_Bullet3Solution.sln` with VC2017 or later.
+Upgrade toolset to v141 or later if requested.
 
 With Visual Studio 2015, you will need to manually change
-platform toolset to "Visual Stuido 2015 (v140)" in the IDE
+platform toolset to "Visual Stuido 2017 (v141)" or later in the IDE
 property page.  This is because premake4 does not support
 VS2015 yet.
 

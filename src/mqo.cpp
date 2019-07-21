@@ -1,6 +1,7 @@
 /** \file
  * \brief Implementation of Metasequoia object loading functions and Model class.
  */
+#define NOMINMAX
 #include "mqo.h"
 #include "ysdnmmot.h"
 //#include "draw/material.h"

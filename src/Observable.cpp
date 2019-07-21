@@ -18,6 +18,11 @@ Observable::~Observable(){
 		it->first->unlink(this);
 		it = next;
 	}
+	for (WeakPtrBase* it = weakPtrHead; it != nullptr;) {
+		WeakPtrBase* next = it->next;
+		it->unlink(this);
+		it = next;
+	}
 }
 
 void Observable::addObserver(Observer *o)const{
@@ -37,12 +42,23 @@ void Observable::removeObserver(Observer *o)const{
 
 /// Obsolete; should call addObserver from the first place.
 void Observable::addWeakPtr(WeakPtrBase *o)const{
-	addObserver(o);
+	//addObserver(o);
+	o->next = weakPtrHead;
+	weakPtrHead = o;
 }
 
 /// Obsolete; should call removeObserver from the first place.
 void Observable::removeWeakPtr(WeakPtrBase *o)const{
-	removeObserver(o);
+	//removeObserver(o);
+	for(WeakPtrBase** it = &weakPtrHead; *it != nullptr;){
+		WeakPtrBase** next = &(*it)->next;
+		if(*it == o){
+			// Remove this from list
+			*it = (*it)->next;
+			break;
+		}
+		it = next;
+	}
 }
 
 /// \brief Notifies the event to all observers that observe this object.

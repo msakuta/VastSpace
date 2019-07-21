@@ -63,6 +63,7 @@ protected:
 	/// It's qualified as mutable because the observer can have a const-pointer to this object,
 	/// in which case we should manage this list from the observer's perspective.
 	mutable ObserverList observers;
+	mutable WeakPtrBase* weakPtrHead = nullptr;
 };
 
 
@@ -136,17 +137,18 @@ EvtType *InterpretDerivedEvent(ObserveEvent &evt){
 ///
 /// That's a re-invention of wheels.
 /// Probably we should use boost library or C++11's std::weak_ptr.
-class EXPORT WeakPtrBase : public Observer{
+class EXPORT WeakPtrBase{
 	/// Prohibit using the copy constructor.
 	/// One must initialize the object with raw pointer as the argument, or the pointed Observable will miss counting.
 	WeakPtrBase(WeakPtrBase &){}
 protected:
-	Observable *ptr;
-	WeakPtrBase(Observable *o = NULL) : ptr(o){
+	Observable *ptr = nullptr;
+	WeakPtrBase* next = nullptr;
+	WeakPtrBase(Observable *o = nullptr) : ptr(o){
 		if(o)
 			o->addWeakPtr(this);
 	}
-	~WeakPtrBase(){
+	virtual ~WeakPtrBase(){
 		if(ptr)
 			ptr->removeWeakPtr(this);
 	}
@@ -162,7 +164,7 @@ protected:
 	WeakPtrBase &operator=(WeakPtrBase &o){
 		return operator=(o.ptr);
 	}
-	bool unlink(const Observable *o){
+	virtual bool unlink(const Observable *o){
 		if(ptr == o)
 			ptr = NULL;
 		return true;

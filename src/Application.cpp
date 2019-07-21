@@ -297,7 +297,8 @@ void Application::init(void vmInit(HSQUIRRELVM))
 		// The static_cast is necessary if ServerGame virtually inherits Game.
 		CmdAddParam("ssq", cmd_sq, static_cast<Game*>(serverGame));
 		sqa_init(serverGame);
-		vmInit(serverGame->sqvm);
+		if(vmInit != nullptr)
+			vmInit(serverGame->sqvm);
 	}
 	if(clientGame){
 		// Explicitly add sq command for the client game

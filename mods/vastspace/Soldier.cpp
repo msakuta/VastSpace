@@ -200,8 +200,7 @@ bool Soldier::getGunPos(GetGunPosCommand &ggp){
 	ggp.gunRot = this->rot.rotate(kick[1], 0, 1, 0).rotate(kick[0], -1, 0, 0);
 	return true;
 }
-void M16::draw(WarDraw *){}
-void M40::draw(WarDraw *){}
+void Rifle::draw(WarDraw *){}
 #endif
 
 

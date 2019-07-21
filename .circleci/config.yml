@@ -1,0 +1,16 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: gcc:latest
+
+    steps:
+      - checkout
+
+      - run:
+          name: checkout bullet
+          command: git clone https://github.com/bulletphysics/bullet3.git bullet && cd bullet && git checkout 2.88
+
+      - run:
+          name: make
+          command: make

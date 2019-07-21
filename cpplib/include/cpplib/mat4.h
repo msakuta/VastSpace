@@ -279,10 +279,10 @@ template<typename T> inline Mat3<T> Mat4<T>::tomat3()const{
 
 template<typename T> template<typename T2> inline Mat4<T2> Mat4<T>::cast()const{
 	return Mat4<T2>(
-		vec4(0).cast<T2>(),
-		vec4(1).cast<T2>(),
-		vec4(2).cast<T2>(),
-		vec4(3).cast<T2>());
+		vec4(0).template cast<T2>(),
+		vec4(1).template cast<T2>(),
+		vec4(2).template cast<T2>(),
+		vec4(3).template cast<T2>());
 }
 
 }

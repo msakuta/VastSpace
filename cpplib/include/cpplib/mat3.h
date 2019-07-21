@@ -207,9 +207,9 @@ template<typename T> inline Mat3<T> Mat3<T>::inverse()const{
 /// This is nested template function.
 template<typename T> template<typename T2> inline Mat3<T2> Mat3<T>::cast()const{
 	return Mat3<T2>(
-		vec3(0).cast<T2>(),
-		vec3(1).cast<T2>(),
-		vec3(2).cast<T2>());
+		vec3(0).template cast<T2>(),
+		vec3(1).template cast<T2>(),
+		vec3(2).template cast<T2>());
 }
 
 }

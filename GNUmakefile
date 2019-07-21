@@ -136,8 +136,8 @@ libBulletCollision: bullet/bin/lib${LIB_BULLET_COLLISION}.a
 libBulletDynamics: bullet/bin/lib${LIB_BULLET_DYNAMICS}.a
 endif
 
-bullet/src/LinearMath/libLinearMath.so bullet/src/BulletCollision/libBulletCollision.so bullet/src/BulletDynamics/libBulletDynamics.so:
-	cd bullet/build3 && premake4_linux64 --double gmake
+bullet/bin/lib${LIB_LINEAR_MATH}.a bullet/bin/lib${LIB_BULLET_COLLISION}.a bullet/bin/lib${LIB_BULLET_DYNAMICS}.a:
+	cd bullet/build3 && ./premake4_linux64 --double gmake && cd gmake && make LinearMath BulletCollision BulletDynamics
 
 ${OUTDIR}:
 	mkdir ${OUTDIR}

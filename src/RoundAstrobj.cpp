@@ -456,6 +456,7 @@ double RoundAstrobj::getTerrainHeight(const Vec3d &basepos)const{
 	}
 
 	double height = 0;
+#ifndef DEDICATED
 	if(heightmap[direction]){
 		BITMAPINFO *bi = heightmap[direction];
 
@@ -482,6 +483,7 @@ double RoundAstrobj::getTerrainHeight(const Vec3d &basepos)const{
 		}
 		height = accum;
 	}
+#endif
 
 	return getTerrainHeightInt(basepos * (1 << terrainNoise.baseLevel), terrainNoise.octaves, terrainNoise.persistence, terrainNoise.height / rad, tmods) + height / rad;
 }

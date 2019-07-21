@@ -1832,5 +1832,6 @@ double Sceptor::pid_dfactor = 1.;
 void Sceptor::draw(WarDraw*){}
 void Sceptor::drawtra(WarDraw*){}
 void Sceptor::drawOverlay(WarDraw*){}
+void Sceptor::drawHUD(WarDraw*){}
 #endif
 

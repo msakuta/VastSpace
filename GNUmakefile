@@ -18,7 +18,7 @@ endif
 
 ifndef BULLET_LIB
 	ifeq "$(USE_LOCAL_BULLET)" "y"
-		BULLET_LIB=-Lbullet/src/LinearMath -Lbullet/src/BulletCollision -Lbullet/src/BulletDynamics
+		BULLET_LIB=-Lbullet/bin
 	else
 		BULLET_LIB=
 	endif
@@ -53,7 +53,7 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Player.o\
  ${OUTDIR}/Game.o\
  ${OUTDIR}/astro.o\
- ${OUTDIR}/TexSphere.o\
+ ${OUTDIR}/RoundAstrobj.o\
  ${OUTDIR}/judge.o\
  ${OUTDIR}/war.o\
  ${OUTDIR}/stellar_file.o\
@@ -80,10 +80,13 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/Destroyer.o\
  ${OUTDIR}/Shipyard.o\
  ${OUTDIR}/RStation.o\
+ ${OUTDIR}/mqo.o\
+ ${OUTDIR}/mqoadapt.o\
+ ${OUTDIR}/Mesh.o\
  ${OUTDIR}/png.o\
- ${OUTDIR}/calc/calc3.o\
- ${OUTDIR}/calc/mathvars.o\
- ${OUTDIR}/calc/calc0.o\
+ ${OUTDIR}/sdnoise1234.o\
+ ${OUTDIR}/simplexnoise1234.o\
+ ${OUTDIR}/simplexnoise1234d.o\
  ./clib/Release/clib.a\
  ./cpplib/Release/cpplib.a\
  ./zlib/libz.a\
@@ -95,11 +98,15 @@ gltestdll_objects = gltestdll/${OUTDIR}/Soldier.o\
  ./clib/Release/clib.a\
  ./cpplib/Release/cpplib.a
 
+LIB_LINEAR_MATH = LinearMath_gmake_x64_release
+LIB_BULLET_COLLISION = BulletCollision_gmake_x64_release
+LIB_BULLET_DYNAMICS = BulletDynamics_gmake_x64_release
+
 all: ${OUTDIR}/gltestplus ${OUTDIR}/vastspace.so
 
 ${OUTDIR}/gltestplus: ${OUTDIR} ${objects} libLinearMath libBulletCollision libBulletDynamics
 	${CC} ${CFLAGS} $(CPPFLAGS) $(RDYNAMIC) ${objects} -o $@ $(BULLET_LIB) \
-	-lstdc++ -lm -lBulletDynamics -lBulletCollision -lLinearMath -ldl -lrt -lpthread
+	-lstdc++ -lm -l${LIB_BULLET_DYNAMICS} -l${LIB_BULLET_COLLISION} -l${LIB_LINEAR_MATH} -ldl -lrt -lpthread
 
 #${OUTDIR}/gltestdll.so: gltestdll/${OUTDIR} ${gltestdll_objects}
 #	${CC} ${CFLAGS} $(CPPFLAGS) -shared ${gltestdll_objects} -o $@ -lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
@@ -117,20 +124,20 @@ ${OUTDIR}/vastspace.so:
 	cd zlib && ${MAKE}
 	
 ./lpng/libpng.a:
-	cd lpng && ${MAKE}
+	cd lpng && ${MAKE} -f scripts/makefile.linux
 
 ./squirrel3/lib/libsquirrel.a ./squirrel3/lib/libsqstdlib.a:
 	-mkdir ./squirrel3/lib ./squirrel3/bin # Squirrel's makefile does not try to mkdir
 	cd squirrel3 && ${MAKE}
 
 ifeq "$(USE_LOCAL_BULLET)" "y"
-libLinearMath: bullet/src/LinearMath/libLinearMath.so
-libBulletCollision: bullet/src/BulletCollision/libBulletCollision.so
-libBulletDynamics: bullet/src/BulletDynamics/libBulletDynamics.so
+libLinearMath: bullet/bin/lib${LIB_LINEAR_MATH}.a
+libBulletCollision: bullet/bin/lib${LIB_BULLET_COLLISION}.a
+libBulletDynamics: bullet/bin/lib${LIB_BULLET_DYNAMICS}.a
 endif
 
 bullet/src/LinearMath/libLinearMath.so bullet/src/BulletCollision/libBulletCollision.so bullet/src/BulletDynamics/libBulletDynamics.so:
-	cd bullet && ${MAKE}
+	cd bullet/build3 && premake4_linux64 --double gmake
 
 ${OUTDIR}:
 	mkdir ${OUTDIR}
@@ -165,7 +172,7 @@ ${OUTDIR}/Game.o: $(call depends,Game.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/astro.o: $(call depends,astro.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
-${OUTDIR}/TexSphere.o: $(call depends,TexSphere.cpp)
+${OUTDIR}/RoundAstrobj.o: $(call depends,RoundAstrobj.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/judge.o: $(call depends,judge.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
@@ -219,16 +226,19 @@ ${OUTDIR}/Shipyard.o: $(call depends,Shipyard.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/RStation.o: $(call depends,RStation.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/mqo.o: $(call depends,mqo.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/mqoadapt.o: $(call depends,mqoadapt.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/Mesh.o: $(call depends,Mesh.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/png.o: $(call depends,png.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
-${OUTDIR}/calc/calc3.o: $(call depends,calc/calc3.c)
-	mkdir -p ${OUTDIR}/calc
-	${CC} $(CFLAGS) -I include -c $< -o $@
-${OUTDIR}/calc/mathvars.o: $(call depends,calc/mathvars.c)
-	mkdir -p ${OUTDIR}/calc
+${OUTDIR}/sdnoise1234.o: $(call depends,noises/sdnoise1234.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
-${OUTDIR}/calc/calc0.o: $(call depends,calc/calc0.c)
-	mkdir -p ${OUTDIR}/calc
+${OUTDIR}/simplexnoise1234.o: $(call depends,noises/simplexnoise1234.cpp)
+	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
+${OUTDIR}/simplexnoise1234d.o: $(call depends,noises/simplexnoise1234d.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 
 #gltestdll/${OUTDIR}/Soldier.o: $(call gltestdll_depends,Soldier.cpp)

@@ -14,6 +14,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <algorithm>
 
 
 #ifdef _WIN32
@@ -792,7 +793,7 @@ bool Model::getBonePosInt(const char *boneName, const ysdnmv_t &v0, const Bone *
 	Quatd arot = srot;
 	for(const ysdnmv_t *v = &v0; v; v = v->next){
 		ysdnm_bone_var *bonevar = v->bonevar;
-		int bones = min(v->bones, this->n);
+		int bones = std::min(v->bones, this->n);
 		for(int i = 0; i < bones; i++) if(!strcmp(bonevar[i].name, bone->name)){
 			apos += arot.trans(bone->joint);
 			apos += arot.trans(v->bonevar[i].pos);

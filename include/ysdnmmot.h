@@ -10,11 +10,15 @@ struct ysdnm_motion{
 	struct keyframe : public ysdnm_var{
 		double dt;
 		keyframe() : dt(0.){}
+		void copy(const keyframe&o){
+			ysdnm_var::copy(o);
+			dt = o.dt;
+		}
 		keyframe(const keyframe &o) : ysdnm_var(o), dt(o.dt){
 		}
 		keyframe &operator=(const keyframe &o){
 			this->ysdnm_var::~ysdnm_var();
-			this->keyframe::keyframe(o);
+			copy(o);
 			return *this;
 		}
 	} *kfl;
@@ -40,7 +44,7 @@ struct ysdnm_motion{
 	}
 	keyframe &addKeyframe(double dt){
 		kfl = (keyframe*)realloc(kfl, ++nkfl * sizeof *kfl);
-		kfl[nkfl-1].keyframe::keyframe();
+		kfl[nkfl-1] = keyframe();
 		kfl[nkfl-1].dt = dt;
 		return kfl[nkfl-1];
 	}
@@ -48,7 +52,7 @@ struct ysdnm_motion{
 		assert(0 <= index && index < nkfl);
 		kfl = (keyframe*)realloc(kfl, (nkfl + 1) * sizeof *kfl);
 		memmove(&kfl[index+1], &kfl[index], (nkfl - index) * sizeof *kfl);
-		kfl[index].keyframe::keyframe();
+		kfl[index] = keyframe();
 		kfl[index].dt = dt;
 		nkfl++;
 		return kfl[index];

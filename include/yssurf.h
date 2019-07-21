@@ -109,7 +109,8 @@ typedef struct ysdnm_var{
 	const char *target;
 	struct ysdnm_var *next;
 #ifdef __cplusplus
-	ysdnm_var() : target(NULL){
+	ysdnm_var(){
+		target = NULL;
 		fcla = 0;
 		fviscla = 0;
 		bonevar = NULL;
@@ -119,6 +120,9 @@ typedef struct ysdnm_var{
 		next = NULL;
 	}
 	ysdnm_var(const ysdnm_var &o) : target(NULL){
+		copy(o);
+	}
+	void copy(const ysdnm_var &o){
 		fcla = 0;
 		fviscla = 0;
 		if(o.bonevar){

@@ -4,6 +4,7 @@
 #define ROUNDASTROBJ_H
 
 #include "stellar_file.h"
+#include "astro.h"
 #ifndef DEDICATED
 #include "draw/ring-draw.h"
 #endif
@@ -93,7 +94,13 @@ public:
 	/// reference counter scheme to delete finished objects.
 	static DTS::TerrainModMap terrainModMap;
 
-	bool isLoadedTerrainMap()const{return heightmap[0];}
+	bool isLoadedTerrainMap()const{
+#ifndef DEDICATED
+		return heightmap[0];
+#else
+		return true;
+#endif
+	}
 	bool hasTerrainMap()const;
 
 protected:

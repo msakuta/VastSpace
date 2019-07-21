@@ -4,6 +4,7 @@
  * \brief Definition of dynamic string for gltestplus
  */
 #include "export.h"
+#include <stddef.h>
 
 namespace gltestp{
 

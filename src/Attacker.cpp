@@ -303,6 +303,7 @@ Model *Attacker::getModel(){
 	if(!init){
 		model = LoadMQOModel("models/attacker.mqo");
 
+#ifndef DEDICATED
 		if(model) for(int n = 0; n < model->n; n++) if(model->sufs[n] && model->tex[n]){
 			MeshTex *tex = model->tex[n];
 			for(int i = 0; i < tex->n; i++) if(!strcmp(model->sufs[n]->a[i].colormap, "attacker_engine.bmp")){
@@ -310,6 +311,7 @@ Model *Attacker::getModel(){
 				tex->a[i].onEndTexture = TextureParams::onEndTextureEngine;
 			}
 		}
+#endif
 
 		init = true;
 	}

@@ -235,7 +235,7 @@ gltestp::dstring StellarStructureScanner::nextLine(TokenList *argv){
 			// Read the whole string (including newlines!) until matching closing brace is found.
 			if((c == '}' || c == ']') && --braceNests <= 0){
 				if(state == Brackets){
-					std::stringstream sstr = std::stringstream(std::string(currentToken));
+					std::stringstream sstr{std::string(currentToken)};
 					StellarContext sc2(sc);
 					StellarStructureScanner ssc(sc2, &sstr, line);
 					sc2.fp = nullptr;
@@ -348,7 +348,7 @@ int StellarContext::parseString(const char *s, CoordSys *cs, linenum_t linenum, 
 	StellarContext sc2 = *this;
 	if(newCommandMap)
 		sc2.commands = newCommandMap;
-	std::stringstream sstr = std::stringstream(std::string(s));
+	std::stringstream sstr{std::string(s)};
 	StellarStructureScanner ssc(*this, &sstr, linenum);
 	sc2.scanner = &ssc;
 	if(cs)
@@ -401,7 +401,7 @@ int StellarContext::parseCoordSys(CoordSys *cs){
 
 void StellarContext::scmd_define(StellarContext &sc, TokenList &argv){
 	if(argv.size() < 3){
-		printf("%s(%ld): Insufficient number of arguments to %s command\n", sc.fname, sc.line, argv.front());
+		printf("%s(%ld): Insufficient number of arguments to %s command\n", sc.fname, sc.line, argv.front().c_str());
 		return;
 	}
 	sq_pushstring(sc.v, argv[1], -1);
@@ -411,7 +411,7 @@ void StellarContext::scmd_define(StellarContext &sc, TokenList &argv){
 
 static void scmd_set(StellarContext &sc, TokenList &argv){
 	if(argv.size() < 3){
-		printf("%s(%ld): Insufficient number of arguments to %s command\n", sc.fname, sc.line, argv.front());
+		printf("%s(%ld): Insufficient number of arguments to %s command\n", sc.fname, sc.line, argv.front().c_str());
 		return;
 	}
 	StackReserver sr(sc.v);
@@ -448,11 +448,11 @@ static void scmd_if(StellarContext &sc, TokenList &argv){
 		return;
 	}
 	else if(0 != stellar_util::sqcalcb(sc, argv[1], "if"))
-		sc.parseString(argv[2], false, sc.scanner->getLine());
+		sc.parseString(argv[2], nullptr, sc.scanner->getLine());
 	else if(5 <= argv.size() && argv[3] == "else") // With "else" keyword (which is ignored)
-		sc.parseString(argv[4], false, sc.scanner->getLine());
+		sc.parseString(argv[4], nullptr, sc.scanner->getLine());
 	else if(4 <= argv.size())
-		sc.parseString(argv[3], false, sc.scanner->getLine());
+		sc.parseString(argv[3], nullptr, sc.scanner->getLine());
 }
 
 static void scmd_while(StellarContext &sc, TokenList &argv){
@@ -461,7 +461,7 @@ static void scmd_while(StellarContext &sc, TokenList &argv){
 		return;
 	}
 	else while(0 != stellar_util::sqcalcb(sc, argv[1], "while"))
-		sc.parseString(argv[2], NULL, sc.scanner->getLine());
+		sc.parseString(argv[2], nullptr, sc.scanner->getLine());
 }
 
 static void scmd_expr(StellarContext &sc, TokenList &argv){
@@ -493,7 +493,7 @@ static void scmd_proc(StellarContext &sc, TokenList &argv){
 	}
 	TokenList params;
 	{
-		std::stringstream sstr = std::stringstream(std::string(argv[2]));
+		std::stringstream sstr{std::string(argv[2])};
 		StellarStructureScanner ssc(sc, &sstr, sc.line);
 		ssc.nextLine(&params);
 	}

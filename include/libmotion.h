@@ -37,6 +37,7 @@ extern "C"{
 #include <sstream>
 #include <iomanip>
 #include <stdlib.h> // atoi
+#include <string.h> // memcpy, memmove
 #endif
 
 

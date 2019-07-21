@@ -2,7 +2,9 @@
  * \brief Implementation of functions to adapt mqo.h to VastSpace project.
  */
 #include "draw/mqoadapt.h"
+#ifndef DEDICATED
 #include "draw/material.h"
+#endif
 extern "C"{
 #include <clib/zip/UnZip.h>
 }
@@ -12,8 +14,10 @@ struct MQOTextureLoad : MQOTextureCallback{
 	const char *fpath;
 	MQOTextureLoad(const char *fpath) : fpath(fpath){}
 	void operator()(Mesh *suf, MeshTex **ret){
+#ifndef DEDICATED
 		CacheMeshMaterials(suf, fpath);
 		*ret = gltestp::AllocMeshTex(suf, fpath);
+#endif
 	}
 };
 
@@ -63,16 +67,19 @@ Model *LoadMQOModel(const char *fname, double scale){
 		fpath << '/';
 	}
 
-	if(ifs.good())
-		return LoadMQOModelSource(ifs, scale, &MQOTextureLoad(fpath));
+	if(ifs.good()){
+		MQOTextureLoad texLoader(fpath);
+		return LoadMQOModelSource(ifs, scale, &texLoader);
+	}
 	else{
 		unsigned long size;
-		void *buffer = (BYTE*)ZipUnZip("rc.zip", fname, &size);
+		void *buffer = (void*)ZipUnZip("rc.zip", fname, &size);
 		if(!buffer)
 			return NULL;
 		srcbuf sb(buffer, size);
 		std::istream is(&sb);
-		Model *ret = LoadMQOModelSource(is, scale, &MQOTextureLoad(fpath));
+		MQOTextureLoad texLoader(fpath);
+		Model *ret = LoadMQOModelSource(is, scale, &texLoader);
 		ZipFree(buffer);
 		return ret;
 	}
@@ -84,7 +91,7 @@ Motion *LoadMotion(const char *fname){
 		return new Motion(ifs);
 	else{
 		unsigned long size;
-		void *buffer = (BYTE*)ZipUnZip("rc.zip", fname, &size);
+		void *buffer = (void*)ZipUnZip("rc.zip", fname, &size);
 		if(!buffer)
 			return NULL;
 		srcbuf sb(buffer, size);

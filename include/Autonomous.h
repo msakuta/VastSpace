@@ -43,7 +43,7 @@ class Autonomous;
 // because an Entity creation can be invoked from server messages.
 // In this case, Autonomous is a abstract class, which means even the server never creates one,
 // so we can safely ignore the case.
-template<> Entity *Entity::EntityRegisterNC<Autonomous>::stcreate(Game *game){ return NULL; }
+template<> inline Entity *Entity::EntityRegisterNC<Autonomous>::stcreate(Game *game){ return NULL; }
 
 /// \brief An autonomous object, which means it can move around by itself, but not remote control like Missiles.
 class EXPORT Autonomous : public ModelEntity{

@@ -6,6 +6,7 @@
 #include "CoordSys.h"
 #include <squirrel.h>
 #include <exception>
+#include <stdexcept> // runtime_error
 #include <deque>
 #include <unordered_map>
 #include <functional>
@@ -16,12 +17,29 @@ typedef std::deque<gltestp::dstring> TokenList;
 
 typedef long linenum_t; ///< I think 2 billions would be enough.
 
+// Due to a bug in gcc, template specialization for a template that is in a
+// namespace fails to compile.  This should be allowed, according to the standard.
+// (https://stackoverflow.com/questions/25594644/warning-specialization-of-template-in-different-namespace)
+// For the time being, adding `namespace std` around the specialization works around the issue.
+#ifdef  __GNUC__
+namespace std{
+#endif
+
 /// Template instantiation for unordered map key hash of gltestp::dstring
-template<> struct std::hash<gltestp::dstring>{
+#ifdef  __GNUC__
+template<> struct hash<gltestp::dstring>
+#else
+template<> struct std::hash<gltestp::dstring>
+#endif
+{
 	size_t operator()(const gltestp::dstring &s)const{
 		return s.hash();
 	}
 };
+
+#ifdef  __GNUC__
+}
+#endif
 
 /// Context object in the process of interpreting a stellar file.
 struct StellarContext{
@@ -69,8 +87,8 @@ struct StellarContext{
 };
 
 /// \brief Base type for any errors that could happen in stellar file interpretation.
-struct StellarError : std::exception{
-	StellarError(const char *s) : std::exception(s){}
+struct StellarError : std::runtime_error{
+	StellarError(const char *s) : std::runtime_error(s){}
 };
 
 namespace stellar_util{

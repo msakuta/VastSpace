@@ -9,8 +9,17 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#ifndef DEDICATED
 #include <GL/gl.h>
+#endif
 #include <vector>
+
+#ifdef DEDICATED
+// Workaround for server
+typedef int GLenum;
+typedef float GLfloat;
+typedef unsigned GLuint;
+#endif
 
 #define EXTENDABLE 1
 

@@ -687,7 +687,7 @@ int argtok(char *argv[], char *s, char **post, int maxargs){
 		escape = 1;
 		if(!head){
 			if(maxargs - 1 <= ret){
-				argv[ret] = '\0';
+				argv[ret] = "\0";
 				return ret;
 			}
 			argv[ret++] = s;

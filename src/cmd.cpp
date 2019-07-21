@@ -23,14 +23,14 @@ extern "C"{
 
 static struct viewport gvp;
 
-cpplib::dstring cmdbuffer[CB_LINES];
+gltestp::dstring cmdbuffer[CB_LINES];
 int cmdcurline = 2;
 int cmddispline = 0;
 
-static cpplib::dstring cmdhist[MAX_COMMAND_HISTORY];
+static gltestp::dstring cmdhist[MAX_COMMAND_HISTORY];
 static int cmdcurhist = 0, cmdselhist = 0;
 
-cpplib::dstring cmdline;
+gltestp::dstring cmdline;
 
 void (*CmdPrintHandler)(const char *line) = NULL;
 
@@ -94,7 +94,7 @@ static FILE *logfp(){
 
 /// Directly assign dstring to command buffer.
 /// This overloaded version reallocates memory less times.
-void CmdPrint(const cpplib::dstring &str){
+void CmdPrint(const gltestp::dstring &str){
 	cmdbuffer[cmdcurline] = str;
 	if(cvar_cmdlog)
 		fprintf(logfp(), "%s\n", (const char*)str);
@@ -133,14 +133,15 @@ void CmdPrint(const cpplib::dstring &str){
 
 	printf("%s\n", buf);
 #else
-	puts(cmdbuffer[cmdcurline]);
+	const char *c_str = cmdbuffer[cmdcurline];
+	std::cout << c_str;
 #endif
 	cmdcurline = (cmdcurline + 1) % CB_LINES;
 }
 
 /// Print a string to console.
 void CmdPrint(const char *str){
-	CmdPrint(static_cast<const cpplib::dstring&>(cpplib::dstring(str)));
+	CmdPrint(static_cast<const gltestp::dstring&>(gltestp::dstring(str)));
 }
 
 /// Formatted version of CmdPrint.
@@ -156,7 +157,7 @@ void CmdPrintf(const char *str, ...){
 
 
 static int cmd_echo(int argc, char *argv[]){
-	cpplib::dstring &out = cmdbuffer[cmdcurline];
+	gltestp::dstring &out = cmdbuffer[cmdcurline];
 	if(argc <= 1)
 		return 0;
 	out = "";
@@ -176,7 +177,7 @@ static int cmd_cmdlist_int(const struct command *c, const char *pattern, int lev
 		ret += cmd_cmdlist_int(c->right, pattern, level + 1);
 	if(!pattern || !strncmp(pattern, c->name, strlen(pattern))){
 #ifdef _DEBUG
-		CmdPrint(cpplib::dstring() << level << ": " << c->name);
+		CmdPrint(gltestp::dstring() << level << ": " << c->name);
 #else
 		CmdPrint(c->name);
 #endif
@@ -190,7 +191,7 @@ static int cmd_cmdlist_int(const struct command *c, const char *pattern, int lev
 static int cmd_cmdlist(int argc, char *argv[]){
 	int c;
 	c = cmd_cmdlist_int(cmdlist, 2 <= argc ? argv[1] : NULL, 0);
-	CmdPrint(cpplib::dstring() << c << " commands listed");
+	CmdPrint(gltestp::dstring() << c << " commands listed");
 	return 0;
 }
 
@@ -205,13 +206,13 @@ static int cmd_cvarlist(int argc, char *argv[]){
 #ifdef _DEBUG
 		char buf[32];
 		sprintf(buf, "%08X", hashfunc(cv->name));
-		CmdPrint(cpplib::dstring() << typechar[cv->type] << ": " << cv->name << " (" << buf << ")");
+		CmdPrint(gltestp::dstring() << typechar[cv->type] << ": " << cv->name << " (" << buf << ")");
 #else
-		CmdPrint(cpplib::dstring() << typechar[cv->type] << ": " << cv->name);
+		CmdPrint(gltestp::dstring() << typechar[cv->type] << ": " << cv->name);
 #endif
 		c++;
 	}
-	CmdPrint(cpplib::dstring() << c << " cvars listed");
+	CmdPrint(gltestp::dstring() << c << " cvars listed");
 	return 0;
 }
 
@@ -379,11 +380,11 @@ static int cmd_exec(int argc, char *argv[]){
 	}
 	FILE *fp = fopen(argv[1], "r");
 	if(!fp){
-		CmdPrint(cpplib::dstring() << "Couldn't load " << argv[1] << "!");
+		CmdPrint(gltestp::dstring() << "Couldn't load " << argv[1] << "!");
 		return 0;
 	}
-	CmdPrint(cpplib::dstring() << "executing " << argv[1]);
-	cpplib::dstring buf;
+	CmdPrint(gltestp::dstring() << "executing " << argv[1]);
+	gltestp::dstring buf;
 	int c;
 	while(EOF != (c = fgetc(fp))) if(c == '\\'){
 		char lc = c;
@@ -430,7 +431,7 @@ static int cmd_time(int argc, char *argv[]){
 	}
 	TimeMeasStart(&tm);
 	CmdExecD(thevalue, false, NULL);
-	CmdPrint(cpplib::dstring() << TimeMeasLap(&tm) << " seconds");
+	CmdPrint(gltestp::dstring() << TimeMeasLap(&tm) << " seconds");
 	free(thevalue);
 	return 0;
 }
@@ -442,9 +443,9 @@ static int listalias(struct cmdalias *a, int level){
 	ret += listalias(a->right, level + 1);
 	{
 #ifdef _DEBUG
-		CmdPrint(cpplib::dstring() << "(" << level << ") " << a->name << ": " << a->str);
+		CmdPrint(gltestp::dstring() << "(" << level << ") " << a->name << ": " << a->str);
 #else
-		CmdPrint(cpplib::dstring() << a->name << ": " << a->str);
+		CmdPrint(gltestp::dstring() << a->name << ": " << a->str);
 #endif
 	}
 	ret += listalias(a->left, level + 1);
@@ -458,7 +459,7 @@ static int cmd_alias(int argc, char *argv[]){
 	if(argc <= 1){
 		int ret;
 		ret = listalias(aliaslist, 0);
-		CmdPrint(cpplib::dstring() << ret << " aliases listed");
+		CmdPrint(gltestp::dstring() << ret << " aliases listed");
 		return 0;
 	}
 	else if(argc == 2){
@@ -468,10 +469,10 @@ static int cmd_alias(int argc, char *argv[]){
 		struct cmdalias *a;
 		thekey = argv[1];
 		if(a = CmdAliasFind(thekey)){
-			CmdPrint(cpplib::dstring() << a->name << ": " << a->str);
+			CmdPrint(gltestp::dstring() << a->name << ": " << a->str);
 			return 0;
 		}
-		CmdPrint(cpplib::dstring() << "no aliase named " << thekey << " is found.");
+		CmdPrint(gltestp::dstring() << "no aliase named " << thekey << " is found.");
 		return -1;
 	}
 	thekey = argv[1];
@@ -530,13 +531,13 @@ static int cmd_memory(int argc, char *argv[]){
 	for(int i = 0; i < numof(cmdbuffer); i++)
 		size += cmdbuffer[i].len();
 	size += sizeof cmdbuffer + sizeof cmdhist;
-	CmdPrint(cpplib::dstring() << "cmdbuf: " << size << " bytes = " << (size + 1023) / 1024 << " kilobytes used");
+	CmdPrint(gltestp::dstring() << "cmdbuf: " << size << " bytes = " << (size + 1023) / 1024 << " kilobytes used");
 	size = cmd_memory_alias(aliaslist);
-	CmdPrint(cpplib::dstring() << "alias: " << size << " bytes = " << (size + 1024) / 1024 << " kilobytes used");
-	CmdPrint(cpplib::dstring() << "cvar: " << cvarlists * sizeof **cvarlist << " bytes = " << cvarlists * sizeof **cvarlist / 1024 << " kilobytes used");
+	CmdPrint(gltestp::dstring() << "alias: " << size << " bytes = " << (size + 1024) / 1024 << " kilobytes used");
+	CmdPrint(gltestp::dstring() << "cvar: " << cvarlists * sizeof **cvarlist << " bytes = " << cvarlists * sizeof **cvarlist / 1024 << " kilobytes used");
 #ifndef DEDICATED
 	size = CircleCutsMemory();
-	CmdPrint(cpplib::dstring() << "circut: " << size << " bytes = " << (size + 1023) / 1024 << " kilobytes used");
+	CmdPrint(gltestp::dstring() << "circut: " << size << " bytes = " << (size + 1023) / 1024 << " kilobytes used");
 #endif
 	return 0;
 }
@@ -574,7 +575,7 @@ int CmdInput(char key){
 	if(key == DELETEKEY)
 		return 1;
 	if(key == 0x08){
-		cmdline = cpplib::dstring().strncat(cmdline, cmdline.len() - 1);
+		cmdline = gltestp::dstring().strncat(cmdline, cmdline.len() - 1);
 		return 0;
 	}
 	else if(key == '\n'){
@@ -796,7 +797,7 @@ static int CmdExecD(char *cmdstring, bool server, ServerClient *sc){
 		int returned;
 		if(aliasnest++ < MAX_ALIAS_NESTS){
 			if(argv[1]){
-				returned = CmdExec(cpplib::dstring(pa->str) << " " << argv[1]);
+				returned = CmdExec(gltestp::dstring(pa->str) << " " << argv[1]);
 			}
 			else
 				returned = CmdExec(pa->str);
@@ -827,7 +828,7 @@ static int CmdExecD(char *cmdstring, bool server, ServerClient *sc){
 	{
 		struct cvar *cv;
 		for(cv = cvarlist[hashfunc(cmd) % numof(cvarlist)]; cv; cv = cv->next) if(!strcmp(cv->name, cmd)){
-			cpplib::dstring buf;
+			gltestp::dstring buf;
 			char *arg = argv[1];
 			if(!arg) switch(cv->type){
 				case cvar_int: buf << "\"" << cmd << "\" is " << *cv->v.i; break;
@@ -856,7 +857,7 @@ static int CmdExecD(char *cmdstring, bool server, ServerClient *sc){
 		}
 	}
 	if(console_undefinedecho){
-		CmdPrint(cpplib::dstring() << "Undefined command: " << cmd);
+		CmdPrint(gltestp::dstring() << "Undefined command: " << cmd);
 	}
 gcon:;
 	}while(cmdstring = post);

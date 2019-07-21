@@ -18,9 +18,7 @@ endif
 
 ifndef BULLET_LIB
 	ifeq "$(USE_LOCAL_BULLET)" "y"
-		BULLET_LIB=-L../../bullet/src/LinearMath \
-			-L../../bullet/src/BulletCollision \
-			-L../../bullet/src/BulletDynamics
+		BULLET_LIB=-L../../bullet/bin
 	else
 		BULLET_LIB=
 	endif
@@ -43,9 +41,13 @@ objects = ${OUTDIR}/Soldier.o\
 
 all: ../../${OUTDIR}/vastspace.so
 
+LIB_LINEAR_MATH = LinearMath_gmake_x64_release
+LIB_BULLET_COLLISION = BulletCollision_gmake_x64_release
+LIB_BULLET_DYNAMICS = BulletDynamics_gmake_x64_release
+
 ../../${OUTDIR}/vastspace.so: ${OUTDIR} ${objects}
 	${CC} ${CFLAGS} $(CPPFLAGS) -shared ${objects} -o $@ ${BULLET_LIB} \
-	-lstdc++ -lm -lBulletCollision -lBulletDynamics -lLinearMath -ldl -lrt -lpthread
+	-lstdc++ -lm -l${LIB_BULLET_DYNAMICS} -l${LIB_BULLET_COLLISION} -l${LIB_LINEAR_MATH} -ldl -lrt -lpthread
 
 ${OUTDIR}:
 	mkdir ${OUTDIR}

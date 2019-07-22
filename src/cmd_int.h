@@ -1,6 +1,6 @@
 #ifndef CMD_INT_H
 #define CMD_INT_H
-#include <cpplib/dstring.h>
+#include "dstring.h"
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -23,11 +23,11 @@ struct cvar{
 	int (*vrc)(void *); /* Value Range Check */
 };
 
-extern cpplib::dstring cmdbuffer[CB_LINES];
+extern gltestp::dstring cmdbuffer[CB_LINES];
 extern int cmdcurline;
 extern int cmddispline;
 //extern int cmdcur;
-extern cpplib::dstring cmdline;
+extern gltestp::dstring cmdline;
 #ifdef _WIN32
 extern int console_cursorposdisp;
 #endif

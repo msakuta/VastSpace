@@ -242,7 +242,7 @@ bool OrbitCS::readFile(StellarContext &sc, int argc, const char *argv[]){
 			orbit_axis[1] = sqcalc(sc, argv[2], s);
 		if(3 < argc){
 			orbit_axis[2] = sqcalc(sc, argv[3], s);
-			orbit_axis[3] = sqrt(1. - VECSLEN(orbit_axis));
+			orbit_axis[3] = sqrt(std::max(0., 1. - VECSLEN(orbit_axis)));
 		}
 		return true;
 	}

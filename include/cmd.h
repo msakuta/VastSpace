@@ -2,8 +2,8 @@
 #define CMD_H
 #include "export.h"
 #ifdef __cplusplus
-#include <cpplib/dstring.h>
-EXPORT void CmdPrint(const cpplib::dstring &);
+#include "dstring.h"
+EXPORT void CmdPrint(const gltestp::dstring &);
 extern "C"{
 #endif
 

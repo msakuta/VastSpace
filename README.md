@@ -39,12 +39,12 @@ Additional screenshots can be seen [here](http://msakuta.github.io/VastSpace/scr
 Supported platforms
 -------------------
 
-Windows client is tested in Windows 7/8, probably work in Vista too.
+Windows client is tested in Windows 7/8 and 10.
 You'll need decent graphic boards that support OpenGL.
-Tested boards are Radeon HD6870, nVidia GeForce GT 650M.
+Tested boards are Radeon HD6870, nVidia GeForce GT 650M and 1070 Ti.
 
 Linux server must be able to build on most distributions.
-Fedora 8 is tested.
+Fedora 8 and Ubuntu 16.04 LTS are tested.
 
 
 
@@ -101,6 +101,14 @@ support gcc 4.8.2 but older versions.  In such case
 (which is almost always the case), you must build gcc
 from source.
 
+Also you could build with gcc Docker image (https://hub.docker.com/_/gcc) to
+get access to the newer version.
+If you have docker installed, simply run
+
+    docker run --rm -it -v $(pwd):/work -w /work gcc:latest
+
+and build normally.
+
 You'll need various external libraries:
 
 * libpng
@@ -111,11 +119,16 @@ You'll need various external libraries:
 * libogg
 * libvorbis
 
-All sources are included in the source tree except Bullet,
-but GNUMakefile does not automatically build them.
+All sources are included in the source tree except Bullet.
 You can choose the method to install these libraries; You can
 install from the distribution's package managers (yum or apt-get)
 or build from the sources.
+
+If you want to build from source, run
+
+    ./git-bullet.sh
+
+on the same directory as this README.
 
 Bullet Dynamics Engine's sources can be downloaded by the shell script
 svn-bullet.sh.  A Subversion command line client and internet connection

@@ -39,12 +39,12 @@ Additional screenshots can be seen [here](http://msakuta.github.io/VastSpace/scr
 Supported platforms
 -------------------
 
-Windows client is tested in Windows 7/8, probably work in Vista too.
+Windows client is tested in Windows 7/8 and 10.
 You'll need decent graphic boards that support OpenGL.
-Tested boards are Radeon HD6870, nVidia GeForce GT 650M.
+Tested boards are Radeon HD6870, nVidia GeForce GT 650M and 1070 Ti.
 
 Linux server must be able to build on most distributions.
-Fedora 8 is tested.
+Fedora 8 and Ubuntu 16.04 LTS are tested.
 
 
 
@@ -100,6 +100,14 @@ Most distributions doesn't provide package managers that
 support gcc 4.8.2 but older versions.  In such case
 (which is almost always the case), you must build gcc
 from source.
+
+Also you could build with gcc Docker image (https://hub.docker.com/_/gcc) to
+get access to the newer version.
+If you have docker installed, simply run
+
+    docker run --rm -it -v $(pwd):/work -w /work gcc:latest
+
+and build normally.
 
 You'll need various external libraries:
 

@@ -119,11 +119,16 @@ You'll need various external libraries:
 * libogg
 * libvorbis
 
-All sources are included in the source tree except Bullet,
-but GNUMakefile does not automatically build them.
+All sources are included in the source tree except Bullet.
 You can choose the method to install these libraries; You can
 install from the distribution's package managers (yum or apt-get)
 or build from the sources.
+
+If you want to build from source, run
+
+    ./git-bullet.sh
+
+on the same directory as this README.
 
 Bullet Dynamics Engine's sources can be downloaded by the shell script
 svn-bullet.sh.  A Subversion command line client and internet connection

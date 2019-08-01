@@ -5,6 +5,7 @@
  *
  * \sa astrodraw.cpp
  */
+#define NOMINMAX
 #include "astro.h"
 #include "serial_util.h"
 #include "stellar_file.h"

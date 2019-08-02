@@ -306,7 +306,7 @@ void Application::init(void vmInit(HSQUIRRELVM))
 		CmdAddParam("csq", cmd_sq, static_cast<Game*>(clientGame));
 		if(serverGame != clientGame){ // Prevent double initialization
 			sqa_init(clientGame);
-			vmInit(serverGame->sqvm);
+			vmInit(clientGame->sqvm);
 		}
 	}
 	if(mode & ServerBit){

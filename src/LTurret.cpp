@@ -206,7 +206,7 @@ double LMissileTurret::getHitRadius()const{return hitRadius;}
 
 
 int LMissileTurret::wantsFollowTarget()const{
-	return cooldown < 2. * getShootInterval();
+	return 2 * (cooldown < 2. * getShootInterval());
 }
 
 void LMissileTurret::anim(double dt){

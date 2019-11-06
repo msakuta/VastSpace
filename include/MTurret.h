@@ -11,6 +11,7 @@ class EXPORT MTurret : public ArmBase{
 protected:
 	void findtarget(Entity *pb, const hardpoint_static *hp, const Entity *ignore_list[] = NULL, int nignore_list = 0);
 	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2); // returns precedence factor
+	virtual bool checkTargetRange(double phi, double theta)const;
 	virtual int wantsFollowTarget()const; // Returns whether the turret should aim at target, 0 - no aim, 1 - yaw only, 2 - yaw and pitch, default 2.
 	static double modelScale;
 	static double hitRadius;

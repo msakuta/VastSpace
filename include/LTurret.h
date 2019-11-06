@@ -87,6 +87,7 @@ public:
 	virtual void tryshoot();
 	virtual double findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2);
 protected:
+	bool checkTargetRange(double phi, double theta)const override{return true;}
 	double getTurretVariance()const override{return turretVariance;}
 	double getTurretIntolerance()const override{return turretIntolerance;}
 	double getRotateSpeed()const override{return rotateSpeed;}

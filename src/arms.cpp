@@ -1,6 +1,7 @@
 /** \file
  * \brief Implementation of ArmBase derived classes.
  */
+#define NOMINMAX
 #include "arms.h"
 #include "MTurret.h"
 #include "EntityRegister.h"
@@ -16,6 +17,7 @@ extern "C"{
 #include <clib/mathdef.h>
 #include <clib/cfloat.h>
 }
+#include <limits>
 
 
 const char *hardpoint_static::classname()const{
@@ -212,7 +214,7 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *i
 	MTurret *pt = this;
 	WarField *w = pb->w;
 	double bulletrange = getBulletSpeed() * getBulletLife(); /* sense range */
-	double best = bulletrange * bulletrange;
+	double best = std::numeric_limits<double>::max();
 	static const Vec3d right(1., 0., 0.), left(-1., 0., 0.);
 	Entity *pt2, *closest = NULL;
 
@@ -247,7 +249,7 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *i
 		theta = atan2(ldelta[1], sqrt(ldelta[0] * ldelta[0] + ldelta[2] * ldelta[2]));
 
 		// Ignore targets that are out of turret rotation or barrel pitch range.
-		if(!(mturret_range[1][0] < phi && phi < mturret_range[1][1] && mturret_range[0][0] < theta && theta < mturret_range[0][1]))
+		if(!checkTargetRange(phi, theta))
 			continue;
 
 		double sdist = (pt2->pos - pb->pos).slen();
@@ -267,6 +269,10 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *i
 
 double MTurret::findtargetproc(const Entity *pb, const hardpoint_static *hp, const Entity *pt2){
 	return 1.;
+}
+
+bool MTurret::checkTargetRange(double phi, double theta)const{
+	return mturret_range[1][0] < phi && phi < mturret_range[1][1] && mturret_range[0][0] < theta && theta < mturret_range[0][1];
 }
 
 int MTurret::wantsFollowTarget()const{return 2;}

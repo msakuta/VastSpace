@@ -1,4 +1,5 @@
 #include "../Battleship.h"
+#include "../vastspace.h"
 #include "draw/material.h"
 #include "effects.h"
 #include "draw/WarDraw.h"
@@ -41,7 +42,7 @@ void Battleship::draw(wardraw_t *wd){
 
 	static int engineAtrIndex = -1;
 	if(!init) do{
-		model = LoadMQOModel("models/battleship.mqo");
+		model = LoadMQOModel(modPath() + "models/battleship.mqo");
 		if(model && model->sufs[0]){
 			for(int i = 0; i < model->tex[0]->n; i++){
 				const char *colormap = model->sufs[0]->a[i].colormap;

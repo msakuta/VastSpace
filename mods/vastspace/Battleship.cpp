@@ -1,5 +1,6 @@
 #include "Battleship.h"
 #include "EntityRegister.h"
+#include "vastspace.h"
 #include "judge.h"
 #include "serial_util.h"
 #include "EntityCommand.h"
@@ -85,7 +86,7 @@ bool Battleship::buildBody(){
 void Battleship::static_init(){
 	static bool initialized = false;
 	if(!initialized){
-		sq_init(_SC("models/Battleship.nut"),
+		sq_init(modPath() << _SC("models/Battleship.nut"),
 			ModelScaleProcess(modelScale) <<=
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(disp) <<=

@@ -3,6 +3,7 @@
  */
 #include "Attacker.h"
 #include "EntityRegister.h"
+#include "vastspace.h"
 #include "war.h"
 #include "btadapt.h"
 #include "judge.h"
@@ -63,7 +64,7 @@ Attacker::~Attacker(){delete docker;}
 void Attacker::static_init(){
 	static bool initialized = false;
 	if(!initialized){
-		sq_init(_SC("models/Attacker.nut"),
+		sq_init(modPath() << _SC("models/Attacker.nut"),
 			ModelScaleProcess(modelScale) <<=
 			MassProcess(defaultMass) <<=
 			ManeuverParamsProcess(maneuverParams) <<=
@@ -301,7 +302,7 @@ Model *Attacker::getModel(){
 	static bool init = false;
 	static Model *model = NULL;
 	if(!init){
-		model = LoadMQOModel("models/attacker.mqo");
+		model = LoadMQOModel(modPath() << "models/attacker.mqo");
 
 #ifndef DEDICATED
 		if(model) for(int n = 0; n < model->n; n++) if(model->sufs[n] && model->tex[n]){

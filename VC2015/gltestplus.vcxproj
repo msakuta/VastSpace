@@ -177,7 +177,6 @@
     <ClCompile Include="..\src\Assault.cpp" />
     <ClCompile Include="..\src\astro.cpp" />
     <ClCompile Include="..\src\astrodraw.cpp" />
-    <ClCompile Include="..\src\Attacker.cpp" />
     <ClCompile Include="..\src\audio\playSound.cpp" />
     <ClCompile Include="..\src\audio\wavemixer.cpp" />
     <ClCompile Include="..\src\Autonomous.cpp" />
@@ -196,7 +195,6 @@
     <ClCompile Include="..\src\Destroyer.cpp" />
     <ClCompile Include="..\src\Docker.cpp" />
     <ClCompile Include="..\src\draw\Assault-Draw.cpp" />
-    <ClCompile Include="..\src\draw\Attacker-Draw.cpp" />
     <ClCompile Include="..\src\draw\Beamer-draw.cpp" />
     <ClCompile Include="..\src\draw\blackbody.cpp" />
     <ClCompile Include="..\src\draw\Bullet-draw.cpp" />
@@ -372,7 +370,6 @@
     <ClInclude Include="..\include\yssurf.h" />
     <ClInclude Include="..\src\argtok.h" />
     <ClInclude Include="..\src\Assault.h" />
-    <ClInclude Include="..\src\Attacker.h" />
     <ClInclude Include="..\src\avi.h" />
     <ClInclude Include="..\src\Beamer.h" />
     <ClInclude Include="..\src\cmd_int.h" />

@@ -76,7 +76,6 @@ objects = ${OUTDIR}/serial.o\
  ${OUTDIR}/arms.o\
  ${OUTDIR}/LTurret.o\
  ${OUTDIR}/Assault.o\
- ${OUTDIR}/Attacker.o\
  ${OUTDIR}/Destroyer.o\
  ${OUTDIR}/Shipyard.o\
  ${OUTDIR}/RStation.o\
@@ -217,8 +216,6 @@ ${OUTDIR}/arms.o: $(call depends,arms.cpp)
 ${OUTDIR}/LTurret.o: $(call depends,LTurret.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Assault.o: $(call depends,Assault.cpp)
-	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
-${OUTDIR}/Attacker.o: $(call depends,Attacker.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@
 ${OUTDIR}/Destroyer.o: $(call depends,Destroyer.cpp)
 	${CC} $(CFLAGS) $(CPPFLAGS) -I include -c $< -o $@

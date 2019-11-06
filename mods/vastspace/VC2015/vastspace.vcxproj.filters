@@ -38,6 +38,12 @@
     <ClCompile Include="..\draw\Battleship-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
+    <ClCompile Include="..\Attacker.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\draw\Attacker-Draw.cpp">
+      <Filter>Sources\draw</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ContainerHead.h">
@@ -62,6 +68,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\Battleship.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Attacker.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

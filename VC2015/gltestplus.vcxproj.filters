@@ -108,9 +108,6 @@
     <ClCompile Include="..\src\astrodraw.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Attacker.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\Autonomous.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
@@ -289,9 +286,6 @@
       <Filter>Sources\draw</Filter>
     </ClCompile>
     <ClCompile Include="..\src\draw\Assault-Draw.cpp">
-      <Filter>Sources\draw</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\draw\Attacker-Draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
     <ClCompile Include="..\src\draw\Beamer-draw.cpp">
@@ -607,9 +601,6 @@
     </ClInclude>
     <ClInclude Include="..\include\msg\GetCoverPointsMessage.h">
       <Filter>Exported Headers\msg</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\Attacker.h">
-      <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\src\avi.h">
       <Filter>Headers</Filter>

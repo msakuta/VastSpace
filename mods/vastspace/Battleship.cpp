@@ -99,7 +99,7 @@ void Battleship::static_init(){
 void Battleship::init(){
 	static_init();
 	st::init();
-	turrets = new ArmBase*[hardpoints.size()];
+	turrets.resize(hardpoints.size());
 	mass = 1e9;
 	engineHeat = 0.;
 }

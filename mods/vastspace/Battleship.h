@@ -6,7 +6,7 @@
 class Battleship : public Warpable{
 protected:
 	float engineHeat;
-	ArmBase **turrets;
+	std::vector<ArmBase *> turrets;
 	static std::vector<hardpoint_static*> hardpoints;
 	static HitBoxList hitboxes;
 	static double modelScale;

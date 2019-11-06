@@ -16,6 +16,7 @@ function init_Universe(){
 		mainmenu.title = "VastSpace Demos";
 		mainmenu.addItem("Container Ship Demo", @() sendCM("load_vastspace_demo1"));
 		mainmenu.addItem("VastSpace Demo 2", @() sendCM("load_vastspace_demo2"));
+		mainmenu.addItem("Attacker Demo", @() sendCM("load_vastspace_demo_attacker"));
 
 		// Adjust window position to center of screen, after all menu items are added.
 		mainmenu.x = scw / 2 - mainmenu.width / 2;

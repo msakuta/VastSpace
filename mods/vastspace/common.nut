@@ -16,6 +16,7 @@ print("x64: " + x64Build() + ", \"" + dllpath + "\"l refc is " + refc);
 
 clientMessageResponses["load_vastspace_demo1"] <- @() loadmission("mods/vastspace/scripts/demo1.nut");
 clientMessageResponses["load_vastspace_demo2"] <- @() loadmission("mods/vastspace/scripts/demo2.nut");
+clientMessageResponses["load_vastspace_demo_attacker"] <- @() loadmission("mods/vastspace/scripts/demo_attacker.nut");
 
 
 registerFirearm("M16", "models/M16.nut");

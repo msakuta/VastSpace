@@ -5,13 +5,13 @@
 #define LTURRET_H
 #include "MTurret.h"
 
-class LTurretBase : public MTurret{
+class EXPORT LTurretBase : public MTurret{
 public:
 	LTurretBase(Game *game) : MTurret(game){}
 	LTurretBase(Entity *abase, const hardpoint_static *hp) : MTurret(abase, hp){}
 };
 
-class LTurret : public LTurretBase{
+class EXPORT LTurret : public LTurretBase{
 	float blowback, blowbackspeed;
 	static double modelScale;
 	static double hitRadius;
@@ -56,7 +56,7 @@ protected:
 	void shootEffect(const Vec3d &bulletpos, const Vec3d &direction);
 };
 
-class LMissileTurret : public LTurretBase{
+class EXPORT LMissileTurret : public LTurretBase{
 	const Entity *targets[6]; // Targets already locked up
 	float deploy; // Deployment factor.
 

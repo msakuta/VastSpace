@@ -114,9 +114,6 @@
     <ClCompile Include="..\src\Autonomous.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Battleship.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\Beamer.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
@@ -295,9 +292,6 @@
       <Filter>Sources\draw</Filter>
     </ClCompile>
     <ClCompile Include="..\src\draw\Attacker-Draw.cpp">
-      <Filter>Sources\draw</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\draw\Battleship-draw.cpp">
       <Filter>Sources\draw</Filter>
     </ClCompile>
     <ClCompile Include="..\src\draw\Beamer-draw.cpp">
@@ -627,9 +621,6 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\src\keybind.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\Battleship.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\src\Beamer.h">

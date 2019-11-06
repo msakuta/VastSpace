@@ -182,7 +182,6 @@
     <ClCompile Include="..\src\audio\wavemixer.cpp" />
     <ClCompile Include="..\src\Autonomous.cpp" />
     <ClCompile Include="..\src\avi.c" />
-    <ClCompile Include="..\src\Battleship.cpp" />
     <ClCompile Include="..\src\Beamer.cpp" />
     <ClCompile Include="..\src\BeamProjectile.cpp" />
     <ClCompile Include="..\src\BinDiff.cpp" />
@@ -198,7 +197,6 @@
     <ClCompile Include="..\src\Docker.cpp" />
     <ClCompile Include="..\src\draw\Assault-Draw.cpp" />
     <ClCompile Include="..\src\draw\Attacker-Draw.cpp" />
-    <ClCompile Include="..\src\draw\Battleship-draw.cpp" />
     <ClCompile Include="..\src\draw\Beamer-draw.cpp" />
     <ClCompile Include="..\src\draw\blackbody.cpp" />
     <ClCompile Include="..\src\draw\Bullet-draw.cpp" />
@@ -376,7 +374,6 @@
     <ClInclude Include="..\src\Assault.h" />
     <ClInclude Include="..\src\Attacker.h" />
     <ClInclude Include="..\src\avi.h" />
-    <ClInclude Include="..\src\Battleship.h" />
     <ClInclude Include="..\src\Beamer.h" />
     <ClInclude Include="..\src\cmd_int.h" />
     <ClInclude Include="..\src\CoordSys-sq.h" />

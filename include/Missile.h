@@ -16,6 +16,8 @@ protected:
 	double ft; /* fpol time */
 	float fuel, throttle;
 	bool centered; /* target must be centered before integration starts */
+	static const double acceleration;
+	static const double speedDecayRate;
 	static const float maxfuel;
 	void steerHoming(double dt, const Vec3d &atarget, const Vec3d &targetvelo, double speedfactor, double minspeed);
 	void unlinkTarget();

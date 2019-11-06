@@ -1,6 +1,7 @@
 /** \file
  * \brief Implementation of Missile class.
  */
+#define NOMINMAX
 #include "Missile.h"
 #include "Viewer.h"
 #include "Game.h"
@@ -11,9 +12,13 @@ extern "C"{
 #include <clib/mathdef.h>
 }
 
+#include <algorithm>
+
 const double Missile::modelScale = 1e-2;
-const float Missile::maxfuel = 120.;
+const float Missile::maxfuel = 120000.;
 const double Missile::maxspeed = 1000.;
+const double Missile::acceleration = 100.;
+const double Missile::speedDecayRate = 1.;
 
 /// Construct on first use idiom.
 Missile::TargetMap &Missile::targetmap(){
@@ -46,7 +51,6 @@ Missile::~Missile(){
 const unsigned Missile::classid = registerClass("Missile", Conster<Missile>);
 const char *Missile::classname()const{return "Missile";}
 
-#define SSM_ACCEL 100.
 #define SSM_BLAST_FREQ 10.
 #define SSM_MAX_GIBS 10
 #define SSM_ROTSPEED (M_PI)
@@ -62,7 +66,7 @@ void Missile::steerHoming(double dt, const Vec3d &atarget, const Vec3d &targetve
 	if(rdrn.sp(dv) < 0) // estimate only when closing
 		target += dvPlanar * dist / dvLinear.len();
 	Vec3d dr = this->pos - target;
-	this->throttle = dr.len() * speedfactor + minspeed;
+	this->throttle = float(dr.len() * speedfactor + minspeed);
 	this->omg = 3 * this->rot.trans(vec3_001).vp(dr.norm());
 	if(SSM_ROTSPEED * SSM_ROTSPEED < this->omg.slen())
 		this->omg.normin().scalein(SSM_ROTSPEED);
@@ -86,7 +90,7 @@ void Missile::anim(double dt){
 		}
 
 		gltestp::dstring labels[2] = {"ServerMissileMapSize", "ClientMissileMapSize"};
-		double values[2] = {serverMissiles, targetmap().size() - serverMissiles};
+		double values[2] = {double(serverMissiles), double(targetmap().size() - serverMissiles)};
 		GLWchart::addSamplesToCharts(labels, values, 2);
 	}
 #endif
@@ -96,14 +100,10 @@ void Missile::anim(double dt){
 #if 1
 		Vec3d epos, dv;
 		if(0. < this->fuel){
-			Vec3d delta;
-			double dist, burnt, thrust;
 			int flying = 0;
 
 			if(target){
-				static const double samspeed = 800.;
-				int i, n;
-				delta = target->pos - pos;
+				Vec3d delta = target->pos - pos;
 
 				/* if the target goes behind, loose focus */
 	/*			if(VECSP(delta, pb->velo) < 0.){
@@ -111,13 +111,11 @@ void Missile::anim(double dt){
 					VECCPY(dv, pb->velo);
 				}
 				else*/{
-					double speed;
 					flying = 0/*((struct entity_private_static*)pb->target->vft)->flying(pb->target)*/;
 					Vec3d zh = delta.norm();
 			/*		estimate_pos(&epos, pb->target->pos, pb->target->velo, pb->pos, pb->velo, &sgravity, BULLETSPEED);*/
-					speed = -velo.sp(zh);
-					speed = MAX(maxspeed * 2., speed);
-					dist = (target->pos - this->pos).len();
+					double speed = std::max(maxspeed * 2., -velo.sp(zh));
+					double dist = (target->pos - this->pos).len();
 					if(speedEpsilon < speed)
 						epos = target->pos + (target->velo - velo) * (dist / speed * 1.2);
 					else
@@ -135,20 +133,19 @@ void Missile::anim(double dt){
 				Mat4d mat = this->rot.tomat4();
 				Vec3d zh = mat.vp3(zh0);
 				if(0 < zh.sp(dv)){
-					dist = dv.len();
-					burnt = dt * SSM_ACCEL /** (flying ? 3 : 1)*/;
-					thrust = burnt / (1. + this->fuel / 20.)/* / dist*/;
+					double burnt = dt * acceleration /** (flying ? 3 : 1)*/;
+					double thrust = burnt / (1. + this->fuel / 60000.)/* / dist*/;
 					velo += zh * thrust;
-					this->fuel -= burnt;
+					this->fuel -= float(burnt);
 				}
 			}
 		}
 #endif
 #if 1
 		if(target && speedEpsilon < dv.slen()){
-			double f = exp(-1.*dt);
+			double f = exp(-dt / speedDecayRate);
 			Vec3d lvelo = velo - target->velo; // Convert to target based velocity space
-			lvelo = lvelo * f + dv.norm() * (1. - f);
+			lvelo = lvelo * f + maxspeed * dv.norm() * (1. - f);
 			velo = lvelo + target->velo;
 			Vec3d omega = velo.norm().vp(rot.trans(vec3_001));
 			rot = rot.quatrotquat(omega);
@@ -344,7 +341,7 @@ void Missile::anim(double dt){
 			sp = forward.sp(dv);
 			if(0 < sp){
 				dist = dv.len();
-				burnt = dt * 3. * SSM_ACCEL /** (flying ? 3 : 1)*/;
+				burnt = dt * 3. * acceleration /** (flying ? 3 : 1)*/;
 				thrust = burnt / (1. + fuel / 20.)/* / dist*/;
 				sp = exp(-thrust);
 				velo *= sp;

@@ -12,8 +12,8 @@ class AttackerDocker;
 /// A heavy assault ship with docking bay.
 class Attacker : public Warpable{
 protected:
-	AttackerDocker *docker;
-	ArmBase **turrets;
+	std::unique_ptr<AttackerDocker> docker;
+	std::vector<ArmBase *> turrets;
 	float engineHeat; ///< Integration of direction & PL_W
 
 	static double modelScale;
@@ -30,7 +30,6 @@ public:
 	static EntityRegister<Attacker> entityRegister;
 	Attacker(Game *game);
 	Attacker(WarField *);
-	~Attacker();
 	void static_init();
 	void init();
 	virtual void dive(SerializeContext &sc, void (Serializable::*method)(SerializeContext &));

@@ -45,7 +45,7 @@ const char *Attacker::classname()const{return "Attacker";}
 const unsigned Attacker::classid = registerClass("Attacker", Conster<Attacker>);
 Entity::EntityRegister<Attacker> Attacker::entityRegister("Attacker");
 
-Attacker::Attacker(Game *game) : st(game), docker(NULL), engineHeat(0){init();}
+Attacker::Attacker(Game *game) : st(game), engineHeat(0){init();}
 
 Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)), engineHeat(0){
 	init();
@@ -58,8 +58,6 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)), eng
 	count++;
 	buildBody();
 }
-
-Attacker::~Attacker(){delete docker;}
 
 void Attacker::static_init(){
 	static bool initialized = false;
@@ -79,7 +77,7 @@ void Attacker::static_init(){
 void Attacker::init(){
 	static_init();
 	st::init();
-	turrets = new ArmBase*[hardpoints.size()];
+	turrets.resize(hardpoints.size());
 	mass = defaultMass;
 	engineHeat = 0.;
 }
@@ -91,14 +89,16 @@ void Attacker::dive(SerializeContext &sc, void (Serializable::*method)(Serialize
 
 void Attacker::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << docker;
+	sc.o << docker.get();
 	for(int i = 0; i < hardpoints.size(); i++)
 		sc.o << turrets[i];
 }
 
 void Attacker::unserialize(UnserializeContext &sc){
 	st::unserialize(sc);
-	sc.i >> docker;
+	AttackerDocker* ptr;
+	sc.i >> ptr;
+	docker.reset(ptr);
 
 	// Update the dynamics body's parameters too.
 	if(bbody){
@@ -159,7 +159,7 @@ const Warpable::ManeuverParams &Attacker::getManeuve()const{
 }
 
 Docker *Attacker::getDockerInt(){
-	return docker;
+	return docker.get();
 }
 
 int Attacker::takedamage(double damage, int hitpart){

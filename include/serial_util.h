@@ -16,6 +16,7 @@ extern "C"{
 #include <set>
 #include <list>
 #include <exception>
+#include <memory>
 
 
 class EXPORT FormatException : public std::exception{
@@ -59,6 +60,10 @@ public:
 	virtual tt &operator<<(double a) = 0;
 	virtual tt &operator<<(const char *a) = 0;
 	virtual tt &operator<<(const Serializable *p) = 0;
+	template<typename T>
+	tt& operator<<(const std::unique_ptr<T>& p) {
+		return *this << p.get();
+	}
 	virtual tt &operator<<(const Vec3d &v) = 0;
 	virtual tt &operator<<(const Quatd &v) = 0;
 	virtual tt &operator<<(const random_sequence &v) = 0;

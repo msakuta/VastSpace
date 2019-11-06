@@ -89,7 +89,7 @@ void Attacker::dive(SerializeContext &sc, void (Serializable::*method)(Serialize
 
 void Attacker::serialize(SerializeContext &sc){
 	st::serialize(sc);
-	sc.o << docker.get();
+	sc.o << docker;
 	for(int i = 0; i < hardpoints.size(); i++)
 		sc.o << turrets[i];
 }

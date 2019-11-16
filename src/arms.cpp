@@ -293,8 +293,8 @@ void MTurret::tryshoot(){
 	Mat4d rot = hp->rot.tomat4();
 	Mat4d mat = mat2 * rot;
 	mat.translatein(0., 1., -2.);
-	mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance());
-	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance());
+	mat2 = mat.roty(this->py[1] + (w->rs.nextd() - .5) * getTurretVariance());
+	mat = mat2.rotx(this->py[0] + (w->rs.nextd() - .5) * getTurretVariance());
 	pz->pos = mat.vp3(mturret_ofs);
 	pz->velo = mat.dvp3(forward) * getBulletSpeed() + this->velo;
 	this->cooldown += getShootInterval();
@@ -386,7 +386,7 @@ void MTurret::anim(double dt){
 					tryshoot();
 				}
 				else
-					a->cooldown += .5 + (drseq(&w->rs) - .5) * .2;
+					a->cooldown += .5 + (w->rs.nextd() - .5) * .2;
 			}
 		}while(0);
 	}
@@ -568,8 +568,8 @@ void GatlingTurret::tryshoot(){
 	Mat4d mat;
 	this->transform(mat);
 	mat.translatein(shootOffset);
-	Mat4d mat2 = mat.roty(this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance());
-	mat = mat2.rotx(this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance());
+	Mat4d mat2 = mat.roty(this->py[1] + (w->rs.nextd() - .5) * getTurretVariance());
+	mat = mat2.rotx(this->py[0] + (w->rs.nextd() - .5) * getTurretVariance());
 	pz->pos = mat.vp3(mturret_ofs);
 	pz->velo = mat.dvp3(forward) * getBulletSpeed() + this->velo;
 	this->cooldown += getShootInterval();

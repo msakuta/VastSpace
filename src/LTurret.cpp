@@ -105,8 +105,8 @@ void LTurret::shootTransform(Mat4d &mat, Quatd *qrot)const{
 	Mat4d rot = hp->rot.tomat4();
 	mat = mat2 * rot;
 	mat.translatein(0., 5., -2.5);
-	double yaw = this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance();
-	double pitch = this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance();
+	double yaw = this->py[1] + (w->rs.nextd() - .5) * getTurretVariance();
+	double pitch = this->py[0] + (w->rs.nextd() - .5) * getTurretVariance();
 	mat2 = mat.roty(yaw);
 	mat = mat2.rotx(pitch);
 	if(qrot)
@@ -239,8 +239,8 @@ void LMissileTurret::tryshoot(){
 	Mat4d rot = hp->rot.tomat4();
 	Mat4d mat = mat2 * rot;
 	mat.translatein(0., 10., 0.);
-	double yaw = this->py[1] + (drseq(&w->rs) - .5) * getTurretVariance();
-	double pitch = this->py[0] + (drseq(&w->rs) - .5) * getTurretVariance();
+	double yaw = this->py[1] + (w->rs.nextd() - .5) * getTurretVariance();
+	double pitch = this->py[0] + (w->rs.nextd() - .5) * getTurretVariance();
 	const Vec3d barrelpos = modelScale * Vec3d(0, 200, 0) * deploy;
 	const Vec3d joint = modelScale * Vec3d(0, 120, 60);
 	mat2 = mat.roty(yaw);

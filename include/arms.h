@@ -71,7 +71,7 @@ public:
 	virtual bool isTargettable()const;
 	virtual bool isSelectable()const;
 	virtual Props props()const;
-	virtual cpplib::dstring descript()const;
+	virtual gltestp::dstring descript()const;
 	void align();
 };
 

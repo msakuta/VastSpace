@@ -111,8 +111,8 @@ Entity::Props ArmBase::props()const{
 	return ret;
 }
 
-cpplib::dstring ArmBase::descript()const{
-	return cpplib::dstring(idname());
+gltestp::dstring ArmBase::descript()const{
+	return gltestp::dstring(idname());
 };
 
 void ArmBase::align(){
@@ -216,7 +216,7 @@ void MTurret::findtarget(Entity *pb, const hardpoint_static *hp, const Entity *i
 	double bulletrange = getBulletSpeed() * getBulletLife(); /* sense range */
 	double best = std::numeric_limits<double>::max();
 	static const Vec3d right(1., 0., 0.), left(-1., 0., 0.);
-	Entity *pt2, *closest = NULL;
+	Entity *closest = NULL;
 
 	// Obtain reverse transformation matrix to the turret's local coordinate system.
 	Mat4d mat2 = this->rot.cnj().tomat4().translatein(-this->pos);
@@ -298,7 +298,7 @@ void MTurret::tryshoot(){
 	pz->pos = mat.vp3(mturret_ofs);
 	pz->velo = mat.dvp3(forward) * getBulletSpeed() + this->velo;
 	this->cooldown += getShootInterval();
-	this->mf += .2;
+	this->mf += .2f;
 	ammo--;
 }
 
@@ -327,7 +327,7 @@ void MTurret::anim(double dt){
 	if(a->mf < dt)
 		a->mf = 0.;
 	else
-		a->mf -= dt;
+		a->mf -= float(dt);
 
 	if(online){
 		if(game->player && controller){
@@ -394,7 +394,7 @@ void MTurret::anim(double dt){
 	if(a->cooldown < dt)
 		a->cooldown = 0.;
 	else
-		a->cooldown -= dt;
+		a->cooldown -= float(dt);
 }
 
 double MTurret::getHitRadius()const{
@@ -403,12 +403,12 @@ double MTurret::getHitRadius()const{
 
 Entity::Props MTurret::props()const{
 	Props ret = st::props();
-//	ret.push_back(cpplib::dstring("Cooldown: ") << cooldown);
+//	ret.push_back(gltestp::dstring("Cooldown: ") << cooldown);
 	return ret;
 }
 
-cpplib::dstring MTurret::descript()const{
-	return cpplib::dstring() << idname() << " " << health << " " << ammo;
+gltestp::dstring MTurret::descript()const{
+	return gltestp::dstring() << idname() << " " << health << " " << ammo;
 }
 
 float MTurret::getShootInterval()const{

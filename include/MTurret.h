@@ -45,7 +45,7 @@ public:
 	virtual void anim(double dt);
 	virtual double getHitRadius()const;
 	virtual Props props()const;
-	virtual cpplib::dstring descript()const;
+	virtual gltestp::dstring descript()const;
 	virtual bool command(EntityCommand *);
 
 	virtual float getShootInterval()const;

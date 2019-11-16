@@ -6,6 +6,7 @@
 #include "Docker.h"
 #include "arms.h"
 #include "Model-forward.h"
+#include "SqInitProcess-ex.h"
 
 class AttackerDocker;
 
@@ -23,6 +24,7 @@ protected:
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
 	static std::vector<Navlight> navlights;
+	static StringList armCtor;
 public:
 	typedef Warpable st;
 	const char *classname()const;

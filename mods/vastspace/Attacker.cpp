@@ -44,6 +44,7 @@ std::vector<Warpable::Navlight> Attacker::navlights;
 const char *Attacker::classname()const{return "Attacker";}
 const unsigned Attacker::classid = registerClass("Attacker", Conster<Attacker>);
 Entity::EntityRegister<Attacker> Attacker::entityRegister("Attacker");
+StringList Attacker::armCtor;
 
 Attacker::Attacker(Game *game) : st(game), engineHeat(0){init();}
 
@@ -51,9 +52,19 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)), eng
 	init();
 	static int count = 0;
 	for(int i = 0; i < hardpoints.size(); i++){
-		turrets[i] = (false || count % 2 ? (LTurretBase*)new LTurret(this, hardpoints[i]) : (LTurretBase*)new LMissileTurret(this, hardpoints[i]));
-		if(aw)
-			aw->addent(turrets[i]);
+		if(i < armCtor.size()){
+			const gltestp::dstring &cname = armCtor[i];
+			LTurretBase* turret = nullptr;
+			if(cname == "LTurret")
+				turret = new LTurret(this, hardpoints[i]);
+			else if(cname == "LMissileTurret")
+				turret = new LMissileTurret(this, hardpoints[i]);
+			else
+				continue;
+			turrets[i] = turret;
+			if(aw)
+				aw->addent(turrets[i]);
+		}
 	}
 	count++;
 	buildBody();
@@ -69,7 +80,8 @@ void Attacker::static_init(){
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(overlayDisp) <<=
 			NavlightsProcess(navlights) <<=
-			HardPointProcess(hardpoints));
+			HardPointProcess(hardpoints) <<=
+			StringListProcess(armCtor, "armCtor"));
 		initialized = true;
 	}
 }

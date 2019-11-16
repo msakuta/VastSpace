@@ -33,6 +33,7 @@ public:
 	const SQChar *name;
 	ArmCtors &value;
 	VariantProcess(ArmCtors &value, const char *name) : value(value), name(name){}
+	VariantProcess(VariantProcess&&) = default;
 	virtual void process(HSQUIRRELVM)const;
 };
 

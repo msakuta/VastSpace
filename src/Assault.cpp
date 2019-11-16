@@ -44,7 +44,7 @@ HitBoxList Assault::hitboxes;
 std::vector<Warpable::Navlight> Assault::navlights;
 
 ArmCtors Assault::armCtors;
-std::list<Assault::AssaultVariantRegister*> Assault::assaultVariantRegisters;
+std::list<Assault::AssaultVariantRegister> Assault::assaultVariantRegisters;
 
 
 /// The Squirrel script should define a table with variant names as the keys.
@@ -174,8 +174,8 @@ bool Assault::sqa_avr(HSQUIRRELVM v){
 			DrawOverlayProcess(disp) <<=
 			NavlightsProcess(navlights) <<=
 			HardPointProcess(hardpoints));
-		for(ArmCtors::iterator it = armCtors.begin(); it != armCtors.end(); ++it)
-			assaultVariantRegisters.push_back(new AssaultVariantRegister(gltestp::dstring("Assault") + it->first, it->first));
+		for(const auto& it : armCtors)
+			assaultVariantRegisters.emplace_back(gltestp::dstring("Assault") + it.first, it.first);
 		initialized = true;
 	}
 	return initialized;

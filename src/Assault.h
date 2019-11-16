@@ -22,7 +22,7 @@ public:
 
 protected:
 	static ArmCtors armCtors; ///< Utility map to remember variant configurations.
-	static std::list<AssaultVariantRegister*> assaultVariantRegisters; ///< Actuall buffer to hold reference to variant registrations.
+	static std::list<AssaultVariantRegister> assaultVariantRegisters; ///< Actuall buffer to hold reference to variant registrations.
 
 	float engineHeat;
 	WeakPtr<Assault> formPrev;

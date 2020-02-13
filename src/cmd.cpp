@@ -105,33 +105,29 @@ void CmdPrint(const gltestp::dstring &str){
 	// This buffer is reused every time this function is called for speed,
 	// meaning it will be left allcated when the program exits, which is
 	// usually freed by OS instead.
-	static wchar_t *wbuf = NULL;
-	static size_t wbufsiz = 0;
+	static std::vector<wchar_t> wbuf;
 	int wcc = MultiByteToWideChar(CP_UTF8, 0, str, str.len(), NULL, 0);
-	if(wbufsiz < wcc){
-		wbuf = (wchar_t*)realloc(wbuf, sizeof(*wbuf) * (wcc + 1));
-		wbufsiz = wcc;
+	if(wbuf.size() < wcc){
+		wbuf.resize(wcc + 1);
 	}
-	MultiByteToWideChar(CP_UTF8, 0, str, str.len(), wbuf, wbufsiz);
+	MultiByteToWideChar(CP_UTF8, 0, str, str.len(), wbuf.data(), (int)wbuf.size());
 	wbuf[wcc] = '\0';
 
 	// And the multibyte string buffer.
 	// It should not be necessary if wprintf worked, but it didn't.
-	static char *buf = NULL;
-	static size_t bufsiz = 0;
-	int cc = WideCharToMultiByte(CP_THREAD_ACP, 0, wbuf, wbufsiz, NULL, 0, NULL, NULL);
-	if(bufsiz < cc){
-		buf = (char*)realloc(buf, sizeof(*buf) * (cc + 1));
-		bufsiz = cc;
+	static std::vector<char> buf;
+	int cc = WideCharToMultiByte(CP_THREAD_ACP, 0, wbuf.data(), (int)wbuf.size(), NULL, 0, NULL, NULL);
+	if(buf.size() < cc){
+		buf.resize(cc + 1);
 	}
-	WideCharToMultiByte(CP_THREAD_ACP, 0, wbuf, wbufsiz, buf, bufsiz, NULL, NULL);
+	WideCharToMultiByte(CP_THREAD_ACP, 0, wbuf.data(), (int)wbuf.size(), buf.data(), (int)buf.size(), NULL, NULL);
 	buf[cc] = '\0';
 
 	if(CmdPrintHandler){
-		CmdPrintHandler(buf);
+		CmdPrintHandler(buf.data());
 	}
 
-	printf("%s\n", buf);
+	printf("%s\n", buf.data());
 #else
 	const char *c_str = cmdbuffer[cmdcurline];
 	std::cout << c_str;
@@ -679,7 +675,7 @@ int argtok(char *argv[], char *s, char **post, int maxargs){
 	for(; *s; s++) if(escape){
 		int len;
 		escape = 0;
-		len = strlen(s);
+		len = (int)strlen(s);
 		memmove(s-1, s, len);
 		s[len-1] = '\0';
 		s--;

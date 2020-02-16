@@ -48,14 +48,16 @@ static int CmdExecD(char *, bool server, ServerClient *);
 static int CmdExecParams(int argc, char *argv[], bool server, ServerClient *sc);
 static double cmd_sqcalc(const char *str, const SQChar *context = _SC("expression"));
 
-template<>
-class std::hash<gltestp::dstring> {
-public:
-	size_t operator()(const gltestp::dstring &str) const
-	{
-		return str.hash();
-	}
-};
+namespace std{
+	template<>
+	class hash<gltestp::dstring> {
+	public:
+		size_t operator()(const gltestp::dstring &str) const
+		{
+			return str.hash();
+		}
+	};
+}
 
 struct Command{
 	union commandproc{
@@ -212,7 +214,7 @@ static int cmd_cvarlist(int argc, char *argv[]){
 		sprintf(buf, "%08X", hashfunc(cv->first));
 		CmdPrint(gltestp::dstring() << typechar[cv->second.type] << ": " << cv->first << " (" << buf << ")");
 #else
-		CmdPrint(gltestp::dstring() << typechar[cv->type] << ": " << cv->name);
+		CmdPrint(gltestp::dstring() << typechar[cv->second.type] << ": " << cv->first);
 #endif
 		c++;
 	}

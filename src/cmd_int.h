@@ -1,9 +1,13 @@
 #ifndef CMD_INT_H
 #define CMD_INT_H
 #include "dstring.h"
+
+#include <unordered_map>
+
 #ifdef __cplusplus
 extern "C"{
 #endif
+
 
 #define CB_LINES 256
 #define MAX_ALIAS_NESTS 32
@@ -12,8 +16,7 @@ extern "C"{
 
 struct CVar{
 	enum CVarType type;
-	gltestp::dstring name;
-	struct CVar *next, *linear;
+	std::pair<const gltestp::dstring, CVar> *linear;
 	union{
 		int *i;
 		float *f;
@@ -21,8 +24,12 @@ struct CVar{
 		char *s;
 	} v;
 	int (*vrc)(void *); /* Value Range Check */
-	double asDouble();
+
+	CVar(CVarType, void* value, int (*vrc)(void *));
+	double asDouble()const;
 };
+
+using CVarList = std::unordered_map<gltestp::dstring, CVar>;
 
 extern gltestp::dstring cmdbuffer[CB_LINES];
 extern int cmdcurline;

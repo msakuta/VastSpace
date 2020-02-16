@@ -57,7 +57,6 @@ public:
 	}
 };
 
-/* binary tree */
 struct Command{
 	union commandproc{
 		int (*a)(int argc, char *argv[]);
@@ -86,10 +85,9 @@ static std::unordered_map<gltestp::dstring, Command> cmdlist;
 #define CVAR_BUCKETS 53
 
 /* hash table */
-static struct CVar *cvarlist[CVAR_BUCKETS] = {NULL}, *cvarlinear = NULL;
-static int cvarlists = 0;
+static CVarList cvarlist;
+static std::pair<const gltestp::dstring, CVar> *cvarlinear = nullptr;
 
-/* binary tree */
 struct CmdAlias{
 	gltestp::dstring str;
 };
@@ -206,13 +204,13 @@ static int cmd_cvarlist(int argc, char *argv[]){
 		'i', 'f', 'd', 's'
 	};
 	int c;
-	struct CVar *cv;
+	std::pair<const gltestp::dstring, CVar> *cv;
 	c = 0;
-	for(cv = cvarlinear; cv; cv = cv->linear) if(argc < 2 || !strncmp(argv[1], cv->name, strlen(argv[1]))){
+	for(cv = cvarlinear; cv; cv = cv->second.linear) if(argc < 2 || !strncmp(argv[1], cv->first, strlen(argv[1]))){
 #ifdef _DEBUG
 		char buf[32];
-		sprintf(buf, "%08X", hashfunc(cv->name));
-		CmdPrint(gltestp::dstring() << typechar[cv->type] << ": " << cv->name << " (" << buf << ")");
+		sprintf(buf, "%08X", hashfunc(cv->first));
+		CmdPrint(gltestp::dstring() << typechar[cv->second.type] << ": " << cv->first << " (" << buf << ")");
 #else
 		CmdPrint(gltestp::dstring() << typechar[cv->type] << ": " << cv->name);
 #endif
@@ -349,7 +347,7 @@ int cmd_set(int argc, char *argv[]){
 				break;
 		}
 		else{
-			CvarAdd(stringdup(thekey), stringdup(thevalue), cvar_string);
+			CvarAdd(thekey, (void*)thevalue, cvar_string);
 		}
 	}
 /*	else
@@ -500,7 +498,7 @@ static int cmd_memory(int argc, char *argv[]){
 	CmdPrint(gltestp::dstring() << "cmdbuf: " << size << " bytes = " << (size + 1023) / 1024 << " kilobytes used");
 	size = cmd_memory_alias(aliaslist);
 	CmdPrint(gltestp::dstring() << "alias: " << size << " bytes = " << (size + 1024) / 1024 << " kilobytes used");
-	CmdPrint(gltestp::dstring() << "cvar: " << cvarlists * sizeof **cvarlist << " bytes = " << cvarlists * sizeof **cvarlist / 1024 << " kilobytes used");
+	CmdPrint(gltestp::dstring() << "cvar: " << cvarlist.size() << " bytes = " << cvarlist.size() * sizeof(CVar) / 1024 << " kilobytes used");
 #ifndef DEDICATED
 	size = CircleCutsMemory();
 	CmdPrint(gltestp::dstring() << "circut: " << size << " bytes = " << (size + 1023) / 1024 << " kilobytes used");
@@ -796,33 +794,33 @@ static int CmdExecParams(int argc, char *argv[], bool server, ServerClient *sc){
 	}
 
 	{
-		struct CVar *cv;
-		for(cv = cvarlist[hashfunc(cmd) % numof(cvarlist)]; cv; cv = cv->next) if(!strcmp(cv->name, cmd)){
+		auto cv = cvarlist.find(cmd);
+		if(cv != cvarlist.end()){
 			gltestp::dstring buf;
 			char *arg = argv[1];
-			if(!arg) switch(cv->type){
-				case cvar_int: buf << "\"" << cmd << "\" is " << *cv->v.i; break;
-				case cvar_float: buf << "\"" << cmd << "\" is " << *cv->v.f; break;
-				case cvar_double: buf << "\"" << cmd << "\" is " << *cv->v.d; break;
-				case cvar_string: buf << "\"" << cmd << "\" is " << cv->v.s; break;
+			if(!arg) switch(cv->second.type){
+				case cvar_int: buf << "\"" << cmd << "\" is " << *cv->second.v.i; break;
+				case cvar_float: buf << "\"" << cmd << "\" is " << *cv->second.v.f; break;
+				case cvar_double: buf << "\"" << cmd << "\" is " << *cv->second.v.d; break;
+				case cvar_string: buf << "\"" << cmd << "\" is " << cv->second.v.s; break;
 			}
-			else switch(cv->type){
-				case cvar_int: *cv->v.i = atoi(arg); break;
-				case cvar_float: *cv->v.f = (float)cmd_sqcalc(arg); break;
-				case cvar_double: *cv->v.d = cmd_sqcalc(arg); break;
+			else switch(cv->second.type){
+				case cvar_int: *cv->second.v.i = atoi(arg); break;
+				case cvar_float: *cv->second.v.f = (float)cmd_sqcalc(arg); break;
+				case cvar_double: *cv->second.v.d = cmd_sqcalc(arg); break;
 				case cvar_string:
-					cv->v.s = (char*)realloc(cv->v.s, strlen(arg) + 1);
-					if(cv->v.s)
-						strcpy(cv->v.s, arg);
+					cv->second.v.s = (char*)realloc(cv->second.v.s, strlen(arg) + 1);
+					if(cv->second.v.s)
+						strcpy(cv->second.v.s, arg);
 					break;
 			}
-			if(cv->vrc)
-				cv->vrc(cv->v.i);
-			if(arg) switch(cv->type){
-				case cvar_int: buf << "\"" << cmd << "\" set to " << *cv->v.i; break;
-				case cvar_float: buf << "\"" << cmd << "\" set to " << *cv->v.f; break;
-				case cvar_double: buf << "\"" << cmd << "\" set to " << *cv->v.d; break;
-				case cvar_string: buf << "\"" << cmd << "\" set to " << cv->v.s; break;
+			if(cv->second.vrc)
+				cv->second.vrc(cv->second.v.i);
+			if(arg) switch(cv->second.type){
+				case cvar_int: buf << "\"" << cmd << "\" set to " << *cv->second.v.i; break;
+				case cvar_float: buf << "\"" << cmd << "\" set to " << *cv->second.v.f; break;
+				case cvar_double: buf << "\"" << cmd << "\" set to " << *cv->second.v.d; break;
+				case cvar_string: buf << "\"" << cmd << "\" set to " << cv->second.v.s; break;
 			}
 			if(cvar_echo)
 				CmdPrint(buf);
@@ -899,7 +897,24 @@ Command *CmdFind(const char *name){
 		return nullptr;
 	}
 
-double CVar::asDouble() {
+CVar::CVar(CVarType type, void* value, int (*vrc)(void *)) :
+	type(type), vrc(vrc), linear(nullptr)
+{
+	switch (type) {
+	case cvar_int: v.i = (int*)value; break;
+	case cvar_float: v.f = (float*)value; break;
+	case cvar_double: v.d = (double*)value; break;
+	case cvar_string:
+		v.s = (char*)malloc(strlen((char*)value));
+		if(v.s)
+			strcpy(v.s, (char*)value);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+double CVar::asDouble() const {
 	switch(type){
 		case cvar_int: return *v.i; break;
 		case cvar_float: return *v.f; break;
@@ -920,34 +935,28 @@ double CVar::asDouble() {
 	return 1;
 }
 
-void CvarAdd(const char *cvarname, void *value, enum CVarType type){
-	CVar *cv = new CVar();
-	if(!cv)
-		return;
-	CVar **ppcv = &cvarlist[hashfunc(cvarname) % numof(cvarlist)];
-	cv->next = *ppcv;
-	*ppcv = cv;
-	cv->type = type;
-	cv->name = cvarname;
-	cv->v.i = (int*)value;
-	cv->vrc = NULL;
-	cv->linear = cvarlinear;
-	cvarlinear = cv;
-	++cvarlists;
+void CvarAdd(const char *cvarname, void *value, CVarType type){
+	gltestp::dstring name = cvarname;
+	auto it = cvarlist.find(name);
+	if (it != cvarlist.end()) {
+		assert("same cvar specified twice");
+	}
+	CVar cv(type, value, nullptr);
+	cv.linear = cvarlinear;
+	cvarlist.emplace(name, std::move(cv));
+	cvarlinear = &*cvarlist.find(name);
 }
 
-void CvarAddVRC(const char *cvarname, void *value, enum CVarType type, int (*vrc)(void*)){
-	CVar *cv = new CVar();
-	CVar **ppcv = &cvarlist[hashfunc(cvarname) % numof(cvarlist)];
-	cv->next = *ppcv;
-	*ppcv = cv;
-	cv->type = type;
-	cv->name = cvarname;
-	cv->v.i = (int*)value;
-	cv->vrc = vrc;
-	cv->linear = cvarlinear;
-	cvarlinear = cv;
-	++cvarlists;
+void CvarAddVRC(const char *cvarname, void *value, CVarType type, int (*vrc)(void*)){
+	gltestp::dstring name = cvarname;
+	auto it = cvarlist.find(name);
+	if (it != cvarlist.end()) {
+		assert("same cvar specified twice");
+	}
+	CVar cv(type, value, vrc);
+	cv.linear = cvarlinear;
+	cvarlist.emplace(name, cv);
+	cvarlinear = &*cvarlist.find(name);
 }
 
 struct CVar *CvarFind(const char *cvarname){
@@ -956,9 +965,9 @@ struct CVar *CvarFind(const char *cvarname){
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 #endif
-	cv = cvarlist[hashfunc(cvarname) % numof(cvarlist)];
-	for(; cv; cv = cv->next) if(!strcmp(cv->name, cvarname)){
-		break;
+	auto it = cvarlist.find(cvarname);
+	if(it == cvarlist.end()){
+		return nullptr;
 	}
 #if profile
 	{
@@ -971,7 +980,7 @@ struct CVar *CvarFind(const char *cvarname){
 		OutputDebugString(buf);
 	}
 #endif
-	return cv;
+	return &it->second;
 }
 
 const char *CvarGetString(const char *cvarname){

@@ -21,6 +21,8 @@ extern "C"{
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <algorithm>
+
 static struct viewport gvp;
 
 gltestp::dstring cmdbuffer[CB_LINES];
@@ -303,7 +305,10 @@ static int cmd_mul(int argc, char *argv[]){
 static char *stringdup(const char *s){
 	char *ret;
 	ret = (char*)malloc(strlen(s) + 1);
-	strcpy(ret, s);
+	if(!ret)
+		return nullptr;
+	else
+		strcpy(ret, s);
 	return ret;
 }
 
@@ -328,7 +333,11 @@ int cmd_set(int argc, char *argv[]){
 			case cvar_int: *cv->v.i = atoi(thevalue); break;
 			case cvar_float: *cv->v.f = (float)cmd_sqcalc(thevalue); break;
 			case cvar_double: *cv->v.d = cmd_sqcalc(thevalue); break;
-			case cvar_string: cv->v.s = (char*)realloc(cv->v.s, strlen(thevalue) + 1); strcpy(cv->v.s, thevalue); break;
+			case cvar_string:
+				cv->v.s = (char*)realloc(cv->v.s, strlen(thevalue) + 1);
+				if(cv->v.s)
+					strcpy(cv->v.s, thevalue);
+				break;
 		}
 		else{
 			CvarAdd(stringdup(thekey), stringdup(thevalue), cvar_string);
@@ -401,26 +410,27 @@ static int cmd_exec(int argc, char *argv[]){
 }
 
 static int cmd_time(int argc, char *argv[]){
-	int i;
-	size_t valuelen;
 	timemeas_t tm;
 	if(argc <= 1){
 		CmdPrint("Measures time elapsed while executing commands.");
 		return 0;
 	}
-	for(valuelen = 0, i = 1; i < argc; i++)
+	size_t valuelen = 0;
+	for(int i = 1; i < argc; i++)
 		valuelen += strlen(argv[i]) + 1;
-	char *thevalue = (char*)malloc(valuelen);
-	for(valuelen = 0, i = 1; i < argc; i++){
-		strcpy(&thevalue[valuelen], argv[i]);
-		valuelen += strlen(argv[i]) + 1;
+	std::vector<char> thevalue;
+	thevalue.reserve(valuelen);
+	for(int i = 1; i < argc; i++){
+		std::for_each(argv[i], argv[i] + strlen(argv[i]), [&thevalue](char &arg){
+			thevalue.push_back(arg);
+		});
 		if(i != argc - 1)
-			thevalue[valuelen-1] = ' ';
+			thevalue.push_back(' ');
 	}
+	thevalue.push_back('\0');
 	TimeMeasStart(&tm);
-	CmdExecD(thevalue, false, NULL);
+	CmdExecD(thevalue.data(), false, NULL);
 	CmdPrint(gltestp::dstring() << TimeMeasLap(&tm) << " seconds");
-	free(thevalue);
 	return 0;
 }
 

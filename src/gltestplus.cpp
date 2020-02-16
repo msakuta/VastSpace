@@ -54,6 +54,7 @@
 #include "cmd_int.h"
 #include "../sqscripter/sqscripter.h"
 #include "resource.h"
+#include "StaticInitializer.h"
 
 extern "C"{
 #include <clib/timemeas.h>
@@ -95,6 +96,8 @@ extern "C"{
 
 #define projection(e) glMatrixMode(GL_PROJECTION); e; glMatrixMode(GL_MODELVIEW);
 #define texturemat(e) glMatrixMode(GL_TEXTURE); e; glMatrixMode(GL_MODELVIEW);
+
+
 
 static double g_fix_dt = 0.;
 static double gametimescale = 1.;
@@ -2664,6 +2667,7 @@ int main(int argc, char *argv[])
 	CvarAdd("g_interpolate_sound", &g_interpolate_sound, cvar_int);
 	CvarAdd("g_interpolate_sound_3d", &g_interpolate_sound_3d, cvar_int);
 	CvarAdd("g_joystick_enable", &g_joystick_enable, cvar_int);
+	StaticInitializer::runInit();
 	Player::cmdInit(application);
 
 	CmdExec("@exec autoexec.cfg");

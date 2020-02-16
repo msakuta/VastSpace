@@ -9,7 +9,7 @@ extern "C"{
 
 enum CVarType{cvar_int, cvar_float, cvar_double, cvar_string};
 
-struct command;
+struct Command;
 struct ServerClient;
 
 void CmdInit(struct viewport *pvp);
@@ -24,7 +24,7 @@ EXPORT void CmdPrintf(const char *str, ...);
 EXPORT void CmdAdd(const char *cmdname, int (*proc)(int argc, char *argv[]));
 EXPORT void CmdAddParam(const char *cmdname, int (*proc)(int argc, char *argv[], void *), void *);
 EXPORT void ServerCmdAdd(const char *cmdname, int (*proc)(int argc, char *argv[], struct ServerClient*));
-EXPORT struct command *CmdFind(const char *name);
+EXPORT struct Command *CmdFind(const char *name);
 EXPORT void CvarAdd(const char *cvarname, void *value, enum CVarType type);
 EXPORT void CvarAddVRC(const char *cvarname, void *value, enum CVarType type, int (*vrc)(void *value));
 EXPORT struct CVar *CvarFind(const char *cvarname);

@@ -22,6 +22,7 @@ extern "C"{
 #include <ctype.h>
 
 #include <algorithm>
+#include <unordered_map>
 
 static struct viewport gvp;
 
@@ -48,18 +49,39 @@ static int CmdExecParams(int argc, char *argv[], bool server, ServerClient *sc);
 struct cmdalias **CmdAliasFindP(const char *name);
 static double cmd_sqcalc(const char *str, const SQChar *context = _SC("expression"));
 
+class dstring_hasher {
+public:
+	size_t operator()(const gltestp::dstring &str) const
+	{
+		return str.hash();
+	}
+};
+
 /* binary tree */
-static struct command{
+struct Command{
 	union commandproc{
 		int (*a)(int argc, char *argv[]);
 		int (*p)(int argc, char *argv[], void *);
 		int (*s)(int argc, char *argv[], ServerClient *);
 	} proc;
-	int type;
+	enum class Type : int{ Arg, Ptr, SvCl };
+	Type type;
 	void *param;
-	const char *name;
-	struct command *left, *right;
-} *cmdlist = NULL;
+	gltestp::dstring name;
+	Command(gltestp::dstring&& name, int (*a)(int argc, char* argv[])) :
+		type(Type::Arg), name(name), param(nullptr) {
+		proc.a = a;
+	}
+	Command(gltestp::dstring&& name, int (*p)(int argc, char *argv[], void *), void* param) :
+		type(Type::Ptr), name(name), param(param) {
+		proc.p = p;
+	}
+	Command(gltestp::dstring&& name, int (*s)(int argc, char *argv[], ServerClient *)) :
+		type(Type::SvCl), name(name), param(nullptr) {
+		proc.s = s;
+	}
+};
+static std::unordered_map<gltestp::dstring, Command, dstring_hasher> cmdlist;
 static int cmdlists = 0;
 
 
@@ -169,27 +191,16 @@ static int cmd_echo(int argc, char *argv[]){
 }
 
 
-static int cmd_cmdlist_int(const struct command *c, const char *pattern, int level){
-	int ret = 0;
-	if(c->right)
-		ret += cmd_cmdlist_int(c->right, pattern, level + 1);
-	if(!pattern || !strncmp(pattern, c->name, strlen(pattern))){
-#ifdef _DEBUG
-		CmdPrint(gltestp::dstring() << level << ": " << c->name);
-#else
-		CmdPrint(c->name);
-#endif
-		ret++;
-	}
-	if(c->left)
-		ret += cmd_cmdlist_int(c->left, pattern, level + 1);
-	return ret;
-}
-
 static int cmd_cmdlist(int argc, char *argv[]){
-	int c;
-	c = cmd_cmdlist_int(cmdlist, 2 <= argc ? argv[1] : NULL, 0);
-	CmdPrint(gltestp::dstring() << c << " commands listed");
+	auto pattern = 2 <= argc ? argv[1] : NULL;
+	size_t count = 0;
+	for(auto& it : cmdlist){
+		if(!pattern || !strncmp(pattern, it.second.name, strlen(pattern))){
+			CmdPrint(it.first);
+			count++;
+		}
+	}
+	CmdPrint(gltestp::dstring() << count << " commands listed");
 	return 0;
 }
 
@@ -769,7 +780,6 @@ static int CmdExecParams(int argc, char *argv[], bool server, ServerClient *sc){
 	}
 
 	int ret = 0;
-	struct command *pc;
 	struct cmdalias *pa;
 	/* aliases are searched before commands, allowing overrides of commands. */
 	if(pa = CmdAliasFind(cmd)){
@@ -789,11 +799,20 @@ static int CmdExecParams(int argc, char *argv[], bool server, ServerClient *sc){
 		aliasnest--;
 		return returned;
 	}
-	if(pc = CmdFind(cmd)){
-		if(pc->type != 2)
-			ret = (pc->type == 0 ? pc->proc.a(argc, argv) : pc->proc.p(argc, argv, pc->param));
-		else if(server)
-			ret = pc->proc.s(argc, argv, sc);
+	Command *pc = CmdFind(cmd);
+	if(pc){
+		switch(pc->type){
+		case Command::Type::Arg:
+			ret = pc->proc.a(argc, argv);
+			break;
+		case Command::Type::Ptr:
+			ret = pc->proc.p(argc, argv, pc->param);
+			break;
+		case Command::Type::SvCl:
+			if(server)
+				ret = pc->proc.s(argc, argv, sc);
+			break;
+		}
 		return ret;
 	}
 
@@ -866,34 +885,11 @@ int ServerCmdExec(const char *cmdstring, ServerClient *sc){
 }
 
 void CmdAdd(const char *cmdname, int (*proc)(int, char*[])){
-	struct command **pp, *p;
-	int i;
-	p = (struct command*)malloc(sizeof *cmdlist);
-	++cmdlists;
-	for(pp = &cmdlist; *pp; pp = (i < 0 ? &(*pp)->left : &(*pp)->right)) if(!(i = strcmp((*pp)->name, cmdname)))
-		break;
-	*pp = p;
-	p->proc.a = proc;
-	p->type = 0;
-	p->name = cmdname;
-	p->left = NULL;
-	p->right = NULL;
+	cmdlist.emplace(cmdname, Command{cmdname, proc});
 }
 
 void CmdAddParam(const char *cmdname, int (*proc)(int, char*[], void *), void *param){
-	struct command **pp, *p;
-	int i;
-	p = (struct command*)malloc(sizeof *cmdlist);
-	++cmdlists;
-	for(pp = &cmdlist; *pp; pp = (i < 0 ? &(*pp)->left : &(*pp)->right)) if(!(i = strcmp((*pp)->name, cmdname)))
-		break;
-	*pp = p;
-	p->proc.p = proc;
-	p->type = 1;
-	p->param = param;
-	p->name = cmdname;
-	p->left = NULL;
-	p->right = NULL;
+	cmdlist.emplace(cmdname, Command{cmdname, proc, param});
 }
 
 /// \brief Registers a cmdname as a server command and binds it with a callback function.
@@ -901,32 +897,18 @@ void CmdAddParam(const char *cmdname, int (*proc)(int, char*[], void *), void *p
 /// Might not necessary to share list of command strings with the client commands, because remote users
 /// should not execute arbitrary client commands in the server.
 void ServerCmdAdd(const char *cmdname, int (*proc)(int, char *[], ServerClient*)){
-	struct command **pp, *p;
-	int i;
-	p = (struct command*)malloc(sizeof *cmdlist);
-	++cmdlists;
-	for(pp = &cmdlist; *pp; pp = (i < 0 ? &(*pp)->left : &(*pp)->right)) if(!(i = strcmp((*pp)->name, cmdname)))
-		break;
-	*pp = p;
-	p->proc.s = proc;
-	p->type = 2;
-	p->param = NULL;
-	p->name = cmdname;
-	p->left = NULL;
-	p->right = NULL;
+	cmdlist.emplace(cmdname, Command{cmdname, proc});
 }
 
 #define profile 0
 
-struct command *CmdFind(const char *name){
-	struct command *p;
+Command *CmdFind(const char *name){
+	struct Command *p;
 #if profile
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 #endif
-	for(p = cmdlist; p; p = (strcmp(p->name, name) < 0 ? p->left : p->right)) if(!strcmp(p->name, name)){
-		break;
-	}
+	auto it = cmdlist.find(name);
 #if profile
 	{
 		static int invokes = 0;
@@ -938,8 +920,11 @@ struct command *CmdFind(const char *name){
 		OutputDebugString(buf);
 	}
 #endif
-	return p;
-}
+	if(it != cmdlist.end())
+		return &it->second;
+	else
+		return nullptr;
+	}
 
 double CVar::asDouble() {
 	switch(type){

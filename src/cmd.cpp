@@ -94,8 +94,8 @@ static FILE *logfp(){
 
 /// Directly assign dstring to command buffer.
 /// This overloaded version reallocates memory less times.
-void CmdPrint(const gltestp::dstring &str){
-	cmdbuffer[cmdcurline] = str;
+/// Most of the time, the argument is rvalue, so move semantics are effective.
+void CmdPrint(gltestp::dstring &&str){
 	if(cvar_cmdlog)
 		fprintf(logfp(), "%s\n", (const char*)str);
 
@@ -128,6 +128,7 @@ void CmdPrint(const gltestp::dstring &str){
 	}
 
 	printf("%s\n", buf.data());
+	cmdbuffer[cmdcurline] = std::move(str);
 #else
 	const char *c_str = cmdbuffer[cmdcurline];
 	std::cout << c_str;
@@ -137,7 +138,7 @@ void CmdPrint(const gltestp::dstring &str){
 
 /// Print a string to console.
 void CmdPrint(const char *str){
-	CmdPrint(static_cast<const gltestp::dstring&>(gltestp::dstring(str)));
+	CmdPrint(gltestp::dstring(str));
 }
 
 /// Formatted version of CmdPrint.
@@ -153,16 +154,14 @@ void CmdPrintf(const char *str, ...){
 
 
 static int cmd_echo(int argc, char *argv[]){
-	gltestp::dstring &out = cmdbuffer[cmdcurline];
 	if(argc <= 1)
 		return 0;
-	out = "";
+	gltestp::dstring out;
 	char **argend = &argv[argc];
 	for(argv++; argend != argv && *argv; argv++){
 		out << *argv << ' ';
 	}
-	puts(cmdbuffer[cmdcurline]);
-	cmdcurline = (cmdcurline + 1) % CB_LINES;
+	CmdPrint(std::move(out));
 	return 0;
 }
 

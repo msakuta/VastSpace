@@ -3,7 +3,7 @@
 #include "export.h"
 #ifdef __cplusplus
 #include "dstring.h"
-EXPORT void CmdPrint(const gltestp::dstring &);
+EXPORT void CmdPrint(gltestp::dstring &&);
 extern "C"{
 #endif
 

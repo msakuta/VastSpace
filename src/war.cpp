@@ -36,6 +36,7 @@ extern "C"{
 #endif
 
 
+#define PROFILE_BULLET 0
 
 
 WarField::WarField(Game *g) : Serializable(g), cs(NULL), realtime(0){}
@@ -386,16 +387,25 @@ void WarSpace::anim(double dt){
 
 	// Allow substeps for stable physics even if the frame rate drops.
 	// How many should the maxSubSteps be? I have no clue.
+#if PROFILE_BULLET
+	timemeas_t tm;
+	TimeMeasStart(&tm);
+#endif
 	bdw->stepSimulation(dt / 1., 20);
+#if PROFILE_BULLET
+	double bulletTime = TimeMeasLap(&tm);
+#endif
 
 #ifdef _WIN32
 	CreateDirectory("logs", NULL);
 #else
 	mkdir("logs", 0755);
 #endif
+#if PROFILE_BULLET
 	delete_bdwtime_log();
-	std::ofstream ofs("logs/bdwtime_s.log", std::ostream::app);
-	ofs << game->universe->global_time << "\t" << getid() << "\t" << dt << std::endl;
+	static std::ofstream ofs("logs/bdwtime_s.log", std::ostream::app);
+	ofs << game->universe->global_time << "\t" << getid() << "\t" << dt << "\t" << bulletTime << "\t" << this->cs->getpath() <<  "\n";
+#endif
 
 	TRYBLOCK(ot_build(this, dt));
 	aaanim(dt, this, &WarField::bl, &Entity::anim);
@@ -417,16 +427,25 @@ void WarSpace::clientUpdate(double dt){
 	aaanim(dt, this, &WarField::el, &Entity::callClientUpdate);
 	aaanim(dt, this, &WarField::bl, &Entity::callClientUpdate);
 
+#if PROFILE_BULLET
+	timemeas_t tm;
+	TimeMeasStart(&tm);
+#endif
 	bdw->stepSimulation(dt / 1., 0);
+#if PROFILE_BULLET
+	double bulletTime = TimeMeasLap(&tm);
+#endif
 
 #ifdef _WIN32
 	CreateDirectory("logs", NULL);
 #else
 	mkdir("logs", 0755);
 #endif
+#if PROFILE_BULLET
 	delete_bdwtime_log();
-	std::ofstream ofs("logs/bdwtime_c.log", std::ostream::app);
-	ofs << game->universe->global_time << "\t" << getid() << "\t" << dt << std::endl;
+	static std::ofstream ofs("logs/bdwtime_c.log", std::ostream::app);
+	ofs << game->universe->global_time << "\t" << getid() << "\t" << dt << "\t" << bulletTime << "\t" << this->cs->getpath() <<  "\n";
+#endif
 
 #ifndef DEDICATED
 	const struct tent3d_line_debug *tld = Teline3DDebug(tell);

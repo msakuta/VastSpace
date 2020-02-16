@@ -46,10 +46,10 @@ static int cvar_cmdlog = 0;
 
 static int CmdExecD(char *, bool server, ServerClient *);
 static int CmdExecParams(int argc, char *argv[], bool server, ServerClient *sc);
-struct cmdalias **CmdAliasFindP(const char *name);
 static double cmd_sqcalc(const char *str, const SQChar *context = _SC("expression"));
 
-class dstring_hasher {
+template<>
+class std::hash<gltestp::dstring> {
 public:
 	size_t operator()(const gltestp::dstring &str) const
 	{
@@ -67,22 +67,20 @@ struct Command{
 	enum class Type : int{ Arg, Ptr, SvCl };
 	Type type;
 	void *param;
-	gltestp::dstring name;
-	Command(gltestp::dstring&& name, int (*a)(int argc, char* argv[])) :
-		type(Type::Arg), name(name), param(nullptr) {
+	Command(int (*a)(int argc, char* argv[])) :
+		type(Type::Arg), param(nullptr) {
 		proc.a = a;
 	}
-	Command(gltestp::dstring&& name, int (*p)(int argc, char *argv[], void *), void* param) :
-		type(Type::Ptr), name(name), param(param) {
+	Command(int (*p)(int argc, char *argv[], void *), void* param) :
+		type(Type::Ptr), param(param) {
 		proc.p = p;
 	}
-	Command(gltestp::dstring&& name, int (*s)(int argc, char *argv[], ServerClient *)) :
-		type(Type::SvCl), name(name), param(nullptr) {
+	Command(int (*s)(int argc, char *argv[], ServerClient *)) :
+		type(Type::SvCl), param(nullptr) {
 		proc.s = s;
 	}
 };
-static std::unordered_map<gltestp::dstring, Command, dstring_hasher> cmdlist;
-static int cmdlists = 0;
+static std::unordered_map<gltestp::dstring, Command> cmdlist;
 
 
 #define CVAR_BUCKETS 53
@@ -92,11 +90,10 @@ static struct CVar *cvarlist[CVAR_BUCKETS] = {NULL}, *cvarlinear = NULL;
 static int cvarlists = 0;
 
 /* binary tree */
-static struct cmdalias{
-	char *name;
-	struct cmdalias *left, *right;
-	char str[1];
-} *aliaslist = NULL;
+struct CmdAlias{
+	gltestp::dstring str;
+};
+static std::unordered_map<gltestp::dstring, CmdAlias> aliaslist;
 
 static unsigned long hashfunc(const char *s){
 	int i = 0;
@@ -195,7 +192,7 @@ static int cmd_cmdlist(int argc, char *argv[]){
 	auto pattern = 2 <= argc ? argv[1] : NULL;
 	size_t count = 0;
 	for(auto& it : cmdlist){
-		if(!pattern || !strncmp(pattern, it.second.name, strlen(pattern))){
+		if(!pattern || !strncmp(pattern, it.first, strlen(pattern))){
 			CmdPrint(it.first);
 			count++;
 		}
@@ -433,47 +430,34 @@ static int cmd_time(int argc, char *argv[]){
 	return 0;
 }
 
-static int listalias(struct cmdalias *a, int level){
-	int ret = 0;
-	if(!a)
-		return 0;
-	ret += listalias(a->right, level + 1);
-	{
-#ifdef _DEBUG
-		CmdPrint(gltestp::dstring() << "(" << level << ") " << a->name << ": " << a->str);
-#else
-		CmdPrint(gltestp::dstring() << a->name << ": " << a->str);
-#endif
-	}
-	ret += listalias(a->left, level + 1);
-	return ret + 1;
-}
-
 static int cmd_alias(int argc, char *argv[]){
 	if(argc <= 1){
-		int ret;
-		ret = listalias(aliaslist, 0);
-		CmdPrint(gltestp::dstring() << ret << " aliases listed");
+		int count = 0;
+		for(const auto& it : aliaslist){
+			CmdPrint(gltestp::dstring() << it.first << ": " << it.second.str);
+			count++;
+		}
+		CmdPrint(gltestp::dstring() << count << " aliases listed");
 		return 0;
 	}
 	else if(argc == 2){
 /*	else if(strncpy(args, arg, sizeof args), !(thekey = strtok(args, " \t")))
 		return 0;
 	else if(!(thevalue = strtok(NULL, ""))){*/
-		struct cmdalias *a;
+		CmdAlias *a;
 		char *thekey = argv[1];
 		if(a = CmdAliasFind(thekey)){
-			CmdPrint(gltestp::dstring() << a->name << ": " << a->str);
+			CmdPrint(gltestp::dstring() << thekey << ": " << a->str);
 			return 0;
 		}
-		CmdPrint(gltestp::dstring() << "no aliase named " << thekey << " is found.");
+		CmdPrint(gltestp::dstring() << "no alias named " << thekey << " is found.");
 		return -1;
 	}
 	size_t valuelen = 0;
 	for(int i = 2; i < argc; i++)
 		valuelen += strlen(argv[i]) + 1;
 	gltestp::dstring thevalue;
-	for(int i = 1; i < argc; i++){
+	for(int i = 2; i < argc; i++){
 		thevalue += argv[i];
 		if(i != argc - 1)
 			thevalue += ' ';
@@ -483,38 +467,27 @@ static int cmd_alias(int argc, char *argv[]){
 	return 1;
 }
 
-#if 0 /* btree deletion is somewhat complex */
 static int cmd_unalias(const char *arg){
-	struct cmdalias **pp;
 	if(!arg){
-		cmd_echoa("Specify alias name to undefine.");
-		return 0;
-	}
-	if((pp = CmdAliasFindP(arg)) && *pp){
-		struct cmdalias *next;
-		if(!(*pp)->left)
-			next = (*pp)->right;
-		else if(!(*pp)->right)
-			next = (*pp)->left;
-		else
-			next = strcmp((*pp)->left, (*pp)->right) < 0 ? (*pp)->
-		free(*pp);
-		*pp = next;
+		CmdPrint("Specify alias name to undefine.");
 		return 1;
 	}
-	else{
-		cmd_echoa("Specified alias name couldn't be found.");
+	auto it = aliaslist.find(arg);
+	if((it != aliaslist.end())){
+		aliaslist.erase(it);
 	}
+	else{
+		CmdPrint("Specified alias name couldn't be found.");
+		return 1;
+	}
+	return 0;
 }
-#endif
 
-size_t cmd_memory_alias(const struct cmdalias *p){
-	size_t ret = sizeof *p;
-	if(!p)
-		return 0;
-	ret += strlen(p->name) + strlen(p->str);
-	ret += cmd_memory_alias(p->left);
-	ret += cmd_memory_alias(p->right);
+size_t cmd_memory_alias(const std::unordered_map<gltestp::dstring, CmdAlias> &p){
+	size_t ret = 0;
+	for(const auto& it : p){
+		ret += sizeof it + it.first.len() + strlen(it.second.str);
+	}
 	return ret;
 }
 
@@ -780,7 +753,7 @@ static int CmdExecParams(int argc, char *argv[], bool server, ServerClient *sc){
 	}
 
 	int ret = 0;
-	struct cmdalias *pa;
+	struct CmdAlias *pa;
 	/* aliases are searched before commands, allowing overrides of commands. */
 	if(pa = CmdAliasFind(cmd)){
 		int returned;
@@ -885,11 +858,11 @@ int ServerCmdExec(const char *cmdstring, ServerClient *sc){
 }
 
 void CmdAdd(const char *cmdname, int (*proc)(int, char*[])){
-	cmdlist.emplace(cmdname, Command{cmdname, proc});
+	cmdlist.emplace(cmdname, Command{proc});
 }
 
 void CmdAddParam(const char *cmdname, int (*proc)(int, char*[], void *), void *param){
-	cmdlist.emplace(cmdname, Command{cmdname, proc, param});
+	cmdlist.emplace(cmdname, Command{proc, param});
 }
 
 /// \brief Registers a cmdname as a server command and binds it with a callback function.
@@ -897,7 +870,7 @@ void CmdAddParam(const char *cmdname, int (*proc)(int, char*[], void *), void *p
 /// Might not necessary to share list of command strings with the client commands, because remote users
 /// should not execute arbitrary client commands in the server.
 void ServerCmdAdd(const char *cmdname, int (*proc)(int, char *[], ServerClient*)){
-	cmdlist.emplace(cmdname, Command{cmdname, proc});
+	cmdlist.emplace(cmdname, Command{proc});
 }
 
 #define profile 0
@@ -1017,38 +990,15 @@ const char *CvarGetString(const char *cvarname){
 }
 
 void CmdAliasAdd(const char *name, const char *str){
-	struct cmdalias **pp, *p;
-	int i;
-	for(pp = &aliaslist; *pp; pp = (i < 0 ? &(*pp)->left : &(*pp)->right)) if(!(i = strcmp((*pp)->name, name)))
-		break;
-	if(*pp){
-		p = (struct cmdalias*)realloc(*pp, offsetof(struct cmdalias, str) + strlen(name) + strlen(str) + 2);
-	}
-	else{
-		p = (struct cmdalias*)malloc(offsetof(struct cmdalias, str) + strlen(name) + strlen(str) + 2);
-		p->left = NULL;
-		p->right = NULL;
-	}
-	*pp = p;
-	p->name = &p->str[strlen(str) + 1];
-	strcpy(p->name, name);
-	strcpy(p->str, str);
+	aliaslist[name] = {str};
 }
 
-struct cmdalias *CmdAliasFind(const char *name){
-	struct cmdalias *p;
-	for(p = aliaslist; p; p = (strcmp(p->name, name) < 0 ? p->left : p->right)) if(!strcmp(p->name, name)){
-		return p;
+struct CmdAlias *CmdAliasFind(const char *name){
+	auto it = aliaslist.find(name);
+	if(it != aliaslist.end()){
+		return &it->second;
 	}
-	return NULL;
-}
-
-struct cmdalias **CmdAliasFindP(const char *name){
-	struct cmdalias **pp;
-	for(pp = &aliaslist; *pp; pp = (strcmp((*pp)->name, name) < 0 ? &(*pp)->left : &(*pp)->right)) if(!strcmp((*pp)->name, name)){
-		return pp;
-	}
-	return pp;
+	return nullptr;
 }
 
 

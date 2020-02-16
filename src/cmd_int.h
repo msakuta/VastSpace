@@ -10,10 +10,10 @@ extern "C"{
 #define MAX_COMMAND_HISTORY 32
 #define MAX_ARGC 64
 
-struct cvar{
-	enum cvartype type;
-	const char *name;
-	struct cvar *next, *linear;
+struct CVar{
+	enum CVarType type;
+	gltestp::dstring name;
+	struct CVar *next, *linear;
 	union{
 		int *i;
 		float *f;
@@ -21,6 +21,7 @@ struct cvar{
 		char *s;
 	} v;
 	int (*vrc)(void *); /* Value Range Check */
+	double asDouble();
 };
 
 extern gltestp::dstring cmdbuffer[CB_LINES];

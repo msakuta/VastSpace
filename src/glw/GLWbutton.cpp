@@ -277,7 +277,7 @@ void GLWstateButton::draw(GLwindowState &ws, double){
 
 
 bool GLWtoggleCvarButton::state()const{
-	cvar *cv = CvarFind(var);
+	CVar *cv = CvarFind(var);
 	if(!cv || cv->type != cvar_int)
 		return 0;
 	else
@@ -285,7 +285,7 @@ bool GLWtoggleCvarButton::state()const{
 }
 
 void GLWtoggleCvarButton::press(){
-	cvar *cv = CvarFind(var);
+	CVar *cv = CvarFind(var);
 	if(!cv || cv->type != cvar_int)
 		;
 	else

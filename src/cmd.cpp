@@ -63,7 +63,7 @@ static int cmdlists = 0;
 #define CVAR_BUCKETS 53
 
 /* hash table */
-static struct cvar *cvarlist[CVAR_BUCKETS] = {NULL}, *cvarlinear = NULL;
+static struct CVar *cvarlist[CVAR_BUCKETS] = {NULL}, *cvarlinear = NULL;
 static int cvarlists = 0;
 
 /* binary tree */
@@ -196,7 +196,7 @@ static int cmd_cvarlist(int argc, char *argv[]){
 		'i', 'f', 'd', 's'
 	};
 	int c;
-	struct cvar *cv;
+	struct CVar *cv;
 	c = 0;
 	for(cv = cvarlinear; cv; cv = cv->linear) if(argc < 2 || !strncmp(argv[1], cv->name, strlen(argv[1]))){
 #ifdef _DEBUG
@@ -213,7 +213,7 @@ static int cmd_cvarlist(int argc, char *argv[]){
 }
 
 static int cmd_toggle(int argc, char *argv[]){
-	struct cvar *cv;
+	struct CVar *cv;
 	const char *arg = argv[1];
 	if(!arg){
 		CmdPrint("Specify a integer cvar to toggle it, assuming flag-like usage.");
@@ -230,7 +230,7 @@ static int cmd_toggle(int argc, char *argv[]){
 }
 
 static int cmd_inc(int argc, char *argv[]){
-	struct cvar *cv;
+	struct CVar *cv;
 	const char *arg = argv[1];
 	if(!arg){
 		CmdPrint("Specify a integer cvar to increment by 1.");
@@ -247,7 +247,7 @@ static int cmd_inc(int argc, char *argv[]){
 }
 
 static int cmd_dec(int argc, char *argv[]){
-	struct cvar *cv;
+	struct CVar *cv;
 	const char *arg = argv[1];
 	if(!arg){
 		CmdPrint("Specify a integer cvar to decrement by 1.");
@@ -269,23 +269,12 @@ static int cmd_mul(int argc, char *argv[]){
 		return 0;
 	}
 	const char* arg = argv[1];
-	cvar* cv = CvarFind(arg);
+	CVar* cv = CvarFind(arg);
 	if(cv){
 		double val;
-		cvar* cv2 = CvarFind(argv[2]);
-		if(cv2) switch(cv2->type){
-			case cvar_int:
-				val = *cv->v.i;
-				break;
-			case cvar_float:
-				val = *cv->v.f;
-				break;
-			case cvar_double:
-				val = *cv->v.d;
-				break;
-			default:
-				CmdPrint("Variable of second argument is not a number.");
-				return 1;
+		CVar* cv2 = CvarFind(argv[2]);
+		if(cv2){
+			val = cv2->asDouble();
 		}
 		else
 			val = atof(argv[2]);
@@ -335,7 +324,7 @@ int cmd_set(int argc, char *argv[]){
 /*	else if(strncpy(args, arg, sizeof args), !(thekey = strtok(args, " \t")))
 		return 0;
 	else if(thevalue = strtok(NULL, ""))*/{
-		struct cvar *cv;
+		struct CVar *cv;
 		if(cv = CvarFind(thekey)) switch(cv->type){
 			case cvar_int: *cv->v.i = atoi(thevalue); break;
 			case cvar_float: *cv->v.f = (float)cmd_sqcalc(thevalue); break;
@@ -362,7 +351,7 @@ static gltestp::dstring cmd_preprocess(const char *in){
 					break;
 				cvarName += *in++;
 			}
-			cvar *cv = CvarFind(cvarName);
+			CVar *cv = CvarFind(cvarName);
 			if(cv) switch(cv->type){
 				case cvar_int: ret << *cv->v.i; break;
 				case cvar_float: ret << *cv->v.f; break;
@@ -823,7 +812,7 @@ static int CmdExecD(char *cmdstring, bool server, ServerClient *sc){
 	}
 
 	{
-		struct cvar *cv;
+		struct CVar *cv;
 		for(cv = cvarlist[hashfunc(cmd) % numof(cvarlist)]; cv; cv = cv->next) if(!strcmp(cv->name, cmd)){
 			gltestp::dstring buf;
 			char *arg = argv[1];
@@ -959,10 +948,32 @@ struct command *CmdFind(const char *name){
 	return p;
 }
 
-void CvarAdd(const char *cvarname, void *value, enum cvartype type){
-	struct cvar *cv, **ppcv;
-	cv = (struct cvar*)malloc(sizeof *cv);
-	ppcv = &cvarlist[hashfunc(cvarname) % numof(cvarlist)];
+double CVar::asDouble() {
+	switch(type){
+		case cvar_int: return *v.i; break;
+		case cvar_float: return *v.f; break;
+		case cvar_double: return *v.d; break;
+		case cvar_string: {
+			char* endptr;
+			double ret = strtod(v.s, &endptr);
+			if(endptr == &v.s[strlen(v.s)])
+				return ret;
+			else{
+				CmdPrint("Conversion of cvar string to double failed");
+				return 0.;
+			}
+		}break;
+		default:
+			assert(0);
+	}
+	return 1;
+}
+
+void CvarAdd(const char *cvarname, void *value, enum CVarType type){
+	CVar *cv = new CVar();
+	if(!cv)
+		return;
+	CVar **ppcv = &cvarlist[hashfunc(cvarname) % numof(cvarlist)];
 	cv->next = *ppcv;
 	*ppcv = cv;
 	cv->type = type;
@@ -974,10 +985,9 @@ void CvarAdd(const char *cvarname, void *value, enum cvartype type){
 	++cvarlists;
 }
 
-void CvarAddVRC(const char *cvarname, void *value, enum cvartype type, int (*vrc)(void*)){
-	struct cvar *cv, **ppcv;
-	cv = (struct cvar*)malloc(sizeof *cv);
-	ppcv = &cvarlist[hashfunc(cvarname) % numof(cvarlist)];
+void CvarAddVRC(const char *cvarname, void *value, enum CVarType type, int (*vrc)(void*)){
+	CVar *cv = new CVar();
+	CVar **ppcv = &cvarlist[hashfunc(cvarname) % numof(cvarlist)];
 	cv->next = *ppcv;
 	*ppcv = cv;
 	cv->type = type;
@@ -989,8 +999,8 @@ void CvarAddVRC(const char *cvarname, void *value, enum cvartype type, int (*vrc
 	++cvarlists;
 }
 
-struct cvar *CvarFind(const char *cvarname){
-	struct cvar *cv;
+struct CVar *CvarFind(const char *cvarname){
+	struct CVar *cv;
 #if profile
 	timemeas_t tm;
 	TimeMeasStart(&tm);
@@ -1014,7 +1024,7 @@ struct cvar *CvarFind(const char *cvarname){
 }
 
 const char *CvarGetString(const char *cvarname){
-	struct cvar *cv;
+	struct CVar *cv;
 	static char *buf;
 	cv = CvarFind(cvarname);
 	if(!cv)

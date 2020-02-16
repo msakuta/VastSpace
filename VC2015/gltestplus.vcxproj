@@ -180,7 +180,7 @@
     <ClCompile Include="..\src\audio\playSound.cpp" />
     <ClCompile Include="..\src\audio\wavemixer.cpp" />
     <ClCompile Include="..\src\Autonomous.cpp" />
-    <ClCompile Include="..\src\avi.c" />
+    <ClCompile Include="..\src\avi.cpp" />
     <ClCompile Include="..\src\Beamer.cpp" />
     <ClCompile Include="..\src\BeamProjectile.cpp" />
     <ClCompile Include="..\src\BinDiff.cpp" />

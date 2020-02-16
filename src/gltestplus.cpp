@@ -2452,7 +2452,7 @@ int cmd_scripter(int argc, char *argv[]){
 }
 
 static void scripterCmdProc(const char *cmd){
-	CmdExec(cmd);
+	CmdExpandExec(cmd);
 }
 
 static void (*scripterPrintProc)(ScripterWindow *, const char *) = NULL;

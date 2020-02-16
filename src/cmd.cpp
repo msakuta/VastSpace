@@ -351,29 +351,32 @@ int cmd_set(int argc, char *argv[]){
 	return 0;
 }
 
-static void cmd_preprocess(char *out, const char *in){
-	char *dollar = NULL;
-	do{
-		if(*in == '$')
-			dollar = out;
-		if(dollar){
-			if(out != dollar && (!isalnum(*in) && *in != '_')){
-				struct cvar *cv;
-				*out = '\0';
-				cv = CvarFind(dollar+1);
-				if(cv) switch(cv->type){
-					case cvar_int: sprintf(dollar, "%d", *cv->v.i); break;
-					case cvar_float: sprintf(dollar, "%f", *cv->v.f); break;
-					case cvar_double: sprintf(dollar, "%lf", *cv->v.d); break;
-					case cvar_string: strcpy(dollar, cv->v.s); break;
-				}
-				out = strchr(dollar, '\0');
-				dollar = NULL;
+static gltestp::dstring cmd_preprocess(const char *in){
+	gltestp::dstring ret;
+	while(*in){
+		if(*in == '$'){
+			gltestp::dstring cvarName;
+			in++;
+			while(*in){
+				if(!isalnum(*in) && *in != '_')
+					break;
+				cvarName += *in++;
+			}
+			cvar *cv = CvarFind(cvarName);
+			if(cv) switch(cv->type){
+				case cvar_int: ret << *cv->v.i; break;
+				case cvar_float: ret << *cv->v.f; break;
+				case cvar_double: ret << *cv->v.d; break;
+				case cvar_string: ret << cv->v.s; break;
+			}
+			else {
+				CmdPrint(gltestp::dstring("Cvar substitution failed: ") << cvarName);
 			}
 		}
-		*out++ = *in;
-	}while(*in++);
-	*out = '\0';
+		else
+			ret += *in++;
+	}
+	return ret;
 }
 
 static int cmd_exec(int argc, char *argv[]){
@@ -397,19 +400,13 @@ static int cmd_exec(int argc, char *argv[]){
 			buf << char(lc) << char(c);
 	}
 	else if(c == '\n'){
-		char *linebuf = new char[buf.len() + 2];
-		cmd_preprocess(linebuf, buf);
-		CmdExec(linebuf);
-		delete[] linebuf;
+		CmdExec(cmd_preprocess(buf));
 		buf = "";
 	}
 	else buf << char(c);
 
 	// Process the last line without a newline.
-	char *linebuf = new char[buf.len() + 2];
-	cmd_preprocess(linebuf, buf);
-	CmdExec(linebuf);
-	delete[] linebuf;
+	CmdExec(cmd_preprocess(buf));
 
 	fclose(fp);
 	return 0;
@@ -587,7 +584,6 @@ int CmdInput(char key){
 	else if(key == '\n' && last == '\r' || key == '\r'){
 		if(cmdline.len()){
 			int ret, echo;
-			char *linebuf = new char[cmdline.len() + 2];
 			cmdhist[cmdcurhist] = cmdline;
 			cmdselhist = cmdcurhist = (cmdcurhist + 1) % MAX_COMMAND_HISTORY;
 			echo = cvar_cmd_echo && cmdline[0] != '@';
@@ -595,14 +591,12 @@ int CmdInput(char key){
 				cmdbuffer[cmdcurline] = cmdline;
 				cmdcurline = (cmdcurline + 1) % CB_LINES;
 			}
-			cmd_preprocess(linebuf, cmdline);
-			ret = CmdExecD(linebuf, false, NULL);
+			ret = CmdExec(cmd_preprocess(cmdline), false, NULL);
 			cmdline = "";
 #ifdef _WIN32
 			if(console_cursorposdisp)
 				cmddispline = 0;
 #endif
-			delete[] linebuf;
 		}
 	}
 	else
@@ -867,12 +861,16 @@ gcon:;
 	return ret;
 }
 
-int CmdExec(const char *cmdstring){
+int CmdExec(const char *cmdstring, bool server, ServerClient* sc){
 	char *buf = new char[strlen(cmdstring) + 2];
 	strcpy(buf, cmdstring);
-	int ret = CmdExecD(buf, false, NULL);
+	int ret = CmdExecD(buf, server, sc);
 	delete[] buf;
 	return ret;
+}
+
+int CmdExpandExec(const char* cmdstring) {
+	return CmdExec(cmd_preprocess(cmdstring));
 }
 
 

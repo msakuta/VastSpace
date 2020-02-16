@@ -300,9 +300,6 @@
     <ClCompile Include="..\src\bitmap.c">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\avi.c">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\glw\GLWbutton.cpp">
       <Filter>Sources\glw</Filter>
     </ClCompile>
@@ -350,6 +347,9 @@
     </ClCompile>
     <ClCompile Include="..\src\glw\GLWinventory.cpp">
       <Filter>Sources\glw</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\avi.cpp">
+      <Filter>Sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

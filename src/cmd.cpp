@@ -44,6 +44,7 @@ static int console_undefinedecho = 0;
 static int cvar_cmdlog = 0;
 
 static int CmdExecD(char *, bool server, ServerClient *);
+static int CmdExecParams(int argc, char *argv[], bool server, ServerClient *sc);
 struct cmdalias **CmdAliasFindP(const char *name);
 static double cmd_sqcalc(const char *str, const SQChar *context = _SC("expression"));
 
@@ -415,21 +416,8 @@ static int cmd_time(int argc, char *argv[]){
 		CmdPrint("Measures time elapsed while executing commands.");
 		return 0;
 	}
-	size_t valuelen = 0;
-	for(int i = 1; i < argc; i++)
-		valuelen += strlen(argv[i]) + 1;
-	std::vector<char> thevalue;
-	thevalue.reserve(valuelen);
-	for(int i = 1; i < argc; i++){
-		std::for_each(argv[i], argv[i] + strlen(argv[i]), [&thevalue](char &arg){
-			thevalue.push_back(arg);
-		});
-		if(i != argc - 1)
-			thevalue.push_back(' ');
-	}
-	thevalue.push_back('\0');
 	TimeMeasStart(&tm);
-	CmdExecD(thevalue.data(), false, NULL);
+	CmdExecParams(argc - 1, &argv[1], false, nullptr);
 	CmdPrint(gltestp::dstring() << TimeMeasLap(&tm) << " seconds");
 	return 0;
 }
@@ -451,9 +439,6 @@ static int listalias(struct cmdalias *a, int level){
 }
 
 static int cmd_alias(int argc, char *argv[]){
-	char *thekey, *thevalue;
-	int i;
-	size_t valuelen;
 	if(argc <= 1){
 		int ret;
 		ret = listalias(aliaslist, 0);
@@ -465,7 +450,7 @@ static int cmd_alias(int argc, char *argv[]){
 		return 0;
 	else if(!(thevalue = strtok(NULL, ""))){*/
 		struct cmdalias *a;
-		thekey = argv[1];
+		char *thekey = argv[1];
 		if(a = CmdAliasFind(thekey)){
 			CmdPrint(gltestp::dstring() << a->name << ": " << a->str);
 			return 0;
@@ -473,18 +458,17 @@ static int cmd_alias(int argc, char *argv[]){
 		CmdPrint(gltestp::dstring() << "no aliase named " << thekey << " is found.");
 		return -1;
 	}
-	thekey = argv[1];
-	for(valuelen = 0, i = 2; i < argc; i++)
+	size_t valuelen = 0;
+	for(int i = 2; i < argc; i++)
 		valuelen += strlen(argv[i]) + 1;
-	thevalue = (char*)malloc(valuelen);
-	for(valuelen = 0, i = 2; i < argc; i++){
-		strcpy(&thevalue[valuelen], argv[i]);
-		valuelen += strlen(argv[i]) + 1;
+	gltestp::dstring thevalue;
+	for(int i = 1; i < argc; i++){
+		thevalue += argv[i];
 		if(i != argc - 1)
-			thevalue[valuelen-1] = ' ';
+			thevalue += ' ';
 	}
-	CmdAliasAdd(thekey, thevalue);
-	free(thevalue);
+	thevalue.push_back('\0');
+	CmdAliasAdd(argv[1], thevalue.c_str());
 	return 1;
 }
 
@@ -759,26 +743,23 @@ static double cmd_sqcalc(const char *str, const SQChar *context){
 /** destructive, i.e. cmdstring is modified by strtok or similar
  * method to tokenize. */
 static int CmdExecD(char *cmdstring, bool server, ServerClient *sc){
+	char *post;
 	int ret = 0;
-	struct command *pc;
-	struct cmdalias *pa;
-	char *cmd/*, *arg, *arg2*/, *post;
+	// This loop runs more than once when the cmdstring contains a semicolon.
 	do{
-	char *argv[MAX_ARGC];
-	int argc;
-	int retval;
-	argc = argtok(argv, cmdstring, &post, MAX_ARGC);
-	cmd = argv[0];
-/*	cmd = strtok(cmdstring, " \t@\n;");
-	arg2 = strtok(NULL, "");
-	arg = grouping(arg2, &post);
-	if(arg2 == arg){
-		arg = strtok(arg2, ";");
-		post = strtok(NULL, "");
-	}*/
+		char *argv[MAX_ARGC];
+		int argc;
+		argc = argtok(argv, cmdstring, &post, MAX_ARGC);
+		ret = CmdExecParams(argc, argv, server, sc);
+	}while(cmdstring = post);
+	return ret;
+}
+
+static int CmdExecParams(int argc, char *argv[], bool server, ServerClient *sc){
+	char *cmd = argv[0];
 
 	if(!cmd || !*cmd || *cmd == '#')
-		continue;
+		return 0;
 
 	if(*cmd == '@'){
 		if(cmd[1])
@@ -787,6 +768,9 @@ static int CmdExecD(char *cmdstring, bool server, ServerClient *sc){
 			memmove(argv, &argv[1], --argc * sizeof *argv);
 	}
 
+	int ret = 0;
+	struct command *pc;
+	struct cmdalias *pa;
 	/* aliases are searched before commands, allowing overrides of commands. */
 	if(pa = CmdAliasFind(cmd)){
 		int returned;
@@ -803,21 +787,20 @@ static int CmdExecD(char *cmdstring, bool server, ServerClient *sc){
 			returned = -1;
 		}
 		aliasnest--;
-		ret = returned;
-		continue;
+		return returned;
 	}
 	if(pc = CmdFind(cmd)){
 		if(pc->type != 2)
 			ret = (pc->type == 0 ? pc->proc.a(argc, argv) : pc->proc.p(argc, argv, pc->param));
 		else if(server)
 			ret = pc->proc.s(argc, argv, sc);
-		continue;
+		return ret;
 	}
 
 	/* Try Squirrel command layer. */
+	int retval;
 	if(sqa_console_command(argc, argv, &retval)){
-		ret = retval;
-		continue;
+		return retval;
 	}
 
 	{
@@ -835,7 +818,11 @@ static int CmdExecD(char *cmdstring, bool server, ServerClient *sc){
 				case cvar_int: *cv->v.i = atoi(arg); break;
 				case cvar_float: *cv->v.f = (float)cmd_sqcalc(arg); break;
 				case cvar_double: *cv->v.d = cmd_sqcalc(arg); break;
-				case cvar_string: cv->v.s = (char*)realloc(cv->v.s, strlen(arg) + 1); strcpy(cv->v.s, arg); break;
+				case cvar_string:
+					cv->v.s = (char*)realloc(cv->v.s, strlen(arg) + 1);
+					if(cv->v.s)
+						strcpy(cv->v.s, arg);
+					break;
 			}
 			if(cv->vrc)
 				cv->vrc(cv->v.i);
@@ -847,15 +834,12 @@ static int CmdExecD(char *cmdstring, bool server, ServerClient *sc){
 			}
 			if(cvar_echo)
 				CmdPrint(buf);
-			ret = 1;
-			goto gcon;
+			return 1;
 		}
 	}
 	if(console_undefinedecho){
 		CmdPrint(gltestp::dstring() << "Undefined command: " << cmd);
 	}
-gcon:;
-	}while(cmdstring = post);
 	return ret;
 }
 

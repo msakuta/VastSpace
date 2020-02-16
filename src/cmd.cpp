@@ -106,8 +106,8 @@ void CmdPrint(const gltestp::dstring &str){
 	// meaning it will be left allcated when the program exits, which is
 	// usually freed by OS instead.
 	static std::vector<wchar_t> wbuf;
-	int wcc = MultiByteToWideChar(CP_UTF8, 0, str, str.len(), NULL, 0);
-	if(wbuf.size() < wcc){
+	size_t wcc = MultiByteToWideChar(CP_UTF8, 0, str, str.len(), NULL, 0);
+	if(wbuf.size() < wcc + 1){
 		wbuf.resize(wcc + 1);
 	}
 	MultiByteToWideChar(CP_UTF8, 0, str, str.len(), wbuf.data(), (int)wbuf.size());
@@ -116,8 +116,8 @@ void CmdPrint(const gltestp::dstring &str){
 	// And the multibyte string buffer.
 	// It should not be necessary if wprintf worked, but it didn't.
 	static std::vector<char> buf;
-	int cc = WideCharToMultiByte(CP_THREAD_ACP, 0, wbuf.data(), (int)wbuf.size(), NULL, 0, NULL, NULL);
-	if(buf.size() < cc){
+	size_t cc = WideCharToMultiByte(CP_THREAD_ACP, 0, wbuf.data(), (int)wbuf.size(), NULL, 0, NULL, NULL);
+	if(buf.size() < cc + 1){
 		buf.resize(cc + 1);
 	}
 	WideCharToMultiByte(CP_THREAD_ACP, 0, wbuf.data(), (int)wbuf.size(), buf.data(), (int)buf.size(), NULL, NULL);
@@ -264,15 +264,16 @@ static int cmd_dec(int argc, char *argv[]){
 }
 
 static int cmd_mul(int argc, char *argv[]){
-	struct cvar *cv, *cv2;
-	const char *arg = argv[1];
 	if(argc <= 2){
 		CmdPrint("Specify an arithmetic cvar and a constant or 2 cvars to multiply.");
 		return 0;
 	}
-	if((cv = CvarFind(arg))){
+	const char* arg = argv[1];
+	cvar* cv = CvarFind(arg);
+	if(cv){
 		double val;
-		if((cv2 = CvarFind(argv[2]))) switch(cv2->type){
+		cvar* cv2 = CvarFind(argv[2]);
+		if(cv2) switch(cv2->type){
 			case cvar_int:
 				val = *cv->v.i;
 				break;
@@ -282,6 +283,9 @@ static int cmd_mul(int argc, char *argv[]){
 			case cvar_double:
 				val = *cv->v.d;
 				break;
+			default:
+				CmdPrint("Variable of second argument is not a number.");
+				return 1;
 		}
 		else
 			val = atof(argv[2]);
@@ -295,12 +299,15 @@ static int cmd_mul(int argc, char *argv[]){
 			case cvar_double:
 				*cv->v.d *= val;
 				break;
+			default:
+				CmdPrint("Variable of first argument is not a number.");
+				return 1;
 		}
 		if(cv->vrc)
 			cv->vrc(cv->v.i);
 	}
 	else
-		CmdPrint("Specified variable is either not a integer nor existing.");
+		CmdPrint("Specified variable is either not a number nor existing.");
 	return 0;
 }
 

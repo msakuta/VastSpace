@@ -170,7 +170,7 @@ bool dstring::operator <(const dstring &o)const{
 	return !p || o.p && ::strcmp(p->s, o.p->s) < 0;
 }
 
-dstring::~dstring(){
+dstring::~dstring() noexcept{
 	if(!p)
 		return;
 	if(!--p->refs){

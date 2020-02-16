@@ -23,7 +23,8 @@ namespace gltestp{
 	public:
 		dstring();
 		dstring(const char*, long len = -1);
-		dstring(const dstring &);
+		dstring(const dstring &) noexcept;
+		dstring(dstring&&) noexcept;
 		dstring(char);
 		dstring(long);
 		dstring(int);
@@ -34,16 +35,17 @@ namespace gltestp{
 		dstring(float);
 		dstring(const void*); ///< General pointer
 		dstring &operator=(const char *); ///< Assignment of a c-string.
-		dstring &operator=(const dstring &); ///< Assignment of the same type.
-		long len()const;
+		dstring &operator=(const dstring &) noexcept; ///< Assignment of the same type.
+		dstring &operator=(dstring&&) noexcept; ///< Move assignment
+		long len()const noexcept;
 		long strncpy(const char *src, unsigned long len);
 		long strcpy(const char *src);
 		dstring &strncat(const char *src, unsigned long len);
 		dstring &strcat(const char *src);
 		dstring &strcat(const dstring &);
-		~dstring();
-		operator const char *()const; ///< conversion to c-str
-		const char *c_str()const; ///< conversion to c-str
+		~dstring() noexcept;
+		operator const char *()const noexcept; ///< conversion to c-str
+		const char *c_str()const noexcept; ///< conversion to c-str
 		char front()const; ///< Mimics behavior of std::string
 		char back()const; ///< Mimics behavior of std::string
 		void push_back(char c); ///< Mimics behavior of std::string
@@ -98,9 +100,13 @@ namespace gltestp{
 
 	inline dstring::dstring() : p(0){}
 
-	inline dstring::dstring(const dstring &ds) : p(ds.p){
+	inline dstring::dstring(const dstring &ds) noexcept : p(ds.p){
 		if(p)
 			p->refs++;
+	}
+
+	inline dstring::dstring(dstring&& ds) noexcept : p(ds.p) {
+		ds.p = nullptr;
 	}
 
 	inline dstring::dstring(char c) : p(0){
@@ -118,11 +124,18 @@ namespace gltestp{
 	inline dstring::dstring(double a){initd(a);}
 	inline dstring::dstring(const void *a){initp(a);}
 
-	inline dstring &dstring::operator =(const dstring &ds){
+	inline dstring &dstring::operator =(const dstring &ds) noexcept{
 		this->dstring::~dstring();
 		p = ds.p;
 		if(p)
 			p->refs++;
+		return *this;
+	}
+
+	inline dstring &dstring::operator =(dstring &&ds) noexcept{
+		this->dstring::~dstring();
+		p = ds.p;
+		ds.p = nullptr;
 		return *this;
 	}
 
@@ -137,15 +150,15 @@ namespace gltestp{
 		return strncat(&c, 1);
 	}
 
-	inline long dstring::len()const{
+	inline long dstring::len()const noexcept{
 		return p ? p->size : 0;
 	}
 
-	inline dstring::operator const char *()const{
+	inline dstring::operator const char *()const noexcept{
 		return p ? p->s : "";
 	}
 
-	inline const char *dstring::c_str()const{
+	inline const char *dstring::c_str()const noexcept{
 		return p ? p->s : "";
 	}
 

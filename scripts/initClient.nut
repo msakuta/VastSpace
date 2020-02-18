@@ -603,8 +603,8 @@ local function locationWindow(title,locationGenerator,selectEvent,rightClickEven
 	w.x = (screenwidth() - w.width) / 2;
 	w.y = (screenheight() - w.height) / 2;
 
-	const LIGHT_SPEED = 299792.458; /* km/s */
-	const AU_PER_KILOMETER = 149597870.691; /* ASTRONOMICAL UNIT */
+	const LIGHT_SPEED = 299792458.; /* m/s */
+	const AU_PER_KILOMETER = 149597870691.; /* ASTRONOMICAL UNIT */
 	local LIGHTYEAR_PER_KILOMETER = LIGHT_SPEED*365*24*60*60; // Couldn't be const
 
 	const scrollBarWidth = 16;

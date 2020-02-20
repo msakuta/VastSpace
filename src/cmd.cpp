@@ -95,16 +95,6 @@ struct CmdAlias{
 };
 static std::unordered_map<gltestp::dstring, CmdAlias> aliaslist;
 
-static unsigned long hashfunc(const char *s){
-	int i = 0;
-	unsigned long ret = 0;
-	while(*s){
-		ret ^= (*s << (7 * i) % 32) | (*s >> (32 - 7 * i % 32));
-		s++;
-		i++;
-	}
-	return ret;
-}
 
 
 static FILE *logfp(){
@@ -210,9 +200,7 @@ static int cmd_cvarlist(int argc, char *argv[]){
 	c = 0;
 	for(cv = cvarlinear; cv; cv = cv->second.linear) if(argc < 2 || !strncmp(argv[1], cv->first, strlen(argv[1]))){
 #ifdef _DEBUG
-		char buf[32];
-		sprintf(buf, "%08X", hashfunc(cv->first));
-		CmdPrint(gltestp::dstring() << typechar[cv->second.type] << ": " << cv->first << " (" << buf << ")");
+		CmdPrint(gltestp::dstring() << typechar[cv->second.type] << ": " << cv->first << " (" << cv->first.hash() << ")");
 #else
 		CmdPrint(gltestp::dstring() << typechar[cv->second.type] << ": " << cv->first);
 #endif
@@ -343,9 +331,11 @@ int cmd_set(int argc, char *argv[]){
 			case cvar_float: *cv->v.f = (float)cmd_sqcalc(thevalue); break;
 			case cvar_double: *cv->v.d = cmd_sqcalc(thevalue); break;
 			case cvar_string:
-				cv->v.s = (char*)realloc(cv->v.s, strlen(thevalue) + 1);
-				if(cv->v.s)
+				char *s = (char*)realloc(cv->v.s, strlen(thevalue) + 1);
+				if(s){
+					cv->v.s = s;
 					strcpy(cv->v.s, thevalue);
+				}
 				break;
 		}
 		else{
@@ -811,9 +801,11 @@ static int CmdExecParams(int argc, char *argv[], bool server, ServerClient *sc){
 				case cvar_float: *cv->second.v.f = (float)cmd_sqcalc(arg); break;
 				case cvar_double: *cv->second.v.d = cmd_sqcalc(arg); break;
 				case cvar_string:
-					cv->second.v.s = (char*)realloc(cv->second.v.s, strlen(arg) + 1);
-					if(cv->second.v.s)
+					char* s = (char*)realloc(cv->second.v.s, strlen(arg) + 1);
+					if(s){
+						cv->second.v.s = s;
 						strcpy(cv->second.v.s, arg);
+					}
 					break;
 			}
 			if(cv->second.vrc)
@@ -873,16 +865,15 @@ void ServerCmdAdd(const char *cmdname, int (*proc)(int, char *[], ServerClient*)
 	cmdlist.emplace(cmdname, Command{proc});
 }
 
-#define profile 0
+#define PROFILE_CMD_FIND 0
 
 Command *CmdFind(const char *name){
-	struct Command *p;
-#if profile
+#if PROFILE_CMD_FIND
 	timemeas_t tm;
 	TimeMeasStart(&tm);
 #endif
 	auto it = cmdlist.find(name);
-#if profile
+#if PROFILE_CMD_FIND
 	{
 		static int invokes = 0;
 		static double avg = 0.;
@@ -897,7 +888,7 @@ Command *CmdFind(const char *name){
 		return &it->second;
 	else
 		return nullptr;
-	}
+}
 
 CVar::CVar(CVarType type, void* value, int (*vrc)(void *)) :
 	type(type), vrc(vrc), linear(nullptr)

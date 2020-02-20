@@ -427,7 +427,6 @@ void Player::serialize(SerializeContext &sc){
 void Player::unserialize(UnserializeContext &sc){
 	unsigned selectedSize;
 //	selected.clear();
-	unsigned ntplist;
 
 	sc.i >> playerId;
 	sc.i >> chase;
@@ -463,7 +462,9 @@ void Player::unserialize(UnserializeContext &sc){
 	sc.i >> fov;
 	sc.i >> viewdist;
 	sc.i >> cs;
-	sc.i >> ntplist;
+
+	//unsigned ntplist;
+	//sc.i >> ntplist;
 
 	// TODO: unserialize bookmarks
 //	tplist.resize(ntplist);

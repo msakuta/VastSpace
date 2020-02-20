@@ -17,6 +17,7 @@ public:
 	RStation(Game *game) : st(game){init();}
 	RStation(WarField *w);
 	void init();
+	static const unsigned classid;
 	static EntityRegister<RStation> entityRegister;
 	EntityStatic &getStatic()const override;
 	virtual const char *dispname()const;

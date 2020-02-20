@@ -59,6 +59,7 @@ void RStation::init(){
 	}
 }
 
+const unsigned RStation::classid = registerClass("RStation", Conster<RStation>);
 Entity::EntityRegister<RStation> RStation::entityRegister("RStation");
 Entity::EntityStatic &RStation::getStatic()const{return entityRegister;}
 const char *RStation::dispname()const{return "Resource St.";}

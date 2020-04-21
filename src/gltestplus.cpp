@@ -1113,6 +1113,106 @@ void Game::adjustAutoExposure(Viewer &vw){
 		timemeas_t tm;
 		TimeMeasStart(&tm);
 
+		// HDR dynamic exposure
+		// We probably need floating point buffer
+		// https://learnopengl.com/Advanced-Lighting/HDR
+		// http://www.songho.ca/opengl/gl_fbo.html
+
+		// We keep the framebuffer object while the program is running.
+		static GLuint pingpongColorBuffer[2] = {0};
+		if(!pingpongColorBuffer[0]){
+			glGenTextures(2, pingpongColorBuffer);
+			for (GLuint i = 0; i < 2; i++)
+			{
+				glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[2]);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, vw.vp.w, vw.vp.h, 0, GL_RGB, GL_FLOAT, NULL);
+			}
+		}
+
+		static GLuint pingpongFBO[2] = {0};
+		if(!pingpongFBO[0]){
+			glGenFramebuffersEXT(2, pingpongFBO);
+		}
+
+		for (GLuint i = 0; i < 2; i++)
+		{
+			// Reset color buffer dimensions
+			glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[i]);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, vw.vp.w, vw.vp.h, 0, GL_RGB, GL_FLOAT, NULL);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, pingpongFBO[i]);
+			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, pingpongColorBuffer[i], 0);
+			GLenum ret = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+			if(ret != GL_FRAMEBUFFER_COMPLETE_EXT)
+				break;
+		}
+
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glLoadIdentity();
+
+		auto RenderQuad = [](){
+			glBegin(GL_QUADS);
+			glTexCoord2d(0., 0.); glVertex2d(-1., -1.);
+			glTexCoord2d(1., 0.); glVertex2d(1., -1.);
+			glTexCoord2d(1., 1.); glVertex2d(1., 1.);
+			glTexCoord2d(0., 1.); glVertex2d(-1., 1.);
+			glEnd();
+		};
+
+		//glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, pingpongFBO[0]);
+		//glClear(GL_COLOR_BUFFER_BIT);
+		////hdrShader.Use();
+		//glActiveTextureARB(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[0]);
+		//glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, pingpongFBO[1]);
+		//glUniform1i(glGetUniformLocation(hdrShader.Program, "hdr"), hdr);
+		//glUniform1f(glGetUniformLocation(hdrShader.Program, "exposure"), exposure);
+		//RenderQuad();
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+		GLuint texWidth = vw.vp.w, texHeight = vw.vp.h;
+		GLboolean change = true;
+		//averageShader.Use();
+
+		// Then pingpong between color buffers creating a smaller texture every time
+		while (texWidth > 1 && texHeight > 1)
+		{
+			// first change texture size
+			glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[change ? 1 : 0]);
+			texWidth = texWidth / 2;
+			texHeight = texHeight / 2;
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth > 1 ? texWidth : 1, texHeight > 1 ? texHeight : 1, 0, GL_RGB, GL_FLOAT, NULL);
+
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, pingpongFBO[change ? 1 : 0]);
+			glViewport(0, 0, texWidth, texHeight);
+			glClear(GL_COLOR_BUFFER_BIT);
+			glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[change ? 0 : 1]);
+			RenderQuad();
+
+			GLfloat test[3];
+			glReadPixels(0, 0, 1, 1, GL_RGB, GL_FLOAT, &test);
+
+			change = !change;
+		}
+
+		// Once done read the luminescence value of 1x1 texture
+		GLfloat luminescence[3];
+		glReadPixels(0, 0, 1, 1, GL_RGB, GL_FLOAT, &luminescence);
+		GLfloat lum = 0.2126 * luminescence[0] + 0.7152 * luminescence[1] + 0.0722 * luminescence[2];
+		double f = 0.05;
+		if(!isnan(lum) && 0. < lum)
+			r_exposure = r_exposure * f + 0.5 / lum * f; // slowly adjust exposure based on average brightness
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glViewport(0, 0, vw.vp.w, vw.vp.h);
+
+#if 0
 		// Sample 9 regions of the screen. We cannot sample the whole screen because
 		// it resides in video memory.
 		for(int x = -1; x <= 1; x++) for(int y = -1; y <= 1; y++){
@@ -1137,6 +1237,7 @@ void Game::adjustAutoExposure(Viewer &vw){
 
 		// Adjust exposure
 		r_exposure *= exp((fl - accum) * vw.dt);
+#endif
 
 		// Make sure to get the value inside the range.
 		r_exposure = rangein(r_exposure, minExposure, maxExposure);

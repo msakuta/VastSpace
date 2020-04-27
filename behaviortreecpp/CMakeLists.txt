@@ -13,7 +13,11 @@ if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(/wd4819)
     add_definitions(/wd4702)
-    add_definitions(/MTd)
+    if(DEBUG)
+        add_definitions(/MTd)
+    else()
+        add_definitions(/MT)
+    endif()
 endif()
 
 #---- Include boost to add coroutines ----

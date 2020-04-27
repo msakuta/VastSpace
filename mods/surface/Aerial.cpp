@@ -46,10 +46,10 @@ public:
 	TaxiingAI(const std::string& name, const BT::NodeConfiguration& config) : BT::SyncActionNode(name, config){}
 
 	BT::NodeStatus tick() override {
-		std::cout << "TaxiingAI: " << this->name() << std::endl;
 		BT::Optional<double> odt = getInput<double>("deltaTime");
-		if(odt){
-			onfeet = entity->taxi(*odt);
+		BT::Optional<Aerial*> oentity = getInput<Aerial*>("entity");
+		if(odt && oentity){
+			setOutput("onfeet", (*oentity)->taxi(*odt));
 			return BT::NodeStatus::SUCCESS;
 		}
 		else
@@ -61,13 +61,14 @@ public:
 	{
 		// This action has a single input port called "message"
 		// Any port must have a name. The type is optional.
-		return { BT::InputPort<double>("deltaTime") };
+		return {
+			BT::InputPort<double>("deltaTime"),
+			BT::InputPort<Aerial*>("entity"),
+			BT::OutputPort<Aerial*>("onfeet"),
+		};
 	}
 
 protected:
-	Aerial* entity = nullptr;
-	double dt = 0.;
-	bool onfeet = false;
 
 	friend class Aerial;
 };
@@ -444,14 +445,14 @@ void Aerial::anim(double dt){
 
 	int inputs = this->inputs.press;
 
-	std::for_each(behaviorTree->nodes.begin(), behaviorTree->nodes.end(), [this, dt](BT::TreeNode::Ptr& node) {
-		if (TaxiingAI* aiNode = dynamic_cast<TaxiingAI*>(&*node)) {
-			aiNode->entity = this;
-			aiNode->dt = dt;
-		}
-	});
+	//std::for_each(behaviorTree->nodes.begin(), behaviorTree->nodes.end(), [this, dt](BT::TreeNode::Ptr& node) {
+	//	if (TaxiingAI* aiNode = dynamic_cast<TaxiingAI*>(&*node)) {
+	//		aiNode->entity = this;
+	//	}
+	//});
 	if (!behaviorTree->blackboard_stack.empty()) {
 		behaviorTree->blackboard_stack.front()->set("deltaTime", dt);
+		behaviorTree->blackboard_stack.front()->set("entity", this);
 	}
 	behaviorTree->tickRoot();
 

@@ -41,29 +41,35 @@ extern "C"{
 #include <memory>
 
 
-class TaxiingAI : public BT::SyncActionNode {
+class AerialBehaviorNode : public BT::SyncActionNode {
+protected:
+	Aerial* entity = nullptr;
+	double dt = 0.;
+
+	AerialBehaviorNode(const std::string& name, const BT::NodeConfiguration& config)
+		: BT::SyncActionNode(name, config){}
+
+
 public:
-	TaxiingAI(const std::string& name, const BT::NodeConfiguration& config) : BT::SyncActionNode(name, config){}
+	void init(Aerial* aerial, double dt){
+		this->entity = aerial;
+		this->dt = dt;
+	}
+};
+
+
+class TaxiingAI : public AerialBehaviorNode {
+public:
+	TaxiingAI(const std::string& name, const BT::NodeConfiguration& config) : AerialBehaviorNode(name, config){}
 
 	BT::NodeStatus tick() override {
-		BT::Optional<double> odt = getInput<double>("deltaTime");
-		BT::Optional<Aerial*> oentity = getInput<Aerial*>("entity");
-		if(odt && oentity){
-			setOutput("onfeet", (*oentity)->taxi(*odt));
-			return BT::NodeStatus::SUCCESS;
-		}
-		else
-			return BT::NodeStatus::FAILURE;
+		setOutput("onfeet", entity->taxi(dt));
+		return BT::NodeStatus::SUCCESS;
 	}
 
-	// It is mandatory to define this static method.
 	static BT::PortsList providedPorts()
 	{
-		// This action has a single input port called "message"
-		// Any port must have a name. The type is optional.
 		return {
-			BT::InputPort<double>("deltaTime"),
-			BT::InputPort<Aerial*>("entity"),
 			BT::OutputPort<Aerial*>("onfeet"),
 		};
 	}
@@ -73,27 +79,18 @@ protected:
 	friend class Aerial;
 };
 
-class EchoSpeed : public BT::SyncActionNode {
+class EchoSpeed : public AerialBehaviorNode {
 public:
-	EchoSpeed(const std::string& name, const BT::NodeConfiguration& config) : BT::SyncActionNode(name, config){}
+	EchoSpeed(const std::string& name, const BT::NodeConfiguration& config) : AerialBehaviorNode(name, config){}
 
 	BT::NodeStatus tick() override {
-		BT::Optional<double> odt = getInput<double>("deltaTime");
-		BT::Optional<Aerial*> oentity = getInput<Aerial*>("entity");
-		if(odt && oentity){
-			std::cout << "EchoSpeed: " << (*oentity)->velo.len() << std::endl;
-			return BT::NodeStatus::SUCCESS;
-		}
-		else
-			return BT::NodeStatus::FAILURE;
+		std::cout << "EchoSpeed: " << entity->velo.len() << std::endl;
+		return BT::NodeStatus::SUCCESS;
 	}
 
-	// It is mandatory to define this static method.
 	static BT::PortsList providedPorts()
 	{
-		// This action has a single input port called "message"
-		// Any port must have a name. The type is optional.
-		return { BT::InputPort<double>("deltaTime"), BT::InputPort<Aerial*>("entity") };
+		return {};
 	}
 
 protected:
@@ -474,14 +471,10 @@ void Aerial::anim(double dt){
 
 	int inputs = this->inputs.press;
 
-	//std::for_each(behaviorTree->nodes.begin(), behaviorTree->nodes.end(), [this, dt](BT::TreeNode::Ptr& node) {
-	//	if (TaxiingAI* aiNode = dynamic_cast<TaxiingAI*>(&*node)) {
-	//		aiNode->entity = this;
-	//	}
-	//});
-	if (!behaviorTree->blackboard_stack.empty()) {
-		behaviorTree->blackboard_stack.front()->set("deltaTime", dt);
-		behaviorTree->blackboard_stack.front()->set("entity", this);
+	for(auto& node : behaviorTree->nodes) {
+		if (AerialBehaviorNode* aiNode = dynamic_cast<AerialBehaviorNode*>(&*node)) {
+			aiNode->init(this, dt);
+		}
 	}
 	behaviorTree->tickRoot();
 

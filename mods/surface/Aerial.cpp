@@ -43,12 +43,25 @@ extern "C"{
 
 class TaxiingAI : public BT::SyncActionNode {
 public:
-	TaxiingAI(const std::string& name) : BT::SyncActionNode(name, BT::NodeConfiguration()){}
+	TaxiingAI(const std::string& name, const BT::NodeConfiguration& config) : BT::SyncActionNode(name, config){}
 
 	BT::NodeStatus tick() override {
 		std::cout << "TaxiingAI: " << this->name() << std::endl;
-		onfeet = entity->taxi(dt);
-		return BT::NodeStatus::SUCCESS;
+		BT::Optional<double> odt = getInput<double>("deltaTime");
+		if(odt){
+			onfeet = entity->taxi(*odt);
+			return BT::NodeStatus::SUCCESS;
+		}
+		else
+			return BT::NodeStatus::FAILURE;
+	}
+
+	// It is mandatory to define this static method.
+	static BT::PortsList providedPorts()
+	{
+		// This action has a single input port called "message"
+		// Any port must have a name. The type is optional.
+		return { BT::InputPort<double>("deltaTime") };
 	}
 
 protected:
@@ -437,6 +450,9 @@ void Aerial::anim(double dt){
 			aiNode->dt = dt;
 		}
 	});
+	if (!behaviorTree->blackboard_stack.empty()) {
+		behaviorTree->blackboard_stack.front()->set("deltaTime", dt);
+	}
 	behaviorTree->tickRoot();
 
 	if(0. < health){

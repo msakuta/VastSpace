@@ -18,6 +18,9 @@
 
 #include <btBulletDynamicsCommon.h>
 
+#include <behaviortree_cpp_v3/behavior_tree.h>
+
+
 struct Model;
 
 /// \brief Base class for aerial vehicles.
@@ -67,6 +70,7 @@ protected:
 	HSQOBJECT hObject; ///< Reference to buffer in Squirrel VM
 	int flyingSid; ///< Sound ID for flying sound
 	int flyingHiSid; ///< Sound ID of high frequency component for flying sound
+	std::unique_ptr<BT::Tree> behaviorTree;
 
 	/// \brief An internal structure that representing a wing and its parameters.
 	struct Wing{

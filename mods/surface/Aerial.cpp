@@ -30,6 +30,7 @@ extern "C"{
 #include <clib/timemeas.h>
 }
 #include <cpplib/vec2.h>
+#include "behaviortree_cpp_v3/bt_factory.h"
 #include <math.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -37,7 +38,21 @@ extern "C"{
 #include <stdarg.h>
 #include <functional>
 #include <algorithm>
+#include <memory>
 
+
+class TaxiingAI : public BT::SyncActionNode {
+public:
+	TaxiingAI(const std::string& name) : BT::SyncActionNode(name, BT::NodeConfiguration()){}
+
+	BT::NodeStatus tick() override {
+		std::cout << "TaxiingAI: " << this->name() << std::endl;
+		return BT::NodeStatus::SUCCESS;
+	}
+
+protected:
+	Aerial* entity = nullptr;
+};
 
 
 /* color sequences */
@@ -242,6 +257,17 @@ void Aerial::CameraPosProcess::process(HSQUIRRELVM v)const{
 void Aerial::init(){
 	sq_resetobject(&hObject);
 	this->weapon = 0;
+
+	static bool behaviortree_init = false;
+	static BT::BehaviorTreeFactory factory;
+	if(!behaviortree_init){
+
+		factory.registerNodeType<TaxiingAI>("TaxiingAI");
+
+		behaviortree_init = true;
+	}
+
+	behaviorTree = std::make_unique<BT::Tree>(factory.createTreeFromFile(static_cast<std::string>(modPath() << "Aerial.xml")));
 }
 
 bool Aerial::buildBody(){
@@ -399,6 +425,8 @@ void Aerial::anim(double dt){
 	transform(mat);
 
 	int inputs = this->inputs.press;
+
+	behaviorTree->tickRoot();
 
 	if(0. < health){
 		double common = 0., normal = 0., best = .3;

@@ -90,7 +90,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../squirrel3/include;../../../bullet/src;../../../lpng/;../../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../squirrel3/include;../../../bullet/src;../../../lpng/;../../../zlib/;../../../behaviortreecpp/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;SQUSEDOUBLE;_DEBUG;_WINDOWS;_USRDLL;SURFACE_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -114,7 +114,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../squirrel3/include;../../../bullet/src;../../../lpng/;../../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../squirrel3/include;../../../bullet/src;../../../lpng/;../../../zlib/;../../../behaviortreecpp/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;SQUSEDOUBLE;_DEBUG;_WINDOWS;_USRDLL;SURFACE_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -125,8 +125,8 @@
       <DisableSpecificWarnings>4251;4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;zlib.lib;opengl32.lib;glu32.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;..\..\..\bullet\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>gltestplus.lib;clib.lib;cpplib.lib;zlib.lib;opengl32.lib;glu32.lib;behaviortree_cpp_v3d.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\VC2015\$(Platform)\$(Configuration);..\..\..\clib\VC2012\$(Platform)\$(Configuration);..\..\..\cpplib\VC2012\$(Platform)\$(Configuration);..\..\..\zlib\projects\VC2012\$(Platform)\$(Configuration);..\..\..\bullet\lib;..\..\..\bullet\bin;..\..\..\behaviortreecpp\build\bin\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
@@ -136,7 +136,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../squirrel3/include;../../../bullet/src;../../../lpng/;../../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../squirrel3/include;../../../bullet/src;../../../lpng/;../../../zlib/;../../../behaviortreecpp/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;SQUSEDOUBLE;NDEBUG;_WINDOWS;_USRDLL;SURFACE_EXPORTS;GLTESTDLL_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -162,7 +162,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../squirrel3/include;../../../bullet/src;../../../lpng/;../../../zlib/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../include;../../../clib/include;../../../cpplib/include;../../../squirrel3/include;../../../bullet/src;../../../lpng/;../../../zlib/;../../../behaviortreecpp/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;SQUSEDOUBLE;NDEBUG;_WINDOWS;_USRDLL;SURFACE_EXPORTS;BT_USE_DOUBLE_PRECISION;DLL;CLIB_SUFDRAW_EXPORT=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>

@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root main_tree_to_execute = "MainTree" >
+  <BehaviorTree ID="MainTree">
+    <Sequence name="root_sequence">
+      <TaxiingAI       name="TaxiingAI"/>
+    </Sequence>
+  </BehaviorTree>
+</root>

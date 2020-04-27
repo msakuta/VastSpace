@@ -33,3 +33,6 @@ UpgradeLog.htm
 UpgradeLog2.XML
 UpgradeLog2.htm
 .vs/
+
+# lpng build output
+/lpng/out/

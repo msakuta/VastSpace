@@ -12,6 +12,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(/wd4819)
+    add_definitions(/wd4702)
+    add_definitions(/MTd)
 endif()
 
 #---- Include boost to add coroutines ----

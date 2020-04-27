@@ -47,11 +47,16 @@ public:
 
 	BT::NodeStatus tick() override {
 		std::cout << "TaxiingAI: " << this->name() << std::endl;
+		onfeet = entity->taxi(dt);
 		return BT::NodeStatus::SUCCESS;
 	}
 
 protected:
 	Aerial* entity = nullptr;
+	double dt = 0.;
+	bool onfeet = false;
+
+	friend class Aerial;
 };
 
 
@@ -426,6 +431,12 @@ void Aerial::anim(double dt){
 
 	int inputs = this->inputs.press;
 
+	std::for_each(behaviorTree->nodes.begin(), behaviorTree->nodes.end(), [this, dt](BT::TreeNode::Ptr& node) {
+		if (TaxiingAI* aiNode = dynamic_cast<TaxiingAI*>(&*node)) {
+			aiNode->entity = this;
+			aiNode->dt = dt;
+		}
+	});
 	behaviorTree->tickRoot();
 
 	if(0. < health){

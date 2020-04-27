@@ -127,6 +127,8 @@ protected:
 	void drawCockpitHUD(const Vec3d &hudPos, double hudSize, const Vec3d &seat,
 		const Vec3d &gunDirection)const;
 	void drawTargetMarker(WarDraw*);
+
+	friend class TaxiingAI;
 };
 
 /// \brief Processes a WingList value in a Squirrel script.

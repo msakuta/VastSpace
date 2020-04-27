@@ -73,6 +73,34 @@ protected:
 	friend class Aerial;
 };
 
+class EchoSpeed : public BT::SyncActionNode {
+public:
+	EchoSpeed(const std::string& name, const BT::NodeConfiguration& config) : BT::SyncActionNode(name, config){}
+
+	BT::NodeStatus tick() override {
+		BT::Optional<double> odt = getInput<double>("deltaTime");
+		BT::Optional<Aerial*> oentity = getInput<Aerial*>("entity");
+		if(odt && oentity){
+			std::cout << "EchoSpeed: " << (*oentity)->velo.len() << std::endl;
+			return BT::NodeStatus::SUCCESS;
+		}
+		else
+			return BT::NodeStatus::FAILURE;
+	}
+
+	// It is mandatory to define this static method.
+	static BT::PortsList providedPorts()
+	{
+		// This action has a single input port called "message"
+		// Any port must have a name. The type is optional.
+		return { BT::InputPort<double>("deltaTime"), BT::InputPort<Aerial*>("entity") };
+	}
+
+protected:
+	friend class Aerial;
+};
+
+
 
 /* color sequences */
 #define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
@@ -282,6 +310,7 @@ void Aerial::init(){
 	if(!behaviortree_init){
 
 		factory.registerNodeType<TaxiingAI>("TaxiingAI");
+		factory.registerNodeType<EchoSpeed>("EchoSpeed");
 
 		behaviortree_init = true;
 	}

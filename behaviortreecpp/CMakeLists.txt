@@ -13,11 +13,8 @@ if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(/wd4819)
     add_definitions(/wd4702)
-    if(DEBUG)
-        add_definitions(/MTd)
-    else()
-        add_definitions(/MT)
-    endif()
+    set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
+    set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 endif()
 
 #---- Include boost to add coroutines ----

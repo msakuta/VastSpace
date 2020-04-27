@@ -2,7 +2,10 @@
 <root main_tree_to_execute = "MainTree" >
   <BehaviorTree ID="MainTree">
     <Sequence name="root_sequence">
-      <TaxiingAI       name="TaxiingAI" deltaTime="{deltaTime}" entity="{entity}" onfeet="{onfeet}"/>
+      <TaxiingAI       name="TaxiingAI" deltaTime="{deltaTime}" entity="{entity}" onfeet="onfeet"/>
+      <Sequence name="echo_sequence">
+        <EchoSpeed       name="EchoSpeed" deltaTime="{deltaTime}" entity="{entity}"/>
+      </Sequence>
     </Sequence>
   </BehaviorTree>
 </root>

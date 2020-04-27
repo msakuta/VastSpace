@@ -8,6 +8,7 @@
 #include <cpplib/vec3.h>
 
 #include <vector>
+#include <memory>
 
 struct hardpoint_static;
 
@@ -53,6 +54,14 @@ public:
 	std::vector<hardpoint_static*> &hardpoints;
 	HardPointProcess(std::vector<hardpoint_static*> &hardpoints) : hardpoints(hardpoints){}
 	virtual void process(HSQUIRRELVM)const;
+};
+
+/// \brief A handler to process owning hardpoint list
+class EXPORT HardPointProcess2 : public SqInitProcess{
+public:
+	std::vector<std::unique_ptr<hardpoint_static>> &hardpoints;
+	HardPointProcess2(std::vector<std::unique_ptr<hardpoint_static>> &hardpoints) : hardpoints(hardpoints){}
+	virtual void process(HSQUIRRELVM)const override;
 };
 
 /// \brief Processes Squirrel callback function.

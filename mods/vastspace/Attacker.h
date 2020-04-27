@@ -17,10 +17,12 @@ protected:
 	std::vector<ArmBase *> turrets;
 	float engineHeat; ///< Integration of direction & PL_W
 
+	using HardPoints = std::vector<std::unique_ptr<hardpoint_static>>;
+
 	static double modelScale;
 	static double defaultMass;
 	static ManeuverParams maneuverParams;
-	static std::vector<hardpoint_static*> hardpoints;
+	static HardPoints hardpoints;
 	static HitBoxList hitboxes;
 	static GLuint overlayDisp;
 	static std::vector<Navlight> navlights;

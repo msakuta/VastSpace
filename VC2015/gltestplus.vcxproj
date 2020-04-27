@@ -327,6 +327,7 @@
     <ClInclude Include="..\include\glw\message.h" />
     <ClInclude Include="..\include\glw\PopupMenu-forward.h" />
     <ClInclude Include="..\include\glw\PopupMenu.h" />
+    <ClInclude Include="..\include\HardpointStatic.h" />
     <ClInclude Include="..\include\Inventory-forward.h" />
     <ClInclude Include="..\include\Inventory.h" />
     <ClInclude Include="..\include\judge.h" />

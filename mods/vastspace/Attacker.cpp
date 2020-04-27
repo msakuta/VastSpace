@@ -36,7 +36,7 @@ Warpable::ManeuverParams Attacker::maneuverParams = {
 	200000., /* double capacity; [MJ] */
 	300., /* double capacitor_gen; [MW] */
 };
-std::vector<hardpoint_static*> Attacker::hardpoints;
+Attacker::HardPoints Attacker::hardpoints;
 HitBoxList Attacker::hitboxes;
 GLuint Attacker::overlayDisp = 0;
 std::vector<Warpable::Navlight> Attacker::navlights;
@@ -56,9 +56,9 @@ Attacker::Attacker(WarField *aw) : st(aw), docker(new AttackerDocker(this)), eng
 			const gltestp::dstring &cname = armCtor[i];
 			LTurretBase* turret = nullptr;
 			if(cname == "LTurret")
-				turret = new LTurret(this, hardpoints[i]);
+				turret = new LTurret(this, hardpoints[i].get());
 			else if(cname == "LMissileTurret")
-				turret = new LMissileTurret(this, hardpoints[i]);
+				turret = new LMissileTurret(this, hardpoints[i].get());
 			else
 				continue;
 			turrets[i] = turret;
@@ -80,7 +80,7 @@ void Attacker::static_init(){
 			HitboxProcess(hitboxes) <<=
 			DrawOverlayProcess(overlayDisp) <<=
 			NavlightsProcess(navlights) <<=
-			HardPointProcess(hardpoints) <<=
+			HardPointProcess2(hardpoints) <<=
 			StringListProcess(armCtor, "armCtor"));
 		initialized = true;
 	}

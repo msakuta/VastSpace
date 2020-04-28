@@ -99,6 +99,81 @@ protected:
 
 
 
+template<int ...> struct seq {};
+
+template<int N, int ...S> struct gens : gens<N - 1, N - 1, S...> { };
+
+template<int ...S> struct gens<0, S...>{ typedef seq<S...> type; };
+
+template <typename ...Args>
+struct save_it_for_later
+{
+	std::tuple<Args...> params;
+	CustomBehaviorNode<Args...>* obj;
+	double(CustomBehaviorNode<Args...>::*func)(Args...);
+
+	double delayed_dispatch()
+	{
+		return callFunc(typename gens<sizeof...(Args)>::type()); // Item #1
+	}
+
+	template<int ...S>
+	double callFunc(seq<S...>)
+	{
+		return func(std::get<S>(params) ...);
+	}
+};
+
+
+template<typename SubPayload, typename... Payload>
+class PeelNode : public CustomBehaviorNode<Payload...> {
+public:
+	using SubNode = CustomBehaviorNode<double>;
+	PeelNode(){}
+	PeelNode(const PeelNode&) = delete;
+	void setChild(std::unique_ptr<SubNode>&& node) {
+		SubNode::setParent(&*node, this);
+		children.push_back(std::move(node));
+	}
+	SubPayload peel(Payload... payload);
+
+	template<int ...S>
+	BehaviorResult callFunc(seq<S...>, SubPayload& params)
+	{
+		return child->tick(std::get<S>(params) ...);
+	}
+
+	BehaviorResult tick(Payload... payload) override {
+		auto peeled = peel(payload...);
+		return callFunc(typename gens<std::tuple_size<SubPayload>::value>::type(), peeled);
+	}
+protected:
+	std::unique_ptr<SubNode> child;
+};
+
+template<typename... Payload>
+class PeelNodeDouble : public CustomBehaviorNode<Payload...> {
+public:
+	using SubNode = CustomBehaviorNode<double>;
+	PeelNodeDouble(){}
+	PeelNodeDouble(const PeelNodeDouble&) = delete;
+	void setChild(std::unique_ptr<SubNode>&& node) {
+		//SubNode::setParent(&*node, this);
+		child = std::move(node);
+	}
+	double peel(Payload... payload);
+
+	BehaviorResult tick(Payload... payload) override {
+		auto peeled = peel(payload...);
+		return child->tick(peeled);
+	}
+protected:
+	std::unique_ptr<SubNode> child;
+};
+
+
+
+
 
 
 
@@ -121,6 +196,23 @@ protected:
 	friend class Aerial;
 };
 
+class EchoDeltaTimeCustom : public CustomBehaviorNode<double> {
+public:
+	BehaviorResult tick(double dt) override {
+		std::cout << "EchoDeltaTimeCustom: " << dt << " size: " << sizeof(*this) << std::endl;
+		return BehaviorResult::SUCCESS;
+	}
+};
+
+template<>
+std::tuple<double> PeelNode<std::tuple<double>, Aerial*, double>::peel(Aerial*, double dt) {
+	return {dt};
+}
+
+template<>
+double PeelNodeDouble<Aerial*, double>::peel(Aerial*, double dt) {
+	return dt;
+}
 
 /* color sequences */
 #define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
@@ -332,9 +424,13 @@ void Aerial::init(){
 		factory.registerNodeType<TaxiingAI>("TaxiingAI");
 		factory.registerNodeType<EchoSpeed>("EchoSpeed");
 
-		std::unique_ptr<CustomSequenceNode<Aerial*, double>> rootNode = std::make_unique<CustomSequenceNode<Aerial*, double>>();
+		auto rootNode = std::make_unique<CustomSequenceNode<Aerial*, double>>();
 		rootNode->addChild(std::make_unique<TaxiingAICustom>());
 		rootNode->addChild(std::make_unique<EchoSpeedCustom>());
+
+		auto peelNode = std::make_unique<PeelNodeDouble<Aerial*, double>>();
+		peelNode->setChild(std::make_unique<EchoDeltaTimeCustom>());
+		rootNode->addChild(std::move(peelNode));
 		customBehaviorTree.setRoot(std::move(rootNode));
 
 		behaviortree_init = true;

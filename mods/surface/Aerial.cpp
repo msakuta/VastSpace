@@ -125,27 +125,41 @@ struct save_it_for_later
 };
 
 
-template<typename SubPayload, typename... Payload>
-class PeelNode : public CustomBehaviorNode<Payload...> {
+template<typename... Payload>
+class PeelNodeBase : public CustomBehaviorNode<Payload...> {
 public:
-	using SubNode = CustomBehaviorNode<double>;
+	using TuplePayload = std::tuple<Payload...>;
+	BehaviorResult tick(Payload... payload) override {
+		return tickTuple(TuplePayload(payload...));
+	}
+
+	virtual BehaviorResult tickTuple(TuplePayload&) = 0;
+};
+
+template<typename SuperNode, typename... SubPayload>
+class PeelNode : public SuperNode {
+public:
+	using SubNode = CustomBehaviorNode<SubPayload...>;
+	using TuplePayload = typename SuperNode::TuplePayload;
 	PeelNode(){}
 	PeelNode(const PeelNode&) = delete;
 	void setChild(std::unique_ptr<SubNode>&& node) {
-		SubNode::setParent(&*node, this);
-		children.push_back(std::move(node));
+		//SubNode::setParent(&*node, this);
+		child = std::move(node);
 	}
-	SubPayload peel(Payload... payload);
+
+	//template<typename... Payload>
+	std::tuple<SubPayload...> peel(TuplePayload& payload);
 
 	template<int ...S>
-	BehaviorResult callFunc(seq<S...>, SubPayload& params)
+	BehaviorResult callFunc(seq<S...>, std::tuple<SubPayload...>& params)
 	{
 		return child->tick(std::get<S>(params) ...);
 	}
 
-	BehaviorResult tick(Payload... payload) override {
-		auto peeled = peel(payload...);
-		return callFunc(typename gens<std::tuple_size<SubPayload>::value>::type(), peeled);
+	BehaviorResult tickTuple(TuplePayload& payload) override {
+		auto peeled = peel(payload);
+		return callFunc(typename gens<sizeof...(SubPayload)>::type(), peeled);
 	}
 protected:
 	std::unique_ptr<SubNode> child;
@@ -203,11 +217,31 @@ public:
 		return BehaviorResult::SUCCESS;
 	}
 };
+class EchoEntityIdCustom : public CustomBehaviorNode<Aerial*> {
+public:
+	BehaviorResult tick(Aerial* entity) override {
+		std::cout << "EchoEntityIdCustom: " << entity->getid() << " size: " << sizeof(*this) << std::endl;
+		return BehaviorResult::SUCCESS;
+	}
+};
 
-template<>
-std::tuple<double> PeelNode<std::tuple<double>, Aerial*, double>::peel(Aerial*, double dt) {
-	return {dt};
+//template<>
+//std::tuple<double> PeelNode<PeelNodeBase<Aerial*, double>,double>::peel(std::tuple<Aerial*, double>& payload) {
+//	return {std::get<1>(payload)};
+//}
+
+#define PEEL_NODE(base, sub, func) \
+template<> \
+std::tuple<sub> PeelNode<PeelNodeBase<base>,sub>::peel(std::tuple<Aerial*, double>& payload) { \
+	return func; \
 }
+
+#define PEEL_BASE(...) __VA_ARGS__
+
+
+PEEL_NODE(PEEL_BASE(Aerial*, double), double, {std::get<1>(payload)})
+PEEL_NODE(PEEL_BASE(Aerial*, double), Aerial*, {std::get<0>(payload)})
+
 
 template<>
 double PeelNodeDouble<Aerial*, double>::peel(Aerial*, double dt) {
@@ -428,9 +462,20 @@ void Aerial::init(){
 		rootNode->addChild(std::make_unique<TaxiingAICustom>());
 		rootNode->addChild(std::make_unique<EchoSpeedCustom>());
 
-		auto peelNode = std::make_unique<PeelNodeDouble<Aerial*, double>>();
-		peelNode->setChild(std::make_unique<EchoDeltaTimeCustom>());
-		rootNode->addChild(std::move(peelNode));
+		//auto peelNode = std::make_unique<PeelNodeDouble<Aerial*, double>>();
+		//peelNode->setChild(std::make_unique<EchoDeltaTimeCustom>());
+		//rootNode->addChild(std::move(peelNode));
+
+		{
+			auto peelNode = std::make_unique<PeelNode<PeelNodeBase<Aerial*, double>, double>>();
+			peelNode->setChild(std::make_unique<EchoDeltaTimeCustom>());
+			rootNode->addChild(std::move(peelNode));
+		}
+		{
+			auto peelNode = std::make_unique<PeelNode<PeelNodeBase<Aerial*, double>, Aerial*>>();
+			peelNode->setChild(std::make_unique<EchoEntityIdCustom>());
+			rootNode->addChild(std::move(peelNode));
+		}
 		customBehaviorTree.setRoot(std::move(rootNode));
 
 		behaviortree_init = true;

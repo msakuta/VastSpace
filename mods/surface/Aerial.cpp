@@ -84,7 +84,7 @@ public:
 	EchoSpeed(const std::string& name, const BT::NodeConfiguration& config) : AerialBehaviorNode(name, config){}
 
 	BT::NodeStatus tick() override {
-		std::cout << "EchoSpeed: " << entity->velo.len() << std::endl;
+		std::cout << "EchoSpeed: " << entity->velo.len() << " size: " << sizeof(*this) << std::endl;
 		return BT::NodeStatus::SUCCESS;
 	}
 
@@ -97,6 +97,28 @@ protected:
 	friend class Aerial;
 };
 
+
+
+
+
+
+class TaxiingAICustom : public CustomBehaviorNode<Aerial*, double> {
+	BehaviorResult tick(Aerial* entity, double dt) override {
+		entity->taxi(dt);
+		return BehaviorResult::SUCCESS;
+	}
+};
+
+class EchoSpeedCustom : public CustomBehaviorNode<Aerial*, double> {
+public:
+	BehaviorResult tick(Aerial* entity, double dt) override {
+		std::cout << "EchoSpeed: " << entity->velo.len() << " size: " << sizeof(*this) << std::endl;
+		return BehaviorResult::SUCCESS;
+	}
+
+protected:
+	friend class Aerial;
+};
 
 
 /* color sequences */
@@ -309,6 +331,11 @@ void Aerial::init(){
 		factory.registerNodeType<TaxiingAI>("TaxiingAI");
 		factory.registerNodeType<EchoSpeed>("EchoSpeed");
 
+		std::unique_ptr<CustomSequenceNode<Aerial*, double>> rootNode = std::make_unique<CustomSequenceNode<Aerial*, double>>();
+		rootNode->addChild(std::make_unique<TaxiingAICustom>());
+		rootNode->addChild(std::make_unique<EchoSpeedCustom>());
+		customBehaviorTree.setRoot(std::move(rootNode));
+
 		behaviortree_init = true;
 	}
 
@@ -471,12 +498,14 @@ void Aerial::anim(double dt){
 
 	int inputs = this->inputs.press;
 
-	for(auto& node : behaviorTree->nodes) {
-		if (AerialBehaviorNode* aiNode = dynamic_cast<AerialBehaviorNode*>(&*node)) {
-			aiNode->init(this, dt);
-		}
-	}
-	behaviorTree->tickRoot();
+	//for(auto& node : behaviorTree->nodes) {
+	//	if (AerialBehaviorNode* aiNode = dynamic_cast<AerialBehaviorNode*>(&*node)) {
+	//		aiNode->init(this, dt);
+	//	}
+	//}
+	//behaviorTree->tickRoot();
+
+	customBehaviorTree.tickRoot(this, dt);
 
 	if(0. < health){
 		double common = 0., normal = 0., best = .3;

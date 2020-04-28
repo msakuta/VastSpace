@@ -23,6 +23,59 @@
 
 struct Model;
 
+enum class BehaviorResult {
+	IDLE = 0,
+	RUNNING,
+	SUCCESS,
+	FAILURE
+};
+
+template<typename... Payload>
+class CustomBehaviorNode {
+public:
+	using This = CustomBehaviorNode<Payload...>;
+	virtual BehaviorResult tick(Payload...) = 0;
+
+protected:
+	static void setParent(This* child, This* parent){child->parent = parent;}
+	This* parent = nullptr;
+};
+
+template<typename... Payload>
+class CustomSequenceNode : public CustomBehaviorNode<Payload...> {
+public:
+	void addChild(std::unique_ptr<This>&& node) {
+		setParent(&*node, this);
+		children.push_back(node.release());
+	}
+	BehaviorResult tick(Payload... payload) override {
+		for (auto it = children.begin(); it != children.end(); ++it) {
+			auto& node = *it;
+			auto result = node->tick(payload...);
+			if(result == BehaviorResult::FAILURE)
+				return BehaviorResult::FAILURE;
+		}
+		return BehaviorResult::SUCCESS;
+	}
+protected:
+	// Why can't we make this std::list or std::vector<std::unique_ptr> ??
+	std::vector<This*> children;
+};
+
+template<typename... Payload>
+class CustomBehaviorTree {
+public:
+	void setRoot(std::unique_ptr<CustomBehaviorNode<Payload...>>&& node) {
+		rootNode = std::move(node);
+	}
+
+	void tickRoot(Payload... payload) {
+		rootNode->tick(payload...);
+	}
+protected:
+	std::unique_ptr<CustomBehaviorNode<Payload...>> rootNode;
+};
+
 /// \brief Base class for aerial vehicles.
 class Aerial : public ModelEntity{
 public:
@@ -71,6 +124,7 @@ protected:
 	int flyingSid; ///< Sound ID for flying sound
 	int flyingHiSid; ///< Sound ID of high frequency component for flying sound
 	std::unique_ptr<BT::Tree> behaviorTree;
+	CustomBehaviorTree<Aerial*, double> customBehaviorTree;
 
 	/// \brief An internal structure that representing a wing and its parameters.
 	struct Wing{
@@ -129,6 +183,7 @@ protected:
 	void drawTargetMarker(WarDraw*);
 
 	friend class TaxiingAI;
+	friend class TaxiingAICustom;
 };
 
 /// \brief Processes a WingList value in a Squirrel script.

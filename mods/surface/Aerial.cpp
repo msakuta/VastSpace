@@ -103,6 +103,7 @@ protected:
 
 
 class TaxiingAICustom : public CustomBehaviorNode<Aerial*, double> {
+public:
 	BehaviorResult tick(Aerial* entity, double dt) override {
 		entity->taxi(dt);
 		return BehaviorResult::SUCCESS;

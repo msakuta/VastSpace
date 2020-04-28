@@ -34,6 +34,8 @@ template<typename... Payload>
 class CustomBehaviorNode {
 public:
 	using This = CustomBehaviorNode<Payload...>;
+	This(){}
+	This(const This&) = delete;
 	virtual BehaviorResult tick(Payload...) = 0;
 
 protected:
@@ -44,9 +46,11 @@ protected:
 template<typename... Payload>
 class CustomSequenceNode : public CustomBehaviorNode<Payload...> {
 public:
+	CustomSequenceNode(){}
+	CustomSequenceNode(const CustomSequenceNode&) = delete;
 	void addChild(std::unique_ptr<This>&& node) {
 		setParent(&*node, this);
-		children.push_back(node.release());
+		children.push_back(std::move(node));
 	}
 	BehaviorResult tick(Payload... payload) override {
 		for (auto it = children.begin(); it != children.end(); ++it) {
@@ -58,13 +62,13 @@ public:
 		return BehaviorResult::SUCCESS;
 	}
 protected:
-	// Why can't we make this std::list or std::vector<std::unique_ptr> ??
-	std::vector<This*> children;
+	std::vector<std::unique_ptr<This>> children;
 };
 
 template<typename... Payload>
 class CustomBehaviorTree {
 public:
+	CustomBehaviorTree(){}
 	void setRoot(std::unique_ptr<CustomBehaviorNode<Payload...>>&& node) {
 		rootNode = std::move(node);
 	}

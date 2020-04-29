@@ -9,6 +9,8 @@ extern "C"{
 #include <clib/timemeas.h>
 }
 
+#include <memory>
+
 /// \brief Load and initialize from a named script file.
 ///
 /// \param scriptFile The name of script file in relative path from the project's root directory.

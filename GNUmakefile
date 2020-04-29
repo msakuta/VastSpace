@@ -27,7 +27,7 @@ endif
 CFLAGS += -I clib/include -I cpplib/include -I squirrel3/include \
  -I lpng -I zlib -I ${BULLET_INCLUDE} -DBT_USE_DOUBLE_PRECISION
 CFLAGS += -D DEDICATED
-CPPFLAGS += -std=c++11
+CPPFLAGS += -std=c++14
 CC = gcc
 #gltestdll_OUTDIR = gltestdll/${OUTDIR}
 

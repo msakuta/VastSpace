@@ -144,7 +144,7 @@ public:
 	PeelNode(){}
 	PeelNode(const PeelNode&) = delete;
 	void setChild(std::unique_ptr<SubNode>&& node) {
-		//SubNode::setParent(&*node, this);
+		SubNode::setParent(&*node, this);
 		child = std::move(node);
 	}
 

@@ -30,8 +30,15 @@ enum class BehaviorResult {
 	FAILURE
 };
 
+class CustomBehaviorNodeBase{
+public:
+
+protected:
+	CustomBehaviorNodeBase* parent = nullptr;
+};
+
 template<typename... Payload>
-class CustomBehaviorNode {
+class CustomBehaviorNode : public CustomBehaviorNodeBase {
 public:
 	using This = CustomBehaviorNode<Payload...>;
 	This(){}
@@ -40,7 +47,6 @@ public:
 
 protected:
 	static void setParent(This* child, This* parent){child->parent = parent;}
-	This* parent = nullptr;
 };
 
 template<typename... Payload>

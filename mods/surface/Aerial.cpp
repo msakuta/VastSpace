@@ -165,25 +165,38 @@ protected:
 	std::unique_ptr<SubNode> child;
 };
 
-template<typename... Payload>
-class PeelNodeDouble : public CustomBehaviorNode<Payload...> {
-public:
-	using SubNode = CustomBehaviorNode<double>;
-	PeelNodeDouble(){}
-	PeelNodeDouble(const PeelNodeDouble&) = delete;
-	void setChild(std::unique_ptr<SubNode>&& node) {
-		//SubNode::setParent(&*node, this);
-		child = std::move(node);
-	}
-	double peel(Payload... payload);
 
-	BehaviorResult tick(Payload... payload) override {
-		auto peeled = peel(payload...);
-		return child->tick(peeled);
-	}
-protected:
-	std::unique_ptr<SubNode> child;
-};
+#define PEEL_NODE_MACRO(name, base, sub, func) \
+template<typename SuperNode, typename... SubPayload> \
+class name ## PeelNodeMacro : public SuperNode { \
+public: \
+	using SubNode = CustomBehaviorNode<sub>; \
+	using TuplePayload = typename SuperNode::TuplePayload; \
+	name ## PeelNodeMacro(){} \
+	name ## PeelNodeMacro(const name ## PeelNodeMacro&) = delete; \
+	void setChild(std::unique_ptr<SubNode>&& node) { \
+		child = std::move(node); \
+	} \
+\
+	std::tuple<sub> peel(TuplePayload& payload) { \
+		return func; \
+	} \
+\
+	template<int ...S>\
+	BehaviorResult callFunc(seq<S...>, std::tuple<sub>& params) \
+	{ \
+		return child->tick(std::get<S>(params) ...); \
+	} \
+\
+	BehaviorResult tickTuple(TuplePayload& payload) override { \
+		auto peeled = peel(payload); \
+		return callFunc(typename gens<sizeof...(SubPayload)>::type(), peeled); \
+	} \
+protected: \
+	std::unique_ptr<SubNode> child; \
+};\
+using name = name ## PeelNodeMacro<PeelNodeBase<base>, sub>;
+
 
 
 
@@ -239,14 +252,17 @@ std::tuple<sub> PeelNode<PeelNodeBase<base>,sub>::peel(std::tuple<Aerial*, doubl
 #define PEEL_BASE(...) __VA_ARGS__
 
 
-PEEL_NODE(PEEL_BASE(Aerial*, double), double, {std::get<1>(payload)})
-PEEL_NODE(PEEL_BASE(Aerial*, double), Aerial*, {std::get<0>(payload)})
+//PEEL_NODE(PEEL_BASE(Aerial*, double), double, {std::get<1>(payload)})
+//PEEL_NODE(PEEL_BASE(Aerial*, double), Aerial*, {std::get<0>(payload)})
+
+PEEL_NODE_MACRO(PeelDouble, PEEL_BASE(Aerial*, double), double, {std::get<1>(payload)})
+PEEL_NODE_MACRO(PeelAerial, PEEL_BASE(Aerial*, double), Aerial*, {std::get<0>(payload)})
 
 
-template<>
-double PeelNodeDouble<Aerial*, double>::peel(Aerial*, double dt) {
-	return dt;
-}
+//template<>
+//double PeelNodeDouble<Aerial*, double>::peel(Aerial*, double dt) {
+//	return dt;
+//}
 
 /* color sequences */
 #define DEFINE_COLSEQ(cnl,colrand,life) {COLOR32RGBA(0,0,0,0),numof(cnl),(cnl),(colrand),(life),1}
@@ -467,12 +483,12 @@ void Aerial::init(){
 		//rootNode->addChild(std::move(peelNode));
 
 		{
-			auto peelNode = std::make_unique<PeelNode<PeelNodeBase<Aerial*, double>, double>>();
+			auto peelNode = std::make_unique<PeelDouble>();
 			peelNode->setChild(std::make_unique<EchoDeltaTimeCustom>());
 			rootNode->addChild(std::move(peelNode));
 		}
 		{
-			auto peelNode = std::make_unique<PeelNode<PeelNodeBase<Aerial*, double>, Aerial*>>();
+			auto peelNode = std::make_unique<PeelAerial>();
 			peelNode->setChild(std::make_unique<EchoEntityIdCustom>());
 			rootNode->addChild(std::move(peelNode));
 		}

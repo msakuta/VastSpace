@@ -119,15 +119,17 @@ GLWcommandButton::GLWcommandButton(Game *game, const char *filename, const char 
 	xpos = ypos = 0;
 	width = height = 32;
 	if(command){
-		this->command = new const char[strlen(command) + 1];
-		strcpy(const_cast<char*>(this->command), command);
+		char* commandCopy = new char[strlen(command) + 1];
+		strcpy(commandCopy, command);
+		this->command = commandCopy;
 	}
 	else
 		this->command = NULL;
 
 	if(tips){
-		this->tipstring = new const char[strlen(tips) + 1];
-		strcpy(const_cast<char*>(this->tipstring), tips);
+		char* tipstring = new char[strlen(tips) + 1];
+		strcpy(tipstring, tips);
+		this->tipstring = tipstring;
 	}
 	else
 		this->tipstring = NULL;
@@ -193,8 +195,9 @@ GLWstateButton::GLWstateButton(Game *game, const char *filename, const char *fil
 		this->command = NULL;*/
 
 	if(tips){
-		this->tipstring = new const char[strlen(tips) + 1];
-		strcpy(const_cast<char*>(this->tipstring), tips);
+		char* tipstring = new char[strlen(tips) + 1];
+		strcpy(tipstring, tips);
+		this->tipstring = tipstring;
 	}
 	else
 		this->tipstring = NULL;
